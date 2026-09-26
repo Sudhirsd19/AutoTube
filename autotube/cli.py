@@ -354,6 +354,86 @@ def upload(
 
 
 @app.command()
+def cartoon(
+    topic: str = typer.Option(..., "--topic", "-t", help="Topic or idea for the cartoon short story"),
+    style: str = typer.Option("pixar", "--style", "-s", help="Visual style: pixar, anime, or comic"),
+    voice: str = typer.Option("guy", "--voice", "-v", help="AI Voice (e.g. guy, andrew, aria, swara)"),
+    duration: int = typer.Option(45, "--duration", "-d", help="Target duration in seconds"),
+    upload: bool = typer.Option(False, "--upload", help="Automatically upload to YouTube after generation"),
+    privacy: str = typer.Option("private", "--privacy", help="Privacy: private, unlisted, or public"),
+):
+    """Generate a viral 3D Pixar/Disney style animated cartoon short with voiceover & animated captions."""
+    print_banner()
+    cfg = get_config()
+    slug = sanitize_filename(topic)
+    total_steps = 5 if upload else 4
+
+    # 1. Script Generation
+    print_step(1, total_steps, "Writing Fun 3D Cartoon Story Script")
+    script_gen = ScriptGenerator()
+    script = script_gen.generate_cartoon_script(topic, target_duration=duration)
+    print_panel(
+        f"[bold yellow]Hook:[/bold yellow] {script.hook}\n\n"
+        f"[bold white]Narration:[/bold white]\n{script.narration}\n\n"
+        f"[bold cyan]Tags:[/bold cyan] {' '.join(script.tags)}",
+        title=f"Cartoon Script: {script.title}",
+    )
+
+    # 2. Voiceover Synthesis
+    print_step(2, total_steps, f"Synthesizing Expressive Cartoon Voice ({voice})")
+    tts = TTSEngine(default_voice=voice, rate="+6%", pitch="+4Hz")
+    audio_path = cfg.paths.temp_dir / f"{slug}_cartoon_voice.mp3"
+    tts_result = tts.synthesize(
+        text=script.narration,
+        output_audio_path=audio_path,
+        voice=voice,
+    )
+
+    # 3. 3D Cartoon AI Visuals
+    print_step(3, total_steps, f"Generating 3D [{style.upper()}] Character Visuals")
+    visual_gen = VisualGenerator()
+    query = script.visual_keywords[0] if script.visual_keywords else topic
+    image_out = cfg.paths.temp_dir / f"{slug}_cartoon_art.jpg"
+    bg_image_path = visual_gen.generate_image(
+        prompt=query,
+        output_path=image_out,
+        width=1080,
+        height=1920,
+        style=style,
+    )
+
+    # 4. Vertical Video Compositing & Karaoke Subtitle Burning
+    print_step(4, total_steps, "Rendering 9:16 Cartoon Short & Burning Comic Subtitles")
+    builder = ShortsBuilder()
+    output_short_path = cfg.paths.output_dir / "shorts" / f"{slug}_cartoon.mp4"
+
+    final_path = builder.build_short(
+        audio_path=tts_result.audio_path,
+        output_path=output_short_path,
+        background_image=bg_image_path,
+        subtitles_file=tts_result.subtitles_ass_path,
+    )
+
+    if not final_path or not final_path.exists():
+        print_error("Failed to render Cartoon Short.")
+        return
+
+    print_success(f"Cartoon Short successfully rendered: {final_path.resolve()}")
+
+    # 5. YouTube Upload
+    if upload:
+        print_step(5, total_steps, "Uploading Cartoon Short to YouTube")
+        uploader = YouTubeUploader()
+        uploader.upload_video(
+            video_path=final_path,
+            title=f"{script.title} #Shorts #Animation",
+            description=f"{script.narration}\n\n{' '.join(script.tags)} #Cartoon #3DAnimation",
+            tags=script.tags + ["cartoon", "animation", "pixar", "funny"],
+            privacy_status=privacy,
+        )
+
+
+@app.command()
 def autopilot(
     count: int = typer.Option(5, "--count", "-c", help="Number of videos to generate and schedule daily"),
     niche: str = typer.Option("space", "--niche", "-n", help="Niche: space, science, history, psychology, mystery"),

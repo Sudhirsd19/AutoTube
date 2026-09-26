@@ -18,12 +18,15 @@ class VisualGenerator:
         output_path: Path,
         width: int = 1080,
         height: int = 1920,
+        style: str = "realistic",
     ) -> Path:
-        """Generate an AI image or fallback gradient graphic."""
+        """Generate an AI image or fallback gradient graphic with custom style."""
         output_path.parent.mkdir(parents=True, exist_ok=True)
 
         # Attempt free AI image generation via Pollinations
-        success = self._fetch_pollinations_image(prompt, output_path, width, height)
+        success = self._fetch_pollinations_image(
+            prompt, output_path, width, height, style=style
+        )
         if success and output_path.exists() and output_path.stat().st_size > 5000:
             return output_path
 
@@ -33,15 +36,30 @@ class VisualGenerator:
         )
 
     def _fetch_pollinations_image(
-        self, prompt: str, output_path: Path, width: int, height: int
+        self,
+        prompt: str,
+        output_path: Path,
+        width: int,
+        height: int,
+        style: str = "realistic",
     ) -> bool:
         seed = random.randint(1000, 999999)
-        enhanced_prompt = f"{prompt}, 8k resolution, cinematic lighting, photorealistic, dramatic contrast"
+
+        if style.lower() in ("cartoon", "pixar", "3d"):
+            style_suffix = "3D Pixar Disney animation style, cute adorable character, expressive big eyes, vibrant colors, Unreal Engine 5 render, cinematic studio lighting"
+        elif style.lower() in ("anime", "ghibli"):
+            style_suffix = "Studio Ghibli modern anime animation style, lush aesthetic, vibrant colorful, beautiful anime digital art"
+        elif style.lower() in ("comic", "2d"):
+            style_suffix = "funny 2D cartoon illustration, bold comic ink outlines, saturated colors, modern cartoon network aesthetic"
+        else:
+            style_suffix = "8k resolution, cinematic lighting, photorealistic, dramatic contrast"
+
+        enhanced_prompt = f"{prompt}, {style_suffix}"
         encoded = requests.utils.quote(enhanced_prompt)
         url = f"https://image.pollinations.ai/prompt/{encoded}?width={width}&height={height}&nologo=true&seed={seed}"
 
         try:
-            print_info(f"Generating AI visual for prompt: '{prompt[:45]}...'")
+            print_info(f"Generating AI [{style.upper()}] visual for: '{prompt[:45]}...'")
             resp = requests.get(url, timeout=25)
             if resp.status_code == 200 and len(resp.content) > 5000:
                 with open(output_path, "wb") as f:

@@ -69,6 +69,46 @@ Write compelling narration, strong first 3 seconds hook, 4-6 visual search keywo
         print_error("All Gemini models busy or failed. Falling back to template.")
         return self._generate_fallback_short(topic, target_duration)
 
+    def generate_cartoon_script(
+        self, topic: str, target_duration: int = 45
+    ) -> ShortScript:
+        """Generate a viral, funny, or heartwarming 3D animated cartoon short script."""
+        from autotube.scripting.prompts import CARTOON_SYSTEM_PROMPT
+
+        if not self.client:
+            return self._generate_fallback_short(topic, target_duration)
+
+        prompt = f"""Generate a hilarious, heartwarming, or surprising 3D Pixar/Disney style animated cartoon short about: '{topic}'.
+Target duration: {target_duration} seconds.
+Rules:
+1. Quirky, funny hook in the first 2 seconds.
+2. Expressive characters and dialogue.
+3. Funny or clever twist ending.
+4. Visual keywords MUST describe cute, expressive 3D Pixar animated characters and scenes.
+"""
+
+        for model_name in CANDIDATE_MODELS:
+            try:
+                print_info(f"Generating Cartoon Script using [{model_name}]...")
+                response = self.client.models.generate_content(
+                    model=model_name,
+                    contents=prompt,
+                    config=types.GenerateContentConfig(
+                        system_instruction=CARTOON_SYSTEM_PROMPT,
+                        response_mime_type="application/json",
+                        response_schema=ShortScript,
+                        temperature=0.85,
+                    ),
+                )
+                data = json.loads(response.text)
+                print_success(f"Cartoon Script generated with {model_name}!")
+                return ShortScript(**data)
+            except Exception as e:
+                print_warning(f"Model {model_name} attempt: {e}")
+                continue
+
+        return self._generate_fallback_short(topic, target_duration)
+
     def generate_long_script(
         self, topic: str, num_scenes: int = 6
     ) -> LongVideoScript:

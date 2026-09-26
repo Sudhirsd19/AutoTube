@@ -17,6 +17,7 @@ VIRAL_NICHES = {
     "history": "Bizarre historical events, untold ancient secrets, ruthless rulers, hidden treasures",
     "psychology": "Dark psychology, human mind tricks, cognitive biases, body language secrets",
     "mystery": "Unsolved ancient mysteries, ocean anomalies, forbidden archaeological discoveries",
+    "cartoon": "Funny 3D Pixar animated animal adventures, quirky pets with secret superhero lives, hilarious baby dinosaur mishaps, funny mischievous robot fails, adorable comedy cartoon stories",
 }
 
 
