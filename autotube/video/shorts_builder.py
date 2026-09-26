@@ -1,7 +1,7 @@
-"""YouTube Shorts Video Builder (9:16 Vertical Video Compositor)."""
+"""YouTube Shorts Video Builder (9:16 Vertical Video Compositor with Multi-Scene Support)."""
 
 from pathlib import Path
-from typing import Optional
+from typing import List, Optional
 from autotube.config import get_config
 from autotube.utils.console import print_error, print_info, print_success
 from autotube.utils.ffmpeg_helper import get_media_duration, run_ffmpeg
@@ -9,7 +9,7 @@ from autotube.video.subtitle_burner import burn_subtitles
 
 
 class ShortsBuilder:
-    """Builds 1080x1920 vertical YouTube Shorts."""
+    """Builds 1080x1920 vertical YouTube Shorts with single or multi-scene dynamic motion."""
 
     def __init__(self):
         self.cfg = get_config()
@@ -23,6 +23,7 @@ class ShortsBuilder:
         output_path: Path,
         background_video: Optional[Path] = None,
         background_image: Optional[Path] = None,
+        scene_visuals: Optional[List[Path]] = None,
         subtitles_file: Optional[Path] = None,
     ) -> Optional[Path]:
         """Compose audio, background visuals, and animated subtitles into a final Short."""
@@ -36,9 +37,79 @@ class ShortsBuilder:
             return None
 
         raw_video_path = temp_dir / f"raw_{output_path.stem}.mp4"
+        success = False
 
-        # Case 1: Video background provided
-        if background_video and background_video.exists():
+        # Case 1: Multiple Dynamic Scene Visuals (Cuts every 4-6 seconds!)
+        if scene_visuals and len(scene_visuals) > 1:
+            print_info(f"Assembling {len(scene_visuals)} dynamic cartoon scenes with motion cuts...")
+            num_scenes = len(scene_visuals)
+            dur_per_scene = duration / num_scenes
+            rendered_clips: List[Path] = []
+
+            for idx, vis in enumerate(scene_visuals):
+                clip_path = temp_dir / f"scene_{output_path.stem}_{idx:02d}.mp4"
+                rendered_clips.append(clip_path)
+
+                # Alternate camera motion between scenes
+                if idx % 2 == 0:
+                    zoom_expr = "min(zoom+0.0006,1.08)"
+                else:
+                    zoom_expr = "max(1.08-0.0006*on,1.0)"
+
+                vf = (
+                    f"scale=1200:2133:force_original_aspect_ratio=increase,"
+                    f"crop=1200:2133,"
+                    f"zoompan=z='{zoom_expr}':d=1:x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':s={self.width}x{self.height}:fps={self.fps},"
+                    f"format=yuv420p"
+                )
+                args = [
+                    "-loop",
+                    "1",
+                    "-i",
+                    str(vis),
+                    "-t",
+                    f"{dur_per_scene:.2f}",
+                    "-vf",
+                    vf,
+                    "-c:v",
+                    "libx264",
+                    "-preset",
+                    "veryfast",
+                    "-an",
+                    str(clip_path),
+                ]
+                run_ffmpeg(args, desc=f"Rendering animated scene {idx+1}/{num_scenes}")
+
+            # Stitch all scene clips together
+            concat_txt = temp_dir / f"concat_{output_path.stem}.txt"
+            with open(concat_txt, "w", encoding="utf-8") as f:
+                for c in rendered_clips:
+                    f.write(f"file '{c.resolve().as_posix()}'\n")
+
+            concat_args = [
+                "-f",
+                "concat",
+                "-safe",
+                "0",
+                "-i",
+                str(concat_txt),
+                "-i",
+                str(audio_path),
+                "-c:v",
+                "copy",
+                "-c:a",
+                "aac",
+                "-b:a",
+                "192k",
+                "-shortest",
+                str(raw_video_path),
+            ]
+            success = run_ffmpeg(
+                concat_args, desc="Stitching multi-scene video sequence"
+            )
+
+        # Case 2: Video background provided
+        elif background_video and background_video.exists():
             print_info(f"Using background video: {background_video.name}")
             vf = (
                 f"scale={self.width}:{self.height}:force_original_aspect_ratio=increase,"
@@ -67,12 +138,14 @@ class ShortsBuilder:
             ]
             success = run_ffmpeg(args, desc="Compositing background video with audio")
 
-        # Case 2: Image background provided
+        # Case 3: Single Image background provided with subtle motion
         elif background_image and background_image.exists():
             print_info(f"Using background visual: {background_image.name}")
             vf = (
-                f"scale={self.width}:{self.height}:force_original_aspect_ratio=increase,"
-                f"crop={self.width}:{self.height},format=yuv420p"
+                f"scale=1200:2133:force_original_aspect_ratio=increase,"
+                f"crop=1200:2133,"
+                f"zoompan=z='min(zoom+0.0004,1.08)':d=1:x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':s={self.width}x{self.height}:fps={self.fps},"
+                f"format=yuv420p"
             )
             args = [
                 "-loop",
@@ -95,9 +168,9 @@ class ShortsBuilder:
                 "192k",
                 str(raw_video_path),
             ]
-            success = run_ffmpeg(args, desc="Rendering vertical video base")
+            success = run_ffmpeg(args, desc="Rendering vertical video base with camera motion")
 
-        # Case 3: Fallback motion canvas
+        # Case 4: Fallback motion canvas
         else:
             print_info("No background provided, creating aesthetic motion canvas...")
             vf = (
@@ -137,7 +210,6 @@ class ShortsBuilder:
                 subtitles_file=subtitles_file,
                 output_video=output_path,
             )
-            # Cleanup raw video
             try:
                 raw_video_path.unlink()
             except Exception:

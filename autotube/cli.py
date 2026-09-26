@@ -389,18 +389,29 @@ def cartoon(
         voice=voice,
     )
 
-    # 3. 3D Cartoon AI Visuals
-    print_step(3, total_steps, f"Generating 3D [{style.upper()}] Character Visuals")
+    # 3. Dynamic Multi-Scene 3D Cartoon AI Visuals
+    print_step(3, total_steps, f"Generating Dynamic 3D [{style.upper()}] Story Scenes")
     visual_gen = VisualGenerator()
-    query = script.visual_keywords[0] if script.visual_keywords else topic
-    image_out = cfg.paths.temp_dir / f"{slug}_cartoon_art.jpg"
-    bg_image_path = visual_gen.generate_image(
-        prompt=query,
-        output_path=image_out,
-        width=1080,
-        height=1920,
-        style=style,
-    )
+    scene_visuals = []
+
+    visual_queries = script.visual_keywords if script.visual_keywords and len(script.visual_keywords) >= 3 else [
+        f"{topic}, cute character intro",
+        f"{topic}, hilarious comedy challenge",
+        f"{topic}, silly action sequence",
+        f"{topic}, shocking funny surprise",
+        f"{topic}, happy comical ending",
+    ]
+
+    for s_idx, v_query in enumerate(visual_queries[:6]):
+        s_img_path = cfg.paths.temp_dir / f"{slug}_scene_{s_idx+1:02d}.jpg"
+        img = visual_gen.generate_image(
+            prompt=v_query,
+            output_path=s_img_path,
+            width=1080,
+            height=1920,
+            style=style,
+        )
+        scene_visuals.append(img)
 
     # 4. Vertical Video Compositing & Karaoke Subtitle Burning
     print_step(4, total_steps, "Rendering 9:16 Cartoon Short & Burning Comic Subtitles")
@@ -410,7 +421,7 @@ def cartoon(
     final_path = builder.build_short(
         audio_path=tts_result.audio_path,
         output_path=output_short_path,
-        background_image=bg_image_path,
+        scene_visuals=scene_visuals,
         subtitles_file=tts_result.subtitles_ass_path,
     )
 
