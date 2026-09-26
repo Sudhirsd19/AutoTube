@@ -66,16 +66,24 @@ class ThumbnailGenerator:
 
         wrapped_lines = textwrap.wrap(short_title, width=16)
 
-        # Load font or fallback
+        # Load font or fallback (Linux & Windows compatible)
         font_size = 76
-        try:
-            # Try Windows standard bold fonts
-            font = ImageFont.truetype("arialbd.ttf", font_size)
-        except Exception:
+        font = None
+        font_candidates = [
+            "arialbd.ttf",
+            "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
+            "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf",
+            "/usr/share/fonts/truetype/freefont/FreeSansBold.ttf",
+            "impact.ttf",
+        ]
+        for fc in font_candidates:
             try:
-                font = ImageFont.truetype("impact.ttf", font_size)
+                font = ImageFont.truetype(fc, font_size)
+                break
             except Exception:
-                font = ImageFont.load_default()
+                pass
+        if not font:
+            font = ImageFont.load_default()
 
         # Compute text block position
         y_offset = (self.height - (len(wrapped_lines) * (font_size + 15))) // 2
