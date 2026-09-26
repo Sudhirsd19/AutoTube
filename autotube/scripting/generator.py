@@ -1,15 +1,22 @@
-"""AI Script Generator for YouTube Shorts and Long-form content."""
+"""AI Script Generator for YouTube Shorts and Long-form content with multi-model fallback."""
 
 import json
 import os
-from typing import Optional
+from typing import List, Optional
 from google import genai
 from google.genai import types
 
 from autotube.config import get_config
 from autotube.scripting.models import LongVideoScript, Scene, ShortScript
 from autotube.scripting.prompts import LONGFORM_SYSTEM_PROMPT, SHORTS_SYSTEM_PROMPT
-from autotube.utils.console import print_error, print_info, print_warning
+from autotube.utils.console import print_error, print_info, print_success, print_warning
+
+# Recommended modern models with automatic fallback
+CANDIDATE_MODELS = [
+    "gemini-3-flash-preview",
+    "gemini-3.1-flash-lite-preview",
+    "gemini-flash-latest",
+]
 
 
 class ScriptGenerator:
@@ -31,7 +38,7 @@ class ScriptGenerator:
         """Generate a viral YouTube Short script for the given topic."""
         if not self.client:
             print_warning(
-                "No GEMINI_API_KEY found or client unavailable. Using smart built-in template for testing."
+                "No GEMINI_API_KEY found or client unavailable. Using smart built-in template."
             )
             return self._generate_fallback_short(topic, target_duration)
 
@@ -39,23 +46,28 @@ class ScriptGenerator:
 Target duration: {target_duration} seconds.
 Write compelling narration, strong first 3 seconds hook, 4-6 visual search keywords, and relevant tags."""
 
-        try:
-            print_info(f"Generating AI Short script for topic: '{topic}'...")
-            response = self.client.models.generate_content(
-                model="gemini-2.5-flash",
-                contents=prompt,
-                config=types.GenerateContentConfig(
-                    system_instruction=SHORTS_SYSTEM_PROMPT,
-                    response_mime_type="application/json",
-                    response_schema=ShortScript,
-                    temperature=0.7,
-                ),
-            )
-            data = json.loads(response.text)
-            return ShortScript(**data)
-        except Exception as e:
-            print_error(f"Gemini API generation failed: {e}. Falling back to template.")
-            return self._generate_fallback_short(topic, target_duration)
+        for model_name in CANDIDATE_MODELS:
+            try:
+                print_info(f"Generating AI Short script using [{model_name}]...")
+                response = self.client.models.generate_content(
+                    model=model_name,
+                    contents=prompt,
+                    config=types.GenerateContentConfig(
+                        system_instruction=SHORTS_SYSTEM_PROMPT,
+                        response_mime_type="application/json",
+                        response_schema=ShortScript,
+                        temperature=0.7,
+                    ),
+                )
+                data = json.loads(response.text)
+                print_success(f"AI Script successfully generated with {model_name}!")
+                return ShortScript(**data)
+            except Exception as e:
+                print_warning(f"Model {model_name} attempt: {e}")
+                continue
+
+        print_error("All Gemini models busy or failed. Falling back to template.")
+        return self._generate_fallback_short(topic, target_duration)
 
     def generate_long_script(
         self, topic: str, num_scenes: int = 6
@@ -63,7 +75,7 @@ Write compelling narration, strong first 3 seconds hook, 4-6 visual search keywo
         """Generate a multi-scene long-form YouTube script."""
         if not self.client:
             print_warning(
-                "No GEMINI_API_KEY found or client unavailable. Using smart built-in template for testing."
+                "No GEMINI_API_KEY found or client unavailable. Using smart built-in template."
             )
             return self._generate_fallback_long(topic, num_scenes)
 
@@ -71,23 +83,28 @@ Write compelling narration, strong first 3 seconds hook, 4-6 visual search keywo
 Structure it into exactly {num_scenes} distinct visual scenes.
 Provide title, description, tags, and each scene with spoken narration and visual search query."""
 
-        try:
-            print_info(f"Generating AI Long-form script for topic: '{topic}'...")
-            response = self.client.models.generate_content(
-                model="gemini-2.5-flash",
-                contents=prompt,
-                config=types.GenerateContentConfig(
-                    system_instruction=LONGFORM_SYSTEM_PROMPT,
-                    response_mime_type="application/json",
-                    response_schema=LongVideoScript,
-                    temperature=0.7,
-                ),
-            )
-            data = json.loads(response.text)
-            return LongVideoScript(**data)
-        except Exception as e:
-            print_error(f"Gemini API generation failed: {e}. Falling back to template.")
-            return self._generate_fallback_long(topic, num_scenes)
+        for model_name in CANDIDATE_MODELS:
+            try:
+                print_info(f"Generating AI Long-form script using [{model_name}]...")
+                response = self.client.models.generate_content(
+                    model=model_name,
+                    contents=prompt,
+                    config=types.GenerateContentConfig(
+                        system_instruction=LONGFORM_SYSTEM_PROMPT,
+                        response_mime_type="application/json",
+                        response_schema=LongVideoScript,
+                        temperature=0.7,
+                    ),
+                )
+                data = json.loads(response.text)
+                print_success(f"Documentary Script generated with {model_name}!")
+                return LongVideoScript(**data)
+            except Exception as e:
+                print_warning(f"Model {model_name} attempt: {e}")
+                continue
+
+        print_error("All Gemini models busy or failed. Falling back to template.")
+        return self._generate_fallback_long(topic, num_scenes)
 
     def _generate_fallback_short(
         self, topic: str, target_duration: int
