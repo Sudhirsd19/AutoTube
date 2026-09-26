@@ -353,5 +353,55 @@ def upload(
     )
 
 
+@app.command()
+def autopilot(
+    count: int = typer.Option(5, "--count", "-c", help="Number of videos to generate and schedule daily"),
+    niche: str = typer.Option("space", "--niche", "-n", help="Niche: space, science, history, psychology, mystery"),
+    voice: str = typer.Option("christopher", "--voice", "-v", help="AI Voice narrator"),
+    upload: bool = typer.Option(True, "--upload/--no-upload", help="Upload to YouTube"),
+    schedule: bool = typer.Option(True, "--schedule/--no-schedule", help="Stagger across peak hours (9 AM, 12 PM, 3 PM, 6 PM, 9 PM)"),
+):
+    """Fully automated batch creation and scheduled publishing for YouTube Shorts."""
+    from autotube.scheduler.autopilot import AutoPilot
+
+    pilot = AutoPilot(niche=niche, voice=voice)
+    pilot.run_daily_batch(count=count, upload=upload, schedule=schedule)
+
+
+@app.command()
+def setup_task(
+    hour: str = typer.Option("08:00", "--time", "-t", help="Time of day to run AutoTube (24hr format HH:MM e.g. 08:00)"),
+):
+    """Configure Windows Task Scheduler to run AutoTube automatically every morning."""
+    import subprocess
+    from autotube.config import PROJECT_ROOT
+
+    bat_file = PROJECT_ROOT / "run_daily.bat"
+    cmd = [
+        "schtasks",
+        "/create",
+        "/tn",
+        "AutoTubeDaily",
+        "/tr",
+        str(bat_file),
+        "/sc",
+        "daily",
+        "/st",
+        hour,
+        "/f",
+    ]
+
+    print_info(f"Registering Windows Scheduled Task for daily run at {hour}...")
+    try:
+        res = subprocess.run(cmd, capture_output=True, text=True)
+        if res.returncode == 0:
+            print_success(f"Windows Task 'AutoTubeDaily' successfully registered! Will run daily at {hour}.")
+        else:
+            print_error(f"Could not register task: {res.stderr}")
+    except Exception as e:
+        print_error(f"Error registering task: {e}")
+
+
+
 if __name__ == "__main__":
     app()
