@@ -133,7 +133,7 @@ def shorts(
     ),
     duration: int = typer.Option(45, "--duration", "-d", help="Target duration in seconds"),
     upload: bool = typer.Option(False, "--upload", help="Automatically upload to YouTube after generation"),
-    privacy: str = typer.Option("private", "--privacy", help="Privacy: private, unlisted, or public"),
+    privacy: str = typer.Option("public", "--privacy", help="Privacy: private, unlisted, or public"),
 ):
     """Generate a high-retention 9:16 vertical YouTube Short with animated subtitles."""
     print_banner()
@@ -232,7 +232,7 @@ def video(
     scenes: int = typer.Option(5, "--scenes", "-s", help="Number of scenes in the documentary"),
     voice: str = typer.Option("christopher", "--voice", "-v", help="AI Voice narrator"),
     upload: bool = typer.Option(False, "--upload", help="Automatically upload to YouTube after generation"),
-    privacy: str = typer.Option("private", "--privacy", help="Privacy: private, unlisted, or public"),
+    privacy: str = typer.Option("public", "--privacy", help="Privacy: private, unlisted, or public"),
 ):
     """Generate a full 16:9 widescreen YouTube documentary video with multi-scenes and thumbnail."""
     print_banner()
