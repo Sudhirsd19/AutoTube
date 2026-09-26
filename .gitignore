@@ -18,6 +18,7 @@ output/temp/
 .env
 config/token.json
 config/client_secrets.json
+config/auth_url.txt
 
 # IDE
 .vscode/

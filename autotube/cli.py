@@ -331,7 +331,7 @@ def video(
 def upload(
     video_path: Path = typer.Argument(..., help="Path to the video file to upload"),
     title: str = typer.Option(..., "--title", "-t", help="Video Title"),
-    description: str = typer.Option("", "--description", "-d", help="Video Description"),
+    description: str = typer.Option("", "--description", "--desc", "-d", help="Video Description"),
     tags: str = typer.Option("AutoTube,AI", "--tags", help="Comma-separated tags"),
     privacy: str = typer.Option("private", "--privacy", help="Privacy status (private, unlisted, public)"),
     thumbnail: Optional[Path] = typer.Option(None, "--thumbnail", help="Path to custom thumbnail image"),
