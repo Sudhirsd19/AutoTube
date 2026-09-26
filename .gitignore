@@ -1,0 +1,24 @@
+# Virtual environment
+.venv/
+env/
+ENV/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# AutoTube outputs & temp files
+output/
+output/shorts/
+output/videos/
+output/temp/
+
+# Credentials & secrets
+.env
+config/token.json
+config/client_secrets.json
+
+# IDE
+.vscode/
+.idea/

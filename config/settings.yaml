@@ -1,0 +1,61 @@
+# AutoTube Configuration Settings
+
+project:
+  name: "AutoTube"
+  version: "1.0.0"
+  description: "End-to-end AI YouTube Shorts, Long-form Video Generator & Auto-Uploader"
+
+paths:
+  output_dir: "output"
+  assets_dir: "assets"
+  temp_dir: "output/temp"
+
+ai:
+  default_model: "gemini-2.5-flash"
+  temperature: 0.7
+
+video:
+  shorts:
+    width: 1080
+    height: 1920
+    fps: 30
+    default_duration: 50
+    subtitle_style:
+      font: "Arial-Bold"
+      fontsize: 58
+      primary_color: "&H00FFFFFF"     # White
+      highlight_color: "&H0000FFFF"   # Bright Yellow
+      outline_color: "&H00000000"     # Black
+      outline_width: 3
+      shadow_width: 2
+      position: "bottom"              # bottom, center
+  longform:
+    width: 1920
+    height: 1080
+    fps: 30
+    subtitle_style:
+      font: "Arial-Bold"
+      fontsize: 42
+      primary_color: "&H00FFFFFF"
+      highlight_color: "&H0000D7FF"   # Gold/Yellow
+      outline_color: "&H00000000"
+      outline_width: 2
+      position: "bottom"
+
+voice:
+  default_voice: "en-US-ChristopherNeural"
+  hindi_voice: "hi-IN-MadhurNeural"
+  rate: "+0%"
+  pitch: "+0Hz"
+  volume: "+0%"
+
+media:
+  stock_provider: "pexels"            # pexels, pixabay, or local
+  image_provider: "pollinations"      # pollinations, local
+  background_music_volume: 0.12       # 12% volume for background ambient track
+
+youtube:
+  client_secrets_file: "config/client_secrets.json"
+  token_file: "config/token.json"
+  default_privacy: "private"          # private, unlisted, public
+  default_category: "28"              # 28 = Science & Technology, 27 = Education, 24 = Entertainment
