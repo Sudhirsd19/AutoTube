@@ -24,6 +24,7 @@ class ShortsBuilder:
         background_video: Optional[Path] = None,
         background_image: Optional[Path] = None,
         scene_visuals: Optional[List[Path]] = None,
+        scene_videos: Optional[List[Path]] = None,
         subtitles_file: Optional[Path] = None,
     ) -> Optional[Path]:
         """Compose audio, background visuals, and animated subtitles into a final Short."""
@@ -39,8 +40,73 @@ class ShortsBuilder:
         raw_video_path = temp_dir / f"raw_{output_path.stem}.mp4"
         success = False
 
-        # Case 1: Multiple Dynamic Scene Visuals (Cuts every 4-6 seconds!)
-        if scene_visuals and len(scene_visuals) > 1:
+        # Fallback single scene video if only 1 passed
+        if scene_videos and len(scene_videos) == 1 and not background_video:
+            background_video = scene_videos[0]
+
+        # Case 0: Multiple Dynamic Moving Video Scenes (Fast Cuts Every 3-5 seconds for maximum retention!)
+        if scene_videos and len(scene_videos) > 1:
+            print_info(f"Assembling {len(scene_videos)} dynamic moving video scenes with fast cuts...")
+            num_scenes = len(scene_videos)
+            dur_per_scene = duration / num_scenes
+            rendered_clips: List[Path] = []
+
+            for idx, vid_clip in enumerate(scene_videos):
+                clip_path = temp_dir / f"vidscene_{output_path.stem}_{idx:02d}.mp4"
+                rendered_clips.append(clip_path)
+
+                vf = (
+                    f"scale={self.width}:{self.height}:force_original_aspect_ratio=increase,"
+                    f"crop={self.width}:{self.height},format=yuv420p"
+                )
+                args = [
+                    "-stream_loop",
+                    "-1",
+                    "-i",
+                    str(vid_clip),
+                    "-t",
+                    f"{dur_per_scene:.2f}",
+                    "-vf",
+                    vf,
+                    "-c:v",
+                    "libx264",
+                    "-preset",
+                    "veryfast",
+                    "-an",
+                    str(clip_path),
+                ]
+                run_ffmpeg(args, desc=f"Rendering video scene cut {idx+1}/{num_scenes}")
+
+            # Stitch all scene clips together
+            concat_txt = temp_dir / f"concat_{output_path.stem}.txt"
+            with open(concat_txt, "w", encoding="utf-8") as f:
+                for c in rendered_clips:
+                    f.write(f"file '{c.resolve().as_posix()}'\n")
+
+            concat_args = [
+                "-f",
+                "concat",
+                "-safe",
+                "0",
+                "-i",
+                str(concat_txt),
+                "-i",
+                str(audio_path),
+                "-c:v",
+                "copy",
+                "-c:a",
+                "aac",
+                "-b:a",
+                "192k",
+                "-shortest",
+                str(raw_video_path),
+            ]
+            success = run_ffmpeg(
+                concat_args, desc="Stitching multi-video sequence"
+            )
+
+        # Case 1: Multiple Dynamic Scene Visuals (Images with Camera Motion cuts!)
+        elif scene_visuals and len(scene_visuals) > 1:
             print_info(f"Assembling {len(scene_visuals)} dynamic cartoon scenes with motion cuts...")
             num_scenes = len(scene_visuals)
             dur_per_scene = duration / num_scenes

@@ -36,6 +36,10 @@ class ShortScript(BaseModel):
     tags: List[str] = Field(
         default_factory=lambda: ["#Shorts", "#viral", "#trending"]
     )
+    pinned_comment: Optional[str] = Field(
+        default="What would you do if this happened? Let me know in the comments below! 👇",
+        description="A provocative question to pin in the comments to maximize engagement",
+    )
     estimated_duration_sec: int = Field(default=50)
 
 

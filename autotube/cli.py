@@ -162,30 +162,35 @@ def shorts(
         voice=voice,
     )
 
-    # 3. Visuals Selection
-    print_step(3, total_steps, "Acquiring Visual Footage & Motion Backdrop")
-    bg_video_path = None
-    bg_image_path = None
-
-    # Try stock footage if query exists
+    # 3. Visuals Selection (Dynamic Multi-Scene Fast B-Roll Cuts)
+    print_step(3, total_steps, "Acquiring Multi-Scene Visual Footage (Fast Pacing Cuts)")
     stock_fetcher = StockFetcher()
-    query = script.visual_keywords[0] if script.visual_keywords else topic
-    bg_video_path = stock_fetcher.search_and_download_video(
-        query=query,
+    queries = script.visual_keywords if script.visual_keywords else [topic]
+    scene_videos = stock_fetcher.fetch_multi_scene_videos(
+        queries=queries,
         output_dir=cfg.paths.temp_dir,
+        target_count=4,
         orientation="portrait",
     )
 
-    # If no stock video, generate high-aesthetic visual
-    if not bg_video_path:
-        visual_gen = VisualGenerator()
-        image_out = cfg.paths.temp_dir / f"{slug}_visual.jpg"
-        bg_image_path = visual_gen.generate_image(
-            prompt=query,
-            output_path=image_out,
-            width=1080,
-            height=1920,
+    bg_video_path = None
+    bg_image_path = None
+    if not scene_videos:
+        # Fallback to single stock search
+        bg_video_path = stock_fetcher.search_and_download_video(
+            query=queries[0],
+            output_dir=cfg.paths.temp_dir,
+            orientation="portrait",
         )
+        if not bg_video_path:
+            visual_gen = VisualGenerator()
+            image_out = cfg.paths.temp_dir / f"{slug}_visual.jpg"
+            bg_image_path = visual_gen.generate_image(
+                prompt=queries[0],
+                output_path=image_out,
+                width=1080,
+                height=1920,
+            )
 
     # 4. Vertical Video Compositing & Karaoke Subtitle Burning
     print_step(4, total_steps, "Rendering 9:16 Vertical Video & Burning Subtitles")
@@ -197,6 +202,7 @@ def shorts(
         output_path=output_short_path,
         background_video=bg_video_path,
         background_image=bg_image_path,
+        scene_videos=scene_videos if len(scene_videos) > 1 else None,
         subtitles_file=tts_result.subtitles_ass_path,
     )
 
@@ -216,6 +222,7 @@ def shorts(
             description=f"{script.narration}\n\n{' '.join(script.tags)}",
             tags=script.tags,
             privacy_status=privacy,
+            pinned_comment=getattr(script, "pinned_comment", None),
         )
 
 

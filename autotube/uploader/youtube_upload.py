@@ -27,8 +27,9 @@ class YouTubeUploader:
         category_id: Optional[str] = None,
         publish_at: Optional[str] = None,
         thumbnail_path: Optional[Path] = None,
+        pinned_comment: Optional[str] = None,
     ) -> Optional[str]:
-        """Upload video file to YouTube with metadata and optional thumbnail."""
+        """Upload video file to YouTube with metadata, optional thumbnail and auto engagement comment."""
         if not video_path.exists():
             print_error(f"Video file not found: {video_path}")
             return None
@@ -102,6 +103,10 @@ class YouTubeUploader:
                 except Exception as te:
                     print_warning(f"Could not set custom thumbnail: {te}")
 
+            # Auto-post engagement comment
+            if pinned_comment:
+                self.post_comment(video_id=video_id, comment_text=pinned_comment)
+
             return video_url
 
         except HttpError as e:
@@ -110,3 +115,31 @@ class YouTubeUploader:
         except Exception as e:
             print_error(f"Upload failed: {e}")
             return None
+
+    def post_comment(self, video_id: str, comment_text: str) -> bool:
+        """Post a top-level creator comment to maximize user engagement and comments signal."""
+        creds = self.auth.get_credentials()
+        if not creds:
+            return False
+
+        try:
+            youtube = build("youtube", "v3", credentials=creds)
+            print_info(f"Posting engagement question on video {video_id}...")
+            youtube.commentThreads().insert(
+                part="snippet",
+                body={
+                    "snippet": {
+                        "videoId": video_id,
+                        "topLevelComment": {
+                            "snippet": {
+                                "textOriginal": comment_text,
+                            }
+                        },
+                    }
+                },
+            ).execute()
+            print_success("Creator engagement comment posted successfully!")
+            return True
+        except Exception as e:
+            print_warning(f"Could not post creator comment: {e}")
+            return False

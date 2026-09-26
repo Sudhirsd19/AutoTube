@@ -66,7 +66,8 @@ class AutoPilot:
 
         uploaded_urls = []
         now = datetime.datetime.now(datetime.timezone.utc)
-        today = datetime.datetime.now()
+        ist = datetime.timezone(datetime.timedelta(hours=5, minutes=30))
+        today = datetime.datetime.now(ist)
 
         for idx, topic in enumerate(topics):
             print_panel(
@@ -86,7 +87,7 @@ class AutoPilot:
                     sched_hour,
                     0,
                     0,
-                    tzinfo=datetime.timezone(datetime.timedelta(hours=5, minutes=30)),  # IST
+                    tzinfo=ist,
                 )
                 # If scheduled time already passed today, schedule for tomorrow
                 if sched_dt.astimezone(datetime.timezone.utc) <= now:
@@ -110,22 +111,30 @@ class AutoPilot:
                 voice=self.voice,
             )
 
-            # Step C: Visual Footage
-            query = script.visual_keywords[0] if script.visual_keywords else topic
-            bg_video = self.stock_fetcher.search_and_download_video(
-                query=query,
+            # Step C: Dynamic Multi-Scene Visual Footage (Cuts every 3-5 seconds!)
+            queries = script.visual_keywords if script.visual_keywords else [topic]
+            scene_videos = self.stock_fetcher.fetch_multi_scene_videos(
+                queries=queries,
                 output_dir=self.cfg.paths.temp_dir,
+                target_count=4,
                 orientation="portrait",
             )
+            bg_video = None
             bg_image = None
-            if not bg_video:
-                img_out = self.cfg.paths.temp_dir / f"{slug}_visual.jpg"
-                bg_image = self.visual_gen.generate_image(
-                    prompt=f"{query}, hyper-detailed cinematic 8k",
-                    output_path=img_out,
-                    width=1080,
-                    height=1920,
+            if not scene_videos:
+                bg_video = self.stock_fetcher.search_and_download_video(
+                    query=queries[0],
+                    output_dir=self.cfg.paths.temp_dir,
+                    orientation="portrait",
                 )
+                if not bg_video:
+                    img_out = self.cfg.paths.temp_dir / f"{slug}_visual.jpg"
+                    bg_image = self.visual_gen.generate_image(
+                        prompt=f"{queries[0]}, hyper-detailed cinematic 8k",
+                        output_path=img_out,
+                        width=1080,
+                        height=1920,
+                    )
 
             # Step D: Render Video & Subtitles
             output_short = self.cfg.paths.output_dir / "shorts" / f"{slug}.mp4"
@@ -134,6 +143,7 @@ class AutoPilot:
                 output_path=output_short,
                 background_video=bg_video,
                 background_image=bg_image,
+                scene_videos=scene_videos if len(scene_videos) > 1 else None,
                 subtitles_file=tts_res.subtitles_ass_path,
             )
 
@@ -150,6 +160,7 @@ class AutoPilot:
                     tags=script.tags,
                     privacy_status="private" if publish_time_iso else "public",
                     publish_at=publish_time_iso,
+                    pinned_comment=getattr(script, "pinned_comment", None),
                 )
                 if video_url:
                     uploaded_urls.append(video_url)

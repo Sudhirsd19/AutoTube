@@ -87,3 +87,30 @@ class StockFetcher:
         except Exception as e:
             print_error(f"Failed to fetch stock video: {e}")
             return None
+
+    def fetch_multi_scene_videos(
+        self,
+        queries: List[str],
+        output_dir: Path,
+        target_count: int = 4,
+        orientation: str = "portrait",
+    ) -> List[Path]:
+        """Fetch multiple distinct video clips for multi-scene fast pacing."""
+        downloaded: List[Path] = []
+        seen_ids = set()
+
+        for q in queries:
+            if len(downloaded) >= target_count:
+                break
+            clean_q = q.strip()
+            if not clean_q:
+                continue
+            video_path = self.search_and_download_video(
+                query=clean_q,
+                output_dir=output_dir,
+                orientation=orientation,
+            )
+            if video_path and video_path.exists() and video_path not in downloaded:
+                downloaded.append(video_path)
+
+        return downloaded

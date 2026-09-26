@@ -57,5 +57,5 @@ media:
 youtube:
   client_secrets_file: "config/client_secrets.json"
   token_file: "config/token.json"
-  default_privacy: "private"          # private, unlisted, public
+  default_privacy: "public"           # private, unlisted, public
   default_category: "28"              # 28 = Science & Technology, 27 = Education, 24 = Entertainment
