@@ -41,7 +41,47 @@ class YouTubeUploader:
 
         privacy = privacy_status or self.cfg.youtube.default_privacy
         category = category_id or self.cfg.youtube.default_category
-        clean_tags = tags or ["AutoTube", "AI"]
+
+        # Ensure high-traffic SEO tags
+        base_viral_tags = [
+            "Shorts",
+            "YouTube Shorts",
+            "Viral",
+            "Trending",
+            "Space",
+            "Science Facts",
+            "Mind Blowing",
+            "Mysteries",
+            "Universe",
+        ]
+        clean_tags = list(dict.fromkeys((tags or []) + base_viral_tags))
+
+        # Ensure 1-click subscription link and engagement CTA in description
+        sub_cta_block = (
+            "\n\n"
+            "🔔 SUBSCRIBE for Daily Cosmic Mysteries & Mind-Blowing Facts:\n"
+            "👉 https://www.youtube.com/@skd_animate?sub_confirmation=1\n\n"
+            "💬 Which theory shocked you the most? Drop your comment below!\n"
+            "⚡ Share this with a friend who loves science & mysteries!\n\n"
+            "#Shorts #SpaceFacts #Mystery #Trending #Viral"
+        )
+        if "sub_confirmation=1" not in description:
+            full_description = (description.rstrip() + sub_cta_block)[:5000]
+        else:
+            full_description = description[:5000]
+
+        # Optimize pinned comment with high-engagement question + 1-click auto-subscribe link
+        sub_link = "https://www.youtube.com/@skd_animate?sub_confirmation=1"
+        if pinned_comment:
+            if "sub_confirmation=1" not in pinned_comment:
+                effective_pinned_comment = f"{pinned_comment.strip()}\n\n👉 Subscribe to @skd_animate for Part 2:\n{sub_link}"
+            else:
+                effective_pinned_comment = pinned_comment
+        else:
+            effective_pinned_comment = (
+                "🔥 Which mystery shocked you the most? Comment below! 👇\n"
+                f"👉 Subscribe to @skd_animate for Part 2 releasing today:\n{sub_link}"
+            )
 
         # If scheduling release, privacy status must be 'private'
         if publish_at:
@@ -50,7 +90,7 @@ class YouTubeUploader:
         body = {
             "snippet": {
                 "title": title[:100],  # YouTube title limit is 100 chars
-                "description": description[:5000],
+                "description": full_description,
                 "tags": clean_tags[:500],
                 "categoryId": str(category),
             },
@@ -104,8 +144,8 @@ class YouTubeUploader:
                     print_warning(f"Could not set custom thumbnail: {te}")
 
             # Auto-post engagement comment
-            if pinned_comment:
-                self.post_comment(video_id=video_id, comment_text=pinned_comment)
+            if effective_pinned_comment:
+                self.post_comment(video_id=video_id, comment_text=effective_pinned_comment)
 
             return video_url
 
