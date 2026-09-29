@@ -672,6 +672,50 @@ def setup_task(
         print_error(f"Error registering task: {e}")
 
 
+@app.command()
+def cleanup(
+    max_age: int = typer.Option(2, "--max-age", help="Delete temp files older than this many hours"),
+    dry_run: bool = typer.Option(False, "--dry-run", help="Show what would be deleted without actually deleting"),
+):
+    """Clean up temporary files to free disk space."""
+    import time
+
+    print_banner()
+    cfg = get_config()
+    temp_dir = cfg.paths.temp_dir
+    if not temp_dir.exists():
+        print_info("No temp directory found. Nothing to clean.")
+        return
+
+    cutoff = time.time() - (max_age * 3600)
+    removed = 0
+    freed_mb = 0.0
+    total_files = 0
+    total_mb = 0.0
+
+    for f in temp_dir.iterdir():
+        if f.is_file():
+            size_mb = f.stat().st_size / (1024 * 1024)
+            total_files += 1
+            total_mb += size_mb
+            if f.stat().st_mtime < cutoff:
+                if dry_run:
+                    print_info(f"  Would delete: {f.name} ({size_mb:.1f} MB)")
+                else:
+                    try:
+                        f.unlink()
+                        removed += 1
+                        freed_mb += size_mb
+                    except Exception as e:
+                        print_warning(f"Could not delete {f.name}: {e}")
+
+    if dry_run:
+        print_info(f"Dry run: {total_files} files ({total_mb:.1f} MB total), would delete files older than {max_age}h.")
+    elif removed > 0:
+        print_success(f"Cleaned up {removed} temp files. Freed {freed_mb:.1f} MB of disk space.")
+    else:
+        print_info(f"No temp files older than {max_age}h found. ({total_files} files, {total_mb:.1f} MB total)")
+
 
 if __name__ == "__main__":
     app()

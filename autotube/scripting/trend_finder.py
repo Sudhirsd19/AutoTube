@@ -51,7 +51,9 @@ class TrendFinder:
         try:
             with open(self.history_file, "r", encoding="utf-8") as f:
                 data = json.load(f)
-            data["topics"].append(clean_topic)
+            # Prevent duplicate topic entries in persistent history
+            if clean_topic not in [t.lower() for t in data.get("topics", [])]:
+                data["topics"].append(clean_topic)
             if video_id:
                 data["video_ids"].append(video_id)
             with open(self.history_file, "w", encoding="utf-8") as f:

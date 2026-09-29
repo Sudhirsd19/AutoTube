@@ -1,6 +1,7 @@
 """AutoPilot Engine for hands-free daily batch video creation and scheduling."""
 
 import datetime
+import time
 from pathlib import Path
 from typing import List, Optional
 from autotube.config import get_config
@@ -106,6 +107,7 @@ class AutoPilot:
                 })
 
         uploaded_urls = []
+        failed_count = 0
         now = datetime.datetime.now(datetime.timezone.utc)
         ist = datetime.timezone(datetime.timedelta(hours=5, minutes=30))
         today = datetime.datetime.now(ist)
@@ -123,103 +125,135 @@ class AutoPilot:
                 f"[bold magenta]Language & Voice:[/bold magenta] {'English (' + item_voice + ')' if item_lang == 'en' else 'Hindi (' + item_voice + ')'}",
                 border_style="magenta",
             )
-            slug = sanitize_filename(topic)
 
-            # Determine scheduled publish time in UTC ISO 8601
-            publish_time_iso = None
-            if schedule and upload:
-                sched_dt = datetime.datetime(
-                    today.year,
-                    today.month,
-                    today.day,
-                    sched_hour,
-                    0,
-                    0,
-                    tzinfo=ist,
+            try:
+                slug = sanitize_filename(topic)
+
+                # Determine scheduled publish time in UTC ISO 8601
+                publish_time_iso = None
+                if schedule and upload:
+                    sched_dt = datetime.datetime(
+                        today.year,
+                        today.month,
+                        today.day,
+                        sched_hour,
+                        0,
+                        0,
+                        tzinfo=ist,
+                    )
+                    # If scheduled time already passed today, schedule for tomorrow
+                    if sched_dt.astimezone(datetime.timezone.utc) <= now:
+                        sched_dt += datetime.timedelta(days=1)
+
+                    publish_time_iso = (
+                        sched_dt.astimezone(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+                    )
+                    print_info(
+                        f"Scheduled Release Time: [bold yellow]{sched_hour:02d}:00 (Local Time)[/bold yellow] ({publish_time_iso} UTC)"
+                    )
+
+                # Step A: Generate Script with 1-to-1 Matching Scenes
+                script = self.script_gen.generate_short_script(
+                    topic, target_duration=45, language=item_lang
                 )
-                # If scheduled time already passed today, schedule for tomorrow
-                if sched_dt.astimezone(datetime.timezone.utc) <= now:
-                    sched_dt += datetime.timedelta(days=1)
 
-                publish_time_iso = (
-                    sched_dt.astimezone(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
-                )
-                print_info(
-                    f"Scheduled Release Time: [bold yellow]{sched_hour:02d}:00 (Local Time)[/bold yellow] ({publish_time_iso} UTC)"
+                # Step B: Synthesize Voiceover & Extract Timings
+                audio_path = self.cfg.paths.temp_dir / f"{slug}_voice.mp3"
+                tts_res = self.tts.synthesize(
+                    text=script.narration,
+                    output_audio_path=audio_path,
+                    voice=item_voice,
                 )
 
-            # Step A: Generate Script with 1-to-1 Matching Scenes
-            script = self.script_gen.generate_short_script(
-                topic, target_duration=45, language=item_lang
-            )
-
-            # Step B: Synthesize Voiceover & Extract Timings
-            audio_path = self.cfg.paths.temp_dir / f"{slug}_voice.mp3"
-            tts_res = self.tts.synthesize(
-                text=script.narration,
-                output_audio_path=audio_path,
-                voice=item_voice,
-            )
-
-            # Calculate exact spoken duration for each scene!
-            from autotube.voice.tts_engine import compute_scene_durations
-            scene_durations = compute_scene_durations(
-                scenes=script.scenes,
-                words=tts_res.words,
-                total_duration=tts_res.duration_seconds,
-            )
-
-            # Step C: Acquire Strictly Verified Visual Assets for Each Scene (1-to-1 Perfect Match!)
-            print_info(f"Acquiring perfectly matching visual assets for {len(script.scenes) if script.scenes else 4} scenes...")
-            if script.scenes:
-                scene_assets = self.stock_fetcher.fetch_scene_visual_assets(
+                # Calculate exact spoken duration for each scene!
+                from autotube.voice.tts_engine import compute_scene_durations
+                scene_durations = compute_scene_durations(
                     scenes=script.scenes,
-                    output_dir=self.cfg.paths.temp_dir,
-                    orientation="portrait",
+                    words=tts_res.words,
+                    total_duration=tts_res.duration_seconds,
                 )
-            else:
-                queries = script.visual_keywords if script.visual_keywords else [topic]
-                scene_assets = [
-                    self.stock_fetcher.fetch_best_visual_for_scene(
-                        subject=q,
+
+                # Step C: Acquire Strictly Verified Visual Assets for Each Scene (1-to-1 Perfect Match!)
+                print_info(f"Acquiring perfectly matching visual assets for {len(script.scenes) if script.scenes else 4} scenes...")
+                if script.scenes:
+                    scene_assets = self.stock_fetcher.fetch_scene_visual_assets(
+                        scenes=script.scenes,
                         output_dir=self.cfg.paths.temp_dir,
                         orientation="portrait",
                     )
-                    for q in queries[:4]
-                ]
+                else:
+                    queries = script.visual_keywords if script.visual_keywords else [topic]
+                    scene_assets = [
+                        self.stock_fetcher.fetch_best_visual_for_scene(
+                            subject=q,
+                            output_dir=self.cfg.paths.temp_dir,
+                            orientation="portrait",
+                        )
+                        for q in queries[:4]
+                    ]
 
-            # Step D: Render Video & Subtitles with Exact Speech-to-Scene Alignment!
-            output_short = self.cfg.paths.output_dir / "shorts" / f"{slug}.mp4"
-            final_video = self.builder.build_short(
-                audio_path=tts_res.audio_path,
-                output_path=output_short,
-                scene_assets=scene_assets,
-                scene_durations=scene_durations,
-                subtitles_file=tts_res.subtitles_ass_path,
-            )
-
-            # Step E: Upload & Schedule on YouTube
-            if upload and final_video and final_video.exists():
-                video_url = self.uploader.upload_video(
-                    video_path=final_video,
-                    title=f"{script.title} #Shorts",
-                    description=(
-                        f"{script.narration}\n\n"
-                        f"Subscribe to the channel for daily mind-bending space & science facts!\n\n"
-                        f"{' '.join(script.tags)}"
-                    ),
-                    tags=script.tags,
-                    privacy_status="private" if publish_time_iso else "public",
-                    publish_at=publish_time_iso,
-                    pinned_comment=getattr(script, "pinned_comment", None),
+                # Step D: Render Video & Subtitles with Exact Speech-to-Scene Alignment!
+                output_short = self.cfg.paths.output_dir / "shorts" / f"{slug}.mp4"
+                final_video = self.builder.build_short(
+                    audio_path=tts_res.audio_path,
+                    output_path=output_short,
+                    scene_assets=scene_assets,
+                    scene_durations=scene_durations,
+                    subtitles_file=tts_res.subtitles_ass_path,
                 )
-                if video_url:
-                    uploaded_urls.append(video_url)
-                    self.trend_finder.record_topic(topic, video_id=video_url.split("/")[-1])
-            else:
+
+                # Step E: Upload & Schedule on YouTube
+                if upload and final_video and final_video.exists():
+                    video_url = self.uploader.upload_video(
+                        video_path=final_video,
+                        title=f"{script.title} #Shorts",
+                        description=(
+                            f"{script.narration}\n\n"
+                            f"Subscribe to the channel for daily mind-bending space & science facts!\n\n"
+                            f"{' '.join(script.tags)}"
+                        ),
+                        tags=script.tags,
+                        privacy_status="private" if publish_time_iso else "public",
+                        publish_at=publish_time_iso,
+                        pinned_comment=getattr(script, "pinned_comment", None),
+                    )
+                    if video_url:
+                        uploaded_urls.append(video_url)
+                        self.trend_finder.record_topic(topic, video_id=video_url.split("/")[-1])
+                else:
+                    self.trend_finder.record_topic(topic)
+
+            except Exception as e:
+                failed_count += 1
+                print_error(f"Failed to generate video {idx+1}/{count} ('{topic}'): {e}")
+                print_warning("Continuing with next video in the batch...")
                 self.trend_finder.record_topic(topic)
+                continue
+
+        # Cleanup stale temp files to prevent disk space bloat
+        self._cleanup_temp()
 
         print_success(
-            f"Daily Batch Complete! Generated {len(topics_info)} videos. Uploaded {len(uploaded_urls)} videos."
+            f"Daily Batch Complete! Generated {len(topics_info)} videos. "
+            f"Uploaded {len(uploaded_urls)}. Failed {failed_count}."
         )
         return uploaded_urls
+
+    def _cleanup_temp(self, max_age_hours: int = 2):
+        """Remove temp files older than max_age_hours to prevent disk bloat."""
+        temp_dir = self.cfg.paths.temp_dir
+        if not temp_dir.exists():
+            return
+        cutoff = time.time() - (max_age_hours * 3600)
+        removed = 0
+        freed_mb = 0.0
+        for f in temp_dir.iterdir():
+            if f.is_file() and f.stat().st_mtime < cutoff:
+                try:
+                    freed_mb += f.stat().st_size / (1024 * 1024)
+                    f.unlink()
+                    removed += 1
+                except Exception:
+                    pass
+        if removed > 0:
+            print_info(f"Cleaned up {removed} stale temp files ({freed_mb:.1f} MB freed).")
