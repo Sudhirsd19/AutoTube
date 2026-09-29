@@ -138,7 +138,7 @@ def shorts(
     visuals: str = typer.Option(
         "auto",
         "--visuals",
-        help="Visuals mode: 'auto' (Veo AI Video with smart fallback), 'veo' (Pure AI Video), 'stock' (Pexels), or 'ai3d' (Pixar Animation)",
+        help="Visuals mode: 'auto' (smart cascade), 'ai' (FREE Wan2.1 AI Video), 'veo' (Google Veo), 'stock' (Pexels), or 'ai3d' (Pixar Animation)",
     ),
     upload: bool = typer.Option(False, "--upload", help="Automatically upload to YouTube after generation"),
     privacy: str = typer.Option("public", "--privacy", help="Privacy: private, unlisted, or public"),
@@ -154,6 +154,7 @@ def shorts(
 
     is_3d = visuals.lower() in ("ai3d", "3d", "pixar", "dltoons", "animation")
     is_auto_or_veo = visuals.lower() in ("auto", "veo")
+    is_free_ai = visuals.lower() in ("ai", "wan", "wan2.1", "free")
     script_gen = ScriptGenerator()
 
     # 1. Script Generation
@@ -224,8 +225,28 @@ def shorts(
         except (VeoQuotaExceededError, Exception) as veo_err:
             err_msg = getattr(veo_err, "message", str(veo_err))
             print_warning(f"⚠️ Google AI Studio (Veo) Quota Exceeded / Limit Reached ({err_msg})")
-            print_info("🔄 Seamlessly switching to High-Fidelity Verified Visual Engine...")
+            print_info("🔄 Attempting Free AI Video Generation (Wan2.1)...")
             scene_videos = None
+
+    # --- Tier 1.5: Free AI Video via HuggingFace Wan2.1 (100% Free!) ---
+    if not scene_videos and not is_3d and visuals.lower() != "stock":
+        if is_free_ai or (is_auto_or_veo and not scene_videos):
+            try:
+                from autotube.media.free_video_gen import FreeVideoGenerator
+                free_gen = FreeVideoGenerator()
+                if free_gen.is_available() and script.scenes:
+                    print_step(3, total_steps, "🎬 Generating FREE Cinematic AI Videos (Wan2.1 Engine)")
+                    ai_videos = free_gen.generate_scene_videos(
+                        scenes=script.scenes,
+                        output_dir=cfg.paths.temp_dir,
+                        orientation="portrait",
+                        max_scenes=min(len(script.scenes), 3),  # Limit to 3 for speed
+                    )
+                    if ai_videos and len(ai_videos) >= 1:
+                        scene_videos = ai_videos
+                        print_success(f"Generated {len(ai_videos)} FREE AI video scenes! 🎬")
+            except Exception as free_err:
+                print_warning(f"Free AI video unavailable: {free_err}")
 
     # --- Tier 2: Fallback Engine (Strictly Verified Scene Assets or 3D AI Visuals) ---
     if not scene_videos:
