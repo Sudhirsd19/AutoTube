@@ -1,18 +1,19 @@
-"""Free AI Video Generator using HuggingFace Spaces (Wan2.1, CogVideoX).
+"""Free AI Video Generator using HuggingFace Spaces (Wan2.1).
 
 Generates realistic 3D cinematic AI videos from text prompts using
 community-hosted open-source models on HuggingFace — 100% FREE!
 
-Supported models:
-- Wan2.1 (Alibaba/Wan-AI) — Best quality, 5-second clips
-- CogVideoX (THUDM) — Alternative fallback
+The Wan-AI/Wan2.1 Space uses an async pattern:
+1. Submit via /t2v_generation_async → starts GPU job
+2. Poll via /status_refresh → returns progress + video when done
+3. The gradio_client.submit() handles session state properly
 
 Usage:
     generator = FreeVideoGenerator()
     video_path = generator.generate_video(
         prompt="A black hole swallowing a star, cinematic 4K",
         output_path=Path("output.mp4"),
-        orientation="portrait",  # for YouTube Shorts (720x1280)
+        orientation="portrait",
     )
 """
 
@@ -26,7 +27,6 @@ from autotube.utils.console import print_error, print_info, print_success, print
 # HuggingFace Spaces with free Wan2.1 access (priority order)
 WAN21_SPACES = [
     "Wan-AI/Wan2.1",
-    "multimodalart/wan2.1-fast",
 ]
 
 # Orientation → Wan2.1 size mapping
@@ -79,6 +79,11 @@ class FreeVideoGenerator:
     ) -> Optional[Path]:
         """Generate a single AI video clip from a text prompt.
 
+        Uses the Wan-AI/Wan2.1 Space async pattern:
+        1. Submit job via /t2v_generation_async
+        2. Poll via /status_refresh until video appears
+        3. Use gradio_client.submit() to maintain session state
+
         Args:
             prompt: Text description of the video to generate
             output_path: Where to save the generated .mp4
@@ -98,8 +103,8 @@ class FreeVideoGenerator:
         try:
             print_info(f"🎬 Generating AI video: '{prompt[:60]}...' ({size})")
 
-            # Submit async generation job
-            result = self._client.predict(
+            # Step 1: Submit async generation job
+            submit_job = self._client.submit(
                 prompt=prompt,
                 size=size,
                 watermark_wan=False,
@@ -107,59 +112,118 @@ class FreeVideoGenerator:
                 api_name="/t2v_generation_async",
             )
 
-            cost_est = result[0] if isinstance(result, (list, tuple)) else 0
-            queue_est = result[1] if isinstance(result, (list, tuple)) and len(result) > 1 else 0
-            print_info(f"Job queued. Estimated GPU time: {cost_est:.0f}s, Queue wait: {queue_est:.0f}s")
+            # Wait for submission to complete
+            try:
+                init_result = submit_job.result(timeout=60)
+                print_info(f"Job queued on free GPU. Waiting for generation...")
+            except Exception:
+                print_info("Job submitted. Waiting for generation...")
 
-            # Poll for completion
+            # Step 2: Poll for completion using submit() to maintain session
             start_time = time.time()
-            poll_interval = 8  # seconds between polls
-            last_progress = -1
+            poll_interval = 10
 
             while (time.time() - start_time) < timeout_seconds:
                 time.sleep(poll_interval)
+                elapsed = int(time.time() - start_time)
+
                 try:
-                    status = self._client.predict(api_name="/status_refresh")
+                    # Use submit() for session-aware polling
+                    status_job = self._client.submit(api_name="/status_refresh")
+                    status = status_job.result(timeout=30)
+
+                    if not isinstance(status, (list, tuple)):
+                        status = (status,)
+
                     video_info = status[0]
-                    progress = status[3] if isinstance(status, (list, tuple)) and len(status) > 3 else 0
 
-                    if progress != last_progress:
-                        elapsed = int(time.time() - start_time)
-                        print_info(f"  AI Video generation: {progress:.0f}% ({elapsed}s elapsed)")
-                        last_progress = progress
-
-                    # Check if video is ready
-                    if video_info and isinstance(video_info, dict) and video_info.get("video"):
-                        video_src = video_info["video"]
-                        shutil.copy2(video_src, str(output_path))
-
+                    # Extract video from result
+                    video_path = self._extract_video_path(video_info)
+                    if video_path:
+                        shutil.copy2(video_path, str(output_path))
                         if output_path.exists() and output_path.stat().st_size > 10000:
                             size_mb = output_path.stat().st_size / (1024 * 1024)
-                            print_success(f"🎬 AI Video generated: {output_path.name} ({size_mb:.1f} MB)")
+                            print_success(f"🎬 AI Video generated: {output_path.name} ({size_mb:.1f} MB) in {elapsed}s")
                             return output_path
-                        else:
-                            print_warning("Generated video file too small, may be incomplete.")
-                            return None
+
+                    # Show progress
+                    progress_info = status[3] if len(status) > 3 else None
+                    progress_text = self._extract_progress(progress_info)
+                    if elapsed % 30 == 0:  # Log every 30 seconds
+                        print_info(f"  Generating... ({elapsed}s elapsed) {progress_text}")
 
                 except Exception as poll_err:
-                    # Polling can fail transiently, continue waiting
-                    elapsed = int(time.time() - start_time)
-                    if elapsed > 60:
-                        print_warning(f"  Still waiting... ({elapsed}s, error: {poll_err})")
+                    if elapsed > 120 and elapsed % 60 == 0:
+                        print_warning(f"  Still waiting... ({elapsed}s, {poll_err})")
 
-            print_warning(f"AI video generation timed out after {timeout_seconds}s")
+            # Step 3: Final attempt via /online_process_change
+            try:
+                print_info("Attempting final video retrieval...")
+                final_result = self._client.predict(api_name="/online_process_change")
+                video_path = self._extract_video_path(final_result)
+                if video_path:
+                    shutil.copy2(video_path, str(output_path))
+                    if output_path.exists() and output_path.stat().st_size > 10000:
+                        size_mb = output_path.stat().st_size / (1024 * 1024)
+                        print_success(f"🎬 AI Video generated: {output_path.name} ({size_mb:.1f} MB)")
+                        return output_path
+            except Exception:
+                pass
+
+            print_warning(f"AI video generation timed out after {timeout_seconds}s. Space may be overloaded.")
             return None
 
         except Exception as e:
             print_error(f"AI video generation failed: {e}")
             return None
 
+    @staticmethod
+    def _extract_video_path(result: Any) -> Optional[str]:
+        """Extract actual video file path from various Gradio response formats."""
+        if result is None:
+            return None
+
+        # Dict with 'video' key (standard Gradio Video component output)
+        if isinstance(result, dict):
+            if result.get("__type__") == "update":
+                return None  # This is a Gradio update marker, not actual data
+            video_val = result.get("video")
+            if video_val and isinstance(video_val, str) and not video_val.startswith("{"):
+                return video_val
+
+        # Direct file path string
+        if isinstance(result, str):
+            if result.endswith((".mp4", ".webm", ".mov")):
+                return result
+
+        # Tuple/list containing a video dict
+        if isinstance(result, (list, tuple)) and len(result) > 0:
+            return FreeVideoGenerator._extract_video_path(result[0])
+
+        return None
+
+    @staticmethod
+    def _extract_progress(progress_info: Any) -> str:
+        """Extract human-readable progress from Gradio response."""
+        if progress_info is None:
+            return ""
+        if isinstance(progress_info, dict):
+            label = progress_info.get("label", "")
+            value = progress_info.get("value", "")
+            if label:
+                return f"[{label}]"
+            if value:
+                return f"[{value}%]"
+        if isinstance(progress_info, (int, float)):
+            return f"[{int(progress_info)}%]"
+        return ""
+
     def generate_scene_videos(
         self,
         scenes: List[Any],
         output_dir: Path,
         orientation: str = "portrait",
-        max_scenes: int = 4,
+        max_scenes: int = 3,
     ) -> List[Path]:
         """Generate AI videos for multiple script scenes.
 
@@ -179,9 +243,7 @@ class FreeVideoGenerator:
             subject = getattr(scene, "visual_subject", "")
             description = getattr(scene, "visual_description", "")
 
-            # Build a cinematic prompt from scene data
             prompt = self._build_cinematic_prompt(subject, description)
-
             output_path = output_dir / f"ai_scene_{idx+1:02d}.mp4"
             print_info(f"Scene {idx+1}/{min(len(scenes), max_scenes)}: Generating AI video for '{subject}'")
 
@@ -205,11 +267,9 @@ class FreeVideoGenerator:
         if not base:
             return "cinematic dramatic scene, 4K ultra HD"
 
-        # Add cinematic quality tags
         quality_tags = "cinematic lighting, photorealistic, dramatic atmosphere, ultra detailed, 4K"
         prompt = f"{base}, {quality_tags}"
 
-        # Keep under 200 chars for best results
         if len(prompt) > 200:
             prompt = prompt[:197] + "..."
 
