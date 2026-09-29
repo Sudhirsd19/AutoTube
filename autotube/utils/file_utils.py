@@ -21,8 +21,9 @@ def slugify(value: str, allow_unicode: bool = False) -> str:
 
 
 def sanitize_filename(filename: str, max_length: int = 60) -> str:
-    """Sanitize a filename and limit length."""
-    slug = slugify(filename)
+    """Sanitize a filename and limit length with unicode support."""
+    slug = slugify(filename, allow_unicode=True)
     if not slug:
-        slug = "untitled"
+        import time
+        slug = f"video_{int(time.time())}"
     return slug[:max_length]

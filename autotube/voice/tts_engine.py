@@ -2,7 +2,7 @@
 
 import asyncio
 from pathlib import Path
-from typing import List, Optional
+from typing import Any, List, Optional
 import edge_tts
 from pydantic import BaseModel
 from autotube.utils.console import print_info, print_success
@@ -23,6 +23,52 @@ class TTSResult(BaseModel):
     subtitles_ass_path: Optional[Path] = None
     words: List[TimedWord]
     duration_seconds: float
+
+
+def compute_scene_durations(
+    scenes: List[Any],
+    words: List[TimedWord],
+    total_duration: float,
+) -> List[float]:
+    """Calculate the precise spoken duration for each scene using word timestamps."""
+    if not scenes:
+        return [round(total_duration, 2)] if total_duration > 0 else [5.0]
+
+    num_scenes = len(scenes)
+    if num_scenes == 1:
+        return [round(total_duration, 2)]
+
+    scene_word_counts = []
+    for s in scenes:
+        narration = getattr(s, "narration", "") or ""
+        count = len(narration.split())
+        scene_word_counts.append(max(1, count))
+
+    total_words = sum(scene_word_counts)
+    if not words or len(words) < num_scenes:
+        # Fallback to proportional duration based on word count
+        proportions = [count / total_words for count in scene_word_counts]
+        return [round(max(1.5, total_duration * p), 2) for p in proportions]
+
+    durations: List[float] = []
+    current_word_idx = 0
+    prev_end_time = 0.0
+
+    for idx, s in enumerate(scenes):
+        if idx == num_scenes - 1:
+            dur = max(1.5, total_duration - prev_end_time)
+            durations.append(round(dur, 2))
+            break
+
+        w_count = scene_word_counts[idx]
+        target_idx = min(len(words) - 1, current_word_idx + w_count - 1)
+        end_time = words[target_idx].end
+        dur = max(1.5, end_time - prev_end_time)
+        durations.append(round(dur, 2))
+        prev_end_time = end_time
+        current_word_idx = target_idx + 1
+
+    return durations
 
 
 class TTSEngine:
@@ -188,9 +234,9 @@ class TTSEngine:
         self,
         words: List[TimedWord],
         ass_path: Path,
-        words_per_line: int = 4,
+        words_per_line: int = 3,
     ) -> None:
-        """Export Advanced SubStation Alpha (.ass) with word-by-word highlight karaoke style."""
+        """Export Advanced SubStation Alpha (.ass) with viral Hormozi-style word-by-word karaoke highlighting."""
         if not words:
             return
 
@@ -203,7 +249,14 @@ class TTSEngine:
                 centis = 99
             return f"{hours}:{minutes:02d}:{secs:02d}.{centis:02d}"
 
-        header = """[Script Info]
+        # Check if words contain Devanagari (Hindi) characters
+        has_devanagari = any(
+            any("\u0900" <= c <= "\u097f" for c in w.word) for w in words
+        )
+        font_name = "Noto Sans Devanagari" if has_devanagari else "Arial"
+
+        # Safe zone positioning: MarginV 780 ensures it is vertically centered above YouTube Shorts UI
+        header = f"""[Script Info]
 Title: AutoTube Animated Subtitles
 ScriptType: v4.00+
 WrapStyle: 0
@@ -214,7 +267,7 @@ PlayResY: 1920
 
 [V4+ Styles]
 Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
-Style: Default,Arial,62,&H00FFFFFF,&H0000FFFF,&H00000000,&H80000000,-1,0,0,0,100,100,0,0,1,5,2,2,40,40,320,1
+Style: Default,{font_name},68,&H00FFFFFF,&H0000FFFF,&H00000000,&H80000000,-1,0,0,0,100,100,0,0,1,6,3,2,60,60,780,1
 
 [Events]
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
@@ -228,7 +281,12 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
             karaoke_text = ""
             for w in group:
                 duration_cs = max(1, int(round(w.duration * 100)))
-                clean_word = w.word.replace("{", "").replace("}", "")
+                clean_word = (
+                    w.word.replace("{", "")
+                    .replace("}", "")
+                    .strip()
+                    .upper()
+                )
                 karaoke_text += f"{{\\k{duration_cs}}}{clean_word} "
 
             events.append(
@@ -237,3 +295,4 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 
         with open(ass_path, "w", encoding="utf-8") as f:
             f.write(header + "\n".join(events))
+

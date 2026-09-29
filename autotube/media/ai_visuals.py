@@ -1,8 +1,9 @@
 """AI visual generation using free Pollinations API and Pillow fallbacks."""
 
 import random
+import time
 from pathlib import Path
-from typing import Optional
+from typing import List, Optional
 from PIL import Image, ImageDraw, ImageFilter
 import requests
 from autotube.utils.console import print_error, print_info, print_success, print_warning
@@ -19,13 +20,14 @@ class VisualGenerator:
         width: int = 1080,
         height: int = 1920,
         style: str = "realistic",
+        seed: Optional[int] = None,
     ) -> Path:
-        """Generate an AI image or fallback gradient graphic with custom style."""
+        """Generate an AI image or fallback graphic with custom style."""
         output_path.parent.mkdir(parents=True, exist_ok=True)
 
         # Attempt free AI image generation via Pollinations
         success = self._fetch_pollinations_image(
-            prompt, output_path, width, height, style=style
+            prompt, output_path, width, height, style=style, seed=seed
         )
         if success and output_path.exists() and output_path.stat().st_size > 5000:
             return output_path
@@ -35,6 +37,38 @@ class VisualGenerator:
             prompt, output_path, width=width, height=height
         )
 
+    def fetch_scene_visuals(
+        self,
+        prompts: List[str],
+        output_dir: Path,
+        slug: str,
+        width: int = 1080,
+        height: int = 1920,
+        style: str = "ai3d",
+        consistent_seed: bool = True,
+    ) -> List[Path]:
+        """Generate a coherent sequence of 3D AI visuals for all scenes with character consistency."""
+        output_dir.mkdir(parents=True, exist_ok=True)
+        seed = random.randint(100000, 999999) if consistent_seed else None
+        scene_paths: List[Path] = []
+
+        print_info(f"Generating {len(prompts)} 3D AI scene visuals (Style: {style}, Seed: {seed})...")
+        for idx, prompt_text in enumerate(prompts):
+            if idx > 0:
+                time.sleep(2)  # Avoid rate limiting
+            img_path = output_dir / f"{slug}_ai3d_scene_{idx+1:02d}.jpg"
+            img = self.generate_image(
+                prompt=prompt_text,
+                output_path=img_path,
+                width=width,
+                height=height,
+                style=style,
+                seed=seed,
+            )
+            scene_paths.append(img)
+
+        return scene_paths
+
     def _fetch_pollinations_image(
         self,
         prompt: str,
@@ -42,11 +76,13 @@ class VisualGenerator:
         width: int,
         height: int,
         style: str = "realistic",
+        seed: Optional[int] = None,
     ) -> bool:
-        seed = random.randint(1000, 999999)
+        if seed is None:
+            seed = random.randint(1000, 999999)
 
-        if style.lower() in ("cartoon", "pixar", "3d"):
-            style_suffix = "3D Pixar Disney animation style, cute adorable character, expressive big eyes, vibrant colors, Unreal Engine 5 render, cinematic studio lighting"
+        if style.lower() in ("cartoon", "pixar", "3d", "ai3d", "dltoons", "3danimation"):
+            style_suffix = "3D Pixar Disney animation style, cute expressive 3D character, Unreal Engine 5 render, cinematic lighting, high detail, masterpiece"
         elif style.lower() in ("anime", "ghibli"):
             style_suffix = "Studio Ghibli modern anime animation style, lush aesthetic, vibrant colorful, beautiful anime digital art"
         elif style.lower() in ("comic", "2d"):
@@ -56,18 +92,36 @@ class VisualGenerator:
 
         enhanced_prompt = f"{prompt}, {style_suffix}"
         encoded = requests.utils.quote(enhanced_prompt)
-        url = f"https://image.pollinations.ai/prompt/{encoded}?width={width}&height={height}&nologo=true&seed={seed}"
 
-        try:
-            print_info(f"Generating AI [{style.upper()}] visual for: '{prompt[:45]}...'")
-            resp = requests.get(url, timeout=25)
-            if resp.status_code == 200 and len(resp.content) > 5000:
-                with open(output_path, "wb") as f:
-                    f.write(resp.content)
-                print_success(f"AI visual saved: {output_path.name}")
-                return True
-        except Exception as e:
-            print_warning(f"Pollinations fetch timed out or failed: {e}")
+        # Sana native aspect ratio handling for fast rendering
+        is_vertical = height > width
+        gen_w = 768 if is_vertical else 1344
+        gen_h = 1344 if is_vertical else 768
+
+        endpoints = [
+            f"https://image.pollinations.ai/prompt/{encoded}?model=sana&width={gen_w}&height={gen_h}&nologo=true&seed={seed}",
+            f"https://image.pollinations.ai/prompt/{encoded}?width={gen_w}&height={gen_h}&nologo=true&seed={seed}",
+        ]
+
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+        }
+
+        for attempt in range(2):
+            for url in endpoints:
+                try:
+                    print_info(f"Generating AI [{style.upper()}] visual for: '{prompt[:45]}...'")
+                    resp = requests.get(url, headers=headers, timeout=60)
+                    if resp.status_code == 200 and len(resp.content) > 5000 and "image" in resp.headers.get("content-type", ""):
+                        with open(output_path, "wb") as f:
+                            f.write(resp.content)
+                        print_success(f"AI visual saved: {output_path.name}")
+                        return True
+                except Exception as e:
+                    print_warning(f"Pollinations fetch attempt error: {e}")
+                    time.sleep(1)
+                    continue
+
         return False
 
     def create_gradient_fallback(

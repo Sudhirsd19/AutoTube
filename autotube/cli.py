@@ -10,6 +10,7 @@ from autotube.config import get_config
 from autotube.media.ai_visuals import VisualGenerator
 from autotube.media.background_music import BackgroundMusicManager
 from autotube.media.stock_fetcher import StockFetcher
+from autotube.media.veo_generator import VeoQuotaExceededError, VeoVideoGenerator
 from autotube.scripting.generator import ScriptGenerator
 from autotube.uploader.auth import YouTubeAuth
 from autotube.uploader.youtube_upload import YouTubeUploader
@@ -70,6 +71,7 @@ def init():
     # Check Gemini API Key
     if cfg.gemini_api_key:
         table.add_row("Gemini AI API", "[green]Configured[/green]", "Active in .env")
+        table.add_row("Google Veo Video", "[green]Auto-Fallback[/green]", "Veo 3.1 with Smart Fallback Engine")
     else:
         table.add_row(
             "Gemini AI API",
@@ -131,7 +133,13 @@ def shorts(
     voice: str = typer.Option(
         "christopher", "--voice", "-v", help="AI Voice (e.g. christopher, guy, madhur, swara)"
     ),
-    duration: int = typer.Option(45, "--duration", "-d", help="Target duration in seconds"),
+    duration: int = typer.Option(50, "--duration", "-d", help="Target duration in seconds (45-55s standard)"),
+    lang: str = typer.Option("en", "--lang", "-l", help="Language: 'en' for English or 'hi' for Hindi"),
+    visuals: str = typer.Option(
+        "auto",
+        "--visuals",
+        help="Visuals mode: 'auto' (Veo AI Video with smart fallback), 'veo' (Pure AI Video), 'stock' (Pexels), or 'ai3d' (Pixar Animation)",
+    ),
     upload: bool = typer.Option(False, "--upload", help="Automatically upload to YouTube after generation"),
     privacy: str = typer.Option("public", "--privacy", help="Privacy: private, unlisted, or public"),
 ):
@@ -141,10 +149,21 @@ def shorts(
     slug = sanitize_filename(topic)
     total_steps = 5 if upload else 4
 
-    # 1. Script Generation
-    print_step(1, total_steps, "Generating High-Retention AI Script")
+    if lang.lower() in ("hi", "hindi") and voice == "christopher":
+        voice = "madhur"
+
+    is_3d = visuals.lower() in ("ai3d", "3d", "pixar", "dltoons", "animation")
+    is_auto_or_veo = visuals.lower() in ("auto", "veo")
     script_gen = ScriptGenerator()
-    script = script_gen.generate_short_script(topic, target_duration=duration)
+
+    # 1. Script Generation
+    if is_3d:
+        print_step(1, total_steps, f"Generating 3D Pixar Story Script ({'Hindi' if lang.lower() in ('hi', 'hindi') else 'English'})")
+        script = script_gen.generate_3d_animation_script(topic, target_duration=duration, language=lang)
+    else:
+        print_step(1, total_steps, f"Generating High-Retention AI Script ({'Hindi' if lang.lower() in ('hi', 'hindi') else 'English'})")
+        script = script_gen.generate_short_script(topic, target_duration=duration, language=lang)
+
     print_panel(
         f"[bold yellow]Hook:[/bold yellow] {script.hook}\n\n"
         f"[bold white]Narration:[/bold white]\n{script.narration}\n\n"
@@ -153,44 +172,100 @@ def shorts(
     )
 
     # 2. Voiceover Synthesis
-    print_step(2, total_steps, "Synthesizing AI Voiceover & Word Timestamps")
-    tts = TTSEngine(default_voice=voice)
+    print_step(2, total_steps, f"Synthesizing AI Voiceover ({voice}) & Word Timestamps")
+    pitch_mod = "+14Hz" if voice.lower() in ("baby", "groot", "kid", "child") else "+0Hz"
+    tts = TTSEngine(default_voice=voice, pitch=pitch_mod)
     audio_path = cfg.paths.temp_dir / f"{slug}_voice.mp3"
     tts_result = tts.synthesize(
         text=script.narration,
         output_audio_path=audio_path,
         voice=voice,
+        pitch=pitch_mod,
     )
 
-    # 3. Visuals Selection (Dynamic Multi-Scene Fast B-Roll Cuts)
-    print_step(3, total_steps, "Acquiring Multi-Scene Visual Footage (Fast Pacing Cuts)")
-    stock_fetcher = StockFetcher()
-    queries = script.visual_keywords if script.visual_keywords else [topic]
-    scene_videos = stock_fetcher.fetch_multi_scene_videos(
-        queries=queries,
-        output_dir=cfg.paths.temp_dir,
-        target_count=4,
-        orientation="portrait",
+    from autotube.voice.tts_engine import compute_scene_durations
+    scene_durations = compute_scene_durations(
+        scenes=script.scenes,
+        words=tts_result.words,
+        total_duration=tts_result.duration_seconds,
     )
 
+    # 3. Visuals Acquisition
+    scene_visuals = None
+    scene_videos = None
+    scene_assets = None
     bg_video_path = None
     bg_image_path = None
+
+    # --- Tier 1: Google AI Studio Veo Video Engine ---
+    if is_auto_or_veo:
+        print_step(3, total_steps, "Acquiring Visuals: Attempting Google AI Studio Video Generation (Veo Engine)")
+        try:
+            veo_gen = VeoVideoGenerator()
+            if not veo_gen.is_available():
+                raise VeoQuotaExceededError("No GEMINI_API_KEY found.")
+
+            queries = script.visual_keywords if script.visual_keywords else [
+                f"{topic}, cinematic close-up, dramatic lighting, 9:16 vertical",
+                f"{topic}, dynamic motion scene, hyperrealistic, 9:16 vertical",
+                f"{topic}, intense angle, cinematic 4k, 9:16 vertical",
+                f"{topic}, breathtaking climax, ultra-detailed, 9:16 vertical",
+            ]
+            veo_scenes = veo_gen.generate_scenes(
+                prompts=queries,
+                output_dir=cfg.paths.temp_dir,
+                slug=slug,
+                aspect_ratio="9:16",
+                max_scenes=5,
+            )
+            if veo_scenes and len(veo_scenes) >= 1:
+                scene_videos = veo_scenes
+                print_success(f"Generated {len(veo_scenes)} Veo AI video scenes successfully!")
+        except (VeoQuotaExceededError, Exception) as veo_err:
+            err_msg = getattr(veo_err, "message", str(veo_err))
+            print_warning(f"⚠️ Google AI Studio (Veo) Quota Exceeded / Limit Reached ({err_msg})")
+            print_info("🔄 Seamlessly switching to High-Fidelity Verified Visual Engine...")
+            scene_videos = None
+
+    # --- Tier 2: Fallback Engine (Strictly Verified Scene Assets or 3D AI Visuals) ---
     if not scene_videos:
-        # Fallback to single stock search
-        bg_video_path = stock_fetcher.search_and_download_video(
-            query=queries[0],
-            output_dir=cfg.paths.temp_dir,
-            orientation="portrait",
-        )
-        if not bg_video_path:
+        if is_3d:
+            print_step(3, total_steps, "Generating 3D Pixar Animation Scene Visuals (Pollinations AI Engine)")
             visual_gen = VisualGenerator()
-            image_out = cfg.paths.temp_dir / f"{slug}_visual.jpg"
-            bg_image_path = visual_gen.generate_image(
-                prompt=queries[0],
-                output_path=image_out,
+            queries = script.visual_keywords if script.visual_keywords else [
+                f"{topic}, cute 3d character intro, pixar style",
+                f"{topic}, cute 3d character emotional moment, pixar style",
+                f"{topic}, dramatic 3d climax scene, pixar style",
+                f"{topic}, happy 3d ending scene, pixar style",
+            ]
+            scene_visuals = visual_gen.fetch_scene_visuals(
+                prompts=queries,
+                output_dir=cfg.paths.temp_dir,
+                slug=slug,
                 width=1080,
                 height=1920,
+                style="ai3d",
+                consistent_seed=True,
             )
+        else:
+            print_step(3, total_steps, "Acquiring Strictly Verified Scene Visuals (Perfect Subject Matching)")
+            stock_fetcher = StockFetcher()
+            if script.scenes:
+                scene_assets = stock_fetcher.fetch_scene_visual_assets(
+                    scenes=script.scenes,
+                    output_dir=cfg.paths.temp_dir,
+                    orientation="portrait",
+                )
+            else:
+                queries = script.visual_keywords if script.visual_keywords else [topic]
+                scene_assets = [
+                    stock_fetcher.fetch_best_visual_for_scene(
+                        subject=q,
+                        output_dir=cfg.paths.temp_dir,
+                        orientation="portrait",
+                    )
+                    for q in queries[:4]
+                ]
 
     # 4. Vertical Video Compositing & Karaoke Subtitle Burning
     print_step(4, total_steps, "Rendering 9:16 Vertical Video & Burning Subtitles")
@@ -202,7 +277,10 @@ def shorts(
         output_path=output_short_path,
         background_video=bg_video_path,
         background_image=bg_image_path,
-        scene_videos=scene_videos if len(scene_videos) > 1 else None,
+        scene_visuals=scene_visuals if scene_visuals and len(scene_visuals) > 1 else None,
+        scene_videos=scene_videos if scene_videos and len(scene_videos) > 1 else None,
+        scene_assets=scene_assets,
+        scene_durations=scene_durations,
         subtitles_file=tts_result.subtitles_ass_path,
     )
 
@@ -361,35 +439,117 @@ def upload(
 
 
 @app.command()
+def stitch(
+    folder: Path = typer.Option(..., "--folder", "-f", help="Folder containing AI generated video clips (.mp4)"),
+    topic: str = typer.Option(..., "--topic", "-t", help="Topic for the story voiceover & subtitles"),
+    voice: str = typer.Option("baby", "--voice", "-v", help="AI Voice (e.g. baby, guy, christopher, madhur)"),
+    lang: str = typer.Option("en", "--lang", "-l", help="Language: 'en' for English or 'hi' for Hindi"),
+    upload: bool = typer.Option(False, "--upload", help="Automatically upload to YouTube after stitching"),
+    privacy: str = typer.Option("unlisted", "--privacy", help="Privacy: private, unlisted, or public"),
+):
+    """Stitch external AI video clips (from Google Colab / LTX / Kling), add voiceover, subtitles, and upload."""
+    print_banner()
+    cfg = get_config()
+    slug = sanitize_filename(topic)
+    total_steps = 4 if upload else 3
+
+    if not folder.exists() or not folder.is_dir():
+        print_error(f"Folder '{folder}' does not exist.")
+        return
+
+    clips = sorted([p for p in folder.iterdir() if p.suffix.lower() in (".mp4", ".mov", ".webm")])
+    if not clips:
+        print_error(f"No video files (.mp4) found in '{folder}'.")
+        return
+
+    print_info(f"Found {len(clips)} AI video clips in '{folder}'.")
+
+    # 1. Script Generation
+    print_step(1, total_steps, f"Generating matching script for {len(clips)} clips")
+    script_gen = ScriptGenerator()
+    script = script_gen.generate_short_script(topic, target_duration=len(clips) * 8, language=lang)
+
+    # 2. Voiceover & Subtitles
+    print_step(2, total_steps, f"Synthesizing voiceover ({voice}) & subtitles")
+    pitch_mod = "+14Hz" if voice.lower() in ("baby", "groot", "kid", "child") else "+0Hz"
+    tts = TTSEngine(default_voice=voice, pitch=pitch_mod)
+    audio_path = cfg.paths.temp_dir / f"{slug}_stitch_voice.mp3"
+    tts_result = tts.synthesize(
+        text=script.narration,
+        output_audio_path=audio_path,
+        voice=voice,
+        pitch=pitch_mod,
+    )
+
+    # 3. Stitch & Burn Subtitles
+    print_step(3, total_steps, "Stitching video clips & burning animated subtitles")
+    builder = ShortsBuilder()
+    output_short_path = cfg.paths.output_dir / "shorts" / f"{slug}.mp4"
+
+    final_path = builder.build_short(
+        audio_path=tts_result.audio_path,
+        output_path=output_short_path,
+        scene_videos=clips,
+        subtitles_file=tts_result.subtitles_ass_path,
+    )
+
+    if not final_path or not final_path.exists():
+        print_error("Failed to stitch video.")
+        return
+
+    print_success(f"Final video successfully stitched: {final_path.resolve()}")
+
+    # 4. Upload
+    if upload:
+        print_step(4, total_steps, "Uploading to YouTube")
+        uploader = YouTubeUploader()
+        uploader.upload_video(
+            video_path=final_path,
+            title=f"{script.title} #Shorts",
+            description=f"{script.narration}\n\n{' '.join(script.tags)}",
+            tags=script.tags,
+            privacy_status=privacy,
+        )
+
+
+@app.command()
 def cartoon(
-    topic: str = typer.Option(..., "--topic", "-t", help="Topic or idea for the cartoon short story"),
-    style: str = typer.Option("pixar", "--style", "-s", help="Visual style: pixar, anime, or comic"),
-    voice: str = typer.Option("guy", "--voice", "-v", help="AI Voice (e.g. guy, andrew, aria, swara)"),
+    topic: str = typer.Option(..., "--topic", "-t", help="Topic or idea for the 3D animated short story"),
+    style: str = typer.Option("pixar", "--style", "-s", help="Visual style: pixar, 3d, dltoons, anime, or comic"),
+    voice: str = typer.Option("madhur", "--voice", "-v", help="AI Voice (e.g. madhur, swara, guy, andrew)"),
+    lang: str = typer.Option("hi", "--lang", "-l", help="Language: 'hi' for Hindi or 'en' for English"),
     duration: int = typer.Option(45, "--duration", "-d", help="Target duration in seconds"),
     upload: bool = typer.Option(False, "--upload", help="Automatically upload to YouTube after generation"),
     privacy: str = typer.Option("private", "--privacy", help="Privacy: private, unlisted, or public"),
 ):
-    """Generate a viral 3D Pixar/Disney style animated cartoon short with voiceover & animated captions."""
+    """Generate a viral 3D Pixar/Disney/DL Toons style animated story short with voiceover & animated captions."""
     print_banner()
     cfg = get_config()
     slug = sanitize_filename(topic)
     total_steps = 5 if upload else 4
 
+    if lang.lower() in ("hi", "hindi") and voice == "guy":
+        voice = "madhur"
+
     # 1. Script Generation
-    print_step(1, total_steps, "Writing Fun 3D Cartoon Story Script")
+    print_step(1, total_steps, f"Writing 3D Animated Story Script ({'Hindi' if lang.lower() in ('hi', 'hindi') else 'English'})")
     script_gen = ScriptGenerator()
-    script = script_gen.generate_cartoon_script(topic, target_duration=duration)
+    if lang.lower() in ("hi", "hindi") or style.lower() in ("pixar", "3d", "dltoons"):
+        script = script_gen.generate_3d_animation_script(topic, target_duration=duration, language=lang)
+    else:
+        script = script_gen.generate_cartoon_script(topic, target_duration=duration)
+
     print_panel(
         f"[bold yellow]Hook:[/bold yellow] {script.hook}\n\n"
         f"[bold white]Narration:[/bold white]\n{script.narration}\n\n"
         f"[bold cyan]Tags:[/bold cyan] {' '.join(script.tags)}",
-        title=f"Cartoon Script: {script.title}",
+        title=f"3D Animation Script: {script.title}",
     )
 
     # 2. Voiceover Synthesis
-    print_step(2, total_steps, f"Synthesizing Expressive Cartoon Voice ({voice})")
-    tts = TTSEngine(default_voice=voice, rate="+6%", pitch="+4Hz")
-    audio_path = cfg.paths.temp_dir / f"{slug}_cartoon_voice.mp3"
+    print_step(2, total_steps, f"Synthesizing Expressive AI Voice ({voice})")
+    tts = TTSEngine(default_voice=voice, rate="+3%", pitch="+2Hz")
+    audio_path = cfg.paths.temp_dir / f"{slug}_3d_voice.mp3"
     tts_result = tts.synthesize(
         text=script.narration,
         output_audio_path=audio_path,
@@ -397,33 +557,30 @@ def cartoon(
     )
 
     # 3. Dynamic Multi-Scene 3D Cartoon AI Visuals
-    print_step(3, total_steps, f"Generating Dynamic 3D [{style.upper()}] Story Scenes")
+    print_step(3, total_steps, f"Generating Dynamic 3D [{style.upper()}] Story Scenes (Pollinations 3D Engine)")
     visual_gen = VisualGenerator()
-    scene_visuals = []
 
     visual_queries = script.visual_keywords if script.visual_keywords and len(script.visual_keywords) >= 3 else [
-        f"{topic}, cute character intro",
-        f"{topic}, hilarious comedy challenge",
-        f"{topic}, silly action sequence",
-        f"{topic}, shocking funny surprise",
-        f"{topic}, happy comical ending",
+        f"{topic}, cute 3d character intro, 3d pixar style",
+        f"{topic}, cute character emotional challenge, 3d pixar style",
+        f"{topic}, miraculous surprise action, 3d pixar style",
+        f"{topic}, happy heartwarming ending, 3d pixar style",
     ]
 
-    for s_idx, v_query in enumerate(visual_queries[:6]):
-        s_img_path = cfg.paths.temp_dir / f"{slug}_scene_{s_idx+1:02d}.jpg"
-        img = visual_gen.generate_image(
-            prompt=v_query,
-            output_path=s_img_path,
-            width=1080,
-            height=1920,
-            style=style,
-        )
-        scene_visuals.append(img)
+    scene_visuals = visual_gen.fetch_scene_visuals(
+        prompts=visual_queries[:6],
+        output_dir=cfg.paths.temp_dir,
+        slug=slug,
+        width=1080,
+        height=1920,
+        style=style,
+        consistent_seed=True,
+    )
 
     # 4. Vertical Video Compositing & Karaoke Subtitle Burning
-    print_step(4, total_steps, "Rendering 9:16 Cartoon Short & Burning Comic Subtitles")
+    print_step(4, total_steps, "Rendering 9:16 3D Animated Short & Burning Subtitles")
     builder = ShortsBuilder()
-    output_short_path = cfg.paths.output_dir / "shorts" / f"{slug}_cartoon.mp4"
+    output_short_path = cfg.paths.output_dir / "shorts" / f"{slug}_3d.mp4"
 
     final_path = builder.build_short(
         audio_path=tts_result.audio_path,
@@ -433,10 +590,10 @@ def cartoon(
     )
 
     if not final_path or not final_path.exists():
-        print_error("Failed to render Cartoon Short.")
+        print_error("Failed to render 3D Short.")
         return
 
-    print_success(f"Cartoon Short successfully rendered: {final_path.resolve()}")
+    print_success(f"3D Short successfully rendered: {final_path.resolve()}")
 
     # 5. YouTube Upload
     if upload:
@@ -454,15 +611,16 @@ def cartoon(
 @app.command()
 def autopilot(
     count: int = typer.Option(5, "--count", "-c", help="Number of videos to generate and schedule daily"),
-    niche: str = typer.Option("space", "--niche", "-n", help="Niche: space, science, history, psychology, mystery"),
-    voice: str = typer.Option("christopher", "--voice", "-v", help="AI Voice narrator"),
+    niche: str = typer.Option("mixed", "--niche", "-n", help="Niche: mixed (all 5 daily slots), mystery, space, science, history, psychology, mythology"),
+    voice: Optional[str] = typer.Option(None, "--voice", "-v", help="AI Voice narrator"),
+    lang: str = typer.Option("mixed", "--lang", "-l", help="Language: 'mixed' (3 English + 2 Hindi), 'hi' (All Hindi), or 'en' (All English)"),
     upload: bool = typer.Option(True, "--upload/--no-upload", help="Upload to YouTube"),
     schedule: bool = typer.Option(True, "--schedule/--no-schedule", help="Stagger across peak hours (9 AM, 12 PM, 3 PM, 6 PM, 9 PM)"),
 ):
     """Fully automated batch creation and scheduled publishing for YouTube Shorts."""
     from autotube.scheduler.autopilot import AutoPilot
 
-    pilot = AutoPilot(niche=niche, voice=voice)
+    pilot = AutoPilot(niche=niche, voice=voice, language=lang)
     pilot.run_daily_batch(count=count, upload=upload, schedule=schedule)
 
 

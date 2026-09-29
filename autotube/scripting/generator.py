@@ -7,15 +7,16 @@ from google import genai
 from google.genai import types
 
 from autotube.config import get_config
-from autotube.scripting.models import LongVideoScript, Scene, ShortScript
+from autotube.scripting.models import LongVideoScript, Scene, ShortScene, ShortScript
 from autotube.scripting.prompts import LONGFORM_SYSTEM_PROMPT, SHORTS_SYSTEM_PROMPT
 from autotube.utils.console import print_error, print_info, print_success, print_warning
 
 # Recommended modern models with automatic fallback
 CANDIDATE_MODELS = [
-    "gemini-3-flash-preview",
     "gemini-3.1-flash-lite-preview",
+    "gemini-3.8-flash",
     "gemini-flash-latest",
+    "gemini-3-flash-preview",
 ]
 
 
@@ -33,35 +34,60 @@ class ScriptGenerator:
                 print_warning(f"Could not initialize Gemini client: {e}")
 
     def generate_short_script(
-        self, topic: str, target_duration: int = 50
+        self, topic: str, target_duration: int = 50, language: str = "en"
     ) -> ShortScript:
-        """Generate a viral YouTube Short script for the given topic."""
+        """Generate a viral YouTube Short script for the given topic in English or Hindi."""
+        is_hindi = language.lower() in ("hi", "hindi")
+        from autotube.scripting.prompts import HINDI_SHORTS_SYSTEM_PROMPT, SHORTS_SYSTEM_PROMPT
+
         if not self.client:
             print_warning(
                 "No GEMINI_API_KEY found or client unavailable. Using smart built-in template."
             )
             return self._generate_fallback_short(topic, target_duration)
 
-        prompt = f"""Generate a high-retention YouTube Short script about: '{topic}'.
-Target duration: {target_duration} seconds.
-Write compelling narration, strong first 3 seconds hook, 4-6 visual search keywords, and relevant tags."""
+        sys_prompt = HINDI_SHORTS_SYSTEM_PROMPT if is_hindi else SHORTS_SYSTEM_PROMPT
+        lang_note = "in natural Hindi/Hinglish (narration) with English visual search keywords" if is_hindi else "in English"
+
+        min_words = 125 if target_duration >= 45 else int(target_duration * 2.5)
+        max_words = 145 if target_duration >= 45 else int(target_duration * 2.9)
+
+        prompt = f"""Generate a high-retention viral YouTube Short script about: '{topic}' {lang_note}.
+Target duration: {target_duration} seconds (MANDATORY: 45 to 55 seconds).
+
+MANDATORY STRUCTURAL REQUIREMENTS:
+1. Break the entire script into 4 to 6 sequential scenes in 'scenes'.
+2. For each scene in 'scenes':
+   - 'scene_number': 1, 2, 3, 4, 5...
+   - 'narration': 1-2 punchy spoken sentences for this scene ({'in Hindi' if is_hindi else 'in English'}).
+   - 'visual_subject': The exact physical subject on screen in 1-3 simple English words (e.g. 'black hole space', 'earth from space', 'pyramid egypt', 'deep ocean storm', 'glowing brain'). MUST directly match the spoken words!
+   - 'visual_description': Vivid description in English of the visual scene.
+   - 'search_keywords': 2-3 clean, simple English search words (e.g. ['black hole', 'space galaxy']).
+3. TOTAL SPOKEN WORDS across all scenes MUST be between {min_words} and {max_words} words.
+4. Set the top-level 'narration' field to the combined text of all scene narrations.
+5. High-converting climax cliffhanger CTA in the final scene.
+6. Seamless infinite loop: ending sentence flows back into opening hook."""
 
         for model_name in CANDIDATE_MODELS:
             try:
-                print_info(f"Generating AI Short script using [{model_name}]...")
+                print_info(f"Generating AI Short script ({'Hindi' if is_hindi else 'English'}) using [{model_name}]...")
                 response = self.client.models.generate_content(
                     model=model_name,
                     contents=prompt,
                     config=types.GenerateContentConfig(
-                        system_instruction=SHORTS_SYSTEM_PROMPT,
+                        system_instruction=sys_prompt,
                         response_mime_type="application/json",
                         response_schema=ShortScript,
-                        temperature=0.7,
+                        temperature=0.75,
                     ),
                 )
                 data = json.loads(response.text)
+                script = ShortScript(**data)
+                # Ensure narration is filled if scenes present
+                if script.scenes and not script.narration:
+                    script.narration = " ".join(s.narration.strip() for s in script.scenes if s.narration.strip())
                 print_success(f"AI Script successfully generated with {model_name}!")
-                return ShortScript(**data)
+                return script
             except Exception as e:
                 print_warning(f"Model {model_name} attempt: {e}")
                 continue
@@ -102,6 +128,55 @@ Rules:
                 )
                 data = json.loads(response.text)
                 print_success(f"Cartoon Script generated with {model_name}!")
+                return ShortScript(**data)
+            except Exception as e:
+                print_warning(f"Model {model_name} attempt: {e}")
+                continue
+
+        return self._generate_fallback_short(topic, target_duration)
+
+    def generate_3d_animation_script(
+        self, topic: str, target_duration: int = 45, language: str = "hi"
+    ) -> ShortScript:
+        """Generate a captivating 3D Pixar/Disney style animated story script (Hindi or English)."""
+        is_hindi = language.lower() in ("hi", "hindi")
+        from autotube.scripting.prompts import CARTOON_SYSTEM_PROMPT, HINDI_3D_ANIMATION_PROMPT
+
+        if not self.client:
+            return self._generate_fallback_short(topic, target_duration)
+
+        sys_prompt = HINDI_3D_ANIMATION_PROMPT if is_hindi else CARTOON_SYSTEM_PROMPT
+        lang_note = "in touching conversational Hindi (narration) with 4-6 detailed 3D Pixar English visual keywords" if is_hindi else "in English with 3D Pixar visual keywords"
+
+        min_words = 125 if target_duration >= 45 else int(target_duration * 2.5)
+        max_words = 145 if target_duration >= 45 else int(target_duration * 2.9)
+
+        prompt = f"""Generate an emotional or entertaining 3D Pixar Disney style animated story about: '{topic}' {lang_note}.
+Target duration: {target_duration} seconds (MANDATORY: 45 to 55 seconds).
+STRICT LENGTH RULE:
+The 'narration' field MUST be between {min_words} and {max_words} words long so that spoken speech comfortably takes 48-55 seconds.
+Rules:
+1. Emotionally gripping hook in the first 2 seconds.
+2. Consistent cute 3D character described across all visual prompts (e.g. skin, clothes, expressions, details).
+3. 5 to 6 detailed English visual prompts for 3D CGI rendering (Unreal Engine 5 / Pixar style).
+4. Full detailed narration between {min_words} and {max_words} words.
+5. High-converting climax cliffhanger CTA in the final 5 seconds."""
+
+        for model_name in CANDIDATE_MODELS:
+            try:
+                print_info(f"Generating 3D Animation Script ({'Hindi' if is_hindi else 'English'}) using [{model_name}]...")
+                response = self.client.models.generate_content(
+                    model=model_name,
+                    contents=prompt,
+                    config=types.GenerateContentConfig(
+                        system_instruction=sys_prompt,
+                        response_mime_type="application/json",
+                        response_schema=ShortScript,
+                        temperature=0.8,
+                    ),
+                )
+                data = json.loads(response.text)
+                print_success(f"3D Animation Script generated with {model_name}!")
                 return ShortScript(**data)
             except Exception as e:
                 print_warning(f"Model {model_name} attempt: {e}")
@@ -152,26 +227,45 @@ Provide title, description, tags, and each scene with spoken narration and visua
         """Smart fallback short script when API key is not yet set."""
         clean_topic = topic.strip().capitalize()
         hook = f"Did you know the darkest secret behind {clean_topic}?"
-        narration = (
-            f"Did you know the darkest secret behind {clean_topic}? "
-            f"Most people think they understand how {clean_topic} works, but scientists recently discovered "
-            f"something that completely changes everything. "
-            f"Deep beneath the surface, forces operate in ways never predicted by modern physics. "
-            f"If this continues, the entire industry could be flipped upside down by next year. "
-            f"What do you think about this? Drop your thoughts below and subscribe for more mind-bending facts!"
-        )
+        scenes = [
+            ShortScene(
+                scene_number=1,
+                narration=f"Did you know the darkest secret behind {clean_topic}?",
+                visual_subject=clean_topic.lower(),
+                visual_description=f"Shocking reveal of {clean_topic}",
+                search_keywords=[clean_topic.lower(), "space mystery"],
+            ),
+            ShortScene(
+                scene_number=2,
+                narration=f"Most people think they understand how {clean_topic} works, but scientists recently discovered something that completely changes everything.",
+                visual_subject="scientific discovery",
+                visual_description="Scientists examining glowing data in high-tech research facility",
+                search_keywords=["science discovery", "research lab"],
+            ),
+            ShortScene(
+                scene_number=3,
+                narration="Deep beneath the surface, forces operate in ways never predicted by modern physics.",
+                visual_subject="deep cosmic energy",
+                visual_description="Energy vortex and glowing cosmic particles in motion",
+                search_keywords=["cosmic energy", "space vortex"],
+            ),
+            ShortScene(
+                scene_number=4,
+                narration="What do you think about this? Drop your thoughts below and subscribe right now so you don't miss part 2!",
+                visual_subject="earth space",
+                visual_description="Epic cinematic perspective of deep space looking back at planet",
+                search_keywords=["earth space", "galaxy stars"],
+            ),
+        ]
+        narration = " ".join(s.narration for s in scenes)
         return ShortScript(
             title=f"The Shocking Truth About {clean_topic}! #Shorts",
             topic=topic,
             hook=hook,
+            scenes=scenes,
             narration=narration,
             call_to_action="Subscribe for more mind-blowing facts!",
-            visual_keywords=[
-                f"{clean_topic} futuristic cinematic",
-                "technology mystery dark lighting",
-                "abstract glowing digital network",
-                "dramatic reveal high tech",
-            ],
+            visual_keywords=[s.visual_subject for s in scenes],
             tags=["#Shorts", "#viral", "#facts", f"#{clean_topic.replace(' ', '')}"],
             estimated_duration_sec=target_duration,
         )

@@ -71,15 +71,15 @@ class VideoConfig(BaseModel):
 class VoiceConfig(BaseModel):
     default_voice: str = "en-US-ChristopherNeural"
     hindi_voice: str = "hi-IN-MadhurNeural"
-    rate: str = "+0%"
-    pitch: str = "+0Hz"
+    rate: str = "-3%"
+    pitch: str = "-4Hz"
     volume: str = "+0%"
 
 
 class MediaConfig(BaseModel):
     stock_provider: str = "pexels"
     image_provider: str = "pollinations"
-    background_music_volume: float = 0.12
+    background_music_volume: float = 0.24
 
 
 class YouTubeConfig(BaseModel):

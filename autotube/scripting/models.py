@@ -18,12 +18,37 @@ class Scene(BaseModel):
     )
 
 
+class ShortScene(BaseModel):
+    scene_number: int = Field(default=1, description="Sequential scene number")
+    narration: str = Field(
+        default="",
+        description="Spoken narration for this specific scene (1-2 clear, punchy sentences)",
+    )
+    visual_subject: str = Field(
+        default="",
+        description="Core concrete visual subject in 1-3 simple English words (e.g. 'black hole', 'earth space', 'ancient pyramids')",
+    )
+    visual_description: str = Field(
+        default="",
+        description="Detailed description of what should appear on screen for this scene",
+    )
+    search_keywords: List[str] = Field(
+        default_factory=list,
+        description="Clean, concrete search keywords without fluff (e.g. ['black hole space', 'deep space vortex'])",
+    )
+
+
 class ShortScript(BaseModel):
     title: str = Field(description="Catchy, high-CTR title for YouTube Shorts")
     topic: str
     hook: str = Field(description="First 3 seconds hook sentence that grabs attention")
+    scenes: List[ShortScene] = Field(
+        default_factory=list,
+        description="Ordered list of 4-6 timed scenes that comprise the entire Short",
+    )
     narration: str = Field(
-        description="Full continuous narration text for voiceover without scene markers"
+        default="",
+        description="Full continuous narration text for voiceover without scene markers",
     )
     call_to_action: str = Field(
         default="Subscribe for more mind-blowing facts!",
@@ -41,6 +66,15 @@ class ShortScript(BaseModel):
         description="A provocative question to pin in the comments to maximize engagement",
     )
     estimated_duration_sec: int = Field(default=50)
+
+    def get_full_narration(self) -> str:
+        """Return continuous narration, building from scenes if narration is empty."""
+        if self.scenes:
+            scene_texts = [s.narration.strip() for s in self.scenes if s.narration.strip()]
+            if scene_texts:
+                return " ".join(scene_texts)
+        return self.narration or ""
+
 
 
 class LongVideoScript(BaseModel):

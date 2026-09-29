@@ -50,9 +50,13 @@ class LongformBuilder:
             rendered_clips.append(clip_path)
 
             if visual.suffix.lower() in [".jpg", ".jpeg", ".png", ".webp"]:
+                total_frames = max(1, int(duration_per_scene * self.fps))
                 vf = (
-                    f"scale={self.width}:{self.height}:force_original_aspect_ratio=increase,"
-                    f"crop={self.width}:{self.height},format=yuv420p"
+                    f"scale=2133:1200:force_original_aspect_ratio=increase,"
+                    f"crop=2133:1200,"
+                    f"zoompan=z='min(zoom+0.0006,1.15)':d={total_frames}:x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':s={self.width}x{self.height}:fps={self.fps},"
+                    f"setsar=1,"
+                    f"format=yuv420p"
                 )
                 args = [
                     "-loop",
@@ -63,6 +67,10 @@ class LongformBuilder:
                     f"{duration_per_scene:.2f}",
                     "-vf",
                     vf,
+                    "-r",
+                    str(self.fps),
+                    "-video_track_timescale",
+                    "30000",
                     "-c:v",
                     "libx264",
                     "-preset",
@@ -73,8 +81,11 @@ class LongformBuilder:
             else:
                 # Video clip: loop or trim to duration_per_scene
                 vf = (
+                    f"fps={self.fps},"
                     f"scale={self.width}:{self.height}:force_original_aspect_ratio=increase,"
-                    f"crop={self.width}:{self.height},format=yuv420p"
+                    f"crop={self.width}:{self.height},"
+                    f"setsar=1,"
+                    f"format=yuv420p"
                 )
                 args = [
                     "-stream_loop",
@@ -85,17 +96,21 @@ class LongformBuilder:
                     f"{duration_per_scene:.2f}",
                     "-vf",
                     vf,
+                    "-r",
+                    str(self.fps),
+                    "-video_track_timescale",
+                    "30000",
                     "-c:v",
                     "libx264",
                     "-preset",
-                    "fast",
+                    "veryfast",
                     "-an",
                     str(clip_path),
                 ]
 
             run_ffmpeg(args, desc=f"Rendering scene {idx+1}/{num_scenes}")
 
-        # Concatenate scene clips
+        # Concatenate scene clips with seamless re-encode
         concat_txt = temp_dir / "concat_list.txt"
         with open(concat_txt, "w", encoding="utf-8") as f:
             for c in rendered_clips:
@@ -112,7 +127,13 @@ class LongformBuilder:
             "-i",
             str(audio_path),
             "-c:v",
-            "copy",
+            "libx264",
+            "-preset",
+            "veryfast",
+            "-r",
+            str(self.fps),
+            "-pix_fmt",
+            "yuv420p",
             "-c:a",
             "aac",
             "-b:a",

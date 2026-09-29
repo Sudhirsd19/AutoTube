@@ -42,6 +42,20 @@ VOICE_CATALOG: Dict[str, VoiceProfile] = {
         language="en-US",
         description="Young, dynamic, tech-oriented voice",
     ),
+    "baby": VoiceProfile(
+        id="en-US-AnaNeural",
+        name="Baby",
+        gender="Female",
+        language="en-US",
+        description="Cute, playful baby/child cartoon voice (Baby Groot style)",
+    ),
+    "ana": VoiceProfile(
+        id="en-US-AnaNeural",
+        name="Ana",
+        gender="Female",
+        language="en-US",
+        description="Cute young child voice",
+    ),
     # Hindi / Hinglish
     "madhur": VoiceProfile(
         id="hi-IN-MadhurNeural",

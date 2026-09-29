@@ -23,20 +23,28 @@ from autotube.utils.file_utils import sanitize_filename
 from autotube.video.shorts_builder import ShortsBuilder
 from autotube.voice.tts_engine import TTSEngine
 
-# Optimal peak hours (IST / Local time) for 5 daily Shorts
-DAILY_SCHEDULE_HOURS = [9, 12, 15, 18, 21]  # 9 AM, 12 PM, 3 PM, 6 PM, 9 PM
+# Custom 5-Slot Daily Timetable matching peak YouTube viewer behavior (3 English + 2 Hindi)
+DAILY_SCHEDULE_SLOTS = [
+    {"hour": 9, "niche": "mystery", "lang": "en", "voice": "christopher", "label": "09:00 AM - Mystery (English)"},
+    {"hour": 12, "niche": "space", "lang": "en", "voice": "christopher", "label": "12:00 PM - Space (English)"},
+    {"hour": 15, "niche": "science", "lang": "en", "voice": "christopher", "label": "03:00 PM - Science Facts (English)"},
+    {"hour": 18, "niche": "history", "lang": "hi", "voice": "madhur", "label": "06:00 PM - History (Hindi - भारत का रहस्य)"},
+    {"hour": 21, "niche": "psychology", "lang": "hi", "voice": "madhur", "label": "09:00 PM - Dark Psychology (Hindi - दिमाग के रहस्य)"},
+]
+DAILY_SCHEDULE_HOURS = [s["hour"] for s in DAILY_SCHEDULE_SLOTS]
 
 
 class AutoPilot:
     """Orchestrates fully autonomous daily video generation and publishing."""
 
-    def __init__(self, niche: str = "space", voice: str = "christopher"):
+    def __init__(self, niche: str = "mixed", voice: Optional[str] = None, language: str = "mixed"):
         self.cfg = get_config()
         self.niche = niche
+        self.language = language
         self.voice = voice
         self.trend_finder = TrendFinder()
         self.script_gen = ScriptGenerator()
-        self.tts = TTSEngine(default_voice=voice)
+        self.tts = TTSEngine(default_voice=self.voice or "christopher")
         self.stock_fetcher = StockFetcher()
         self.visual_gen = VisualGenerator()
         self.builder = ShortsBuilder()
@@ -53,25 +61,66 @@ class AutoPilot:
         print_panel(
             f"[bold cyan]AutoTube Autonomous AutoPilot Activated[/bold cyan]\n"
             f"• Target Daily Videos: [bold yellow]{count}[/bold yellow]\n"
-            f"• Niche: [bold green]{self.niche.upper()}[/bold green]\n"
-            f"• AI Voice: [bold white]{self.voice}[/bold white]\n"
+            f"• Niche Mode: [bold green]{'5-Slot Multi-Niche Daily Schedule' if self.niche in ('mixed', 'auto', 'daily', 'daily_slots') else self.niche.upper()}[/bold green]\n"
+            f"• Language Distribution: [bold white]{'3 English + 2 Hindi' if self.language in ('mixed', 'auto', 'both') else self.language.upper()}[/bold white]\n"
             f"• Copyright Safety: [bold green]100% Commercial-Safe (Pexels CC0 / Original AI)[/bold green]\n"
-            f"• Scheduled Publishing: [bold cyan]{'Yes (Staggered Peak Hours)' if schedule else 'Immediate'}[/bold cyan]",
+            f"• Scheduled Publishing: [bold cyan]{'Yes (Staggered Peak Hours: 9AM, 12PM, 3PM, 6PM, 9PM)' if schedule else 'Immediate'}[/bold cyan]",
             title="AutoPilot Initialized",
         )
 
-        # 1. Fetch trending non-repeating topics
-        print_info(f"Discovering {count} fresh trending topics in '{self.niche}'...")
-        topics = self.trend_finder.get_trending_topics(count=count, niche=self.niche)
+        is_multi_niche = self.niche in ("mixed", "auto", "daily", "daily_slots")
+        is_mixed_lang = self.language in ("mixed", "auto", "both")
+
+        # 1. Fetch trending non-repeating topics per slot
+        topics_info = []
+        if is_multi_niche:
+            print_info(f"Discovering {count} fresh trending topics across 5 daily slots...")
+            for idx in range(count):
+                slot = DAILY_SCHEDULE_SLOTS[idx % len(DAILY_SCHEDULE_SLOTS)]
+                topic_title = self.trend_finder.get_single_topic(niche=slot["niche"])
+                item_lang = slot["lang"] if is_mixed_lang else self.language
+                item_voice = self.voice or (slot["voice"] if is_mixed_lang else ("madhur" if item_lang in ("hi", "hindi") else "christopher"))
+                topics_info.append({
+                    "topic": topic_title,
+                    "niche": slot["niche"],
+                    "hour": slot["hour"],
+                    "lang": item_lang,
+                    "voice": item_voice,
+                    "label": f"{slot['label']}",
+                })
+        else:
+            print_info(f"Discovering {count} fresh trending topics in '{self.niche}'...")
+            raw_topics = self.trend_finder.get_trending_topics(count=count, niche=self.niche)
+            for idx, topic_title in enumerate(raw_topics):
+                slot_hour = DAILY_SCHEDULE_HOURS[idx % len(DAILY_SCHEDULE_HOURS)]
+                slot_fallback = DAILY_SCHEDULE_SLOTS[idx % len(DAILY_SCHEDULE_SLOTS)]
+                item_lang = slot_fallback["lang"] if is_mixed_lang else self.language
+                item_voice = self.voice or (slot_fallback["voice"] if is_mixed_lang else ("madhur" if item_lang in ("hi", "hindi") else "christopher"))
+                topics_info.append({
+                    "topic": topic_title,
+                    "niche": self.niche,
+                    "hour": slot_hour,
+                    "lang": item_lang,
+                    "voice": item_voice,
+                    "label": f"{slot_hour:02d}:00 - {self.niche.capitalize()} ({'English' if item_lang == 'en' else 'Hindi'})",
+                })
 
         uploaded_urls = []
         now = datetime.datetime.now(datetime.timezone.utc)
         ist = datetime.timezone(datetime.timedelta(hours=5, minutes=30))
         today = datetime.datetime.now(ist)
 
-        for idx, topic in enumerate(topics):
+        for idx, item in enumerate(topics_info):
+            topic = item["topic"]
+            sched_hour = item["hour"]
+            slot_label = item["label"]
+            item_lang = item["lang"]
+            item_voice = item["voice"]
+
             print_panel(
-                f"[bold white]Processing Video {idx+1}/{count}:[/bold white] [bold yellow]{topic}[/bold yellow]",
+                f"[bold white]Processing Video {idx+1}/{count}:[/bold white] [bold yellow]{topic}[/bold yellow]\n"
+                f"[bold cyan]Category & Slot:[/bold cyan] {slot_label}\n"
+                f"[bold magenta]Language & Voice:[/bold magenta] {'English (' + item_voice + ')' if item_lang == 'en' else 'Hindi (' + item_voice + ')'}",
                 border_style="magenta",
             )
             slug = sanitize_filename(topic)
@@ -79,7 +128,6 @@ class AutoPilot:
             # Determine scheduled publish time in UTC ISO 8601
             publish_time_iso = None
             if schedule and upload:
-                sched_hour = DAILY_SCHEDULE_HOURS[idx % len(DAILY_SCHEDULE_HOURS)]
                 sched_dt = datetime.datetime(
                     today.year,
                     today.month,
@@ -100,50 +148,53 @@ class AutoPilot:
                     f"Scheduled Release Time: [bold yellow]{sched_hour:02d}:00 (Local Time)[/bold yellow] ({publish_time_iso} UTC)"
                 )
 
-            # Step A: Generate Script
-            script = self.script_gen.generate_short_script(topic, target_duration=45)
+            # Step A: Generate Script with 1-to-1 Matching Scenes
+            script = self.script_gen.generate_short_script(
+                topic, target_duration=45, language=item_lang
+            )
 
-            # Step B: Synthesize Voiceover & Timing
+            # Step B: Synthesize Voiceover & Extract Timings
             audio_path = self.cfg.paths.temp_dir / f"{slug}_voice.mp3"
             tts_res = self.tts.synthesize(
                 text=script.narration,
                 output_audio_path=audio_path,
-                voice=self.voice,
+                voice=item_voice,
             )
 
-            # Step C: Dynamic Multi-Scene Visual Footage (Cuts every 3-5 seconds!)
-            queries = script.visual_keywords if script.visual_keywords else [topic]
-            scene_videos = self.stock_fetcher.fetch_multi_scene_videos(
-                queries=queries,
-                output_dir=self.cfg.paths.temp_dir,
-                target_count=4,
-                orientation="portrait",
+            # Calculate exact spoken duration for each scene!
+            from autotube.voice.tts_engine import compute_scene_durations
+            scene_durations = compute_scene_durations(
+                scenes=script.scenes,
+                words=tts_res.words,
+                total_duration=tts_res.duration_seconds,
             )
-            bg_video = None
-            bg_image = None
-            if not scene_videos:
-                bg_video = self.stock_fetcher.search_and_download_video(
-                    query=queries[0],
+
+            # Step C: Acquire Strictly Verified Visual Assets for Each Scene (1-to-1 Perfect Match!)
+            print_info(f"Acquiring perfectly matching visual assets for {len(script.scenes) if script.scenes else 4} scenes...")
+            if script.scenes:
+                scene_assets = self.stock_fetcher.fetch_scene_visual_assets(
+                    scenes=script.scenes,
                     output_dir=self.cfg.paths.temp_dir,
                     orientation="portrait",
                 )
-                if not bg_video:
-                    img_out = self.cfg.paths.temp_dir / f"{slug}_visual.jpg"
-                    bg_image = self.visual_gen.generate_image(
-                        prompt=f"{queries[0]}, hyper-detailed cinematic 8k",
-                        output_path=img_out,
-                        width=1080,
-                        height=1920,
+            else:
+                queries = script.visual_keywords if script.visual_keywords else [topic]
+                scene_assets = [
+                    self.stock_fetcher.fetch_best_visual_for_scene(
+                        subject=q,
+                        output_dir=self.cfg.paths.temp_dir,
+                        orientation="portrait",
                     )
+                    for q in queries[:4]
+                ]
 
-            # Step D: Render Video & Subtitles
+            # Step D: Render Video & Subtitles with Exact Speech-to-Scene Alignment!
             output_short = self.cfg.paths.output_dir / "shorts" / f"{slug}.mp4"
             final_video = self.builder.build_short(
                 audio_path=tts_res.audio_path,
                 output_path=output_short,
-                background_video=bg_video,
-                background_image=bg_image,
-                scene_videos=scene_videos if len(scene_videos) > 1 else None,
+                scene_assets=scene_assets,
+                scene_durations=scene_durations,
                 subtitles_file=tts_res.subtitles_ass_path,
             )
 
@@ -169,6 +220,6 @@ class AutoPilot:
                 self.trend_finder.record_topic(topic)
 
         print_success(
-            f"Daily Batch Complete! Generated {len(topics)} videos. Uploaded {len(uploaded_urls)} videos."
+            f"Daily Batch Complete! Generated {len(topics_info)} videos. Uploaded {len(uploaded_urls)} videos."
         )
         return uploaded_urls
