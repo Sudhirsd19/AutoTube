@@ -342,31 +342,26 @@ def video(
         voice=voice,
     )
 
+    from autotube.voice.tts_engine import compute_scene_durations
+    scene_durations = compute_scene_durations(
+        scenes=script.scenes,
+        words=tts_result.words,
+        total_duration=tts_result.duration_seconds,
+    )
+
     # 3. Visuals Generation for Each Scene
-    print_step(3, total_steps, "Fetching Scene Visuals (Stock Footage & AI Visuals)")
-    visual_gen = VisualGenerator()
+    print_step(3, total_steps, "Fetching Verified Scene Visuals (Relevance-Checked Stock & Fallback)")
     stock_fetcher = StockFetcher()
     scene_visuals = []
 
     for scene in script.scenes:
-        # Check stock video first
-        vid = stock_fetcher.search_and_download_video(
-            query=scene.visual_query,
+        asset = stock_fetcher.fetch_best_visual_for_scene(
+            subject=scene.visual_query,
+            keywords=[scene.visual_query],
             output_dir=cfg.paths.temp_dir,
             orientation="landscape",
         )
-        if vid:
-            scene_visuals.append(vid)
-        else:
-            # Generate AI image
-            img_path = cfg.paths.temp_dir / f"{slug}_scene_{scene.scene_number:02d}.jpg"
-            img = visual_gen.generate_image(
-                prompt=f"{scene.visual_query}, cinematic documentary shot",
-                output_path=img_path,
-                width=1920,
-                height=1080,
-            )
-            scene_visuals.append(img)
+        scene_visuals.append(asset)
 
     # 4. Thumbnail Generation
     print_step(4, total_steps, "Generating High-CTR Custom Thumbnail")
@@ -389,6 +384,7 @@ def video(
         scene_visuals=scene_visuals,
         output_path=output_video_path,
         subtitles_file=tts_result.subtitles_srt_path,
+        scene_durations=scene_durations,
     )
 
     if not final_path or not final_path.exists():
@@ -481,6 +477,14 @@ def stitch(
         pitch=pitch_mod,
     )
 
+    # Compute per-scene durations from TTS word timestamps for speech sync
+    from autotube.voice.tts_engine import compute_scene_durations
+    scene_durations = compute_scene_durations(
+        scenes=script.scenes,
+        words=tts_result.words,
+        total_duration=tts_result.duration_seconds,
+    )
+
     # 3. Stitch & Burn Subtitles
     print_step(3, total_steps, "Stitching video clips & burning animated subtitles")
     builder = ShortsBuilder()
@@ -490,6 +494,7 @@ def stitch(
         audio_path=tts_result.audio_path,
         output_path=output_short_path,
         scene_videos=clips,
+        scene_durations=scene_durations,
         subtitles_file=tts_result.subtitles_ass_path,
     )
 
@@ -556,6 +561,14 @@ def cartoon(
         voice=voice,
     )
 
+    # Compute per-scene durations from TTS word timestamps for speech sync
+    from autotube.voice.tts_engine import compute_scene_durations
+    scene_durations = compute_scene_durations(
+        scenes=script.scenes,
+        words=tts_result.words,
+        total_duration=tts_result.duration_seconds,
+    )
+
     # 3. Dynamic Multi-Scene 3D Cartoon AI Visuals
     print_step(3, total_steps, f"Generating Dynamic 3D [{style.upper()}] Story Scenes (Pollinations 3D Engine)")
     visual_gen = VisualGenerator()
@@ -586,6 +599,7 @@ def cartoon(
         audio_path=tts_result.audio_path,
         output_path=output_short_path,
         scene_visuals=scene_visuals,
+        scene_durations=scene_durations,
         subtitles_file=tts_result.subtitles_ass_path,
     )
 

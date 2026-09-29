@@ -24,6 +24,7 @@ class LongformBuilder:
         scene_visuals: List[Path],
         output_path: Path,
         subtitles_file: Optional[Path] = None,
+        scene_durations: Optional[List[float]] = None,
     ) -> Optional[Path]:
         """Combine multiple scene visuals with narration audio and subtitles."""
         output_path.parent.mkdir(parents=True, exist_ok=True)
@@ -39,15 +40,18 @@ class LongformBuilder:
             print_error("No scene visuals provided for long-form video.")
             return None
 
-        # Calculate duration per scene visual
         num_scenes = len(scene_visuals)
-        duration_per_scene = total_duration / num_scenes
 
         # Render each scene clip to a standard 1920x1080 30fps clip
         rendered_clips: List[Path] = []
         for idx, visual in enumerate(scene_visuals):
             clip_path = temp_dir / f"scene_clip_{idx:03d}.mp4"
             rendered_clips.append(clip_path)
+
+            if scene_durations and idx < len(scene_durations):
+                duration_per_scene = float(scene_durations[idx])
+            else:
+                duration_per_scene = total_duration / num_scenes
 
             if visual.suffix.lower() in [".jpg", ".jpeg", ".png", ".webp"]:
                 total_frames = max(1, int(duration_per_scene * self.fps))
