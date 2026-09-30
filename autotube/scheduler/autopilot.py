@@ -24,13 +24,15 @@ from autotube.utils.file_utils import sanitize_filename
 from autotube.video.shorts_builder import ShortsBuilder
 from autotube.voice.tts_engine import TTSEngine
 
-# Custom 5-Slot Daily Timetable matching peak YouTube viewer behavior (3 English + 2 Hindi)
+# Custom 7-Slot Daily Timetable matching peak YouTube viewer behavior (4 English + 3 Hindi, including Alien Interview Series)
 DAILY_SCHEDULE_SLOTS = [
-    {"hour": 9, "niche": "mystery", "lang": "en", "voice": "christopher", "label": "09:00 AM - Mystery (English)"},
-    {"hour": 12, "niche": "space", "lang": "en", "voice": "christopher", "label": "12:00 PM - Space (English)"},
-    {"hour": 15, "niche": "science", "lang": "en", "voice": "christopher", "label": "03:00 PM - Science Facts (English)"},
-    {"hour": 18, "niche": "history", "lang": "hi", "voice": "madhur", "label": "06:00 PM - History (Hindi - भारत का रहस्य)"},
-    {"hour": 21, "niche": "psychology", "lang": "hi", "voice": "madhur", "label": "09:00 PM - Dark Psychology (Hindi - दिमाग के रहस्य)"},
+    {"hour": 9, "niche": "space", "lang": "en", "voice": "adam", "label": "09:00 AM - Space Mysteries (English - Viral Narrator)"},
+    {"hour": 11, "niche": "alien", "lang": "en", "voice": "adam", "label": "11:00 AM - Alien Interview: Official Transcripts (English - Viral Narrator)"},
+    {"hour": 13, "niche": "science", "lang": "en", "voice": "adam", "label": "01:00 PM - Science Facts & Paradoxes (English - Viral Narrator)"},
+    {"hour": 15, "niche": "mystery", "lang": "en", "voice": "adam", "label": "03:00 PM - Unsolved Ancient Mysteries (English - Viral Narrator)"},
+    {"hour": 17, "niche": "history", "lang": "hi", "voice": "madhur", "label": "05:00 PM - Bharat Ke Rahasya (Hindi - Viral Narrator)"},
+    {"hour": 19, "niche": "alien", "lang": "hi", "voice": "madhur", "label": "07:00 PM - Alien Interview: Roswell Telepathic Khulasa (Hindi - Viral Narrator)"},
+    {"hour": 21, "niche": "psychology", "lang": "hi", "voice": "madhur", "label": "09:00 PM - Dark Psychology (Hindi - Viral Narrator)"},
 ]
 DAILY_SCHEDULE_HOURS = [s["hour"] for s in DAILY_SCHEDULE_SLOTS]
 
@@ -53,19 +55,19 @@ class AutoPilot:
 
     def run_daily_batch(
         self,
-        count: int = 5,
+        count: int = 7,
         upload: bool = True,
         schedule: bool = True,
     ) -> List[str]:
-        """Generate and schedule a batch of viral videos for the day."""
+        """Generate and schedule a batch of viral videos for the day (7 slots per day)."""
         print_banner()
         print_panel(
             f"[bold cyan]AutoTube Autonomous AutoPilot Activated[/bold cyan]\n"
             f"• Target Daily Videos: [bold yellow]{count}[/bold yellow]\n"
-            f"• Niche Mode: [bold green]{'5-Slot Multi-Niche Daily Schedule' if self.niche in ('mixed', 'auto', 'daily', 'daily_slots') else self.niche.upper()}[/bold green]\n"
-            f"• Language Distribution: [bold white]{'3 English + 2 Hindi' if self.language in ('mixed', 'auto', 'both') else self.language.upper()}[/bold white]\n"
+            f"• Niche Mode: [bold green]{'7-Slot Multi-Niche Daily Schedule' if self.niche in ('mixed', 'auto', 'daily', 'daily_slots') else self.niche.upper()}[/bold green]\n"
+            f"• Language Distribution: [bold white]{'4 English + 3 Hindi' if self.language in ('mixed', 'auto', 'both') else self.language.upper()}[/bold white]\n"
             f"• Copyright Safety: [bold green]100% Commercial-Safe (Pexels CC0 / Original AI)[/bold green]\n"
-            f"• Scheduled Publishing: [bold cyan]{'Yes (Staggered Peak Hours: 9AM, 12PM, 3PM, 6PM, 9PM)' if schedule else 'Immediate'}[/bold cyan]",
+            f"• Scheduled Publishing: [bold cyan]{'Yes (Staggered Peak Hours: 9AM, 11AM, 1PM, 3PM, 5PM, 7PM, 9PM)' if schedule else 'Immediate'}[/bold cyan]",
             title="AutoPilot Initialized",
         )
 
@@ -75,12 +77,23 @@ class AutoPilot:
         # 1. Fetch trending non-repeating topics per slot
         topics_info = []
         if is_multi_niche:
-            print_info(f"Discovering {count} fresh trending topics across 5 daily slots...")
+            print_info(f"Discovering {count} fresh trending topics across 7 daily slots...")
+            from autotube.scripting.alien_tracker import AlienSeriesTracker
+            alien_tracker = AlienSeriesTracker()
+            current_alien_chapter = alien_tracker.get_current_chapter()
+
             for idx in range(count):
                 slot = DAILY_SCHEDULE_SLOTS[idx % len(DAILY_SCHEDULE_SLOTS)]
-                topic_title = self.trend_finder.get_single_topic(niche=slot["niche"])
                 item_lang = slot["lang"] if is_mixed_lang else self.language
                 item_voice = self.voice or (slot["voice"] if is_mixed_lang else ("madhur" if item_lang in ("hi", "hindi") else "christopher"))
+
+                if slot["niche"] == "alien":
+                    topic_title = current_alien_chapter["title_hi"] if item_lang in ("hi", "hindi") else current_alien_chapter["title_en"]
+                    alien_part = current_alien_chapter["part_number"]
+                else:
+                    topic_title = self.trend_finder.get_single_topic(niche=slot["niche"])
+                    alien_part = None
+
                 topics_info.append({
                     "topic": topic_title,
                     "niche": slot["niche"],
@@ -88,6 +101,7 @@ class AutoPilot:
                     "lang": item_lang,
                     "voice": item_voice,
                     "label": f"{slot['label']}",
+                    "alien_part": alien_part,
                 })
         else:
             print_info(f"Discovering {count} fresh trending topics in '{self.niche}'...")
@@ -104,6 +118,7 @@ class AutoPilot:
                     "lang": item_lang,
                     "voice": item_voice,
                     "label": f"{slot_hour:02d}:00 - {self.niche.capitalize()} ({'English' if item_lang == 'en' else 'Hindi'})",
+                    "alien_part": None,
                 })
 
         uploaded_urls = []
@@ -118,6 +133,7 @@ class AutoPilot:
             slot_label = item["label"]
             item_lang = item["lang"]
             item_voice = item["voice"]
+            item_niche = item["niche"]
 
             print_panel(
                 f"[bold white]Processing Video {idx+1}/{count}:[/bold white] [bold yellow]{topic}[/bold yellow]\n"
@@ -153,9 +169,16 @@ class AutoPilot:
                     )
 
                 # Step A: Generate Script with 1-to-1 Matching Scenes
-                script = self.script_gen.generate_short_script(
-                    topic, target_duration=45, language=item_lang
-                )
+                if item_niche == "alien":
+                    script = self.script_gen.generate_alien_script(
+                        part=item.get("alien_part"),
+                        language=item_lang,
+                        target_duration=48,
+                    )
+                else:
+                    script = self.script_gen.generate_short_script(
+                        topic, target_duration=45, language=item_lang
+                    )
 
                 # Step B: Synthesize Voiceover & Extract Timings
                 audio_path = self.cfg.paths.temp_dir / f"{slug}_voice.mp3"
@@ -173,24 +196,18 @@ class AutoPilot:
                     total_duration=tts_res.duration_seconds,
                 )
 
-                # Step C: Acquire Strictly Verified Visual Assets for Each Scene (1-to-1 Perfect Match!)
-                print_info(f"Acquiring perfectly matching visual assets for {len(script.scenes) if script.scenes else 4} scenes...")
-                if script.scenes:
-                    scene_assets = self.stock_fetcher.fetch_scene_visual_assets(
-                        scenes=script.scenes,
-                        output_dir=self.cfg.paths.temp_dir,
-                        orientation="portrait",
-                    )
-                else:
-                    queries = script.visual_keywords if script.visual_keywords else [topic]
-                    scene_assets = [
-                        self.stock_fetcher.fetch_best_visual_for_scene(
-                            subject=q,
-                            output_dir=self.cfg.paths.temp_dir,
-                            orientation="portrait",
-                        )
-                        for q in queries[:4]
-                    ]
+                # Step C: 3-Tier Visual Waterfall (Hugging Face -> 8 AM Gemini cutoff -> Verified Stock/AI)
+                from autotube.media.visual_waterfall import acquire_scene_visuals_waterfall
+                print_info(f"Acquiring visual scenes using 3-Tier Waterfall (HF -> Gemini -> Verified Stock)...")
+                scene_assets = acquire_scene_visuals_waterfall(
+                    script=script,
+                    output_dir=self.cfg.paths.temp_dir,
+                    slug=slug,
+                    orientation="portrait",
+                    max_scenes=min(len(script.scenes), 5) if script.scenes else 4,
+                    max_hf_retries=2,
+                    cutoff_hour=8,
+                )
 
                 # Step D: Render Video & Subtitles with Exact Speech-to-Scene Alignment!
                 output_short = self.cfg.paths.output_dir / "shorts" / f"{slug}.mp4"
@@ -222,6 +239,16 @@ class AutoPilot:
                         self.trend_finder.record_topic(topic, video_id=video_url.split("/")[-1])
                 else:
                     self.trend_finder.record_topic(topic)
+
+                # Record Alien Interview series completion atomically (Zero-Skip Guarantee)
+                if item_niche == "alien" and item.get("alien_part"):
+                    from autotube.scripting.alien_tracker import AlienSeriesTracker
+                    vid_id = video_url.split("/")[-1] if (upload and video_url) else "rendered"
+                    AlienSeriesTracker().mark_part_completed(
+                        part=item["alien_part"],
+                        lang=item_lang,
+                        video_id=vid_id,
+                    )
 
             except Exception as e:
                 failed_count += 1

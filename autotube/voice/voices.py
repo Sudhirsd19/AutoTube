@@ -13,6 +13,21 @@ class VoiceProfile(BaseModel):
 
 
 VOICE_CATALOG: Dict[str, VoiceProfile] = {
+    # Most Popular Viral Voices (YouTube Shorts, Reels, Documentaries)
+    "adam": VoiceProfile(
+        id="en-US-ChristopherNeural",
+        name="Adam",
+        gender="Male",
+        language="en-US",
+        description="#1 Most popular viral narrator voice on YouTube Shorts & TikTok (ElevenLabs Adam / Edge-TTS Christopher)",
+    ),
+    "madhur": VoiceProfile(
+        id="hi-IN-MadhurNeural",
+        name="Madhur",
+        gender="Male",
+        language="hi-IN",
+        description="Most widely used Hindi narrator voice for YouTube Shorts and documentary channels",
+    ),
     # English (US)
     "christopher": VoiceProfile(
         id="en-US-ChristopherNeural",

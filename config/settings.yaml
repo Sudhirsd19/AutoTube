@@ -43,8 +43,8 @@ video:
       position: "bottom"
 
 voice:
-  default_voice: "en-US-ChristopherNeural"
-  hindi_voice: "hi-IN-MadhurNeural"
+  default_voice: "adam"               # ElevenLabs #1 Most Used Voice (Adam) / Fallback: Christopher
+  hindi_voice: "madhur"               # Natural Hindi Documentary Voice / Adam Multilingual
   rate: "+0%"
   pitch: "+0Hz"
   volume: "+0%"
@@ -52,7 +52,7 @@ voice:
 media:
   stock_provider: "pexels"            # pexels, pixabay, or local
   image_provider: "pollinations"      # pollinations, local
-  background_music_volume: 0.12       # 12% volume for background ambient track
+  background_music_volume: 0.14       # 14% volume for Hollywood ambient track
 
 youtube:
   client_secrets_file: "config/client_secrets.json"
