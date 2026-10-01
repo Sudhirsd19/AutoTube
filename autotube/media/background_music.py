@@ -16,17 +16,53 @@ class BackgroundMusicManager:
         self.assets_dir = assets_dir or (cfg.paths.assets_dir / "audio")
         self.music_volume = cfg.media.background_music_volume
 
-    def get_music_tracks(self) -> List[Path]:
-        """List all audio tracks available in assets/audio (excluding SFX)."""
+    def get_music_tracks(self, category: Optional[str] = None) -> List[Path]:
+        """List all audio tracks available in assets/audio (optionally filtered by subject category)."""
         if not self.assets_dir.exists():
             return []
         valid_exts = {".mp3", ".wav", ".aac", ".m4a", ".ogg"}
-        # Filter out short SFX from regular BGM tracks
-        return [
-            p
-            for p in self.assets_dir.iterdir()
-            if p.suffix.lower() in valid_exts and not p.name.startswith("whoosh")
-        ]
+
+        # If category specified, look in that subfolder first
+        if category:
+            cat_dir = self.assets_dir / category.lower().strip()
+            if cat_dir.exists():
+                cat_tracks = [p for p in cat_dir.iterdir() if p.suffix.lower() in valid_exts]
+                if cat_tracks:
+                    return cat_tracks
+
+        # Search recursively in all subdirectories of assets/audio
+        all_tracks = []
+        for p in self.assets_dir.rglob("*"):
+            if p.is_file() and p.suffix.lower() in valid_exts and not p.name.startswith("whoosh"):
+                all_tracks.append(p)
+        return all_tracks
+
+    def get_music_for_subject(self, niche: Optional[str] = None, topic: Optional[str] = None) -> Optional[Path]:
+        """Select a high-quality, Hollywood-grade BGM track matched directly to the video's subject."""
+        import random
+        text = f"{niche or ''} {topic or ''}".lower()
+
+        cat = "mystery"
+        if any(w in text for w in ("alien", "roswell", "airl", "ufo", "domain", "extraterrestrial")):
+            cat = "alien"
+        elif any(w in text for w in ("space", "galaxy", "universe", "black hole", "cosmos", "stars", "planet")):
+            cat = "space"
+        elif any(w in text for w in ("history", "bharat", "king", "emperor", "war", "battle", "empire", "ancient rome")):
+            cat = "history"
+        elif any(w in text for w in ("psychology", "manipulation", "mind", "subconscious", "brain", "trick")):
+            cat = "psychology"
+        elif any(w in text for w in ("mystery", "sphinx", "pyramid", "tomb", "atlantis", "anomal")):
+            cat = "mystery"
+
+        tracks = self.get_music_tracks(category=cat)
+        if tracks:
+            chosen = random.choice(tracks)
+            print_info(f"Selected subject-matched BGM ({cat}): {chosen.name}")
+            return chosen
+
+        # Fallback to any available track
+        all_tracks = self.get_music_tracks()
+        return random.choice(all_tracks) if all_tracks else None
 
     def get_sfx_path(self, sfx_name: str = "whoosh_hit.wav") -> Optional[Path]:
         """Get path to a specific sound effect in assets/audio."""
@@ -40,17 +76,17 @@ class BackgroundMusicManager:
         music_path: Optional[Path] = None,
         music_volume: Optional[float] = None,
         include_whoosh: bool = True,
+        niche: Optional[str] = None,
+        topic: Optional[str] = None,
     ) -> Path:
-        """Mix speech voiceover with background music and hook SFX with dynamic audio ducking."""
+        """Mix speech voiceover with background music and hook SFX with dynamic audio ducking and Thanos DSP."""
         import random
 
-        volume = music_volume if music_volume is not None else self.music_volume
+        volume = music_volume if music_volume is not None else (self.music_volume or 0.14)
 
-        # If no music specified, pick from assets
+        # If no music specified, pick subject-matched BGM
         if not music_path:
-            tracks = self.get_music_tracks()
-            if tracks:
-                music_path = random.choice(tracks)
+            music_path = self.get_music_for_subject(niche=niche, topic=topic)
 
         whoosh_sfx = self.get_sfx_path("whoosh_hit.wav") if include_whoosh else None
 
@@ -67,8 +103,14 @@ class BackgroundMusicManager:
 
         codec = "libmp3lame" if output_mixed_path.suffix.lower() == ".mp3" else "aac"
 
-        # Voice enhancement filter: deep bass boost + crisp presence + subtle cinematic trailer echo
-        voice_filter = "bass=g=6:f=115,treble=g=2:f=3500,aecho=0.8:0.88:45|70:0.22|0.12"
+        # Thanos Titan Resonance DSP: sub-bass weight (75Hz), chest resonance (150Hz), presence, and broadcast trailer compression
+        voice_filter = (
+            "equalizer=f=75:width_type=o:width=1.5:g=6,"
+            "equalizer=f=150:width_type=o:width=1.2:g=5,"
+            "equalizer=f=3200:width_type=o:width=1.2:g=2.5,"
+            "compand=attacks=0.02:decays=0.2:points=-80/-80|-30/-18|-15/-8|0/-2:gain=3.5,"
+            "loudnorm=I=-14:TP=-1.0:LRA=7"
+        )
 
         if music_path and music_path.exists() and whoosh_sfx:
             # 3-input mix: heavy voice + audible bgm + opening whoosh SFX

@@ -644,15 +644,122 @@ def cartoon(
 
 
 @app.command()
-def autopilot(
-    count: int = typer.Option(5, "--count", "-c", help="Number of videos to generate and schedule daily"),
-    niche: str = typer.Option("mixed", "--niche", "-n", help="Niche: mixed (all 5 daily slots), mystery, space, science, history, psychology, mythology"),
-    voice: Optional[str] = typer.Option(None, "--voice", "-v", help="AI Voice narrator"),
-    lang: str = typer.Option("mixed", "--lang", "-l", help="Language: 'mixed' (3 English + 2 Hindi), 'hi' (All Hindi), or 'en' (All English)"),
-    upload: bool = typer.Option(True, "--upload/--no-upload", help="Upload to YouTube"),
-    schedule: bool = typer.Option(True, "--schedule/--no-schedule", help="Stagger across peak hours (9 AM, 12 PM, 3 PM, 6 PM, 9 PM)"),
+def alien(
+    part: Optional[int] = typer.Option(None, "--part", "-p", help="Specific episode part number (1-8, default: next tracked chapter)"),
+    lang: str = typer.Option("hi", "--lang", "-l", help="Language: 'hi' for Hindi or 'en' for English"),
+    voice: Optional[str] = typer.Option(None, "--voice", "-v", help="AI Voice (default: thanos_hi for Hindi, thanos_en for English)"),
+    upload: bool = typer.Option(False, "--upload", help="Automatically upload to YouTube after generation"),
+    privacy: str = typer.Option("unlisted", "--privacy", help="Privacy: private, unlisted, or public"),
 ):
-    """Fully automated batch creation and scheduled publishing for YouTube Shorts."""
+    """Generate an episode of the 'Alien Interview' book series (Roswell 1947 & Airl transcripts) with proof citations & 3-Tier Visual Waterfall."""
+    print_banner()
+    cfg = get_config()
+    is_hindi = lang.lower() in ("hi", "hindi")
+    selected_voice = voice or ("thanos_hi" if is_hindi else "thanos_en")
+    total_steps = 5 if upload else 4
+
+    from autotube.scripting.alien_tracker import AlienSeriesTracker
+    from autotube.media.visual_waterfall import acquire_scene_visuals_waterfall
+    tracker = AlienSeriesTracker()
+    chapter = tracker.get_current_chapter(part_override=part)
+    part_num = chapter["part_number"]
+    topic = chapter["title_hi"] if is_hindi else chapter["title_en"]
+    slug = sanitize_filename(f"alien_interview_part_{part_num}_{'hi' if is_hindi else 'en'}")
+
+    # 1. Script Generation
+    print_step(1, total_steps, f"Writing Alien Interview Script Part {part_num} ({'Hindi' if is_hindi else 'English'})")
+    script_gen = ScriptGenerator()
+    script = script_gen.generate_alien_script(part=part_num, language=lang, target_duration=65)
+
+    print_panel(
+        f"[bold yellow]Episode:[/bold yellow] Part {part_num}: {topic}\n\n"
+        f"[bold cyan]Documented Proof:[/bold cyan] {chapter['evidence_proof']}\n\n"
+        f"[bold green]Alien Airl Quote:[/bold green] \"{chapter['key_quote']}\"\n\n"
+        f"[bold white]Narration:[/bold white]\n{script.narration}\n\n"
+        f"[bold magenta]Tags:[/bold magenta] {' '.join(script.tags)}",
+        title=f"🛸 Alien Interview: {script.title}",
+    )
+
+    # 2. Voiceover Synthesis
+    print_step(2, total_steps, f"Synthesizing Expressive AI Voice ({selected_voice})")
+    tts = TTSEngine(default_voice=selected_voice)
+    audio_path = cfg.paths.temp_dir / f"{slug}_voice.mp3"
+    tts_result = tts.synthesize(
+        text=script.narration,
+        output_audio_path=audio_path,
+        voice=selected_voice,
+    )
+
+    from autotube.voice.tts_engine import compute_scene_durations
+    scene_durations = compute_scene_durations(
+        scenes=script.scenes,
+        words=tts_result.words,
+        total_duration=tts_result.duration_seconds,
+    )
+
+    # 3. 3-Tier Visual Waterfall
+    print_step(3, total_steps, "Acquiring Visuals (Hugging Face -> 8 AM Gemini Cutoff -> Verified Stock/AI)")
+    scene_assets = acquire_scene_visuals_waterfall(
+        script=script,
+        output_dir=cfg.paths.temp_dir,
+        slug=slug,
+        orientation="portrait",
+        max_scenes=len(script.scenes) if script.scenes else 8,
+        max_hf_retries=2,
+        cutoff_hour=8,
+    )
+
+    # 4. Render 9:16 Vertical Video & Burn Subtitles
+    print_step(4, total_steps, "Rendering 9:16 Video & Burning Subtitles")
+    builder = ShortsBuilder()
+    output_short_path = cfg.paths.output_dir / "shorts" / f"{slug}.mp4"
+    final_path = builder.build_short(
+        audio_path=tts_result.audio_path,
+        output_path=output_short_path,
+        scene_assets=scene_assets,
+        scene_durations=scene_durations,
+        subtitles_file=tts_result.subtitles_ass_path,
+    )
+
+    if not final_path or not final_path.exists():
+        print_error("Failed to render Alien Short.")
+        return
+
+    print_success(f"Alien Short successfully rendered: {final_path.resolve()}")
+
+    # 5. YouTube Upload
+    if upload:
+        print_step(5, total_steps, "Uploading Alien Short to YouTube")
+        uploader = YouTubeUploader()
+        video_url = uploader.upload_video(
+            video_path=final_path,
+            title=f"{script.title} #Shorts #AlienInterview",
+            description=(
+                f"{script.narration}\n\n"
+                f"Evidence / Proof Cited: {chapter['evidence_proof']}\n"
+                f"Based on 'Alien Interview' (Lawrence R. Spencer / Matilda MacElroy transcripts)\n\n"
+                f"{' '.join(script.tags)}"
+            ),
+            tags=script.tags + ["alien interview", "roswell 1947", "airl", "the domain", "prison planet"],
+            privacy_status=privacy,
+            pinned_comment=getattr(script, "pinned_comment", None),
+        )
+        if video_url:
+            tracker.mark_part_completed(part=part_num, lang=lang, video_id=video_url.split("/")[-1])
+    else:
+        tracker.mark_part_completed(part=part_num, lang=lang, video_id="rendered_local")
+
+
+@app.command()
+def autopilot(
+    count: int = typer.Option(7, "--count", "-c", help="Number of videos to generate and schedule daily (Default: 7 slots)"),
+    niche: str = typer.Option("mixed", "--niche", "-n", help="Niche: mixed (all 7 daily slots including Alien Interview), space, science, history, psychology, mystery, alien"),
+    voice: Optional[str] = typer.Option(None, "--voice", "-v", help="AI Voice narrator"),
+    lang: str = typer.Option("mixed", "--lang", "-l", help="Language: 'mixed' (4 English + 3 Hindi), 'hi' (All Hindi), or 'en' (All English)"),
+    upload: bool = typer.Option(True, "--upload/--no-upload", help="Upload to YouTube"),
+    schedule: bool = typer.Option(True, "--schedule/--no-schedule", help="Stagger across peak hours (USA peak hours for English & India peak hours for Hindi)"),
+):
+    """Fully automated batch creation and scheduled publishing for YouTube Shorts (7 videos/day)."""
     from autotube.scheduler.autopilot import AutoPilot
 
     pilot = AutoPilot(niche=niche, voice=voice, language=lang)

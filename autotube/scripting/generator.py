@@ -83,8 +83,9 @@ MANDATORY STRUCTURAL REQUIREMENTS:
                 )
                 data = json.loads(response.text)
                 script = ShortScript(**data)
-                # Ensure narration is filled if scenes present
-                if script.scenes and not script.narration:
+                # Ensure narration is 100% strictly constructed from individual scene narrations
+                # so speech word counts and scene boundaries align with 100% precision
+                if script.scenes:
                     script.narration = " ".join(s.narration.strip() for s in script.scenes if s.narration.strip())
                 print_success(f"AI Script successfully generated with {model_name}!")
                 return script
@@ -127,8 +128,11 @@ Rules:
                     ),
                 )
                 data = json.loads(response.text)
+                script = ShortScript(**data)
+                if script.scenes:
+                    script.narration = " ".join(s.narration.strip() for s in script.scenes if s.narration.strip())
                 print_success(f"Cartoon Script generated with {model_name}!")
-                return ShortScript(**data)
+                return script
             except Exception as e:
                 print_warning(f"Model {model_name} attempt: {e}")
                 continue
@@ -176,13 +180,85 @@ Rules:
                     ),
                 )
                 data = json.loads(response.text)
+                script = ShortScript(**data)
+                if script.scenes:
+                    script.narration = " ".join(s.narration.strip() for s in script.scenes if s.narration.strip())
                 print_success(f"3D Animation Script generated with {model_name}!")
-                return ShortScript(**data)
+                return script
             except Exception as e:
                 print_warning(f"Model {model_name} attempt: {e}")
                 continue
 
         return self._generate_fallback_short(topic, target_duration)
+
+    def generate_alien_script(
+        self,
+        part: Optional[int] = None,
+        language: str = "en",
+        target_duration: int = 65,
+    ) -> ShortScript:
+        """Generate a viral episode for the Alien Interview book series with proof citations."""
+        from autotube.scripting.alien_tracker import AlienSeriesTracker
+        from autotube.scripting.prompts import ALIEN_INTERVIEW_EN_PROMPT, ALIEN_INTERVIEW_HI_PROMPT
+
+        is_hindi = language.lower() in ("hi", "hindi")
+        tracker = AlienSeriesTracker()
+        chapter = tracker.get_current_chapter(part_override=part)
+
+        part_num = chapter["part_number"]
+        chapter_title = chapter["title_hi"] if is_hindi else chapter["title_en"]
+        book_chapter = chapter["book_chapter"]
+        core_theme = chapter["core_theme"]
+        evidence = chapter["evidence_proof"]
+        quote = chapter["key_quote"]
+
+        if not self.client:
+            return self._generate_fallback_short(f"Alien Interview Part {part_num} {chapter_title}", target_duration)
+
+        sys_prompt = ALIEN_INTERVIEW_HI_PROMPT if is_hindi else ALIEN_INTERVIEW_EN_PROMPT
+        lang_instruction = "in dramatic suspenseful Hindi/Hinglish" if is_hindi else "in gripping investigative English"
+
+        prompt = f"""Write YouTube Short Episode: Part {part_num} of the 'Alien Interview' Book Series ({lang_instruction}).
+Source Material:
+- Book Chapter: {book_chapter}
+- Episode Title: Part {part_num}: {chapter_title}
+- Core Topic: {core_theme}
+- Documented Evidence / Proof to Cite: {evidence}
+- Key Quote from Alien Airl: "{quote}"
+
+CRITICAL REQUIREMENTS:
+1. MANDATORY DURATION: Video MUST be at least 1 minute long (60 to 75 seconds). Scripts shorter than 60 seconds are unacceptable.
+2. TOTAL SPOKEN WORDS: The total spoken narration across all scenes MUST be between 155 and 185 words (do NOT generate less than 155 words).
+3. SCENES: Break the Short into 8 to 11 sequential dynamic scenes (each scene 5 to 7 seconds of spoken dialogue).
+4. Hook & Evidence: Shock hook in scene 1, cite documented proof '{evidence}', and explain Airl's quote '{quote}'.
+5. Cliffhanger Ending (Last Scene): Tell viewers what will be revealed in Part {part_num + 1} and tell them to subscribe right now so they don't miss Part {part_num + 1}!
+6. Visual Requirement: Each scene's 'visual_subject' (in 2-4 tangible English words) and 'visual_description' MUST directly visually depict what is being spoken in that scene's narration! Each scene MUST have a unique visual_subject.
+"""
+
+        for model_name in CANDIDATE_MODELS:
+            try:
+                print_info(f"Generating Alien Interview Part {part_num} ({'Hindi' if is_hindi else 'English'}) using [{model_name}]...")
+                response = self.client.models.generate_content(
+                    model=model_name,
+                    contents=prompt,
+                    config=types.GenerateContentConfig(
+                        system_instruction=sys_prompt,
+                        response_mime_type="application/json",
+                        response_schema=ShortScript,
+                        temperature=0.75,
+                    ),
+                )
+                data = json.loads(response.text)
+                script = ShortScript(**data)
+                if script.scenes:
+                    script.narration = " ".join(s.narration.strip() for s in script.scenes if s.narration.strip())
+                print_success(f"Alien Interview Script (Part {part_num}) successfully generated with {model_name}!")
+                return script
+            except Exception as e:
+                print_warning(f"Model {model_name} attempt: {e}")
+                continue
+
+        return self._generate_fallback_short(f"Alien Interview Part {part_num}", target_duration)
 
     def generate_long_script(
         self, topic: str, num_scenes: int = 6
@@ -224,42 +300,48 @@ Provide title, description, tags, and each scene with spoken narration and visua
     def _generate_fallback_short(
         self, topic: str, target_duration: int
     ) -> ShortScript:
-        """Smart fallback short script when API key is not yet set."""
+        """Smart fallback short script when API key is not yet set - uses topic-specific scenes."""
         clean_topic = topic.strip().capitalize()
-        hook = f"Did you know the darkest secret behind {clean_topic}?"
+        # Extract core subject words for search (remove common filler)
+        topic_words = [w for w in topic.lower().split() if len(w) > 2 and w not in {'the', 'and', 'for', 'how', 'why', 'what', 'when', 'about'}]
+        search_term = ' '.join(topic_words[:3]) if topic_words else clean_topic.lower()
+
+        hook = f"Nobody talks about the hidden truth behind {clean_topic}!"
         scenes = [
             ShortScene(
                 scene_number=1,
-                narration=f"Did you know the darkest secret behind {clean_topic}?",
-                visual_subject=clean_topic.lower(),
-                visual_description=f"Shocking reveal of {clean_topic}",
-                search_keywords=[clean_topic.lower(), "space mystery"],
+                narration=f"Nobody talks about the hidden truth behind {clean_topic}!",
+                visual_subject=search_term,
+                visual_description=f"Dramatic reveal shot related to {clean_topic}",
+                search_keywords=[search_term, topic_words[0] if topic_words else clean_topic.lower()],
             ),
             ShortScene(
                 scene_number=2,
-                narration=f"Most people think they understand how {clean_topic} works, but scientists recently discovered something that completely changes everything.",
-                visual_subject="scientific discovery",
-                visual_description="Scientists examining glowing data in high-tech research facility",
-                search_keywords=["science discovery", "research lab"],
+                narration=f"Most people think they understand {clean_topic}, but what was recently uncovered completely changes everything we thought we knew.",
+                visual_subject=f"{search_term} closeup",
+                visual_description=f"Detailed close-up view related to {clean_topic}",
+                search_keywords=[f"{topic_words[0] if topic_words else clean_topic.lower()} detail",
+                                 topic_words[1] if len(topic_words) > 1 else search_term],
             ),
             ShortScene(
                 scene_number=3,
-                narration="Deep beneath the surface, forces operate in ways never predicted by modern physics.",
-                visual_subject="deep cosmic energy",
-                visual_description="Energy vortex and glowing cosmic particles in motion",
-                search_keywords=["cosmic energy", "space vortex"],
+                narration=f"Hidden deep within {clean_topic} lies a secret that even experts are afraid to talk about publicly.",
+                visual_subject=f"{search_term} mystery",
+                visual_description=f"Mysterious and dramatic perspective of {clean_topic}",
+                search_keywords=[f"{search_term} secret",
+                                 topic_words[-1] if topic_words else clean_topic.lower()],
             ),
             ShortScene(
                 scene_number=4,
-                narration="What do you think about this? Drop your thoughts below and subscribe right now so you don't miss part 2!",
-                visual_subject="earth space",
-                visual_description="Epic cinematic perspective of deep space looking back at planet",
-                search_keywords=["earth space", "galaxy stars"],
+                narration=f"What do you think about this? Drop your thoughts below and subscribe right now because part 2 reveals the most shocking detail!",
+                visual_subject=f"{search_term} dramatic",
+                visual_description=f"Epic dramatic perspective of {clean_topic} for the finale",
+                search_keywords=[search_term, f"{search_term} dramatic"],
             ),
         ]
         narration = " ".join(s.narration for s in scenes)
         return ShortScript(
-            title=f"The Shocking Truth About {clean_topic}! #Shorts",
+            title=f"The Hidden Truth About {clean_topic}! #Shorts",
             topic=topic,
             hook=hook,
             scenes=scenes,
@@ -273,49 +355,50 @@ Provide title, description, tags, and each scene with spoken narration and visua
     def _generate_fallback_long(
         self, topic: str, num_scenes: int
     ) -> LongVideoScript:
-        """Smart fallback multi-scene script when API key is not yet set."""
+        """Smart fallback multi-scene script when API key is not yet set - uses topic-specific scenes."""
         clean_topic = topic.strip().capitalize()
+        topic_lower = topic.strip().lower()
         scenes = [
             Scene(
                 scene_number=1,
                 narration=f"In a world driven by constant change, one phenomenon has quietly rewritten the rules: {clean_topic}.",
-                visual_query=f"{clean_topic} futuristic cinematic dark",
-                visual_description="Cinematic slow panning shot with atmospheric lighting",
+                visual_query=f"{topic_lower} overview introduction",
+                visual_description=f"Cinematic establishing shot related to {clean_topic}",
                 estimated_duration_sec=6.0,
             ),
             Scene(
                 scene_number=2,
-                narration="To truly grasp the scale of what is happening today, we have to look back at where it all began.",
-                visual_query="vintage archives history turning point documentary",
-                visual_description="Historical black and white or archival retro footage",
+                narration=f"To truly grasp the scale of {clean_topic}, we have to look back at where it all began.",
+                visual_query=f"{topic_lower} history origins",
+                visual_description=f"Historical perspective on {clean_topic}",
                 estimated_duration_sec=6.0,
             ),
             Scene(
                 scene_number=3,
-                narration="Breakthrough after breakthrough paved the way, accelerating progress at an unprecedented rate.",
-                visual_query="modern laboratory researchers high tech innovation",
-                visual_description="Dynamic shots of technology and high-speed data flow",
+                narration=f"Breakthrough after breakthrough in {clean_topic} paved the way, accelerating progress at an unprecedented rate.",
+                visual_query=f"{topic_lower} development progress",
+                visual_description=f"Dynamic shots showing the evolution of {clean_topic}",
                 estimated_duration_sec=6.0,
             ),
             Scene(
                 scene_number=4,
-                narration="Yet, with extraordinary power comes unforeseen dilemmas that experts are only beginning to confront.",
-                visual_query="dramatic city skyline time lapse night lights",
-                visual_description="Moody aerial drone footage of glowing metropolis",
+                narration=f"Yet, with extraordinary power comes unforeseen dilemmas in {clean_topic} that experts are only beginning to confront.",
+                visual_query=f"{topic_lower} challenges problems",
+                visual_description=f"Dramatic footage showing challenges related to {clean_topic}",
                 estimated_duration_sec=6.0,
             ),
             Scene(
                 scene_number=5,
-                narration="The choices made over the next five years will determine the trajectory for generations to come.",
-                visual_query="future horizon dawn sunrise landscape inspiring",
-                visual_description="Golden hour landscape with expanding sun rays",
+                narration=f"The choices made in {clean_topic} over the next five years will determine the trajectory for generations to come.",
+                visual_query=f"{topic_lower} future outlook",
+                visual_description=f"Forward-looking perspective on {clean_topic}",
                 estimated_duration_sec=6.0,
             ),
             Scene(
                 scene_number=6,
                 narration="The future is arriving faster than anyone anticipated. If you enjoyed this breakdown, like and subscribe.",
-                visual_query="youtube subscribe button graphic neon glow",
-                visual_description="Clean modern end screen motion graphics",
+                visual_query=f"{topic_lower} conclusion summary",
+                visual_description=f"Concluding montage related to {clean_topic}",
                 estimated_duration_sec=5.0,
             ),
         ]
@@ -323,7 +406,7 @@ Provide title, description, tags, and each scene with spoken narration and visua
             title=f"The Rise and Evolution of {clean_topic} | Full Documentary",
             topic=topic,
             description=f"An in-depth investigative exploration into {clean_topic}.\n\nTimestamps:\n0:00 - Introduction\n1:00 - The Origins\n2:30 - The Turning Point\n4:00 - What Lies Ahead\n\nSubscribe to AutoTube for daily documentaries!",
-            tags=["documentary", clean_topic.lower(), "technology", "future", "history"],
+            tags=["documentary", topic_lower, "facts", "education", "explained"],
             scenes=scenes[:num_scenes],
             total_estimated_duration_sec=len(scenes[:num_scenes]) * 6,
         )

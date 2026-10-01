@@ -55,10 +55,13 @@ class FreeVideoGenerator:
             print_error("gradio_client not installed. Run: pip install gradio_client")
             return False
 
+        import os
+        token = os.getenv("HF_TOKEN")
+
         for space in WAN21_SPACES:
             try:
                 print_info(f"Connecting to free AI video model: {space}...")
-                self._client = Client(space, verbose=False)
+                self._client = Client(space, token=token, verbose=False)
                 self._space_name = space
                 print_success(f"Connected to {space} (Wan2.1 — free AI video)!")
                 return True
@@ -74,7 +77,7 @@ class FreeVideoGenerator:
         prompt: str,
         output_path: Path,
         orientation: str = "portrait",
-        timeout_seconds: int = 600,
+        timeout_seconds: int = 120,
         seed: int = -1,
     ) -> Optional[Path]:
         """Generate a single AI video clip from a text prompt.
@@ -183,13 +186,25 @@ class FreeVideoGenerator:
         if result is None:
             return None
 
-        # Dict with 'video' key (standard Gradio Video component output)
+        # Dict responses
         if isinstance(result, dict):
-            if result.get("__type__") == "update":
-                return None  # This is a Gradio update marker, not actual data
+            # Check nested value if it's an update dict
+            if "value" in result and result["value"] is not None:
+                nested = FreeVideoGenerator._extract_video_path(result["value"])
+                if nested:
+                    return nested
+
+            # Standard video key
             video_val = result.get("video")
             if video_val and isinstance(video_val, str) and not video_val.startswith("{"):
                 return video_val
+
+            # Path key
+            path_val = result.get("path")
+            if path_val and isinstance(path_val, str) and path_val.endswith((".mp4", ".webm", ".mov")):
+                return path_val
+
+            return None
 
         # Direct file path string
         if isinstance(result, str):
@@ -198,7 +213,10 @@ class FreeVideoGenerator:
 
         # Tuple/list containing a video dict
         if isinstance(result, (list, tuple)) and len(result) > 0:
-            return FreeVideoGenerator._extract_video_path(result[0])
+            for item in result:
+                extracted = FreeVideoGenerator._extract_video_path(item)
+                if extracted:
+                    return extracted
 
         return None
 
@@ -256,7 +274,8 @@ class FreeVideoGenerator:
             if video:
                 generated.append(video)
             else:
-                print_warning(f"Scene {idx+1} AI generation failed. Will use stock fallback for this scene.")
+                print_warning(f"Scene {idx+1} AI generation failed/timed out. Space is busy, immediately switching to smart visual fallback.")
+                break
 
         return generated
 

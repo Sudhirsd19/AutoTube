@@ -47,6 +47,7 @@ class ShortsBuilder:
             voice_path=audio_path,
             output_mixed_path=mixed_audio_path,
             include_whoosh=True,
+            topic=output_path.stem,
         )
 
         raw_video_path = temp_dir / f"raw_{output_path.stem}.mp4"
@@ -70,14 +71,20 @@ class ShortsBuilder:
             num_scenes = len(multi_assets)
             rendered_clips: List[Path] = []
 
+            elapsed_rendered = 0.0
             for idx, asset in enumerate(multi_assets):
                 clip_path = temp_dir / f"sync_scene_{output_path.stem}_{idx:02d}.mp4"
                 rendered_clips.append(clip_path)
 
-                if scene_durations and idx < len(scene_durations):
+                if idx == num_scenes - 1:
+                    # Final clip takes all remaining audio duration to guarantee 100% sync
+                    dur_per_scene = max(1.5, duration - elapsed_rendered)
+                elif scene_durations and idx < len(scene_durations):
                     dur_per_scene = float(scene_durations[idx])
                 else:
                     dur_per_scene = duration / num_scenes
+
+                elapsed_rendered += dur_per_scene
 
                 is_video = asset.suffix.lower() in (".mp4", ".mov", ".webm", ".mkv")
 
@@ -100,6 +107,10 @@ class ShortsBuilder:
                         vf,
                         "-r",
                         str(self.fps),
+                        "-fflags",
+                        "+genpts",
+                        "-avoid_negative_ts",
+                        "make_zero",
                         "-video_track_timescale",
                         "30000",
                         "-c:v",
@@ -111,21 +122,34 @@ class ShortsBuilder:
                     ]
                     run_ffmpeg(args, desc=f"Rendering video scene cut {idx+1}/{num_scenes} ({dur_per_scene:.1f}s)")
                 else:
-                    # High-res photo with dynamic Ken Burns camera motion
+                    # High-res photo / AI visual with dynamic continuous motion (0% Freeze Guarantee!)
                     total_frames = max(1, int(dur_per_scene * self.fps))
-                    motion_type = idx % 3
+                    motion_type = idx % 5
                     if motion_type == 0:
-                        zoom_expr = "min(zoom+0.0015,1.28)"
+                        # Smooth continuous Zoom-In (1.0 -> 1.25) across entire scene duration
+                        zoom_expr = f"1.0+0.25*(on/{total_frames})"
                         x_expr = "iw/2-(iw/zoom/2)"
                         y_expr = "ih/2-(ih/zoom/2)"
                     elif motion_type == 1:
-                        zoom_expr = "1.18"
-                        x_expr = f"(iw-iw/zoom)*(on/{total_frames})"
-                        y_expr = "ih/2-(ih/zoom/2)"
-                    else:
-                        zoom_expr = "if(eq(on,1),1.25,max(1.0,zoom-0.0012))"
+                        # Smooth continuous Zoom-Out (1.25 -> 1.05) across entire scene duration
+                        zoom_expr = f"1.25-0.20*(on/{total_frames})"
                         x_expr = "iw/2-(iw/zoom/2)"
                         y_expr = "ih/2-(ih/zoom/2)"
+                    elif motion_type == 2:
+                        # Cinematic Pan Left-to-Right with steady framing
+                        zoom_expr = "1.15"
+                        x_expr = f"(iw-iw/zoom)*(on/{total_frames})"
+                        y_expr = "ih/2-(ih/zoom/2)"
+                    elif motion_type == 3:
+                        # Cinematic Pan Right-to-Left with steady framing
+                        zoom_expr = "1.15"
+                        x_expr = f"(iw-iw/zoom)*(1.0-(on/{total_frames}))"
+                        y_expr = "ih/2-(ih/zoom/2)"
+                    else:
+                        # Cinematic Diagonal Tilt & Zoom
+                        zoom_expr = f"1.06+0.18*(on/{total_frames})"
+                        x_expr = f"(iw-iw/zoom)*(on/{total_frames})"
+                        y_expr = f"(ih-ih/zoom)*(on/{total_frames})"
 
                     vf = (
                         f"scale=1200:2133:force_original_aspect_ratio=increase,"
@@ -154,7 +178,7 @@ class ShortsBuilder:
                         "-an",
                         str(clip_path),
                     ]
-                    run_ffmpeg(args, desc=f"Rendering animated scene {idx+1}/{num_scenes} ({dur_per_scene:.1f}s)")
+                    run_ffmpeg(args, desc=f"Rendering dynamic scene {idx+1}/{num_scenes} ({dur_per_scene:.1f}s)")
 
             # Stitch all scene clips together
             concat_txt = temp_dir / f"concat_{output_path.stem}.txt"
@@ -230,7 +254,7 @@ class ShortsBuilder:
             vf = (
                 f"scale=1200:2133:force_original_aspect_ratio=increase,"
                 f"crop=1200:2133,"
-                f"zoompan=z='min(zoom+0.0008,1.22)':d={total_frames}:x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':s={self.width}x{self.height}:fps={self.fps},"
+                f"zoompan=z='1.0+0.22*(on/{total_frames})':d={total_frames}:x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':s={self.width}x{self.height}:fps={self.fps},"
                 f"setsar=1,"
                 f"format=yuv420p"
             )

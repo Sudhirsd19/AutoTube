@@ -55,10 +55,28 @@ class LongformBuilder:
 
             if visual.suffix.lower() in [".jpg", ".jpeg", ".png", ".webp"]:
                 total_frames = max(1, int(duration_per_scene * self.fps))
+                motion_type = idx % 4
+                if motion_type == 0:
+                    zoom_expr = f"1.0+0.18*(on/{total_frames})"
+                    x_expr = "iw/2-(iw/zoom/2)"
+                    y_expr = "ih/2-(ih/zoom/2)"
+                elif motion_type == 1:
+                    zoom_expr = f"1.18-0.14*(on/{total_frames})"
+                    x_expr = "iw/2-(iw/zoom/2)"
+                    y_expr = "ih/2-(ih/zoom/2)"
+                elif motion_type == 2:
+                    zoom_expr = "1.12"
+                    x_expr = f"(iw-iw/zoom)*(on/{total_frames})"
+                    y_expr = "ih/2-(ih/zoom/2)"
+                else:
+                    zoom_expr = "1.12"
+                    x_expr = f"(iw-iw/zoom)*(1.0-(on/{total_frames}))"
+                    y_expr = "ih/2-(ih/zoom/2)"
+
                 vf = (
                     f"scale=2133:1200:force_original_aspect_ratio=increase,"
                     f"crop=2133:1200,"
-                    f"zoompan=z='min(zoom+0.0006,1.15)':d={total_frames}:x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':s={self.width}x{self.height}:fps={self.fps},"
+                    f"zoompan=z='{zoom_expr}':d={total_frames}:x='{x_expr}':y='{y_expr}':s={self.width}x{self.height}:fps={self.fps},"
                     f"setsar=1,"
                     f"format=yuv420p"
                 )
@@ -83,7 +101,7 @@ class LongformBuilder:
                     str(clip_path),
                 ]
             else:
-                # Video clip: loop or trim to duration_per_scene
+                # Video clip: loop or trim to duration_per_scene with freeze-prevention flags
                 vf = (
                     f"fps={self.fps},"
                     f"scale={self.width}:{self.height}:force_original_aspect_ratio=increase,"
@@ -102,6 +120,10 @@ class LongformBuilder:
                     vf,
                     "-r",
                     str(self.fps),
+                    "-fflags",
+                    "+genpts",
+                    "-avoid_negative_ts",
+                    "make_zero",
                     "-video_track_timescale",
                     "30000",
                     "-c:v",
@@ -112,7 +134,7 @@ class LongformBuilder:
                     str(clip_path),
                 ]
 
-            run_ffmpeg(args, desc=f"Rendering scene {idx+1}/{num_scenes}")
+            run_ffmpeg(args, desc=f"Rendering dynamic scene {idx+1}/{num_scenes}")
 
         # Concatenate scene clips with seamless re-encode
         concat_txt = temp_dir / "concat_list.txt"

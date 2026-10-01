@@ -23,7 +23,7 @@ VIRAL_NICHES = {
 
 
 class TrendFinder:
-    """Discovers viral, high-retention topics and prevents repetition."""
+    """Discovers viral, high-retention topics and prevents repetition with fuzzy deduplication."""
 
     def __init__(self):
         self.cfg = get_config()
@@ -36,6 +36,33 @@ class TrendFinder:
             self.history_file.parent.mkdir(parents=True, exist_ok=True)
             with open(self.history_file, "w", encoding="utf-8") as f:
                 json.dump({"topics": [], "video_ids": []}, f, indent=2)
+
+    def _normalize_topic(self, topic: str) -> str:
+        """Normalize a topic for comparison: lowercase, strip punctuation, remove filler words."""
+        import re
+        clean = re.sub(r'[^a-z0-9\s]', '', topic.lower().strip())
+        filler = {'the', 'a', 'an', 'in', 'of', 'and', 'for', 'is', 'was', 'that', 'this', 'with', 'its', 'it', 'to', 'on', 'at', 'by'}
+        words = [w for w in clean.split() if w not in filler and len(w) > 1]
+        return ' '.join(words)
+
+    def _is_topic_similar(self, new_topic: str, existing_topics: List[str], threshold: float = 0.6) -> bool:
+        """Check if a new topic is too similar to any existing topic using word overlap."""
+        new_normalized = self._normalize_topic(new_topic)
+        new_words = set(new_normalized.split())
+        if not new_words:
+            return False
+
+        for existing in existing_topics:
+            existing_normalized = self._normalize_topic(existing)
+            existing_words = set(existing_normalized.split())
+            if not existing_words:
+                continue
+            # Calculate word overlap ratio (Jaccard-like)
+            overlap = len(new_words & existing_words)
+            max_len = max(len(new_words), len(existing_words))
+            if max_len > 0 and (overlap / max_len) >= threshold:
+                return True
+        return False
 
     def get_history(self) -> List[str]:
         try:
@@ -51,8 +78,9 @@ class TrendFinder:
         try:
             with open(self.history_file, "r", encoding="utf-8") as f:
                 data = json.load(f)
-            # Prevent duplicate topic entries in persistent history
-            if clean_topic not in [t.lower() for t in data.get("topics", [])]:
+            # Prevent duplicate topic entries in persistent history (using fuzzy check)
+            existing = data.get("topics", [])
+            if not self._is_topic_similar(clean_topic, existing, threshold=0.7):
                 data["topics"].append(clean_topic)
             if video_id:
                 data["video_ids"].append(video_id)
@@ -62,8 +90,8 @@ class TrendFinder:
             print_warning(f"Could not update history: {e}")
 
     def get_trending_topics(self, count: int = 5, niche: str = "space") -> List[str]:
-        """Generate unique, non-repeating viral topics using Gemini."""
-        history = [t.lower() for t in self.get_history()] + list(self.session_used_topics)
+        """Generate unique, non-repeating viral topics using Gemini with fuzzy deduplication."""
+        history = self.get_history() + list(self.session_used_topics)
         niche_focus = VIRAL_NICHES.get(niche.lower(), VIRAL_NICHES["space"])
 
         client = None
@@ -74,13 +102,15 @@ class TrendFinder:
                 pass
 
         if client:
-            past_topics_str = ", ".join(f"'{t}'" for t in history[-40:]) if history else "None"
+            # Send more history context (100 instead of 40) to prevent topic recycling
+            past_topics_str = ", ".join(f"'{t}'" for t in history[-100:]) if history else "None"
             prompt = f"""You are a viral YouTube Shorts growth strategist.
 Generate {count} unique, mind-bending, high-CTR video topics in the niche: {niche_focus}.
 Requirements:
 1. Each topic must evoke intense curiosity, fear of missing out, or awe.
 2. Formatted as punchy questions or shocking statements.
-3. DO NOT repeat any of these previously covered topics: [{past_topics_str}].
+3. DO NOT repeat or closely rephrase any of these previously covered topics: [{past_topics_str}].
+4. Each topic must be genuinely different - not just a word swap of a previous topic.
 
 Return ONLY a JSON list of strings, for example:
 ["Why You Would Age Backwards Near a Neutron Star", "The Rogue Planet Wandering Towards Our Solar System"]
@@ -97,7 +127,8 @@ Return ONLY a JSON list of strings, for example:
                     )
                     topics = json.loads(resp.text)
                     if isinstance(topics, list) and len(topics) >= 1:
-                        clean_topics = [t for t in topics if t.strip().lower() not in history][:count]
+                        # Use fuzzy dedup instead of exact string match
+                        clean_topics = [t for t in topics if not self._is_topic_similar(t, history)][:count]
                         if clean_topics:
                             for ct in clean_topics:
                                 self.session_used_topics.add(ct.strip().lower())
@@ -153,7 +184,8 @@ Return ONLY a JSON list of strings, for example:
         }
 
         pool = niche_fallbacks.get(niche.lower(), niche_fallbacks["space"])
-        available = [f for f in pool if f.lower() not in history]
+        # Use fuzzy matching for fallback dedup too
+        available = [f for f in pool if not self._is_topic_similar(f, history)]
         selected = available[:count] if len(available) >= count else pool[:count]
         for s in selected:
             self.session_used_topics.add(s.strip().lower())
