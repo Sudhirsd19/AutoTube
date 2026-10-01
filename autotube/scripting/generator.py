@@ -227,9 +227,9 @@ Source Material:
 - Key Quote from Alien Airl: "{quote}"
 
 CRITICAL REQUIREMENTS:
-1. MANDATORY DURATION: Video MUST be at least 1 minute long (60 to 75 seconds). Scripts shorter than 60 seconds are unacceptable.
-2. TOTAL SPOKEN WORDS: The total spoken narration across all scenes MUST be between 155 and 185 words (do NOT generate less than 155 words).
-3. SCENES: Break the Short into 8 to 11 sequential dynamic scenes (each scene 5 to 7 seconds of spoken dialogue).
+1. MANDATORY DURATION: Video MUST be at least 1 minute long (60 to 75 seconds). Scripts shorter than 60 seconds are strictly unacceptable.
+2. TOTAL SPOKEN WORDS: The total spoken narration across all scenes MUST be between 165 and 195 words (each scene MUST have 18 to 22 spoken words across 9 to 11 scenes). Ensure the total spoken words exceed 160 words so that spoken duration strictly reaches at least 65 seconds.
+3. SCENES: Break the Short into 9 to 11 sequential dynamic scenes (each scene 6 to 7 seconds of spoken dialogue).
 4. Hook & Evidence: Shock hook in scene 1, cite documented proof '{evidence}', and explain Airl's quote '{quote}'.
 5. Cliffhanger Ending (Last Scene): Tell viewers what will be revealed in Part {part_num + 1} and tell them to subscribe right now so they don't miss Part {part_num + 1}!
 6. Visual Requirement: Each scene's 'visual_subject' (in 2-4 tangible English words) and 'visual_description' MUST directly visually depict what is being spoken in that scene's narration! Each scene MUST have a unique visual_subject.
@@ -252,7 +252,11 @@ CRITICAL REQUIREMENTS:
                 script = ShortScript(**data)
                 if script.scenes:
                     script.narration = " ".join(s.narration.strip() for s in script.scenes if s.narration.strip())
-                print_success(f"Alien Interview Script (Part {part_num}) successfully generated with {model_name}!")
+                word_count = len(script.narration.split())
+                if word_count < 145:
+                    print_warning(f"Model {model_name} generated only {word_count} words. Retrying to guarantee >= 60s...")
+                    continue
+                print_success(f"Alien Interview Script (Part {part_num}) successfully generated with {model_name} ({word_count} words)!")
                 return script
             except Exception as e:
                 print_warning(f"Model {model_name} attempt: {e}")
