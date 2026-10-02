@@ -526,13 +526,25 @@ class StockFetcher:
             clean_subj = self.clean_query(subject) or subject
             ai_path = out_dir / f"ai_{sanitize_filename(clean_subj)}_{random.randint(1000, 9999)}.jpg"
 
-            # Enrich AI prompt with concrete scene context
-            ai_prompt = f"{clean_subj}"
-            if narration:
-                clean_narr = self.clean_query(narration)
-                if clean_narr and clean_narr != clean_subj:
-                    ai_prompt += f", {clean_narr[:50]}"
-            ai_prompt += ", cinematic lighting, documentary photography, 8k resolution, dramatic atmosphere, ultra detailed"
+            # Enrich AI prompt with concrete cinematic scene context
+            lower_subj = clean_subj.lower()
+            lower_narr = (narration or "").lower()
+
+            if any(k in lower_subj or k in lower_narr for k in ("nurse", "matilda", "interrogat")):
+                ai_prompt = "cinematic 1947 photograph, young US Army nurse Matilda MacElroy in vintage uniform, wooden interrogation desk, steel microphone, notebook, moody classified Roswell military bunker, dramatic lighting, 8k resolution, photorealistic"
+            elif any(k in lower_subj or k in lower_narr for k in ("alien", "airl", "extraterrestrial", "grey")):
+                ai_prompt = "hyperrealistic cinematic close-up of extraterrestrial grey alien Airl, smooth porcelain skin, piercing black obsidian almond eyes, faint psychic blue glow from temple, dark classified Roswell bunker, dramatic volumetric lighting, 8k photorealistic documentary photography"
+            elif any(k in lower_subj or k in lower_narr for k in ("fbi", "memo", "document", "classified")):
+                ai_prompt = "authentic 1947 classified FBI memo stamped TOP SECRET about recovered flying disc in Roswell New Mexico, vintage typewriter text, old aged yellowed paper, dim bunker desk lamp, 8k resolution"
+            elif any(k in lower_subj or k in lower_narr for k in ("prison", "barrier", "grid", "soul", "matrix")):
+                ai_prompt = "cinematic view of planet Earth surrounded by glowing electronic amnesia grid barrier in deep space, cosmic prison matrix, hyperrealistic 8k, dark dramatic universe"
+            else:
+                ai_prompt = f"{clean_subj}"
+                if narration:
+                    clean_narr = self.clean_query(narration)
+                    if clean_narr and clean_narr != clean_subj:
+                        ai_prompt += f", {clean_narr[:50]}"
+                ai_prompt += ", cinematic lighting, documentary photography, 8k resolution, dramatic atmosphere, ultra detailed"
 
             img = vis_gen.generate_image(
                 prompt=ai_prompt,

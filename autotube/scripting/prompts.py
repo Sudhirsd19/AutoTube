@@ -120,51 +120,67 @@ Return the result as valid JSON matching the ShortScript schema.
 """
 
 
-ALIEN_INTERVIEW_EN_PROMPT = """You are an investigative documentary creator specializing in declassified cosmic mysteries, Roswell 1947, and the book 'Alien Interview' by Lawrence R. Spencer (transcripts of Nurse Matilda O'Donnell MacElroy and the Roswell alien 'Airl' from The Domain).
+ALIEN_INTERVIEW_EN_PROMPT = """You are recreating the classified 1947 Roswell interrogation audio tapes from the book 'Alien Interview' by Lawrence R. Spencer (transcripts between US Army Nurse Matilda O'Donnell MacElroy and the Roswell alien 'Airl' from The Domain).
 
-Your goal is to write a suspenseful, gripping 60-75 second vertical YouTube Short episode that presents the transcripts and evidence with chilling authenticity.
+Your goal is to write an authentic, chilling, high-suspense 65-75 second YouTube Short formatted as a REAL INTERVIEW between Nurse Matilda and Alien Airl.
 
-CRITICAL RULES:
-1. MANDATORY MINIMUM DURATION (AT LEAST 1 MINUTE / 60 SECONDS):
-   - The total spoken narration across all scenes MUST be between 155 and 185 words (lasting 60 to 75 seconds).
-   - Scripts shorter than 150 words are strictly forbidden.
-2. Ground every video in documented proof: Mention declassified FBI/USAF files, official Roswell 1947 news releases, or Matilda MacElroy's signed transcripts.
-3. Quote Airl's words directly: What the alien telepathically revealed about Earth, consciousness, and the universe.
-4. Fast Pacing & Precise Spoken Voice Visual Synchronization (8 to 11 sequential scenes):
-   - Exactly 8 to 11 sequential scenes in the 'scenes' array (each scene represents 5 to 7 seconds of speech).
-   - For every scene:
-     * 'scene_number': 1, 2, 3, 4, 5, 6, 7, 8...
-     * 'narration': 1 punchy, suspenseful sentence spoken during this exact scene (14 to 20 words).
-     * 'visual_subject': 2-4 tangible English words describing the exact physical subject appearing on screen during this exact sentence (e.g., 'vintage newspaper 1947', 'army officer desk', 'secret interrogation room', 'telepathic mind connection', 'classified documents stamped', 'alien silhouette', 'human soul glowing', 'space galaxy stars').
-     * 'visual_description': A vivid 1-sentence prompt describing the scene action and cinematic lighting.
-     * 'search_keywords': 2-3 specific search terms matching this scene.
-5. Ending Cliffhanger CTA: Always end with a cliffhanger teasing the next chapter of the Alien Interview series (e.g., 'In Part X, Airl reveals why humans lose all memory at birth. Subscribe right now so you don't miss the truth!').
-6. Pinned Comment: A provocative question asking viewers if they believe Earth is a prison planet.
+CRITICAL DIALOGUE & SPEAKER RULES:
+1. DUAL SPEAKERS (REAL INTERVIEW):
+   - The video is NOT a monologue. It is a direct back-and-forth dramatic interrogation dialogue!
+   - Every scene MUST specify 'speaker': either 'nurse' (Nurse Matilda MacElroy) or 'alien' (Alien Airl).
+   - Alternating dialogue flow:
+     * Nurse asks intense, investigative questions into her 1947 microphone or notes what she hears in her mind.
+     * Alien Airl transmits telepathic cosmic answers with eerie, god-like calm directly into her consciousness.
+2. MANDATORY DURATION & WORD COUNT:
+   - Total spoken dialogue across all scenes MUST be between 165 and 195 words (lasting 65 to 75 seconds).
+   - Break into 9 to 11 sequential dialogue scenes (each scene 6 to 7 seconds of spoken dialogue).
+3. Ground in Documented Proof:
+   - Nurse quotes official Roswell 1947 reports, declassified memos, or the physical evidence.
+   - Alien quotes the core truth and Airl's exact quote from the book.
+4. CINEMATIC VISUAL SYNCHRONIZATION:
+   - When 'speaker' is 'nurse':
+     * 'visual_subject': 'nurse matilda interview' or '1947 military interrogation desk'
+     * 'visual_description': 'Cinematic 1947 photograph, young US Army nurse Matilda MacElroy in vintage uniform at wooden interrogation desk with steel microphone, dramatic moody military bunker lighting, 8k vertical'
+   - When 'speaker' is 'alien':
+     * 'visual_subject': 'alien airl close up' or 'grey alien telepathic'
+     * 'visual_description': 'Hyperrealistic cinematic close-up of grey extraterrestrial Airl, smooth porcelain synthetic skin, piercing black obsidian eyes, faint psychic blue glow from temple, dark classified chamber, 8k vertical'
+   - When discussing documents or cosmic concepts:
+     * 'visual_subject': 'classified fbi memo 1947' or 'earth cosmic prison barrier'
+     * 'visual_description': 'Authentic declassified FBI memo stamped TOP SECRET / planet Earth surrounded by electric amnesia force field in deep space'
+5. Ending Cliffhanger: The final scene must tease what Airl reveals in the next episode and demand viewers subscribe so they don't miss the next classified tape.
 
 Return the result as valid JSON matching the ShortScript schema.
 """
 
 
-ALIEN_INTERVIEW_HI_PROMPT = """आप एक खोजी यूट्यूबर और डाक्यूमेंट्री निर्माता हैं जो 1947 के रोसवेल यूएफओ क्रैश और 'Alien Interview' किताब (नर्स मटिल्डा मैकएलरॉय और एलियन 'एयरल' के बीच हुई सीक्रेट टेलीपैथिक बातचीत) पर भारत की सबसे वायरल और रहस्यमयी शॉर्ट्स सीरीज बनाते हैं।
+ALIEN_INTERVIEW_HI_PROMPT = """आप 1947 के रोसवेल यूएफओ हादसे के सबसे सीक्रेट डीक्लासिफाइड ऑडियो टेप्स को रीक्रिएट कर रहे हैं जो 'Alien Interview' किताब (यूएस आर्मी नर्स मटिल्डा मैकएलरॉय और एलियन 'एयरल' के बीच हुई सीधी टेलीपैथिक पूछताछ) पर आधारित हैं।
 
-आपका लक्ष्य 60-75 सेकंड (न्यूनतम 1 मिनट) की एक बेहद सस्पेंसफुल, रोंगटे खड़े कर देने वाली स्क्रिप्ट लिखना है जो दर्शकों को सबूतों और दस्तावेजों के साथ सच दिखाए।
+आपका लक्ष्य 65-75 सेकंड का एक बेहद सस्पेंसफुल, रोंगटे खड़े कर देने वाला REAL INTERVIEW शॉर्ट बनाना है जिसमें नर्स मटिल्डा और एलियन एयरल के बीच सीधी बातचीत सुनाई दे।
 
-अनिवार्य नियम:
-1. अनिवार्य न्यूनतम लंबाई (कम से कम 1 मिनट / 60 सेकंड):
-   - सभी दृश्यों को मिलाकर कुल Narration 155 से 185 शब्दों के बीच होना अनिवार्य है (60 से 75 सेकंड की अवधि)।
-   - 150 शब्दों से कम की स्क्रिप्ट बिल्कुल स्वीकार नहीं है।
-2. पक्के सबूतों का ज़िक्र: 1947 के डीक्लासिफाइड FBI मेमो, अमेरिकी सेना के बयानों और मटिल्डा मैकएलरॉय के हस्ताक्षरित बयानों का संदर्भ दें।
-3. एलियन 'एयरल' के टेलीपैथिक शब्दों को सीधे कोट करें: जैसे आत्मा क्या है (IS-BE), पृथ्वी एक ब्रह्मांडीय जेल (Prison Planet) क्यों है, और इंसानों की याददाश्त क्यों मिटाई जाती है।
-4. आवाज़ और स्क्रीन का 100% सटीक मिलान (8 से 11 दृश्य - हर 5 से 7 सेकंड में नया विजुअल):
-   - 8 से 11 दृश्य (Scenes) 'scenes' array में।
-   - प्रत्येक Scene के लिए:
-     * 'scene_number': 1, 2, 3, 4, 5, 6, 7, 8...
-     * 'narration': 1 छोटा और सस्पेंसफुल हिंदी वाक्य (14 से 20 शब्द) जो ठीक इस 5-7 सेकंड में बोला जाएगा।
-     * 'visual_subject': स्क्रीन पर दिखने वाला मुख्य विषय केवल 2-4 सीधे अंग्रेजी शब्दों में जो ठीक उस वाक्य से मेल खाता हो (जैसे 'vintage newspaper 1947', 'army officer desk', 'secret interrogation room', 'telepathic mind connection', 'classified documents stamped', 'alien silhouette', 'immortal soul glowing', 'cosmic galaxy stars')।
-     * 'visual_description': कैमरा मूवमेंट और दृश्य का 1 वाक्य में विवरण।
-     * 'search_keywords': 2-3 सीधे अंग्रेजी कीवर्ड्स।
-5. Cliffhanger CTA: आख़िरी सीन में अगले पार्ट का सस्पेंस छोड़ें (जैसे 'पार्ट X में एयरल ने बताया कि मौत के बाद सफेद रोशनी की तरफ क्यों नहीं जाना चाहिए! तुरंत सब्सक्राइब करें!')।
-6. Pinned Comment: दर्शकों से पूछें कि क्या उन्हें लगता है कि पृथ्वी वाकई एक जेल है?
+अनिवार्य संवाद और स्पीकर नियम:
+1. दो आवाजों का असली इंटरव्यू (REAL DIALOGUE INTERVIEW):
+   - यह कोई अकेला मोनोलॉग नहीं है। यह नर्स और एलियन के बीच सीधा नाटकीय सवाल-जवाब है!
+   - प्रत्येक Scene में 'speaker' तय करना अनिवार्य है: या तो 'nurse' (नर्स मटिल्डा) या 'alien' (एलियन एयरल)।
+   - बातचीत का क्रम:
+     * नर्स मटिल्डा अपने 1947 के माइक्रोफोन में सवाल पूछती है या एयरल से सीधा सवाल करती है।
+     * एलियन एयरल उसके दिमाग में सीधे टेलीपैथिक तरीके से शांत और रोंगटे खड़े कर देने वाली ब्रह्मांडीय सच्चाई बयां करती है।
+2. अनिवार्य अवधि और शब्द सीमा:
+   - सभी दृश्यों को मिलाकर कुल Narration 165 से 195 शब्दों के बीच होना अनिवार्य है (65 से 75 सेकंड की अवधि)।
+   - 9 से 11 दृश्यों (Scenes) में बांटें (प्रत्येक दृश्य 6 से 7 सेकंड का संवाद)।
+3. पक्के सबूत और कोट:
+   - नर्स 1947 के सरकारी बयानों और साक्ष्यों का ज़िक्र करे।
+   - एयरल अपनी किताब के मुख्य कोट और आत्मा (IS-BE), पृथ्वी एक जेल है (Prison Planet), आदि का खुलासा करे।
+4. 100% सिनेमैटिक विजुअल्स (CINEMATIC VISUALS):
+   - जब 'speaker' = 'nurse':
+     * 'visual_subject': 'nurse matilda interview' या 'military interrogation room 1947'
+     * 'visual_description': 'Cinematic 1947 photograph, young US Army nurse Matilda in vintage uniform at wooden interrogation desk with steel microphone, dramatic moody military bunker lighting, 8k vertical'
+   - जब 'speaker' = 'alien':
+     * 'visual_subject': 'alien airl close up' या 'grey alien telepathic'
+     * 'visual_description': 'Hyperrealistic cinematic close-up of grey extraterrestrial Airl, smooth porcelain synthetic skin, piercing black obsidian eyes, faint psychic blue glow, dark classified chamber, 8k vertical'
+   - जब सबूत या अंतरिक्ष की बात हो:
+     * 'visual_subject': 'classified fbi memo 1947' या 'earth cosmic prison barrier'
+     * 'visual_description': 'Authentic declassified FBI memo stamped TOP SECRET / planet Earth surrounded by electric amnesia force field in deep space'
+5. Cliffhanger CTA: आख़िरी सीन में अगले एपिसोड का सस्पेंस छोड़ें और दर्शकों से कहें कि अगला टेप सुनने के लिए अभी सब्सक्राइब करें।
 
 Return the result as valid JSON matching the ShortScript schema.
 """

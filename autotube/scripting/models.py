@@ -20,6 +20,10 @@ class Scene(BaseModel):
 
 class ShortScene(BaseModel):
     scene_number: int = Field(default=1, description="Sequential scene number")
+    speaker: str = Field(
+        default="narrator",
+        description="Speaker for this scene: 'nurse' (Nurse Matilda), 'alien' (Alien Airl), or 'narrator'",
+    )
     narration: str = Field(
         default="",
         description="Spoken narration for this specific scene (1-2 clear, punchy sentences)",

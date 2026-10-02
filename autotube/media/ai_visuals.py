@@ -99,8 +99,9 @@ class VisualGenerator:
         gen_h = 1344 if is_vertical else 768
 
         endpoints = [
-            f"https://image.pollinations.ai/prompt/{encoded}?model=sana&width={gen_w}&height={gen_h}&nologo=true&seed={seed}",
             f"https://image.pollinations.ai/prompt/{encoded}?width={gen_w}&height={gen_h}&nologo=true&seed={seed}",
+            f"https://image.pollinations.ai/prompt/{encoded}?model=flux&width={gen_w}&height={gen_h}&nologo=true&seed={seed}",
+            f"https://image.pollinations.ai/prompt/{encoded}?model=sana&width={gen_w}&height={gen_h}&nologo=true&seed={seed}",
         ]
 
         headers = {

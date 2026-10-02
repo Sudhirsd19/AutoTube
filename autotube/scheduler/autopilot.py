@@ -277,19 +277,34 @@ class AutoPilot:
 
                 # Step B: Synthesize Voiceover & Extract Timings
                 audio_path = self.cfg.paths.temp_dir / f"{slug}_voice.mp3"
-                tts_res = self.tts.synthesize(
-                    text=script.narration,
-                    output_audio_path=audio_path,
-                    voice=item_voice,
-                )
-
-                # Calculate exact spoken duration for each scene!
-                from autotube.voice.tts_engine import compute_scene_durations
-                scene_durations = compute_scene_durations(
-                    scenes=script.scenes,
-                    words=tts_res.words,
-                    total_duration=tts_res.duration_seconds,
-                )
+                if item_niche == "alien":
+                    print_info(f"Synthesizing Real Dialogue (Nurse Matilda + Alien Airl)...")
+                    tts_res = self.tts.synthesize_dialogue(
+                        scenes=script.scenes,
+                        output_audio_path=audio_path,
+                        language=item_lang,
+                    )
+                    if tts_res.scene_durations and len(tts_res.scene_durations) == len(script.scenes):
+                        scene_durations = tts_res.scene_durations
+                    else:
+                        from autotube.voice.tts_engine import compute_scene_durations
+                        scene_durations = compute_scene_durations(
+                            scenes=script.scenes,
+                            words=tts_res.words,
+                            total_duration=tts_res.duration_seconds,
+                        )
+                else:
+                    tts_res = self.tts.synthesize(
+                        text=script.narration,
+                        output_audio_path=audio_path,
+                        voice=item_voice,
+                    )
+                    from autotube.voice.tts_engine import compute_scene_durations
+                    scene_durations = compute_scene_durations(
+                        scenes=script.scenes,
+                        words=tts_res.words,
+                        total_duration=tts_res.duration_seconds,
+                    )
 
                 # Step C: 3-Tier Visual Waterfall (Hugging Face -> 8 AM Gemini cutoff -> Verified Stock/AI)
                 from autotube.media.visual_waterfall import acquire_scene_visuals_waterfall

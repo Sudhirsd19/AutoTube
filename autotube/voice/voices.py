@@ -101,6 +101,34 @@ VOICE_CATALOG: Dict[str, VoiceProfile] = {
         language="en-GB",
         description="Classic British documentary female voice",
     ),
+    "rachel": VoiceProfile(
+        id="en-US-JennyNeural",
+        name="Rachel",
+        gender="Female",
+        language="en-US",
+        description="Empathetic, clear US female voice (Nurse Matilda MacElroy)",
+    ),
+    "jenny": VoiceProfile(
+        id="en-US-JennyNeural",
+        name="Jenny",
+        gender="Female",
+        language="en-US",
+        description="Empathetic, clear US female voice",
+    ),
+    "daniel": VoiceProfile(
+        id="en-US-ChristopherNeural",
+        name="Daniel",
+        gender="Male",
+        language="en-US",
+        description="Deep, resonant authoritative voice (Alien Airl)",
+    ),
+    "antoni": VoiceProfile(
+        id="en-US-GuyNeural",
+        name="Antoni",
+        gender="Male",
+        language="en-US",
+        description="Conversational US male voice",
+    ),
 }
 
 

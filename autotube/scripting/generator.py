@@ -219,6 +219,8 @@ Rules:
         lang_instruction = "in dramatic suspenseful Hindi/Hinglish" if is_hindi else "in gripping investigative English"
 
         prompt = f"""Write YouTube Short Episode: Part {part_num} of the 'Alien Interview' Book Series ({lang_instruction}).
+Format: REAL 1947 INTERROGATION AUDIO TAPE between US Army Nurse Matilda MacElroy ('nurse') and Roswell Alien Airl ('alien').
+
 Source Material:
 - Book Chapter: {book_chapter}
 - Episode Title: Part {part_num}: {chapter_title}
@@ -227,12 +229,18 @@ Source Material:
 - Key Quote from Alien Airl: "{quote}"
 
 CRITICAL REQUIREMENTS:
-1. MANDATORY DURATION: Video MUST be at least 1 minute long (60 to 75 seconds). Scripts shorter than 60 seconds are strictly unacceptable.
-2. TOTAL SPOKEN WORDS: The total spoken narration across all scenes MUST be between 165 and 195 words (each scene MUST have 18 to 22 spoken words across 9 to 11 scenes). Ensure the total spoken words exceed 160 words so that spoken duration strictly reaches at least 65 seconds.
-3. SCENES: Break the Short into 9 to 11 sequential dynamic scenes (each scene 6 to 7 seconds of spoken dialogue).
-4. Hook & Evidence: Shock hook in scene 1, cite documented proof '{evidence}', and explain Airl's quote '{quote}'.
-5. Cliffhanger Ending (Last Scene): Tell viewers what will be revealed in Part {part_num + 1} and tell them to subscribe right now so they don't miss Part {part_num + 1}!
-6. Visual Requirement: Each scene's 'visual_subject' (in 2-4 tangible English words) and 'visual_description' MUST directly visually depict what is being spoken in that scene's narration! Each scene MUST have a unique visual_subject.
+1. TWO CHARACTERS DIALOGUE (REAL INTERVIEW):
+   - Every single scene in 'scenes' MUST specify 'speaker': either 'nurse' or 'alien'!
+   - Alternate between Nurse Matilda (asking intense questions into her 1947 microphone / writing in her notebook) and Alien Airl (transmitting eerie, mind-shattering telepathic answers).
+   - This must feel like an authentic leaked military interrogation tape session!
+2. MANDATORY DURATION: Video MUST be at least 1 minute long (65 to 75 seconds). Scripts shorter than 60 seconds are strictly unacceptable.
+3. TOTAL SPOKEN WORDS: The total spoken dialogue across all scenes MUST be between 165 and 195 words (each scene MUST have 16 to 22 spoken words across 9 to 11 scenes). Ensure the total spoken words exceed 160 words so that spoken duration strictly reaches at least 65 seconds.
+4. SCENES: Break the Short into 9 to 11 sequential dialogue scenes (each scene 6 to 7 seconds of spoken dialogue).
+5. Hook & Evidence: Shock hook in scene 1 (Nurse opening the tape / setting date July 1947), cite documented proof '{evidence}', and explain Airl's quote '{quote}'.
+6. Cliffhanger Ending (Last Scene): Tease what will be revealed in Part {part_num + 1} and tell viewers to subscribe right now so they don't miss Part {part_num + 1}!
+7. Visual Requirement:
+   - When speaker is 'nurse': 'visual_subject' MUST be 'nurse matilda interview' or '1947 military interrogation desk', describing the young US Army nurse in 1940s uniform at the wooden desk with vintage microphone in moody bunker lighting.
+   - When speaker is 'alien': 'visual_subject' MUST be 'alien airl close up' or 'grey alien telepathic', describing the hyperrealistic extraterrestrial Airl with deep obsidian almond eyes and faint psychic blue glow.
 """
 
         for model_name in CANDIDATE_MODELS:

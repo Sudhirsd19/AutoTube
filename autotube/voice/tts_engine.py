@@ -42,6 +42,7 @@ class TTSResult(BaseModel):
     subtitles_ass_path: Optional[Path] = None
     words: List[TimedWord]
     duration_seconds: float
+    scene_durations: Optional[List[float]] = None
 
 
 def compute_scene_durations(
@@ -514,4 +515,227 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 
         with open(ass_path, "w", encoding="utf-8") as f:
             f.write(header + "\n".join(events))
+
+    def synthesize_dialogue(
+        self,
+        scenes: List[Any],
+        output_audio_path: Path,
+        language: str = "en",
+    ) -> TTSResult:
+        """Synthesize real two-character dialogue interview (Nurse Matilda + Alien Airl)."""
+        import subprocess
+        import imageio_ffmpeg
+
+        ffmpeg_exe = imageio_ffmpeg.get_ffmpeg_exe()
+        output_audio_path.parent.mkdir(parents=True, exist_ok=True)
+        is_hindi = language.lower() in ("hi", "hindi")
+
+        # Map speakers to character voices
+        if is_hindi:
+            voice_map = {
+                "nurse": "swara",   # Female Nurse Matilda in Hindi
+                "alien": "madhur",  # Alien Airl in Hindi (with telepathic resonance)
+                "narrator": "madhur",
+            }
+        else:
+            voice_map = {
+                "nurse": "rachel",  # Female Nurse Matilda in English
+                "alien": "daniel",  # Alien Airl in English (with telepathic resonance)
+                "narrator": "adam",
+            }
+
+        scene_audio_files = []
+        scene_durations: List[float] = []
+        all_words: List[TimedWord] = []
+        scene_events_data = []
+        current_time_offset = 0.0
+
+        print_info(f"🎙️ Synthesizing Real Dialogue Interview ({len(scenes)} scenes, {'Hindi' if is_hindi else 'English'})...")
+
+        for idx, scene in enumerate(scenes):
+            speaker_raw = getattr(scene, "speaker", "").lower().strip()
+            if "nurse" in speaker_raw or "matilda" in speaker_raw:
+                role = "nurse"
+            elif "alien" in speaker_raw or "airl" in speaker_raw:
+                role = "alien"
+            elif idx % 2 == 0:
+                role = "nurse"
+            else:
+                role = "alien"
+
+            chosen_voice = voice_map.get(role, voice_map["alien" if idx % 2 != 0 else "nurse"])
+            scene_text = getattr(scene, "narration", "").strip()
+            if not scene_text:
+                continue
+
+            scene_raw_path = output_audio_path.parent / f"dialogue_scene_{idx:02d}_{role}_raw.mp3"
+            scene_final_path = output_audio_path.parent / f"dialogue_scene_{idx:02d}_{role}.mp3"
+
+            print_info(f"  Scene {idx+1}/{len(scenes)} [{role.upper()}]: Speaking with voice '{chosen_voice}'...")
+            res = self.synthesize(
+                text=scene_text,
+                output_audio_path=scene_raw_path,
+                voice=chosen_voice,
+            )
+
+            # If Alien, apply telepathic mind-resonance filter
+            if role == "alien":
+                filter_str = "aecho=0.8:0.88:60:0.35,equalizer=f=3000:t=q:w=1:g=2"
+                cmd = [
+                    ffmpeg_exe, "-y", "-i", str(scene_raw_path),
+                    "-af", filter_str,
+                    str(scene_final_path),
+                ]
+                try:
+                    subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True)
+                except Exception:
+                    scene_final_path = scene_raw_path
+            else:
+                if scene_final_path.exists():
+                    scene_final_path.unlink()
+                scene_raw_path.rename(scene_final_path)
+
+            actual_duration = get_media_duration(scene_final_path)
+            scene_durations.append(round(actual_duration, 2))
+
+            # Adjust word timestamps to global timeline
+            duration_ratio = (actual_duration / res.duration_seconds) if res.duration_seconds > 0 else 1.0
+            scene_timed_words = []
+            for w in res.words:
+                w_start = current_time_offset + (w.start * duration_ratio)
+                w_end = current_time_offset + (w.end * duration_ratio)
+                tw = TimedWord(
+                    word=w.word,
+                    start=round(w_start, 3),
+                    end=round(w_end, 3),
+                    duration=round(w_end - w_start, 3),
+                )
+                all_words.append(tw)
+                scene_timed_words.append(tw)
+
+            scene_events_data.append((role, scene_timed_words))
+            scene_audio_files.append(scene_final_path)
+            current_time_offset += actual_duration
+
+        # Concatenate scene audio files into single final audio
+        concat_list_file = output_audio_path.parent / f"concat_{output_audio_path.stem}.txt"
+        with open(concat_list_file, "w", encoding="utf-8") as f:
+            for sf in scene_audio_files:
+                f.write(f"file '{sf.resolve().as_posix()}'\n")
+
+        cmd_concat = [
+            ffmpeg_exe, "-y", "-f", "concat", "-safe", "0",
+            "-i", str(concat_list_file),
+            "-c:a", "libmp3lame", "-q:a", "2",
+            str(output_audio_path),
+        ]
+        subprocess.run(cmd_concat, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True)
+
+        final_duration = get_media_duration(output_audio_path)
+
+        # Export SRT and Dialogue-styled Karaoke ASS
+        srt_path = output_audio_path.with_suffix(".srt")
+        ass_path = output_audio_path.with_suffix(".ass")
+        self._export_srt(all_words, srt_path)
+        self._export_dialogue_karaoke_ass(scene_events_data, ass_path)
+
+        # Clean up temporary scene audio slices
+        for sf in scene_audio_files:
+            try:
+                sf.unlink(missing_ok=True)
+            except Exception:
+                pass
+        concat_list_file.unlink(missing_ok=True)
+
+        print_success(
+            f"🎬 Real Dual-Voice Interview Audio Generated: {output_audio_path.name} ({final_duration:.2f}s, {len(all_words)} words across {len(scenes)} scenes)"
+        )
+        return TTSResult(
+            audio_path=output_audio_path,
+            subtitles_srt_path=srt_path,
+            subtitles_ass_path=ass_path,
+            words=all_words,
+            duration_seconds=final_duration,
+            scene_durations=scene_durations,
+        )
+
+    def _export_dialogue_karaoke_ass(
+        self,
+        scene_events_data: List[Any],
+        ass_path: Path,
+        words_per_line: int = 3,
+    ) -> None:
+        """Export Advanced SubStation Alpha (.ass) with character-specific styles:
+        - Nurse: Crisp White with bright Gold/Cyan highlight
+        - Alien: Eerie Neon Green with Cyan highlight
+        """
+        def format_ass_time(seconds: float) -> str:
+            hours = int(seconds // 3600)
+            minutes = int((seconds % 3600) // 60)
+            secs = int(seconds % 60)
+            centis = int(round((seconds - int(seconds)) * 100))
+            if centis >= 100:
+                centis = 99
+            return f"{hours}:{minutes:02d}:{secs:02d}.{centis:02d}"
+
+        # Check for Devanagari characters
+        has_devanagari = False
+        for _, words in scene_events_data:
+            if any(any("\u0900" <= c <= "\u097f" for c in w.word) for w in words):
+                has_devanagari = True
+                break
+
+        font_name = "Noto Sans Devanagari" if has_devanagari else "Arial"
+
+        header = f"""[Script Info]
+Title: AutoTube Alien Interview Animated Subtitles
+ScriptType: v4.00+
+WrapStyle: 0
+ScaledBorderAndShadow: yes
+YCbCr Matrix: None
+PlayResX: 1080
+PlayResY: 1920
+
+[V4+ Styles]
+Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
+Style: Default,{font_name},68,&H00FFFFFF,&H0000FFFF,&H00000000,&H80000000,-1,0,0,0,100,100,0,0,1,6,3,2,60,60,780,1
+Style: Nurse,{font_name},68,&H00FFFFFF,&H00FFFF00,&H00000000,&H80000000,-1,0,0,0,100,100,0,0,1,6,3,2,60,60,780,1
+Style: Alien,{font_name},68,&H0039FF14,&H0000FFFF,&H00000000,&H80000000,-1,0,0,0,100,100,0,0,1,6,3,2,60,60,780,1
+
+[Events]
+Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
+"""
+        events = []
+        for role, words in scene_events_data:
+            if not words:
+                continue
+            style_name = "Alien" if role == "alien" else "Nurse"
+            prefix = "[AIRL]: " if role == "alien" else "[MATILDA]: "
+
+            for i in range(0, len(words), words_per_line):
+                group = words[i : i + words_per_line]
+                line_start = group[0].start
+                line_end = group[-1].end + 0.1
+
+                karaoke_text = ""
+                if i == 0:
+                    karaoke_text += f"{prefix}"
+
+                for w in group:
+                    duration_cs = max(1, int(round(w.duration * 100)))
+                    clean_word = (
+                        w.word.replace("{", "")
+                        .replace("}", "")
+                        .strip()
+                        .upper()
+                    )
+                    karaoke_text += f"{{\\k{duration_cs}}}{clean_word} "
+
+                events.append(
+                    f"Dialogue: 0,{format_ass_time(line_start)},{format_ass_time(line_end)},{style_name},,0,0,0,,{karaoke_text.strip()}"
+                )
+
+        with open(ass_path, "w", encoding="utf-8") as f:
+            f.write(header + "\n".join(events))
+
 

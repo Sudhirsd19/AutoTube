@@ -655,7 +655,7 @@ def alien(
     print_banner()
     cfg = get_config()
     is_hindi = lang.lower() in ("hi", "hindi")
-    selected_voice = voice or ("thanos_hi" if is_hindi else "thanos_en")
+    selected_voice = voice or ("madhur" if is_hindi else "adam")
     total_steps = 5 if upload else 4
 
     from autotube.scripting.alien_tracker import AlienSeriesTracker
@@ -680,22 +680,25 @@ def alien(
         title=f"🛸 Alien Interview: {script.title}",
     )
 
-    # 2. Voiceover Synthesis
-    print_step(2, total_steps, f"Synthesizing Expressive AI Voice ({selected_voice})")
+    # 2. Voiceover Synthesis (Real Dialogue: Matilda [Nurse] + Airl [Alien])
+    print_step(2, total_steps, "Synthesizing Real Dialogue Interview (Nurse Matilda + Alien Airl)")
     tts = TTSEngine(default_voice=selected_voice)
     audio_path = cfg.paths.temp_dir / f"{slug}_voice.mp3"
-    tts_result = tts.synthesize(
-        text=script.narration,
+    tts_result = tts.synthesize_dialogue(
+        scenes=script.scenes,
         output_audio_path=audio_path,
-        voice=selected_voice,
+        language=lang,
     )
 
-    from autotube.voice.tts_engine import compute_scene_durations
-    scene_durations = compute_scene_durations(
-        scenes=script.scenes,
-        words=tts_result.words,
-        total_duration=tts_result.duration_seconds,
-    )
+    if tts_result.scene_durations and len(tts_result.scene_durations) == len(script.scenes):
+        scene_durations = tts_result.scene_durations
+    else:
+        from autotube.voice.tts_engine import compute_scene_durations
+        scene_durations = compute_scene_durations(
+            scenes=script.scenes,
+            words=tts_result.words,
+            total_duration=tts_result.duration_seconds,
+        )
 
     # 3. 3-Tier Visual Waterfall
     print_step(3, total_steps, "Acquiring Visuals (Hugging Face -> 8 AM Gemini Cutoff -> Verified Stock/AI)")
