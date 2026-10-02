@@ -1,0 +1,781 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AutoTube Command Center | YouTube Automation</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              red: '#FF0033',
+              cyan: '#00F0FF',
+              dark: '#0B0F19',
+              card: '#131B2E',
+              border: '#1F2B48',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body { background-color: #070A12; color: #E2E8F0; font-family: system-ui, -apple-system, sans-serif; }
+    .glass { background: rgba(19, 27, 46, 0.75); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.08); }
+    .glass-card { background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.06); }
+    .neon-glow-cyan { box-shadow: 0 0 20px rgba(0, 240, 255, 0.25); }
+    .neon-glow-red { box-shadow: 0 0 20px rgba(255, 0, 51, 0.25); }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #070A12; }
+    ::-webkit-scrollbar-thumb { background: #1E293B; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #00F0FF; }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+  <!-- TOP NAVIGATION HEADER -->
+  <header class="glass sticky top-0 z-50 border-b border-brand-border">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-4">
+      <div class="flex items-center space-x-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-red to-brand-cyan flex items-center justify-center font-black text-xl text-white shadow-lg">
+          <i class="fa-solid fa-play"></i>
+        </div>
+        <div>
+          <div class="flex items-center space-x-2">
+            <h1 class="text-xl font-black tracking-wider text-white">AUTOTUBE <span class="text-brand-cyan text-sm font-semibold px-2 py-0.5 rounded bg-cyan-950/60 border border-cyan-500/30">PRO</span></h1>
+            <span id="system-badge" class="px-2 py-0.5 text-xs font-semibold rounded-full bg-emerald-950 text-emerald-400 border border-emerald-500/30 flex items-center gap-1.5">
+              <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> Online
+            </span>
+          </div>
+          <p class="text-xs text-slate-400" id="channel-name-sub">CosmoChronicle Automation Hub</p>
+        </div>
+      </div>
+
+      <!-- CLOCKS & QUOTA STATS -->
+      <div class="flex items-center gap-4 text-xs font-mono">
+        <div class="hidden md:flex flex-col text-right">
+          <span class="text-slate-400">🇮🇳 IST: <span id="clock-ist" class="text-slate-200 font-bold">--:--</span></span>
+          <span class="text-slate-400">🇺🇸 EDT: <span id="clock-edt" class="text-cyan-300 font-bold">--:--</span></span>
+        </div>
+        <div class="glass px-3 py-1.5 rounded-lg border border-brand-border flex items-center gap-2">
+          <i class="fa-solid fa-cloud-arrow-up text-brand-red"></i>
+          <div>
+            <div class="text-[10px] text-slate-400 uppercase tracking-wider">Today's Uploads</div>
+            <div class="text-sm font-bold text-white"><span id="quota-used">--</span> <span class="text-slate-500">/ 10</span></div>
+          </div>
+        </div>
+        <button onclick="refreshAllData()" class="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition" title="Refresh Dashboard">
+          <i class="fa-solid fa-rotate"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- TABS -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 flex overflow-x-auto gap-2 border-t border-slate-800/60 pt-2 pb-1 text-sm font-medium">
+      <button onclick="switchTab('videos')" id="tab-btn-videos" class="tab-btn px-4 py-2 rounded-lg bg-brand-cyan/10 text-brand-cyan border border-brand-cyan/30 flex items-center gap-2">
+        <i class="fa-brands fa-youtube"></i> YouTube Schedule & Videos
+      </button>
+      <button onclick="switchTab('alien')" id="tab-btn-alien" class="tab-btn px-4 py-2 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800/50 flex items-center gap-2">
+        <i class="fa-solid fa-user-astronaut"></i> Alien Series (16 Chapters)
+      </button>
+      <button onclick="switchTab('generator')" id="tab-btn-generator" class="tab-btn px-4 py-2 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800/50 flex items-center gap-2">
+        <i class="fa-solid fa-bolt"></i> 1-Click Generator
+      </button>
+      <button onclick="switchTab('media')" id="tab-btn-media" class="tab-btn px-4 py-2 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800/50 flex items-center gap-2">
+        <i class="fa-solid fa-film"></i> Video Player & Archive
+      </button>
+      <button onclick="switchTab('terminal')" id="tab-btn-terminal" class="tab-btn px-4 py-2 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800/50 flex items-center gap-2">
+        <i class="fa-solid fa-terminal"></i> Live Generation Terminal
+      </button>
+    </div>
+  </header>
+
+  <!-- MAIN CONTENT AREA -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-6">
+
+    <!-- NOTIFICATION TOAST -->
+    <div id="toast" class="hidden fixed bottom-6 right-6 z-50 px-5 py-3 rounded-xl glass text-sm font-semibold shadow-2xl transition-all duration-300"></div>
+
+    <!-- ================================================================= -->
+    <!-- TAB 1: YOUTUBE SCHEDULE & VIDEOS -->
+    <!-- ================================================================= -->
+    <div id="tab-videos" class="tab-content space-y-6">
+      <div class="flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <h2 class="text-2xl font-bold text-white flex items-center gap-2">
+            <i class="fa-brands fa-youtube text-brand-red"></i> Channel Schedule & Uploads
+          </h2>
+          <p class="text-sm text-slate-400">View live status, reschedule releases, or publish queued videos immediately.</p>
+        </div>
+        <div class="flex items-center gap-2">
+          <button onclick="filterVideos('all')" class="filter-btn px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-800 text-white" id="f-all">All (<span id="count-all">0</span>)</button>
+          <button onclick="filterVideos('scheduled')" class="filter-btn px-3 py-1.5 rounded-lg text-xs font-bold bg-amber-950/60 text-amber-400 border border-amber-500/20" id="f-scheduled">Scheduled (<span id="count-scheduled">0</span>)</button>
+          <button onclick="filterVideos('public')" class="filter-btn px-3 py-1.5 rounded-lg text-xs font-bold bg-emerald-950/60 text-emerald-400 border border-emerald-500/20" id="f-public">Public (<span id="count-public">0</span>)</button>
+        </div>
+      </div>
+
+      <!-- VIDEOS GRID -->
+      <div id="videos-loading" class="text-center py-20 text-slate-400">
+        <i class="fa-solid fa-circle-notch fa-spin text-3xl text-brand-cyan mb-3"></i>
+        <p>Loading YouTube videos and schedules...</p>
+      </div>
+      <div id="videos-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5"></div>
+    </div>
+
+    <!-- ================================================================= -->
+    <!-- TAB 2: ALIEN SERIES (16 CHAPTERS) -->
+    <!-- ================================================================= -->
+    <div id="tab-alien" class="tab-content hidden space-y-6">
+      <div class="flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <h2 class="text-2xl font-bold text-white flex items-center gap-2">
+            <i class="fa-solid fa-user-astronaut text-brand-cyan"></i> Alien Interview Book Series Curriculum
+          </h2>
+          <p class="text-sm text-slate-400">16 Declassified Interrogation Chapters (Roswell 1947 & Airl transcripts). 100% Sequential Continuity.</p>
+        </div>
+        <div class="glass px-4 py-2 rounded-xl text-sm font-bold text-slate-200 border border-brand-border">
+          Active Next Part: <span id="alien-active-part" class="text-brand-cyan text-lg">Part 3</span>
+        </div>
+      </div>
+
+      <div id="alien-chapters-grid" class="grid grid-cols-1 md:grid-cols-2 gap-5"></div>
+    </div>
+
+    <!-- ================================================================= -->
+    <!-- TAB 3: 1-CLICK GENERATOR -->
+    <!-- ================================================================= -->
+    <div id="tab-generator" class="tab-content hidden space-y-6">
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+        <!-- ALIEN GENERATOR CARD -->
+        <div class="glass-card p-6 rounded-2xl border border-brand-border space-y-5">
+          <div class="flex items-center justify-between border-b border-slate-800 pb-4">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-xl bg-cyan-950/80 border border-brand-cyan flex items-center justify-center text-brand-cyan text-xl">
+                🛸
+              </div>
+              <div>
+                <h3 class="font-bold text-lg text-white">Generate Alien Interview Short</h3>
+                <p class="text-xs text-slate-400">Real 2-Voice Dialogue (Matilda + Airl) & 1947 Leaked Tape</p>
+              </div>
+            </div>
+            <span class="text-xs font-semibold px-2 py-1 rounded bg-brand-cyan/20 text-brand-cyan border border-brand-cyan/30">Dual-Voice</span>
+          </div>
+
+          <form id="alien-gen-form" onsubmit="handleAlienSubmit(event)" class="space-y-4 text-sm">
+            <div>
+              <label class="block text-slate-300 font-semibold mb-1">Episode Part</label>
+              <select id="alien-part-select" class="w-full glass bg-slate-900 px-3 py-2 rounded-lg border border-slate-700 text-white focus:outline-none focus:border-brand-cyan">
+                <option value="">Auto-Detect Next Untracked Chapter</option>
+                <!-- populated by JS -->
+              </select>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block text-slate-300 font-semibold mb-1">Language</label>
+                <select id="alien-lang-select" class="w-full glass bg-slate-900 px-3 py-2 rounded-lg border border-slate-700 text-white focus:outline-none focus:border-brand-cyan">
+                  <option value="hi">🇮🇳 Hindi (Swara + Madhur Telepathic)</option>
+                  <option value="en">🇺🇸 English (Rachel + Daniel Telepathic)</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-slate-300 font-semibold mb-1">YouTube Privacy</label>
+                <select id="alien-privacy-select" class="w-full glass bg-slate-900 px-3 py-2 rounded-lg border border-slate-700 text-white focus:outline-none focus:border-brand-cyan">
+                  <option value="public">Public (Instant Live)</option>
+                  <option value="unlisted">Unlisted (Review First)</option>
+                  <option value="private">Private (Scheduled)</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="flex items-center gap-2 pt-2">
+              <input type="checkbox" id="alien-upload-check" checked class="w-4 h-4 rounded text-brand-cyan focus:ring-brand-cyan bg-slate-900 border-slate-700">
+              <label for="alien-upload-check" class="text-slate-300 text-xs font-medium">Upload to YouTube immediately after rendering</label>
+            </div>
+
+            <button type="submit" id="btn-gen-alien" class="w-full py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold tracking-wide shadow-lg neon-glow-cyan transition flex items-center justify-center gap-2">
+              <i class="fa-solid fa-play"></i> GENERATE & UPLOAD ALIEN SHORT
+            </button>
+          </form>
+        </div>
+
+        <!-- AUTOPILOT DAILY BATCH CARD -->
+        <div class="glass-card p-6 rounded-2xl border border-brand-border space-y-5">
+          <div class="flex items-center justify-between border-b border-slate-800 pb-4">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-xl bg-red-950/80 border border-brand-red flex items-center justify-center text-brand-red text-xl">
+                ⚡
+              </div>
+              <div>
+                <h3 class="font-bold text-lg text-white">Autopilot 7-Slot Daily Batch</h3>
+                <p class="text-xs text-slate-400">Trigger full daily batch across peak hours</p>
+              </div>
+            </div>
+            <span class="text-xs font-semibold px-2 py-1 rounded bg-red-950 text-red-400 border border-red-500/30">Batch Runner</span>
+          </div>
+
+          <p class="text-xs text-slate-300 leading-relaxed">
+            Runs all 7 curated daily time slots: 4 English videos (USA EDT Peak Hours) and 3 Hindi videos (India IST Peak Hours), including Alien Interview sequential progression, high-retention stock waterfalls, and automated scheduling.
+          </p>
+
+          <div class="p-3 rounded-xl bg-slate-900/60 border border-slate-800 text-xs font-mono space-y-1.5 text-slate-400">
+            <div>• 08:30 AM IST: Psychology / Life Hacks (Hindi)</div>
+            <div>• 01:00 PM IST: Science & Quantum Paradoxes (Hindi)</div>
+            <div>• 06:30 PM EDT: Alien Interview Part X (English)</div>
+            <div>• 07:30 PM IST: Alien Interview Part X (Hindi)</div>
+            <div>• 09:00 PM EDT: Unsolved Ancient Mysteries (English)</div>
+            <div>• 10:30 PM EDT: Deep Space & Astronomy (English)</div>
+          </div>
+
+          <button onclick="handleAutopilotTrigger()" id="btn-gen-autopilot" class="w-full py-3 rounded-xl bg-gradient-to-r from-red-600 to-amber-600 hover:from-red-500 hover:to-amber-500 text-white font-bold tracking-wide shadow-lg neon-glow-red transition flex items-center justify-center gap-2">
+            <i class="fa-solid fa-bolt"></i> RUN 7-SLOT DAILY AUTOPILOT NOW
+          </button>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ================================================================= -->
+    <!-- TAB 4: IN-BROWSER VIDEO PLAYER & ARCHIVE -->
+    <!-- ================================================================= -->
+    <div id="tab-media" class="tab-content hidden space-y-6">
+      <div class="flex items-center justify-between">
+        <div>
+          <h2 class="text-2xl font-bold text-white flex items-center gap-2">
+            <i class="fa-solid fa-film text-purple-400"></i> Rendered Shorts Archive & In-Browser Player
+          </h2>
+          <p class="text-sm text-slate-400">Preview generated 9:16 vertical shorts directly with burned dual-styled subtitles and audio effects.</p>
+        </div>
+        <button onclick="loadMediaFiles()" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-bold text-white transition flex items-center gap-1.5">
+          <i class="fa-solid fa-rotate"></i> Refresh Files
+        </button>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- VIDEO PLAYER EMBED -->
+        <div class="lg:col-span-1 glass-card p-4 rounded-2xl border border-brand-border flex flex-col items-center">
+          <h3 class="text-sm font-bold text-slate-200 mb-3 w-full flex items-center justify-between">
+            <span>Video Preview</span>
+            <span id="player-title" class="text-xs text-brand-cyan truncate max-w-[180px]">Select a video</span>
+          </h3>
+          <div class="w-[270px] h-[480px] bg-black rounded-xl overflow-hidden shadow-2xl border border-slate-800 flex items-center justify-center">
+            <video id="html5-player" controls class="w-full h-full object-cover">
+              Your browser does not support the video tag.
+            </video>
+          </div>
+        </div>
+
+        <!-- FILES LIST -->
+        <div class="lg:col-span-2 glass-card p-5 rounded-2xl border border-brand-border">
+          <h3 class="text-sm font-bold text-slate-200 mb-4">Generated Files in output/shorts/</h3>
+          <div id="media-list" class="space-y-2 max-h-[520px] overflow-y-auto pr-1"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================================================================= -->
+    <!-- TAB 5: LIVE TERMINAL CONSOLE -->
+    <!-- ================================================================= -->
+    <div id="tab-terminal" class="tab-content hidden space-y-4">
+      <div class="flex items-center justify-between">
+        <div>
+          <h2 class="text-2xl font-bold text-white flex items-center gap-2">
+            <i class="fa-solid fa-terminal text-emerald-400"></i> Live Generation Terminal
+          </h2>
+          <p class="text-sm text-slate-400">Live output stream from background generation tasks.</p>
+        </div>
+        <div class="flex items-center gap-2">
+          <span id="term-status-badge" class="px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-800 text-slate-300">
+            Idle
+          </span>
+          <button onclick="clearTerminal()" class="px-3 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-slate-300">Clear</button>
+        </div>
+      </div>
+
+      <div class="glass-card rounded-2xl p-4 border border-brand-border font-mono text-xs overflow-hidden">
+        <div id="terminal-body" class="bg-black/90 p-4 rounded-xl h-[540px] overflow-y-auto text-emerald-400 space-y-1">
+          <div class="text-slate-500">// AutoTube Generation Terminal Initialized.</div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- ================================================================= -->
+  <!-- RESCHEDULE MODAL -->
+  <!-- ================================================================= -->
+  <div id="reschedule-modal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="glass-card max-w-md w-full p-6 rounded-2xl border border-brand-border space-y-5">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <h3 class="font-bold text-lg text-white flex items-center gap-2">
+          <i class="fa-solid fa-calendar-days text-amber-400"></i> Reschedule Video Release
+        </h3>
+        <button onclick="closeRescheduleModal()" class="text-slate-400 hover:text-white">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <div class="space-y-3 text-sm">
+        <p class="text-xs text-slate-300 font-semibold" id="modal-video-title">Video Title</p>
+
+        <div>
+          <label class="block text-slate-400 text-xs mb-1">New Release Date & Time</label>
+          <input type="datetime-local" id="modal-datetime-input" class="w-full glass bg-slate-900 px-3 py-2 rounded-lg border border-slate-700 text-white focus:outline-none focus:border-brand-cyan">
+        </div>
+
+        <div class="p-3 rounded-lg bg-slate-900/80 border border-slate-800 text-xs space-y-1">
+          <div class="text-slate-400">Target Timezone Guide:</div>
+          <div class="text-cyan-300">• USA Peak Hours: 06:30 PM - 09:30 PM EDT</div>
+          <div class="text-amber-300">• India Peak Hours: 07:00 PM - 09:30 PM IST</div>
+        </div>
+      </div>
+
+      <div class="flex items-center justify-end gap-3 pt-2">
+        <button onclick="closeRescheduleModal()" class="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-300">Cancel</button>
+        <button onclick="submitReschedule()" class="px-5 py-2 rounded-lg bg-amber-600 hover:bg-amber-500 text-xs font-bold text-white shadow-lg transition">Save Schedule</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- JAVASCRIPT APP LOGIC -->
+  <script>
+    let currentFilter = 'all';
+    let allVideos = [];
+    let selectedRescheduleVideoId = null;
+
+    // Toast helper
+    function showToast(msg, isError = false) {
+      const toast = document.getElementById('toast');
+      toast.textContent = msg;
+      toast.className = `fixed bottom-6 right-6 z-50 px-5 py-3 rounded-xl glass text-sm font-semibold shadow-2xl transition-all duration-300 ${isError ? 'bg-red-950/90 text-red-200 border-red-500/50' : 'bg-cyan-950/90 text-cyan-200 border-cyan-500/50'}`;
+      toast.classList.remove('hidden');
+      setTimeout(() => toast.classList.add('hidden'), 4000);
+    }
+
+    // Tab Switcher
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('bg-brand-cyan/10', 'text-brand-cyan', 'border-brand-cyan/30');
+        btn.classList.add('text-slate-400');
+      });
+
+      const activeContent = document.getElementById(`tab-${tabId}`);
+      const activeBtn = document.getElementById(`tab-btn-${tabId}`);
+      if (activeContent) activeContent.classList.remove('hidden');
+      if (activeBtn) {
+        activeBtn.classList.add('bg-brand-cyan/10', 'text-brand-cyan', 'border-brand-cyan/30');
+        activeBtn.classList.remove('text-slate-400');
+      }
+
+      if (tabId === 'videos') loadVideos();
+      if (tabId === 'alien') loadAlienChapters();
+      if (tabId === 'media') loadMediaFiles();
+    }
+
+    // Clocks and Status
+    async function loadStatus() {
+      try {
+        const res = await fetch('/api/status');
+        const data = await res.json();
+        document.getElementById('clock-ist').textContent = data.time_ist.split(' ')[1] + ' ' + data.time_ist.split(' ')[2];
+        document.getElementById('clock-edt').textContent = data.time_edt.split(' ')[1] + ' ' + data.time_edt.split(' ')[2];
+        document.getElementById('quota-used').textContent = data.today_uploads_count;
+        document.getElementById('alien-active-part').textContent = `Part ${data.current_alien_part}`;
+
+        const termBadge = document.getElementById('term-status-badge');
+        if (data.is_generating) {
+          termBadge.textContent = `Running: ${data.current_task}`;
+          termBadge.className = 'px-2.5 py-1 rounded-full text-xs font-semibold bg-cyan-950 text-cyan-400 border border-cyan-500/30 animate-pulse';
+        } else {
+          termBadge.textContent = 'Idle';
+          termBadge.className = 'px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-800 text-slate-300';
+        }
+      } catch (err) {
+        console.error('Status fetch error:', err);
+      }
+    }
+
+    // Videos Tab
+    async function loadVideos() {
+      const loader = document.getElementById('videos-loading');
+      const grid = document.getElementById('videos-grid');
+      loader.classList.remove('hidden');
+      grid.innerHTML = '';
+
+      try {
+        const res = await fetch('/api/videos');
+        const data = await res.json();
+        allVideos = data.videos || [];
+        loader.classList.add('hidden');
+
+        if (data.channel && data.channel.title) {
+          document.getElementById('channel-name-sub').textContent = `${data.channel.title} (${data.channel.custom_url})`;
+        }
+
+        renderVideoCards();
+      } catch (err) {
+        loader.innerHTML = `<div class="text-red-400"><i class="fa-solid fa-triangle-exclamation mb-2"></i><br>Failed to fetch YouTube videos: ${err.message}</div>`;
+      }
+    }
+
+    function renderVideoCards() {
+      const grid = document.getElementById('videos-grid');
+      grid.innerHTML = '';
+
+      const filtered = allVideos.filter(v => {
+        if (currentFilter === 'scheduled') return v.is_scheduled;
+        if (currentFilter === 'public') return v.privacy === 'public';
+        return true;
+      });
+
+      document.getElementById('count-all').textContent = allVideos.length;
+      document.getElementById('count-scheduled').textContent = allVideos.filter(v => v.is_scheduled).length;
+      document.getElementById('count-public').textContent = allVideos.filter(v => v.privacy === 'public').length;
+
+      if (filtered.length === 0) {
+        grid.innerHTML = `<div class="col-span-full text-center py-12 text-slate-500">No videos found for this filter.</div>`;
+        return;
+      }
+
+      filtered.forEach(v => {
+        const card = document.createElement('div');
+        card.className = 'glass-card rounded-2xl overflow-hidden border border-brand-border flex flex-col justify-between hover:border-slate-600 transition';
+
+        const isSched = v.is_scheduled;
+        const statusBadge = isSched
+          ? `<span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-950/80 text-amber-400 border border-amber-500/30 flex items-center gap-1.5"><i class="fa-solid fa-clock"></i> SCHEDULED</span>`
+          : (v.privacy === 'public'
+            ? `<span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-950/80 text-emerald-400 border border-emerald-500/30 flex items-center gap-1.5"><i class="fa-solid fa-globe"></i> PUBLIC</span>`
+            : `<span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-slate-800 text-slate-300 border border-slate-700 uppercase">${v.privacy}</span>`);
+
+        const schedInfo = isSched
+          ? `<div class="p-2.5 rounded-xl bg-amber-950/30 border border-amber-500/20 text-xs space-y-0.5">
+              <div class="text-amber-300 font-semibold"><i class="fa-solid fa-calendar text-[10px]"></i> ${v.publish_display_ist}</div>
+              <div class="text-slate-400 text-[11px]">${v.publish_display_edt}</div>
+            </div>`
+          : '';
+
+        card.innerHTML = `
+          <div>
+            <div class="relative w-full h-44 bg-black overflow-hidden group">
+              <img src="${v.thumbnail}" alt="" class="w-full h-full object-cover group-hover:scale-105 transition duration-300">
+              <div class="absolute top-2 right-2">${statusBadge}</div>
+              <a href="${v.url}" target="_blank" class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white text-3xl transition">
+                <i class="fa-solid fa-circle-play"></i>
+              </a>
+            </div>
+            <div class="p-4 space-y-3">
+              <h4 class="font-bold text-sm text-white line-clamp-2" title="${v.title}">${v.title}</h4>
+              <div class="flex items-center gap-4 text-xs text-slate-400">
+                <span><i class="fa-solid fa-eye text-cyan-400"></i> ${v.views} views</span>
+                <span><i class="fa-solid fa-thumbs-up text-pink-400"></i> ${v.likes}</span>
+                <span><i class="fa-solid fa-comment text-emerald-400"></i> ${v.comments}</span>
+              </div>
+              ${schedInfo}
+            </div>
+          </div>
+          <div class="p-4 border-t border-slate-800/80 flex items-center justify-between gap-2">
+            ${isSched ? `
+              <button onclick="handleMakePublic('${v.id}')" class="px-3 py-1.5 rounded-lg bg-emerald-600/90 hover:bg-emerald-500 text-white text-xs font-bold transition flex items-center gap-1">
+                <i class="fa-solid fa-bolt"></i> Publish Now
+              </button>
+              <button onclick="openRescheduleModal('${v.id}', '${v.title.replace(/'/g, "\\'")}', '${v.publish_at_iso || ''}')" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-amber-300 text-xs font-semibold transition flex items-center gap-1">
+                <i class="fa-solid fa-calendar-days"></i> Reschedule
+              </button>
+            ` : `
+              <a href="${v.url}" target="_blank" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-xs font-semibold transition flex items-center gap-1">
+                <i class="fa-solid fa-arrow-up-right-from-square"></i> Open YouTube
+              </a>
+            `}
+          </div>
+        `;
+        grid.appendChild(card);
+      });
+    }
+
+    function filterVideos(filter) {
+      currentFilter = filter;
+      document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('ring-2', 'ring-brand-cyan'));
+      const activeBtn = document.getElementById(`f-${filter}`);
+      if (activeBtn) activeBtn.classList.add('ring-2', 'ring-brand-cyan');
+      renderVideoCards();
+    }
+
+    async function handleMakePublic(videoId) {
+      if (!confirm(`Are you sure you want to publish video ${videoId} immediately to YouTube as PUBLIC?`)) return;
+      try {
+        const res = await fetch('/api/videos/make_public', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ video_id: videoId })
+        });
+        const data = await res.json();
+        if (data.success) {
+          showToast(`Video ${videoId} is now PUBLIC!`);
+          loadVideos();
+        } else {
+          showToast(data.detail || 'Failed to publish video', true);
+        }
+      } catch (err) {
+        showToast(err.message, true);
+      }
+    }
+
+    function openRescheduleModal(videoId, title, currentPublishIso) {
+      selectedRescheduleVideoId = videoId;
+      document.getElementById('modal-video-title').textContent = title;
+      if (currentPublishIso) {
+        const dt = new Date(currentPublishIso);
+        // Format to YYYY-MM-DDTHH:MM for datetime-local
+        const localIso = new Date(dt.getTime() - dt.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+        document.getElementById('modal-datetime-input').value = localIso;
+      }
+      document.getElementById('reschedule-modal').classList.remove('hidden');
+    }
+
+    function closeRescheduleModal() {
+      document.getElementById('reschedule-modal').classList.add('hidden');
+      selectedRescheduleVideoId = null;
+    }
+
+    async function submitReschedule() {
+      const val = document.getElementById('modal-datetime-input').value;
+      if (!val || !selectedRescheduleVideoId) return;
+
+      try {
+        const res = await fetch('/api/videos/reschedule', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({
+            video_id: selectedRescheduleVideoId,
+            publish_at: val
+          })
+        });
+        const data = await res.json();
+        if (data.success) {
+          showToast(`Successfully rescheduled video!`);
+          closeRescheduleModal();
+          loadVideos();
+        } else {
+          showToast(data.detail || 'Failed to reschedule', true);
+        }
+      } catch (err) {
+        showToast(err.message, true);
+      }
+    }
+
+    // Alien Chapters Tab
+    async function loadAlienChapters() {
+      const grid = document.getElementById('alien-chapters-grid');
+      grid.innerHTML = '<div class="col-span-full text-center py-10 text-slate-500"><i class="fa-solid fa-spinner fa-spin"></i> Loading 16 chapters curriculum...</div>';
+
+      try {
+        const res = await fetch('/api/alien/chapters');
+        const data = await res.json();
+        grid.innerHTML = '';
+
+        // Also populate select dropdown in generator form
+        const partSelect = document.getElementById('alien-part-select');
+        partSelect.innerHTML = `<option value="">Auto-Detect Next (Part ${data.current_part})</option>`;
+        data.chapters.forEach(ch => {
+          const opt = document.createElement('option');
+          opt.value = ch.part;
+          opt.textContent = `Part ${ch.part}: ${ch.title_en}`;
+          if (ch.part === data.current_part) opt.selected = true;
+          partSelect.appendChild(opt);
+        });
+
+        data.chapters.forEach(ch => {
+          const card = document.createElement('div');
+          const isCurrent = ch.is_current;
+          card.className = `glass-card p-5 rounded-2xl border transition ${isCurrent ? 'border-brand-cyan shadow-lg neon-glow-cyan' : 'border-brand-border'}`;
+
+          const enStatus = ch.en_done
+            ? `<a href="${ch.en_video_url}" target="_blank" class="px-2.5 py-1 rounded bg-emerald-950 text-emerald-400 border border-emerald-500/30 text-xs font-bold hover:bg-emerald-900 transition flex items-center gap-1"><i class="fa-solid fa-check"></i> EN Live</a>`
+            : `<button onclick="quickGenAlien(${ch.part}, 'en')" class="px-2.5 py-1 rounded bg-slate-800 hover:bg-cyan-900 text-cyan-300 text-xs font-semibold transition">Gen EN</button>`;
+
+          const hiStatus = ch.hi_done
+            ? `<a href="${ch.hi_video_url}" target="_blank" class="px-2.5 py-1 rounded bg-emerald-950 text-emerald-400 border border-emerald-500/30 text-xs font-bold hover:bg-emerald-900 transition flex items-center gap-1"><i class="fa-solid fa-check"></i> HI Live</a>`
+            : `<button onclick="quickGenAlien(${ch.part}, 'hi')" class="px-2.5 py-1 rounded bg-slate-800 hover:bg-cyan-900 text-cyan-300 text-xs font-semibold transition">Gen HI</button>`;
+
+          card.innerHTML = `
+            <div class="flex items-center justify-between mb-3">
+              <span class="text-xs font-black tracking-wider px-2 py-0.5 rounded ${isCurrent ? 'bg-brand-cyan text-black' : 'bg-slate-800 text-brand-cyan'}">PART ${ch.part}</span>
+              <div class="flex items-center gap-2">${enStatus} ${hiStatus}</div>
+            </div>
+            <h4 class="font-bold text-white text-sm mb-1">${ch.title_en}</h4>
+            <h5 class="text-xs text-slate-300 font-hindi mb-3">${ch.title_hi}</h5>
+            <div class="p-2.5 rounded-xl bg-slate-900/70 border border-slate-800/80 text-xs space-y-1 mb-2">
+              <div class="text-cyan-300 font-semibold"><i class="fa-solid fa-file-shield text-[10px]"></i> Proof: ${ch.evidence_proof}</div>
+              <div class="text-slate-400 italic">"${ch.key_quote}"</div>
+            </div>
+            <div class="text-[11px] text-slate-500">${ch.book_chapter}</div>
+          `;
+          grid.appendChild(card);
+        });
+      } catch (err) {
+        grid.innerHTML = `<div class="text-red-400 text-center py-10">Error loading chapters: ${err.message}</div>`;
+      }
+    }
+
+    async function quickGenAlien(part, lang) {
+      if (!confirm(`Generate Alien Interview Part ${part} in ${lang.toUpperCase()} and upload to YouTube?`)) return;
+      try {
+        const res = await fetch('/api/generate/alien', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ part: part, lang: lang, upload: true, privacy: 'public' })
+        });
+        const data = await res.json();
+        showToast(data.message || 'Generation started!');
+        switchTab('terminal');
+      } catch (err) {
+        showToast(err.message, true);
+      }
+    }
+
+    // Generator Tab Form
+    async function handleAlienSubmit(e) {
+      e.preventDefault();
+      const partVal = document.getElementById('alien-part-select').value;
+      const lang = document.getElementById('alien-lang-select').value;
+      const privacy = document.getElementById('alien-privacy-select').value;
+      const upload = document.getElementById('alien-upload-check').checked;
+
+      const part = partVal ? parseInt(partVal) : null;
+      try {
+        const res = await fetch('/api/generate/alien', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ part: part, lang: lang, upload: upload, privacy: privacy })
+        });
+        const data = await res.json();
+        showToast(data.message || 'Alien Short generation started!');
+        switchTab('terminal');
+      } catch (err) {
+        showToast(err.message, true);
+      }
+    }
+
+    async function handleAutopilotTrigger() {
+      if (!confirm('Run the full 7-slot Autopilot batch now across USA & India peak hours?')) return;
+      try {
+        const res = await fetch('/api/autopilot/run', { method: 'POST' });
+        const data = await res.json();
+        showToast(data.message || 'Autopilot batch started!');
+        switchTab('terminal');
+      } catch (err) {
+        showToast(err.message, true);
+      }
+    }
+
+    // Media & Video Player Tab
+    async function loadMediaFiles() {
+      const list = document.getElementById('media-list');
+      list.innerHTML = '<div class="text-slate-500 py-4"><i class="fa-solid fa-spinner fa-spin"></i> Loading files...</div>';
+
+      try {
+        const res = await fetch('/api/media/list');
+        const data = await res.json();
+        list.innerHTML = '';
+
+        if (!data.files || data.files.length === 0) {
+          list.innerHTML = '<div class="text-slate-500 py-4">No rendered MP4 files found in output/shorts/</div>';
+          return;
+        }
+
+        data.files.forEach((f, idx) => {
+          const item = document.createElement('div');
+          item.className = 'glass p-3 rounded-xl border border-slate-800 flex items-center justify-between hover:border-brand-cyan transition cursor-pointer';
+          item.onclick = () => playMedia(f.filename, f.stream_url);
+
+          item.innerHTML = `
+            <div class="flex items-center gap-3 overflow-hidden">
+              <div class="w-8 h-8 rounded-lg bg-slate-800 flex items-center justify-center text-brand-cyan flex-shrink-0">
+                <i class="fa-solid fa-play text-xs"></i>
+              </div>
+              <div class="truncate">
+                <div class="text-sm font-semibold text-white truncate">${f.filename}</div>
+                <div class="text-xs text-slate-400">${f.size_mb} MB • ${f.modified}</div>
+              </div>
+            </div>
+            <button class="px-3 py-1 rounded bg-brand-cyan/20 text-brand-cyan hover:bg-brand-cyan/30 text-xs font-bold">Play</button>
+          `;
+          list.appendChild(item);
+
+          // Auto-play first video on load
+          if (idx === 0 && !document.getElementById('html5-player').src) {
+            playMedia(f.filename, f.stream_url);
+          }
+        });
+      } catch (err) {
+        list.innerHTML = `<div class="text-red-400 py-4">Error loading media: ${err.message}</div>`;
+      }
+    }
+
+    function playMedia(filename, url) {
+      document.getElementById('player-title').textContent = filename;
+      const player = document.getElementById('html5-player');
+      player.src = url;
+      player.play().catch(e => console.log('Autoplay blocked:', e));
+    }
+
+    // Terminal Logs
+    async function pollLogs() {
+      try {
+        const res = await fetch('/api/logs');
+        const data = await res.json();
+        const term = document.getElementById('terminal-body');
+
+        if (data.logs && data.logs.length > 0) {
+          term.innerHTML = data.logs.map(line => {
+            let color = 'text-slate-300';
+            if (line.includes('[OK]') || line.includes('SUCCESS') || line.includes('completed')) color = 'text-emerald-400 font-bold';
+            if (line.includes('[X]') || line.includes('Error') || line.includes('error')) color = 'text-red-400 font-bold';
+            if (line.includes('[!]') || line.includes('warning') || line.includes('Waiting')) color = 'text-amber-300';
+            if (line.includes('--- Step')) color = 'text-cyan-400 font-black';
+            return `<div class="${color}">${line}</div>`;
+          }).join('');
+          term.scrollTop = term.scrollHeight;
+        }
+
+        const termBadge = document.getElementById('term-status-badge');
+        if (data.is_running) {
+          termBadge.textContent = `Running: ${data.current_task}`;
+          termBadge.className = 'px-2.5 py-1 rounded-full text-xs font-semibold bg-cyan-950 text-cyan-400 border border-cyan-500/30 animate-pulse';
+        } else {
+          termBadge.textContent = 'Idle';
+          termBadge.className = 'px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-800 text-slate-300';
+        }
+      } catch (err) {
+        console.error('Log polling error:', err);
+      }
+    }
+
+    function clearTerminal() {
+      document.getElementById('terminal-body').innerHTML = '<div class="text-slate-500">// Terminal Cleared.</div>';
+    }
+
+    // Initial Load & Polling intervals
+    function refreshAllData() {
+      loadStatus();
+      loadVideos();
+      showToast('Dashboard refreshed!');
+    }
+
+    window.onload = () => {
+      loadStatus();
+      loadVideos();
+      setInterval(loadStatus, 10000);
+      setInterval(pollLogs, 3000);
+    };
+  </script>
+</body>
+</html>

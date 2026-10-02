@@ -1,11 +1,17 @@
 {
-  "current_part": 2,
+  "current_part": 3,
   "parts_status": {
     "1": {
       "en_done": true,
       "en_video_id": "FicyTL-q2JQ",
       "hi_done": true,
-      "hi_video_id": "rendered_local"
+      "hi_video_id": "fbjT0YqG_8o"
+    },
+    "2": {
+      "en_done": true,
+      "en_video_id": "tC_3gpzjZ7M",
+      "hi_done": true,
+      "hi_video_id": "A5J1OEcgrsU"
     }
   },
   "total_chapters": 16

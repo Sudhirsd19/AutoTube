@@ -848,5 +848,18 @@ def cleanup(
         print_info(f"No temp files older than {max_age}h found. ({total_files} files, {total_mb:.1f} MB total)")
 
 
+@app.command()
+def web(
+    host: str = typer.Option("0.0.0.0", "--host", "-h", help="Host interface to bind to"),
+    port: int = typer.Option(5000, "--port", "-p", help="Port to listen on (Default: 5000)"),
+    reload: bool = typer.Option(False, "--reload", help="Enable auto-reload for development"),
+):
+    """Launch the AutoTube Command Center Web Dashboard."""
+    import uvicorn
+    print_banner()
+    print_info(f"🚀 Starting AutoTube Command Center Dashboard on http://{host}:{port} (Port {port})...")
+    uvicorn.run("autotube.web.app:app", host=host, port=port, reload=reload)
+
+
 if __name__ == "__main__":
     app()

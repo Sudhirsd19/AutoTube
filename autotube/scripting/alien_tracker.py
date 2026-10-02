@@ -198,6 +198,18 @@ class AlienSeriesTracker:
             with open(self.file_path, "w", encoding="utf-8") as f:
                 json.dump(initial_data, f, indent=2)
 
+    @property
+    def current_part(self) -> int:
+        return self.get_current_part_number()
+
+    @property
+    def total_chapters(self) -> int:
+        return len(ALIEN_SERIES_CHAPTERS)
+
+    @property
+    def data(self) -> Dict[str, Any]:
+        return self._read_data()
+
     def get_current_part_number(self, lang: Optional[str] = None) -> int:
         """Get the current part number that needs to be generated.
         Strict continuity: Part X will not advance until BOTH English and Hindi

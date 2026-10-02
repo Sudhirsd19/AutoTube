@@ -701,11 +701,41 @@ Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour,
 Style: Default,{font_name},68,&H00FFFFFF,&H0000FFFF,&H00000000,&H80000000,-1,0,0,0,100,100,0,0,1,6,3,2,60,60,780,1
 Style: Nurse,{font_name},68,&H00FFFFFF,&H00FFFF00,&H00000000,&H80000000,-1,0,0,0,100,100,0,0,1,6,3,2,60,60,780,1
 Style: Alien,{font_name},68,&H0039FF14,&H0000FFFF,&H00000000,&H80000000,-1,0,0,0,100,100,0,0,1,6,3,2,60,60,780,1
+Style: HUD_REC,Arial,34,&H00FFFFFF,&H000000FF,&H00000000,&H80000000,-1,0,0,0,100,100,0,0,1,3,2,7,50,50,80,1
+Style: HUD_TOPSECRET,Arial,30,&H0000D7FF,&H000000FF,&H00000000,&H80000000,-1,0,0,0,100,100,0,0,1,3,2,9,50,50,82,1
+Style: HUD_STAMP,Arial,46,&H000000FF,&H000000FF,&H00FFFFFF,&H90000000,-1,0,0,0,100,100,0,0,1,5,3,8,40,40,240,1
+Style: HUD_NEXT,Arial,38,&H0000FFFF,&H0000FFFF,&H00000000,&H80000000,-1,0,0,0,100,100,0,0,1,4,2,2,40,40,1180,1
 
 [Events]
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 """
         events = []
+        
+        # Calculate total video duration for permanent HUD overlay
+        all_ends = [w.end for _, words in scene_events_data for w in words]
+        max_duration = max(all_ends) if all_ends else 70.0
+        hud_end_str = format_ass_time(max_duration + 0.5)
+
+        # 1. Permanent Leaked Military HUD (Top-Left REC timestamp & Top-Right Classified watermark)
+        events.append(
+            f"Dialogue: 1,0:00:00.00,{hud_end_str},HUD_REC,,0,0,0,,{{\\c&H0000FF&}}● {{\\c&HFFFFFF&}}REC  08-JUL-1947"
+        )
+        events.append(
+            f"Dialogue: 1,0:00:00.00,{hud_end_str},HUD_TOPSECRET,,0,0,0,,[TOP SECRET // MAJESTIC-12]"
+        )
+
+        # 2. Instant Curiosity Hook: Opening Classified Stamp (First 2.5 seconds)
+        events.append(
+            f"Dialogue: 2,0:00:00.10,0:00:02.50,HUD_STAMP,,0,0,0,,[ RESTRICTED - EYES ONLY ]"
+        )
+
+        # 3. Next Part Teaser & Subscriber CTA (Final 4.5 seconds)
+        cta_start = max(0.0, max_duration - 4.5)
+        events.append(
+            f"Dialogue: 2,{format_ass_time(cta_start)},{hud_end_str},HUD_NEXT,,0,0,0,,🔥 NEXT PART UNLOCKING SOON! SUBSCRIBE 👇"
+        )
+
+        # 4. Spoken Dialogue Lines (Dual-Styled Karaoke)
         for role, words in scene_events_data:
             if not words:
                 continue

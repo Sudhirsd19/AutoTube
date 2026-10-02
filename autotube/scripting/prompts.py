@@ -147,7 +147,13 @@ CRITICAL DIALOGUE & SPEAKER RULES:
    - When discussing documents or cosmic concepts:
      * 'visual_subject': 'classified fbi memo 1947' or 'earth cosmic prison barrier'
      * 'visual_description': 'Authentic declassified FBI memo stamped TOP SECRET / planet Earth surrounded by electric amnesia force field in deep space'
-5. Ending Cliffhanger: The final scene must tease what Airl reveals in the next episode and demand viewers subscribe so they don't miss the next classified tape.
+5. SEAMLESS INFINITE LOOP (110%+ Retention Hack):
+   - The very last sentence spoken in Scene 10 or 11 MUST seamlessly connect and flow grammatically right back into the opening sentence of Scene 1 with zero awkward pause, creating an irresistible infinite loop!
+6. HIGH-CTR CURIOSITY TITLE FORMULA:
+   - Must use extreme curiosity triggers and emotional drama (e.g. "NURSE ASKED: 'What Happens After Death?' The Alien's Answer Chilled The Pentagon... Part X #Shorts", "THEY LIED: What The Roswell Alien Really Revealed About Humanity #Shorts").
+7. CONTROVERSY POLL PINNED COMMENT:
+   - Provide a pinned_comment with an existential or moral debate question that compels viewers to comment YES or NO (e.g. "Airl claimed Earth is an amnesia prison planet and your soul has lived millions of years. Do you believe her? Type YES or NO below 👇").
+8. Next Part Cliffhanger & CTA: Tease the shocking secret of the next episode and demand viewers subscribe.
 
 Return the result as valid JSON matching the ShortScript schema.
 """
@@ -180,7 +186,13 @@ ALIEN_INTERVIEW_HI_PROMPT = """आप 1947 के रोसवेल यूए�
    - जब सबूत या अंतरिक्ष की बात हो:
      * 'visual_subject': 'classified fbi memo 1947' या 'earth cosmic prison barrier'
      * 'visual_description': 'Authentic declassified FBI memo stamped TOP SECRET / planet Earth surrounded by electric amnesia force field in deep space'
-5. Cliffhanger CTA: आख़िरी सीन में अगले एपिसोड का सस्पेंस छोड़ें और दर्शकों से कहें कि अगला टेप सुनने के लिए अभी सब्सक्राइब करें।
+5. सीमलेस इनफिनिट लूप (SEAMLESS INFINITE LOOP):
+   - आखिरी दृश्य का अंतिम वाक्य ऐसे खत्म होना चाहिए जो पहले दृश्य के पहले वाक्य से बिना किसी रुकावट के सीधे जुड़ जाए, ताकि दर्शक को पता भी न चले और वीडियो दोबारा लूप हो जाए!
+6. हाई-सीटीआर वायरल टाइटल (HIGH-CTR VIRAL TITLE):
+   - टाइटल में रहस्य और जिज्ञासा चरम पर होनी चाहिए (जैसे: "NURSE ने पूछा: 'मरने के बाद आत्मा कहाँ जाती है?' Alien का जवाब सुनकर रोंगटे खड़े हो गए! Part X #Shorts").
+7. विवादित पोल पिन्ड कमेंट (CONTROVERSY PINNED COMMENT):
+   - ऐसा सवाल जो दर्शकों को कमेंट करने पर मजबूर कर दे (जैसे: "एयरल का दावा है कि इंसान अमर आत्माएं हैं और पृथ्वी एक जेल है। क्या आपको भी ऐसा लगता है? कमेंट में 'हाँ' या 'ना' लिखें! 👇").
+8. Cliffhanger CTA: आख़िरी सीन में अगले एपिसोड का सस्पेंस छोड़ें और दर्शकों से कहें कि अगला टेप सुनने के लिए अभी सब्सक्राइब करें।
 
 Return the result as valid JSON matching the ShortScript schema.
 """
