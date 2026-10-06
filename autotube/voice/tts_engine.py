@@ -11,7 +11,7 @@ import edge_tts
 from pydantic import BaseModel
 from autotube.utils.console import print_info, print_success, print_warning
 from autotube.utils.ffmpeg_helper import get_media_duration
-from autotube.voice.voices import get_voice_id
+from autotube.voice.voices import get_voice_id, get_voice_profile
 
 
 ELEVENLABS_VOICES: Dict[str, str] = {
@@ -286,8 +286,32 @@ class TTSEngine:
         voice: Optional[str] = None,
         rate: Optional[str] = None,
         pitch: Optional[str] = None,
+        width: int = 1080,
+        height: int = 1920,
     ) -> TTSResult:
-        """Synchronous wrapper to run async synthesis."""
+        """Synchronous wrapper to run async synthesis (safe inside running event loops)."""
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+
+        if loop and loop.is_running():
+            import concurrent.futures
+            with concurrent.futures.ThreadPoolExecutor() as executor:
+                future = executor.submit(
+                    asyncio.run,
+                    self.synthesize_async(
+                        text=text,
+                        output_audio_path=output_audio_path,
+                        voice=voice,
+                        rate=rate,
+                        pitch=pitch,
+                        width=width,
+                        height=height,
+                    )
+                )
+                return future.result()
+
         return asyncio.run(
             self.synthesize_async(
                 text=text,
@@ -295,6 +319,8 @@ class TTSEngine:
                 voice=voice,
                 rate=rate,
                 pitch=pitch,
+                width=width,
+                height=height,
             )
         )
 
@@ -305,6 +331,8 @@ class TTSEngine:
         voice: Optional[str] = None,
         rate: Optional[str] = None,
         pitch: Optional[str] = None,
+        width: int = 1080,
+        height: int = 1920,
     ) -> TTSResult:
         """Synthesize text into speech and extract word & sentence boundaries."""
         # Tier 1: ElevenLabs Ultra-Realistic Synthesis (with character-level synchronization)
@@ -322,16 +350,25 @@ class TTSEngine:
                     f"ElevenLabs synthesis unavailable or quota reached ({e}). Falling back to Edge-TTS..."
                 )
 
-        selected_voice = get_voice_id(voice) if voice else self.default_voice
+        profile = get_voice_profile(voice)
+        selected_voice = profile.edge_voice_id if profile else (get_voice_id(voice) if voice else self.default_voice)
+        is_akashvani = any(k in (voice or "").lower() for k in ("akashvani", "akashwani"))
         is_thanos = any(k in (voice or "").lower() for k in ("thanos", "warlord", "titan")) or any(k in selected_voice.lower() for k in ("roger", "thanos"))
-        is_hindi = "hi-IN" in selected_voice or (voice and voice.lower() in ("madhur", "swara", "thanos_hi", "thanos"))
+        is_hindi = "hi-IN" in selected_voice or (voice and any(k in voice.lower() for k in ("hi", "hindi", "madhur", "swara", "akashvani")))
 
-        if is_thanos:
+        if is_akashvani:
+            selected_rate = rate or "-7%"
+            selected_pitch = pitch or "-14Hz"
+        elif is_thanos:
             selected_rate = rate or "-8%"
             selected_pitch = pitch or ("-25Hz" if is_hindi else "-22Hz")
+        elif profile:
+            # Use profile's tuned deep pitch and rate (default 0.90x-0.95x speed)
+            selected_rate = rate or profile.rate
+            selected_pitch = pitch or profile.pitch
         else:
-            selected_rate = rate or (self.rate if self.rate != "+0%" else ("+4%" if is_hindi else "+0%"))
-            selected_pitch = pitch or self.pitch
+            selected_rate = rate or (self.rate if self.rate != "+0%" else ("-8%" if is_hindi else "-8%"))
+            selected_pitch = pitch or ("-10Hz" if is_hindi else self.pitch)
 
         output_audio_path.parent.mkdir(parents=True, exist_ok=True)
         print_info(f"Synthesizing voiceover with voice: '{selected_voice}' (Pitch: {selected_pitch}, Rate: {selected_rate})...")
@@ -339,26 +376,67 @@ class TTSEngine:
         # Preprocess text for natural breathing pauses and cadence
         processed_text = self._preprocess_for_naturalness(text)
 
-        communicate = edge_tts.Communicate(
-            text=processed_text,
-            voice=selected_voice,
-            rate=selected_rate,
-            pitch=selected_pitch,
-        )
-
         submaker = edge_tts.SubMaker()
         total_audio_bytes = bytearray()
         raw_boundaries = []
+        max_attempts = 3
+        last_error = None
+        succeeded = False
 
-        async for chunk in communicate.stream():
-            if chunk["type"] == "audio":
-                total_audio_bytes.extend(chunk["data"])
-            elif chunk["type"] in ("WordBoundary", "SentenceBoundary"):
-                submaker.feed(chunk)
-                raw_boundaries.append(chunk)
+        for attempt in range(1, max_attempts + 1):
+            try:
+                curr_voice = selected_voice
+                # On final attempt, fallback to bulletproof baseline voice if specialized voice had issues
+                if attempt == max_attempts:
+                    curr_voice = "hi-IN-MadhurNeural" if is_hindi else "en-US-ChristopherNeural"
+
+                communicate = edge_tts.Communicate(
+                    text=processed_text,
+                    voice=curr_voice,
+                    rate=selected_rate,
+                    pitch=selected_pitch,
+                )
+
+                submaker = edge_tts.SubMaker()
+                total_audio_bytes = bytearray()
+                raw_boundaries = []
+
+                async for chunk in communicate.stream():
+                    if chunk["type"] == "audio":
+                        total_audio_bytes.extend(chunk["data"])
+                    elif chunk["type"] in ("WordBoundary", "SentenceBoundary"):
+                        submaker.feed(chunk)
+                        raw_boundaries.append(chunk)
+
+                if len(total_audio_bytes) < 500:
+                    raise RuntimeError("Edge-TTS returned empty or truncated audio stream")
+
+                succeeded = True
+                break
+            except Exception as e:
+                last_error = e
+                print_warning(f"Edge-TTS attempt {attempt}/{max_attempts} failed ({e}). Retrying in {attempt * 2}s...")
+                await asyncio.sleep(attempt * 2)
+
+        if not succeeded:
+            raise RuntimeError(f"Edge-TTS failed after {max_attempts} attempts: {last_error}")
 
         with open(output_audio_path, "wb") as f:
             f.write(total_audio_bytes)
+
+        # Apply Voice Acoustic Filter (Deep Bass, Cinematic Studio Equalizer, or Subtle Echo)
+        audio_filter_to_apply = None
+        if is_akashvani:
+            audio_filter_to_apply = "aecho=0.85:0.75:100|220:0.35|0.2,equalizer=f=120:width_type=o:width=1.5:g=4,equalizer=f=3500:width_type=o:width=1.2:g=2"
+        elif profile and profile.audio_filter:
+            audio_filter_to_apply = profile.audio_filter
+
+        if audio_filter_to_apply:
+            temp_filtered = output_audio_path.with_name(f"fx_{output_audio_path.name}")
+            from autotube.utils.ffmpeg_helper import run_ffmpeg
+            ok = run_ffmpeg(["-i", str(output_audio_path), "-af", audio_filter_to_apply, str(temp_filtered)])
+            if ok and temp_filtered.exists() and temp_filtered.stat().st_size > 1000:
+                temp_filtered.replace(output_audio_path)
 
         # Get authoritative duration using ffmpeg
         duration = get_media_duration(output_audio_path)
@@ -410,7 +488,7 @@ class TTSEngine:
         else:
             self._export_srt(words, srt_path)
 
-        self._export_karaoke_ass(words, ass_path)
+        self._export_karaoke_ass(words, ass_path, width=width, height=height)
 
         print_success(
             f"Voiceover generated: {output_audio_path.name} ({duration:.2f}s, {len(words)} words)"
@@ -455,6 +533,8 @@ class TTSEngine:
         words: List[TimedWord],
         ass_path: Path,
         words_per_line: int = 3,
+        width: int = 1080,
+        height: int = 1920,
     ) -> None:
         """Export Advanced SubStation Alpha (.ass) with viral Hormozi-style word-by-word karaoke highlighting."""
         if not words:
@@ -475,19 +555,25 @@ class TTSEngine:
         )
         font_name = "Noto Sans Devanagari" if has_devanagari else "Arial"
 
-        # Safe zone positioning: MarginV 780 ensures it is vertically centered above YouTube Shorts UI
+        is_landscape = width > height
+        res_x = 1920 if is_landscape else 1080
+        res_y = 1080 if is_landscape else 1920
+        font_size = 52 if is_landscape else 68
+        margin_v = 110 if is_landscape else 780
+
+        # Safe zone positioning: MarginV 780 for 9:16 Shorts, 110 for 16:9 Landscape Widescreen
         header = f"""[Script Info]
 Title: AutoTube Animated Subtitles
 ScriptType: v4.00+
 WrapStyle: 0
 ScaledBorderAndShadow: yes
 YCbCr Matrix: None
-PlayResX: 1080
-PlayResY: 1920
+PlayResX: {res_x}
+PlayResY: {res_y}
 
 [V4+ Styles]
 Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
-Style: Default,{font_name},68,&H00FFFFFF,&H0000FFFF,&H00000000,&H80000000,-1,0,0,0,100,100,0,0,1,6,3,2,60,60,780,1
+Style: Default,{font_name},{font_size},&H00FFFFFF,&H0000FFFF,&H00000000,&H80000000,-1,0,0,0,100,100,0,0,1,6,3,2,60,60,{margin_v},1
 
 [Events]
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
@@ -533,15 +619,15 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
         # Map speakers to character voices
         if is_hindi:
             voice_map = {
-                "nurse": "swara",   # Female Nurse Matilda in Hindi
-                "alien": "madhur",  # Alien Airl in Hindi (with telepathic resonance)
-                "narrator": "madhur",
+                "nurse": "swara",    # Female Nurse Matilda in Hindi
+                "alien": "madhur",   # Alien Airl in Hindi (with telepathic resonance)
+                "narrator": "madhur",  # Documentarian Narrator in Hindi (clean broadcast)
             }
         else:
             voice_map = {
-                "nurse": "rachel",  # Female Nurse Matilda in English
-                "alien": "daniel",  # Alien Airl in English (with telepathic resonance)
-                "narrator": "adam",
+                "nurse": "rachel",   # Female Nurse Matilda in English (JennyNeural)
+                "alien": "daniel",   # Alien Airl in English (ChristopherNeural with telepathic resonance)
+                "narrator": "guy",   # Documentarian Narrator in English (GuyNeural)
             }
 
         scene_audio_files = []
@@ -554,7 +640,9 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 
         for idx, scene in enumerate(scenes):
             speaker_raw = getattr(scene, "speaker", "").lower().strip()
-            if "nurse" in speaker_raw or "matilda" in speaker_raw:
+            if "narrator" in speaker_raw:
+                role = "narrator"
+            elif "nurse" in speaker_raw or "matilda" in speaker_raw:
                 role = "nurse"
             elif "alien" in speaker_raw or "airl" in speaker_raw:
                 role = "alien"
@@ -563,7 +651,7 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
             else:
                 role = "alien"
 
-            chosen_voice = voice_map.get(role, voice_map["alien" if idx % 2 != 0 else "nurse"])
+            chosen_voice = voice_map.get(role, voice_map.get("alien" if idx % 2 != 0 else "nurse"))
             scene_text = getattr(scene, "narration", "").strip()
             if not scene_text:
                 continue
