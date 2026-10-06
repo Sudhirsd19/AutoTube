@@ -69,6 +69,20 @@
             <div class="text-sm font-bold text-white"><span id="quota-used">--</span> <span class="text-slate-500">/ 10</span></div>
           </div>
         </div>
+        <!-- SERVER STORAGE WIDGET & CLEAN BUTTON -->
+        <div onclick="openStorageModal()" class="glass px-3 py-1.5 rounded-lg border border-brand-border hover:border-brand-cyan/50 flex items-center gap-2.5 cursor-pointer transition shadow group" title="Server Storage Management & Cleaner">
+          <i class="fa-solid fa-hard-drive text-brand-cyan group-hover:scale-110 transition-transform"></i>
+          <div>
+            <div class="text-[10px] text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+              <span>Free Disk</span>
+              <span id="header-disk-badge" class="px-1 py-0.2 text-[9px] font-bold rounded bg-emerald-950 text-emerald-400 border border-emerald-500/30">OK</span>
+            </div>
+            <div class="text-sm font-bold text-white"><span id="header-disk-free">--</span> <span class="text-slate-500 text-xs">GB</span></div>
+          </div>
+          <span class="ml-1 px-2 py-0.5 rounded bg-rose-950/70 group-hover:bg-rose-900 border border-rose-700/50 text-[10px] text-rose-300 font-bold transition flex items-center gap-1">
+            <i class="fa-solid fa-broom"></i> Clean
+          </span>
+        </div>
         <button onclick="refreshAllData()" class="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition" title="Refresh Dashboard">
           <i class="fa-solid fa-rotate"></i>
         </button>
@@ -80,14 +94,14 @@
       <button onclick="switchTab('videos')" id="tab-btn-videos" class="tab-btn px-4 py-2 rounded-lg bg-brand-cyan/10 text-brand-cyan border border-brand-cyan/30 flex items-center gap-2">
         <i class="fa-brands fa-youtube"></i> YouTube Schedule & Videos
       </button>
-      <button onclick="switchTab('alien')" id="tab-btn-alien" class="tab-btn px-4 py-2 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800/50 flex items-center gap-2">
-        <i class="fa-solid fa-user-astronaut"></i> Alien Series (16 Chapters)
-      </button>
       <button onclick="switchTab('generator')" id="tab-btn-generator" class="tab-btn px-4 py-2 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800/50 flex items-center gap-2">
-        <i class="fa-solid fa-bolt"></i> 1-Click Generator
+        <i class="fa-solid fa-bolt text-amber-400"></i> Slots Matrix & Generator
       </button>
       <button onclick="switchTab('media')" id="tab-btn-media" class="tab-btn px-4 py-2 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800/50 flex items-center gap-2">
         <i class="fa-solid fa-film"></i> Video Player & Archive
+      </button>
+      <button onclick="switchTab('aivideo')" id="tab-btn-aivideo" class="tab-btn px-4 py-2 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800/50 flex items-center gap-2">
+        <i class="fa-solid fa-wand-magic-sparkles text-purple-400"></i> Custom Story & Video Studio
       </button>
       <button onclick="switchTab('terminal')" id="tab-btn-terminal" class="tab-btn px-4 py-2 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800/50 flex items-center gap-2">
         <i class="fa-solid fa-terminal"></i> Live Generation Terminal
@@ -128,114 +142,165 @@
     </div>
 
     <!-- ================================================================= -->
-    <!-- TAB 2: ALIEN SERIES (16 CHAPTERS) -->
-    <!-- ================================================================= -->
-    <div id="tab-alien" class="tab-content hidden space-y-6">
-      <div class="flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <h2 class="text-2xl font-bold text-white flex items-center gap-2">
-            <i class="fa-solid fa-user-astronaut text-brand-cyan"></i> Alien Interview Book Series Curriculum
-          </h2>
-          <p class="text-sm text-slate-400">16 Declassified Interrogation Chapters (Roswell 1947 & Airl transcripts). 100% Sequential Continuity.</p>
-        </div>
-        <div class="glass px-4 py-2 rounded-xl text-sm font-bold text-slate-200 border border-brand-border">
-          Active Next Part: <span id="alien-active-part" class="text-brand-cyan text-lg">Part 3</span>
-        </div>
-      </div>
-
-      <div id="alien-chapters-grid" class="grid grid-cols-1 md:grid-cols-2 gap-5"></div>
-    </div>
-
-    <!-- ================================================================= -->
-    <!-- TAB 3: 1-CLICK GENERATOR -->
+    <!-- TAB 2: AUTONOMOUS SLOTS MATRIX & VIDEO GENERATOR -->
     <!-- ================================================================= -->
     <div id="tab-generator" class="tab-content hidden space-y-6">
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-
-        <!-- ALIEN GENERATOR CARD -->
-        <div class="glass-card p-6 rounded-2xl border border-brand-border space-y-5">
-          <div class="flex items-center justify-between border-b border-slate-800 pb-4">
-            <div class="flex items-center gap-3">
-              <div class="w-10 h-10 rounded-xl bg-cyan-950/80 border border-brand-cyan flex items-center justify-center text-brand-cyan text-xl">
-                🛸
-              </div>
-              <div>
-                <h3 class="font-bold text-lg text-white">Generate Alien Interview Short</h3>
-                <p class="text-xs text-slate-400">Real 2-Voice Dialogue (Matilda + Airl) & 1947 Leaked Tape</p>
-              </div>
+      <div class="glass-card p-6 rounded-2xl border border-brand-border space-y-5 shadow-2xl">
+        
+        <!-- Header: Presets, Slot Counter & Badges -->
+        <div class="flex flex-wrap items-center justify-between gap-4 border-b border-slate-800 pb-4">
+          <div class="flex items-center gap-3">
+            <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-brand-red to-amber-500 border border-brand-red/40 flex items-center justify-center text-white text-2xl shadow-lg neon-glow-red">
+              ⚡
             </div>
-            <span class="text-xs font-semibold px-2 py-1 rounded bg-brand-cyan/20 text-brand-cyan border border-brand-cyan/30">Dual-Voice</span>
-          </div>
-
-          <form id="alien-gen-form" onsubmit="handleAlienSubmit(event)" class="space-y-4 text-sm">
             <div>
-              <label class="block text-slate-300 font-semibold mb-1">Episode Part</label>
-              <select id="alien-part-select" class="w-full glass bg-slate-900 px-3 py-2 rounded-lg border border-slate-700 text-white focus:outline-none focus:border-brand-cyan">
-                <option value="">Auto-Detect Next Untracked Chapter</option>
-                <!-- populated by JS -->
-              </select>
-            </div>
-
-            <div class="grid grid-cols-2 gap-3">
-              <div>
-                <label class="block text-slate-300 font-semibold mb-1">Language</label>
-                <select id="alien-lang-select" class="w-full glass bg-slate-900 px-3 py-2 rounded-lg border border-slate-700 text-white focus:outline-none focus:border-brand-cyan">
-                  <option value="hi">🇮🇳 Hindi (Swara + Madhur Telepathic)</option>
-                  <option value="en">🇺🇸 English (Rachel + Daniel Telepathic)</option>
-                </select>
+              <div class="flex items-center gap-2">
+                <h3 class="font-black text-xl text-white tracking-wide">YouTube Slot Automation Matrix</h3>
+                <span id="slot-count-badge" class="text-xs font-bold px-2.5 py-0.5 rounded-full bg-red-950/80 text-red-400 border border-red-500/30">
+                  5 Slots Active
+                </span>
               </div>
-              <div>
-                <label class="block text-slate-300 font-semibold mb-1">YouTube Privacy</label>
-                <select id="alien-privacy-select" class="w-full glass bg-slate-900 px-3 py-2 rounded-lg border border-slate-700 text-white focus:outline-none focus:border-brand-cyan">
-                  <option value="public">Public (Instant Live)</option>
-                  <option value="unlisted">Unlisted (Review First)</option>
-                  <option value="private">Private (Scheduled)</option>
-                </select>
-              </div>
+              <p class="text-xs text-slate-400">Har slot ke anusaar Time, Niche, Language, AI Voice aur BGM configure karein. Single slot run karein ya poora batch automate karein.</p>
             </div>
-
-            <div class="flex items-center gap-2 pt-2">
-              <input type="checkbox" id="alien-upload-check" checked class="w-4 h-4 rounded text-brand-cyan focus:ring-brand-cyan bg-slate-900 border-slate-700">
-              <label for="alien-upload-check" class="text-slate-300 text-xs font-medium">Upload to YouTube immediately after rendering</label>
-            </div>
-
-            <button type="submit" id="btn-gen-alien" class="w-full py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold tracking-wide shadow-lg neon-glow-cyan transition flex items-center justify-center gap-2">
-              <i class="fa-solid fa-play"></i> GENERATE & UPLOAD ALIEN SHORT
-            </button>
-          </form>
+          </div>
+          
+          <!-- Templates Selector (Optional Quick-Fill) -->
+          <div class="flex flex-wrap items-center gap-1.5 bg-slate-900/95 p-1.5 rounded-xl border border-slate-800 text-xs">
+            <span class="text-[11px] text-slate-400 font-semibold px-2 flex items-center gap-1">
+              <i class="fa-solid fa-layer-group text-brand-cyan"></i> Load Template Set:
+            </span>
+            <button type="button" onclick="applyPreset('viral_5')" id="preset-btn-viral_5" class="preset-btn px-3 py-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition">5 Viral (Daily)</button>
+            <button type="button" onclick="applyPreset('master_12')" id="preset-btn-master_12" class="preset-btn px-3 py-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition">12 Master (10S+2L)</button>
+            <button type="button" onclick="applyPreset('shorts_10')" id="preset-btn-shorts_10" class="preset-btn px-3 py-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition">10 Shorts</button>
+            <button type="button" onclick="applyPreset('balanced_7')" id="preset-btn-balanced_7" class="preset-btn px-3 py-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition">7 Balanced</button>
+            <button type="button" onclick="applyPreset('starter_3')" id="preset-btn-starter_3" class="preset-btn px-3 py-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition">3 Quick</button>
+          </div>
         </div>
 
-        <!-- AUTOPILOT DAILY BATCH CARD -->
-        <div class="glass-card p-6 rounded-2xl border border-brand-border space-y-5">
-          <div class="flex items-center justify-between border-b border-slate-800 pb-4">
-            <div class="flex items-center gap-3">
-              <div class="w-10 h-10 rounded-xl bg-red-950/80 border border-brand-red flex items-center justify-center text-brand-red text-xl">
-                ⚡
-              </div>
-              <div>
-                <h3 class="font-bold text-lg text-white">Autopilot 7-Slot Daily Batch</h3>
-                <p class="text-xs text-slate-400">Trigger full daily batch across peak hours</p>
-              </div>
+        <!-- Global Slot Settings & Action Controls -->
+        <div class="flex flex-wrap items-center justify-between gap-3 bg-slate-900/80 border border-slate-800/90 rounded-xl px-4 py-3 text-xs">
+          <div class="flex flex-wrap items-center gap-5">
+            <div class="flex items-center gap-2">
+              <label for="matrix-privacy-select" class="text-slate-400 font-semibold">YouTube Privacy:</label>
+              <select id="matrix-privacy-select" onchange="updateMatrixPrivacy(this.value)" class="bg-slate-950 border border-slate-700 text-white text-xs px-3 py-1.5 rounded-lg focus:outline-none focus:border-brand-cyan">
+                <option value="private" selected>Private (Scheduled)</option>
+                <option value="public">Public (Instant Live)</option>
+                <option value="unlisted">Unlisted (Review First)</option>
+              </select>
             </div>
-            <span class="text-xs font-semibold px-2 py-1 rounded bg-red-950 text-red-400 border border-red-500/30">Batch Runner</span>
+            <div class="flex items-center gap-2">
+              <input type="checkbox" id="matrix-upload-check" checked onchange="updateMatrixUpload(this.checked)" class="w-4 h-4 rounded text-brand-cyan focus:ring-brand-cyan bg-slate-950 border-slate-700">
+              <label for="matrix-upload-check" class="text-slate-300 font-medium">Auto-upload to YouTube after rendering</label>
+            </div>
+            <span class="hidden md:inline-flex items-center gap-2 font-mono text-[11px] text-slate-400 border-l border-slate-800 pl-4">
+              <span class="text-cyan-400 font-bold"><i class="fa-solid fa-mobile-screen"></i> 9:16 Shorts</span>
+              <span class="text-slate-600">•</span>
+              <span class="text-amber-400 font-bold"><i class="fa-solid fa-film"></i> 16:9 Long (Doc)</span>
+            </span>
           </div>
 
-          <p class="text-xs text-slate-300 leading-relaxed">
-            Runs all 7 curated daily time slots: 4 English videos (USA EDT Peak Hours) and 3 Hindi videos (India IST Peak Hours), including Alien Interview sequential progression, high-retention stock waterfalls, and automated scheduling.
-          </p>
+          <div class="flex flex-wrap items-center gap-2.5">
+            <span class="slot-sync-status hidden sm:inline-flex items-center gap-1.5 text-xs text-slate-400 font-semibold mr-1">
+              <span class="w-2 h-2 rounded-full bg-emerald-400"></span> Synced
+            </span>
+            <button type="button" onclick="addNewSlot()" class="btn-add-slot px-4 py-2 rounded-xl bg-cyan-700 hover:bg-cyan-600 text-white font-bold transition flex items-center gap-1.5 shadow-md shadow-cyan-950/40 text-xs">
+              <i class="fa-solid fa-plus text-xs"></i> Add New Slot
+            </button>
+            <button type="button" onclick="saveSlotsConfiguration()" class="btn-save-slots px-5 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-black transition flex items-center gap-1.5 shadow-lg shadow-emerald-950/50 text-xs border border-emerald-400/40">
+              <i class="fa-solid fa-floppy-disk text-xs"></i> Save Slot Settings
+            </button>
+          </div>
+        </div>
 
-          <div class="p-3 rounded-xl bg-slate-900/60 border border-slate-800 text-xs font-mono space-y-1.5 text-slate-400">
-            <div>• 08:30 AM IST: Psychology / Life Hacks (Hindi)</div>
-            <div>• 01:00 PM IST: Science & Quantum Paradoxes (Hindi)</div>
-            <div>• 06:30 PM EDT: Alien Interview Part X (English)</div>
-            <div>• 07:30 PM IST: Alien Interview Part X (Hindi)</div>
-            <div>• 09:00 PM EDT: Unsolved Ancient Mysteries (English)</div>
-            <div>• 10:30 PM EDT: Deep Space & Astronomy (English)</div>
+        <!-- Audio Preview Studio Bar -->
+        <div class="flex flex-wrap items-center justify-between gap-3 bg-slate-950/80 border border-slate-800 rounded-xl px-4 py-2.5 text-xs">
+          <div class="flex flex-wrap items-center gap-3">
+            <span class="text-cyan-400 font-bold flex items-center gap-1.5">
+              <i class="fa-solid fa-headphones"></i> Listen & Preview Audio:
+            </span>
+            <!-- Quick Voice Preview -->
+            <div class="flex items-center gap-1.5 bg-slate-900 px-2 py-1 rounded-lg border border-slate-800">
+              <span class="text-[11px] text-slate-400">Voice:</span>
+              <select id="quick-voice-select" class="bg-transparent text-white font-medium text-xs focus:outline-none cursor-pointer">
+                <option value="akashvani" selected>🎙️ आकाशवाणी (Cosmic Devavani)</option>
+                <option value="madhur">🎙️ Madhur (Hindi Male Viral)</option>
+                <option value="swara">🎙️ Swara (Hindi Female)</option>
+                <option value="adam">🎙️ Adam (US Male Viral #1)</option>
+                <option value="christopher">🎙️ Christopher (Deep Documentary)</option>
+                <option value="guy">🎙️ Guy (Energetic Storyteller)</option>
+                <option value="aria">🎙️ Aria (Warm US Female)</option>
+                <option value="andrew">🎙️ Andrew (Tech Male)</option>
+              </select>
+              <button type="button" onclick="playCustomVoicePreview()" class="px-2.5 py-1 rounded bg-cyan-900 hover:bg-cyan-800 text-cyan-200 font-bold flex items-center gap-1 transition shadow">
+                <i id="quick-v-icon" class="fa-solid fa-play text-[10px]"></i> Play Voice
+              </button>
+            </div>
+
+            <!-- Quick BGM Preview -->
+            <div class="flex items-center gap-1.5 bg-slate-900 px-2 py-1 rounded-lg border border-slate-800">
+              <span class="text-[11px] text-slate-400">BGM:</span>
+              <select id="quick-bgm-select" class="bg-transparent text-white font-medium text-xs focus:outline-none cursor-pointer">
+                <option value="psychology" selected>🧠 Dark Psychology (Ambient)</option>
+                <option value="space">🌌 Cosmic Space (Deep Ambient)</option>
+                <option value="history">⚔️ History & Bharat (Epic / Ancient)</option>
+                <option value="mystery">🕵️ Eerie Mystery & Unsolved</option>
+                <option value="alien">🛸 Alien Sci-Fi (Atmospheric)</option>
+              </select>
+              <button type="button" onclick="playCustomBgmPreview()" class="px-2.5 py-1 rounded bg-purple-900 hover:bg-purple-800 text-purple-200 font-bold flex items-center gap-1 transition shadow">
+                <i id="quick-bgm-icon" class="fa-solid fa-play text-[10px]"></i> Play BGM
+              </button>
+            </div>
           </div>
 
-          <button onclick="handleAutopilotTrigger()" id="btn-gen-autopilot" class="w-full py-3 rounded-xl bg-gradient-to-r from-red-600 to-amber-600 hover:from-red-500 hover:to-amber-500 text-white font-bold tracking-wide shadow-lg neon-glow-red transition flex items-center justify-center gap-2">
-            <i class="fa-solid fa-bolt"></i> RUN 7-SLOT DAILY AUTOPILOT NOW
+          <button type="button" onclick="stopCurrentAudio()" class="px-3 py-1 rounded-lg bg-red-950/70 hover:bg-red-900 text-red-300 border border-red-500/30 font-bold flex items-center gap-1.5 transition">
+            <i class="fa-solid fa-stop text-xs"></i> Stop Audio
           </button>
+        </div>
+
+        <!-- Table Column Titles for Desktop -->
+        <div class="hidden lg:grid grid-cols-12 gap-2.5 px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-400 border-b border-slate-800/60">
+          <div class="col-span-2"># & Scheduled Time</div>
+          <div class="col-span-3">Topic / Niche</div>
+          <div class="col-span-1">Language</div>
+          <div class="col-span-2">Voice Narrator</div>
+          <div class="col-span-2">BGM Music</div>
+          <div class="col-span-1">Format</div>
+          <div class="col-span-1 text-right">Actions</div>
+        </div>
+
+        <!-- Scrollable Slot Items Container -->
+        <div id="slots-matrix-list" class="space-y-2.5 max-h-[520px] overflow-y-auto pr-1">
+          <!-- Dynamically populated by JavaScript -->
+        </div>
+
+        <!-- Inline Add Slot Row (Always visible right after slots) -->
+        <div class="pt-1 pb-1">
+          <button type="button" onclick="addNewSlot()" class="w-full py-2.5 rounded-xl border-2 border-dashed border-cyan-500/40 hover:border-cyan-400 bg-cyan-950/20 hover:bg-cyan-950/40 text-cyan-300 font-bold text-xs flex items-center justify-center gap-2 transition group shadow-sm">
+            <i class="fa-solid fa-circle-plus text-sm group-hover:scale-110 transition-transform"></i> + Add Another Slot to Matrix
+          </button>
+        </div>
+
+        <!-- Bottom Action Bar: Save Settings & Batch Run -->
+        <div class="pt-4 border-t border-slate-800 flex flex-col md:flex-row items-center justify-between gap-4">
+          <div class="flex flex-col gap-1 text-xs w-full md:w-auto">
+            <div class="slot-sync-status flex items-center gap-2">
+              <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+              <span class="text-emerald-400 font-semibold">Bot Schedule Active: Slots synced with config/slots_config.json</span>
+            </div>
+            <p class="text-[11px] text-slate-400">Speech-to-scene sync, auto-voiceover, burned subtitles & targeted peak publishing enabled.</p>
+          </div>
+
+          <div class="flex flex-wrap items-center gap-2.5 w-full md:w-auto justify-end">
+            <button type="button" onclick="addNewSlot()" class="btn-add-slot px-4 py-3 rounded-xl bg-cyan-700 hover:bg-cyan-600 text-white font-bold text-xs uppercase tracking-wider flex items-center gap-2 shadow-md transition">
+              <i class="fa-solid fa-circle-plus text-sm"></i> Add Slot
+            </button>
+            <button type="button" onclick="saveSlotsConfiguration()" class="btn-save-slots px-6 py-3 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-black text-xs uppercase tracking-wider flex items-center gap-2 shadow-xl shadow-emerald-950/50 border border-emerald-400/40 transition">
+              <i class="fa-solid fa-floppy-disk text-sm"></i> Save Settings
+            </button>
+            <button onclick="handleAutopilotTrigger()" id="btn-gen-autopilot" class="px-7 py-3 rounded-xl bg-gradient-to-r from-red-600 via-amber-600 to-red-600 hover:from-red-500 hover:to-amber-500 text-white font-black tracking-wide shadow-xl neon-glow-red transition flex items-center justify-center gap-2 text-xs uppercase">
+              <i class="fa-solid fa-bolt text-amber-300"></i> Run All Active Slots Now
+            </button>
+          </div>
         </div>
 
       </div>
@@ -264,19 +329,420 @@
             <span>Video Preview</span>
             <span id="player-title" class="text-xs text-brand-cyan truncate max-w-[180px]">Select a video</span>
           </h3>
-          <div class="w-[270px] h-[480px] bg-black rounded-xl overflow-hidden shadow-2xl border border-slate-800 flex items-center justify-center">
+          <div class="w-[270px] h-[380px] bg-black rounded-xl overflow-hidden shadow-2xl border border-slate-800 flex items-center justify-center">
             <video id="html5-player" controls class="w-full h-full object-cover">
               Your browser does not support the video tag.
             </video>
+          </div>
+          <!-- PUBLISH & DELETE CONTROLS -->
+          <div id="publish-controls" class="w-full mt-4 space-y-2 hidden">
+            <div id="publish-status-badge" class="text-center"></div>
+            <div class="flex items-center gap-2">
+              <button id="btn-publish" onclick="publishCurrentVideo()"
+                class="flex-1 px-4 py-2.5 rounded-xl bg-gradient-to-r from-red-600 to-red-500 hover:from-red-500 hover:to-red-400 text-white text-sm font-bold transition-all flex items-center justify-center gap-2 shadow-lg neon-glow-red">
+                <i class="fa-brands fa-youtube"></i> Publish to YouTube
+              </button>
+              <button id="btn-delete-active-video" onclick="deleteCurrentActiveVideo()"
+                class="px-4 py-2.5 rounded-xl bg-rose-950/80 hover:bg-rose-900 text-rose-300 border border-rose-700/50 text-xs font-bold transition flex items-center justify-center gap-1.5 shadow" title="Delete this video file">
+                <i class="fa-solid fa-trash"></i> Delete
+              </button>
+            </div>
+            <div id="publish-options" class="space-y-2">
+              <select id="publish-privacy" class="w-full px-3 py-1.5 rounded-lg bg-slate-800 border border-slate-700 text-xs text-white">
+                <option value="public">Public (Live Immediately)</option>
+                <option value="unlisted">Unlisted (Link Only)</option>
+                <option value="private">Private (Hidden)</option>
+              </select>
+            </div>
           </div>
         </div>
 
         <!-- FILES LIST -->
         <div class="lg:col-span-2 glass-card p-5 rounded-2xl border border-brand-border">
-          <h3 class="text-sm font-bold text-slate-200 mb-4">Generated Files in output/shorts/</h3>
+          <div class="flex flex-wrap items-center justify-between gap-2 mb-4 pb-2 border-b border-slate-800">
+            <div class="flex items-center gap-2">
+              <h3 class="text-sm font-bold text-slate-200">Generated Files in output/shorts/</h3>
+              <span id="media-count-badge" class="px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 text-xs font-semibold">0 files</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <button onclick="deleteAllVideos()" class="px-3 py-1.5 rounded-lg bg-rose-950/70 hover:bg-rose-900 border border-rose-800/50 text-xs font-bold text-rose-300 transition flex items-center gap-1.5 shadow" title="Delete all rendered videos from server disk">
+                <i class="fa-solid fa-trash-can"></i> Delete All Videos
+              </button>
+              <button onclick="openStorageModal()" class="px-3 py-1.5 rounded-lg bg-cyan-950/70 hover:bg-cyan-900 border border-cyan-800/50 text-xs font-bold text-cyan-300 transition flex items-center gap-1.5 shadow" title="Storage Management">
+                <i class="fa-solid fa-hard-drive"></i> Clean Storage
+              </button>
+            </div>
+          </div>
           <div id="media-list" class="space-y-2 max-h-[520px] overflow-y-auto pr-1"></div>
         </div>
       </div>
+    </div>
+
+    <!-- ================================================================= -->
+    <!-- TAB 4: CUSTOM STORY & VIDEO STUDIO (STORY -> VOICE & BGM -> REVIEW -> UPLOAD) -->
+    <!-- ================================================================= -->
+    <div id="tab-aivideo" class="tab-content hidden space-y-6">
+      
+      <!-- TOP CONTROLS: STUDIO TITLE, FORMAT SELECTOR & LANGUAGE SELECTOR -->
+      <div class="glass-card p-6 rounded-2xl border border-brand-border space-y-4 shadow-xl">
+        <div class="flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <h2 class="text-2xl font-bold text-white flex items-center gap-2">
+              <i class="fa-solid fa-wand-magic-sparkles text-purple-400"></i> Custom Story & Video Studio
+            </h2>
+            <p class="text-sm text-slate-400">Story likho ya idea do ➔ Voice & BGM select aur play karo ➔ Video generate karo ➔ Review karke direct YouTube par upload karo!</p>
+          </div>
+          
+          <!-- FORMAT TOGGLE & LANGUAGE TOGGLE -->
+          <div class="flex flex-wrap items-center gap-3">
+            <!-- Format Selector (Short vs Long) -->
+            <div class="flex items-center bg-slate-900/90 p-1 rounded-xl border border-slate-700">
+              <button type="button" onclick="selectStudioFormat('short')" id="btn-format-short" class="px-3.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 bg-brand-cyan text-black shadow-md">
+                <i class="fa-solid fa-mobile-screen"></i> 📱 9:16 Short (Vertical)
+              </button>
+              <button type="button" onclick="selectStudioFormat('landscape_long')" id="btn-format-long" class="px-3.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 text-slate-400 hover:text-white">
+                <i class="fa-solid fa-film"></i> 🎬 16:9 Long Video (Landscape)
+              </button>
+            </div>
+
+            <!-- Language Selector -->
+            <div class="flex items-center bg-slate-900/90 p-1 rounded-xl border border-slate-700">
+              <button type="button" onclick="selectStudioLang('hi')" id="btn-lang-hi" class="px-3 py-1.5 rounded-lg text-xs font-bold transition bg-purple-600 text-white shadow-md">
+                🇮🇳 Hindi
+              </button>
+              <button type="button" onclick="selectStudioLang('hinglish')" id="btn-lang-hinglish" class="px-3 py-1.5 rounded-lg text-xs font-bold transition text-slate-400 hover:text-white">
+                🇮🇳 Hinglish
+              </button>
+              <button type="button" onclick="selectStudioLang('en')" id="btn-lang-en" class="px-3 py-1.5 rounded-lg text-xs font-bold transition text-slate-400 hover:text-white">
+                🇺🇸 English
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- STEP 1: STORY / SCRIPT WRITING & ENHANCEMENT -->
+      <div class="glass-card p-6 rounded-2xl border border-brand-border space-y-4 shadow-xl">
+        <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3">
+          <div class="flex items-center gap-2">
+            <span class="w-6 h-6 rounded-full bg-purple-500/20 text-purple-400 font-bold text-xs flex items-center justify-center border border-purple-500/40">1</span>
+            <h3 class="text-base font-bold text-white flex items-center gap-2">
+              <i class="fa-solid fa-feather-pointed text-brand-cyan"></i> Story / Script Studio
+            </h3>
+            <span id="script-format-hint" class="text-xs text-brand-cyan bg-cyan-950/60 px-2.5 py-0.5 rounded-full border border-cyan-500/30">
+              Target for Shorts: 120-140 words (~50s)
+            </span>
+          </div>
+          <div class="flex items-center gap-2">
+            <button onclick="writeStoryFromIdea()" id="btn-write-story" class="px-3.5 py-1.5 rounded-lg bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white text-xs font-bold transition flex items-center gap-1.5 shadow-md">
+              <i class="fa-solid fa-wand-magic-sparkles"></i> ✨ Write Story from Idea (AI)
+            </button>
+            <button onclick="enhanceCurrentScript()" id="btn-enhance-script" class="px-3.5 py-1.5 rounded-lg bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-black text-xs font-bold transition flex items-center gap-1.5 shadow-md">
+              <i class="fa-solid fa-bolt"></i> ⚡ Enhance Hook & Retention (AI)
+            </button>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+          <div class="lg:col-span-2 space-y-3">
+            <div class="flex items-center justify-between text-xs text-slate-400">
+              <label class="font-semibold text-slate-300">Script / Kahani Narration:</label>
+              <div class="space-x-3">
+                <span>Words: <b id="script-word-count" class="text-brand-cyan">0</b></span>
+                <span>Est. Duration: <b id="script-est-duration" class="text-emerald-400">0s</b></span>
+              </div>
+            </div>
+            <textarea id="director-script-input" rows="6" oninput="updateScriptStats()" placeholder="Yaha apni kahani, script ya 1-line idea likho (jaise: 'Kailasa temple mystery' ya 'Bhagavad Gita mysterious prophecy') aur upar diye gaye '✨ Write Story' ya '⚡ Enhance Hook' par click karo..." class="w-full glass bg-slate-900/90 p-3.5 rounded-xl border border-slate-700 text-xs text-white focus:outline-none focus:border-brand-cyan font-sans leading-relaxed"></textarea>
+            
+            <!-- 1-CLICK VIRAL HOOK & OUTRO BOOSTERS -->
+            <div class="flex flex-wrap items-center gap-1.5 p-2 rounded-lg bg-slate-950/70 border border-slate-800">
+              <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider mr-1">⚡ Viral Boosters:</span>
+              <button type="button" onclick="injectHookTemplate('shock')" class="px-2.5 py-1 rounded bg-purple-950/70 hover:bg-purple-900 border border-purple-600/40 text-[11px] text-purple-300 font-medium transition flex items-center gap-1" title="Injects a 3-second attention-grabbing shock hook at start">
+                🚨 +3s Shock Hook
+              </button>
+              <button type="button" onclick="injectHookTemplate('secret')" class="px-2.5 py-1 rounded bg-cyan-950/70 hover:bg-cyan-900 border border-cyan-600/40 text-[11px] text-cyan-300 font-medium transition flex items-center gap-1" title="Injects a 50-year mystery hook at start">
+                🕵️ +Secret File Hook
+              </button>
+              <button type="button" onclick="injectOutroTemplate('debate')" class="px-2.5 py-1 rounded bg-amber-950/70 hover:bg-amber-900 border border-amber-600/40 text-[11px] text-amber-300 font-medium transition flex items-center gap-1" title="Injects a polarized comment debate question at end">
+                💬 +Comment Debate
+              </button>
+              <button type="button" onclick="injectOutroTemplate('subscribe')" class="px-2.5 py-1 rounded bg-emerald-950/70 hover:bg-emerald-900 border border-emerald-600/40 text-[11px] text-emerald-300 font-medium transition flex items-center gap-1" title="Injects a high-retention like & subscribe call-to-action">
+                🔔 +Like & Subscribe CTA
+              </button>
+            </div>
+
+            <div>
+              <label class="block text-[11px] text-slate-400 mb-1 font-semibold">Video Title (Click-Worthy & Viral)</label>
+              <input type="text" id="director-video-title" placeholder="e.g. Kailasa Temple Ka Khaufnak Sach! 😱 #Shorts" class="w-full glass bg-slate-900 px-3 py-2 rounded-lg border border-slate-700 text-xs text-white focus:outline-none focus:border-brand-cyan font-medium">
+            </div>
+          </div>
+
+          <!-- Suggested Titles & Auto Debate Pinned Comment -->
+          <div class="glass bg-slate-900/70 p-4 rounded-xl border border-slate-800 space-y-4 flex flex-col justify-between text-xs">
+            <div>
+              <div class="font-bold text-slate-300 flex items-center gap-1.5 mb-2">
+                <i class="fa-solid fa-comments text-brand-purple"></i> Auto-Generated Pinned Debate
+              </div>
+              <p id="director-pinned-preview" class="text-slate-400 italic bg-black/40 p-3 rounded-lg border border-slate-800 leading-relaxed text-[11px]">
+                Jab aap "Write Story" ya "Enhance Hook" click karenge, AI yaha 100+ comments drive karne wala debate question banayega!
+              </p>
+            </div>
+            <div>
+              <div class="text-[11px] text-slate-400 font-semibold mb-1.5">Suggested High-CTR Titles (Click to Apply):</div>
+              <div id="director-suggested-titles" class="space-y-1.5 text-[11px] text-brand-cyan">
+                <div class="text-slate-500 italic">• Script ya Idea enter karke Enhance par click karein...</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- STEP 2: VOICE & BGM SELECTION (WITH LIVE AUDITION / PLAY) -->
+      <div class="glass-card p-6 rounded-2xl border border-brand-border space-y-4 shadow-xl">
+        <div class="flex items-center gap-2 border-b border-slate-800 pb-3">
+          <span class="w-6 h-6 rounded-full bg-cyan-500/20 text-cyan-400 font-bold text-xs flex items-center justify-center border border-cyan-500/40">2</span>
+          <h3 class="text-base font-bold text-white flex items-center gap-2">
+            <i class="fa-solid fa-headphones text-cyan-400"></i> Voice & Background Music (BGM) Selection
+          </h3>
+          <span class="text-xs text-slate-400 font-normal">(Live Play karke suniye aur pasandida voice/music chuniye)</span>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <!-- VOICE SELECTION & LIVE AUDITION -->
+          <div class="glass bg-slate-900/60 p-4 rounded-xl border border-slate-800 space-y-3">
+            <div class="flex items-center justify-between mb-1">
+              <label class="text-xs font-bold text-slate-200 flex items-center gap-1.5">
+                <i class="fa-solid fa-microphone-lines text-purple-400"></i> AI Narrator Voice
+              </label>
+              <button type="button" onclick="playStudioVoicePreview()" id="btn-studio-voice-play" class="px-3 py-1 rounded-lg bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold transition flex items-center gap-1.5 shadow">
+                <i class="fa-solid fa-play text-[10px]"></i> ▶ Play Voice
+              </button>
+            </div>
+            
+            <select id="director-select-voice" class="w-full glass bg-slate-900 px-3 py-2 rounded-lg border border-slate-700 text-xs text-white focus:outline-none focus:border-brand-cyan">
+              <optgroup label="🇮🇳 HINDI VOICES — SPACE / MYSTERY / SCIENCE">
+                <option value="hi_deep_cinematic_male" selected>🎙️ Deep Cinematic Male Hindi (Space, Universe, Black Holes) ⭐ BEST</option>
+                <option value="hi_calm_male">🎙️ Calm Male Hindi (Science Explanations, Astronomy, Planet Facts)</option>
+                <option value="hi_cinematic_male">🎙️ Cinematic Male Hindi (Mystery, रहस्य, Unsolved Stories)</option>
+                <option value="hi_authoritative_male">🎙️ Authoritative Male Hindi (History, Science Facts, Educational)</option>
+                <option value="hi_young_male">🎙️ Young Male Hindi (YouTube Shorts, Fast Facts, Viral Content)</option>
+                <option value="hi_deep_female">🎙️ Deep Female Hindi (Mystery, Paranormal, Dark Stories)</option>
+                <option value="hi_calm_female">🎙️ Calm Female Hindi (Science, Space & Storytelling)</option>
+                <option value="hi_cinematic_female">🎙️ Cinematic Female Hindi (Emotional & Mysterious Stories)</option>
+              </optgroup>
+              <optgroup label="🇺🇸🇬🇧 ENGLISH VOICES — SPACE / MYSTERY / SCIENCE">
+                <option value="en_deep_cinematic_male">🎙️ Deep Cinematic American Male (Space Shorts, Universe, Black Holes) ⭐ BEST</option>
+                <option value="en_deep_british_male">🎙️ Deep British Male (Premium Space Documentary)</option>
+                <option value="en_calm_british_male">🎙️ Calm British Male (Science, Astronomy, Universe)</option>
+                <option value="en_cinematic_narrator">🎙️ Cinematic Male Narrator (Mystery, Aliens, Time Travel)</option>
+                <option value="en_deep_warm_male">🎙️ Deep Warm Male (Black Holes, Cosmic Events, Deep Space)</option>
+                <option value="en_authoritative_male">🎙️ Authoritative Male (Scientific Facts & Educational Content)</option>
+                <option value="en_calm_female">🎙️ Calm Female (Space & Science Storytelling)</option>
+                <option value="en_cinematic_female">🎙️ Cinematic Female (Mystery & Emotional Stories)</option>
+              </optgroup>
+              <optgroup label="✨ CLASSIC / LEGACY">
+                <option value="akashvani">🎙️ आकाशवाणी (Cosmic Echo Devavani - Divine Echo)</option>
+                <option value="madhur">🎙️ Madhur (Natural Hindi Documentary Narrator)</option>
+                <option value="adam">🎙️ Adam (US Male Cinematic #1 Viral)</option>
+              </optgroup>
+            </select>
+
+            <!-- Voice Speed Slider (Default 0.92x for Deep Suspense) -->
+            <div class="pt-1">
+              <div class="flex items-center justify-between text-xs mb-1">
+                <span class="text-slate-400">Voice Delivery Speed:</span>
+                <span id="val-voice-speed" class="font-bold text-brand-cyan">0.92x (Deep, Calm & Mysterious)</span>
+              </div>
+              <input type="range" id="slider-voice-speed" min="0.85" max="1.15" step="0.01" value="0.92" oninput="document.getElementById('val-voice-speed').textContent = this.value + 'x' + (this.value <= 0.95 ? ' (Deep Suspense & Calm)' : ' (Fast)')" class="w-full accent-brand-cyan cursor-pointer">
+            </div>
+          </div>
+
+          <!-- BGM SELECTION & LIVE AUDITION -->
+          <div class="glass bg-slate-900/60 p-4 rounded-xl border border-slate-800 space-y-3">
+            <div class="flex items-center justify-between mb-1">
+              <label class="text-xs font-bold text-slate-200 flex items-center gap-1.5">
+                <i class="fa-solid fa-music text-emerald-400"></i> Background Music (BGM)
+              </label>
+              <button type="button" onclick="playStudioBgmPreview()" id="btn-studio-bgm-play" class="px-3 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition flex items-center gap-1.5 shadow">
+                <i class="fa-solid fa-play text-[10px]"></i> ▶ Play BGM
+              </button>
+            </div>
+            
+            <select id="director-select-bgm" class="w-full glass bg-slate-900 px-3 py-2 rounded-lg border border-slate-700 text-xs text-white focus:outline-none focus:border-brand-cyan">
+              <option value="psychology" selected>🧠 Dark Psychology (Ambient Tension)</option>
+              <option value="space">🌌 Cosmic Space (Deep Ambient Void)</option>
+              <option value="history">⚔️ History & Bharat (Ancient Epic Chords)</option>
+              <option value="mystery">🕵️ Eerie Mystery & Unsolved Cases</option>
+              <option value="alien">🛸 Alien Sci-Fi (Atmospheric / Outer Space)</option>
+              <option value="none">🔇 None (Speech / Voice Narration Only)</option>
+            </select>
+
+            <!-- BGM Volume Slider -->
+            <div class="pt-1">
+              <div class="flex items-center justify-between text-xs mb-1">
+                <span class="text-slate-400">BGM Volume Mix:</span>
+                <span id="val-bgm-volume" class="font-bold text-emerald-400">16% (Auto-Ducked Audio)</span>
+              </div>
+              <input type="range" id="slider-bgm-volume" min="0.05" max="0.35" step="0.01" value="0.16" oninput="document.getElementById('val-bgm-volume').textContent = Math.round(this.value * 100) + '%' + (this.value <= 0.18 ? ' (Subtle)' : ' (Loud)')" class="w-full accent-emerald-400 cursor-pointer">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- STEP 3: SUBTITLES & VISUAL STYLE -->
+      <div class="glass-card p-6 rounded-2xl border border-brand-border space-y-4 shadow-xl">
+        <div class="flex items-center gap-2 border-b border-slate-800 pb-3">
+          <span class="w-6 h-6 rounded-full bg-amber-500/20 text-amber-400 font-bold text-xs flex items-center justify-center border border-amber-500/40">3</span>
+          <h3 class="text-base font-bold text-white flex items-center gap-2">
+            <i class="fa-solid fa-palette text-amber-400"></i> Subtitles & Visual Style
+          </h3>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1.5">Karaoke Subtitle Style</label>
+            <select id="director-select-subtitle-style" class="w-full glass bg-slate-900 px-3 py-2 rounded-lg border border-slate-700 text-xs text-white focus:outline-none focus:border-brand-cyan">
+              <option value="hormozi" selected>🔥 Hormozi / Viral Pop (Yellow Highlights, Bold Outline)</option>
+              <option value="cinematic">💎 Clean Cinematic (Bold White with Soft Shadow)</option>
+              <option value="none">🚫 No Subtitles (Clean Video Only)</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1.5 flex items-center gap-1.5">
+              <span>Visual Engine Mode</span>
+              <span class="text-[10px] bg-cyan-500/20 text-cyan-400 px-2 py-0.5 rounded-full border border-cyan-500/30">AI Multi-Source</span>
+            </label>
+            <select id="director-visual-mode" class="w-full glass bg-slate-900 px-3 py-2 rounded-lg border border-slate-700 text-xs text-white focus:outline-none focus:border-brand-cyan">
+              <option value="multi_cinematic" selected>🎬 Multi-Source AI Best Match (Mixkit + Coverr + Pexels + Archival)</option>
+              <option value="hybrid">🌟 Hybrid Mode: Asli Archive Proofs + AI Incident Scenes</option>
+              <option value="real_only">📜 100% Real Historical Photos & Scanned Documents Only</option>
+              <option value="ai_only">🎨 100% Photorealistic AI Generated Incident Scenes Only</option>
+              <option value="stock">🎥 Multi-Stock HD Videos Only (Mixkit, Coverr & Pexels)</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- REAL INCIDENT / HISTORICAL ARCHIVE PROOF MODE -->
+        <div class="p-3.5 rounded-xl bg-amber-950/25 border border-amber-500/30 flex items-start gap-3">
+          <input type="checkbox" id="director-real-incident-mode" checked class="mt-0.5 w-4 h-4 rounded text-amber-500 bg-slate-900 border-slate-700 focus:ring-0 cursor-pointer">
+          <div class="flex-1">
+            <label for="director-real-incident-mode" class="text-xs font-bold text-amber-300 flex items-center gap-2 cursor-pointer">
+              <i class="fa-solid fa-landmark text-amber-400"></i> 📜 Real Story / Historical Incident Mode (Authentic Photos, Scanned Archives & Proofs)
+            </label>
+            <p class="text-[11px] text-slate-400 mt-0.5">
+              Asli ghatna, sachhi kahani ya historical mystery (jaise Shanti Devi, Roswell 1947, Kailasa Temple) ke liye isse check karein. Bot internet aur Wikimedia se asli photos, purane newspaper headlines aur saboot documents fetch karke video me use karega!
+            </p>
+          </div>
+        </div>
+
+        <!-- AUTO VIRAL HOOK & ENGAGEMENT BOOSTER TOGGLE -->
+        <div class="p-3.5 rounded-xl bg-purple-950/25 border border-purple-500/30 flex items-start gap-3">
+          <input type="checkbox" id="director-auto-viral-hook" checked class="mt-0.5 w-4 h-4 rounded text-purple-500 bg-slate-900 border-slate-700 focus:ring-0 cursor-pointer">
+          <div class="flex-1">
+            <label for="director-auto-viral-hook" class="text-xs font-bold text-purple-300 flex items-center gap-2 cursor-pointer">
+              <i class="fa-solid fa-bolt text-amber-400"></i> 🔥 Auto Viral Hook & Subscriber Outro (3s Shock Opening + Animated Like/Subscribe/Bell)
+            </label>
+            <p class="text-[11px] text-slate-400 mt-0.5">
+              Isko ON rakhne par bot video ke starting 2.8s me audio whoosh aur visual hook badge lagayega, aur aakhiri 5s me animated Like/Subscribe/Bell banner aur comment debate CTA include karega!
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- STEP 4: GENERATE VIDEO ACTION & LIVE STATUS -->
+      <div class="glass-card p-6 rounded-2xl border border-brand-border space-y-4 shadow-xl text-center">
+        <div class="flex items-center justify-center gap-2 mb-1">
+          <span class="w-6 h-6 rounded-full bg-emerald-500/20 text-emerald-400 font-bold text-xs flex items-center justify-center border border-emerald-500/40">4</span>
+          <h3 class="text-base font-bold text-white">Generate Video</h3>
+        </div>
+
+        <button onclick="startDirectorRender()" id="btn-director-render" class="w-full max-w-lg mx-auto py-3.5 rounded-xl bg-gradient-to-r from-purple-600 via-pink-600 to-cyan-600 hover:from-purple-500 hover:via-pink-500 hover:to-cyan-500 text-white text-sm font-extrabold shadow-2xl transition flex items-center justify-center gap-2 transform active:scale-95">
+          <i class="fa-solid fa-play"></i> 🎬 Generate 9:16 Short Video Now
+        </button>
+
+        <div id="director-render-status" class="hidden max-w-lg mx-auto p-3.5 rounded-xl bg-cyan-950/40 border border-cyan-500/30 text-xs text-cyan-300 text-center font-medium animate-pulse space-y-1">
+          <div class="flex items-center justify-center gap-2 font-bold">
+            <i class="fa-solid fa-circle-notch fa-spin text-brand-cyan"></i>
+            <span id="director-render-status-text">Video render ho raha hai... Please wait...</span>
+          </div>
+          <div class="text-[11px] text-slate-400">Audio synthesis ➔ BGM mixing ➔ Visual composition ➔ Subtitle burning</div>
+        </div>
+      </div>
+
+      <!-- STEP 5: REVIEW VIDEO & 1-CLICK YOUTUBE UPLOAD -->
+      <div id="director-result-panel" class="hidden glass-card p-6 rounded-2xl border border-emerald-500/40 bg-emerald-950/10 space-y-5 shadow-2xl">
+        <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800 pb-3">
+          <div class="flex items-center gap-2">
+            <span class="w-6 h-6 rounded-full bg-emerald-500 text-black font-bold text-xs flex items-center justify-center">5</span>
+            <h3 class="text-base font-bold text-white flex items-center gap-2">
+              <i class="fa-solid fa-circle-check text-emerald-400"></i> Video Review & YouTube Upload
+            </h3>
+          </div>
+          <span id="director-res-specs" class="text-xs text-brand-cyan font-mono bg-slate-900 px-3 py-1 rounded-full border border-slate-700">
+            1080x1920 • 0.0 MB • 0s
+          </span>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+          <!-- In-Browser Adaptive Video Player -->
+          <div class="lg:col-span-5 flex flex-col items-center">
+            <div id="director-video-container" class="w-full max-w-[280px] aspect-[9/16] bg-black rounded-2xl overflow-hidden border-2 border-brand-cyan/40 shadow-2xl relative">
+              <video id="director-preview-player" controls preload="metadata" class="w-full h-full object-contain"></video>
+            </div>
+            <div class="mt-3 flex items-center gap-2">
+              <a id="btn-director-download" href="#" download class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-slate-300 font-semibold transition flex items-center gap-1.5">
+                <i class="fa-solid fa-download"></i> 📥 Download .mp4
+              </a>
+              <button id="btn-director-delete" onclick="deleteCurrentDirectorVideo()" class="px-3 py-1.5 rounded-lg bg-rose-950/80 hover:bg-rose-900 border border-rose-600/50 text-xs text-rose-300 font-bold transition flex items-center gap-1.5 shadow" title="Delete video if you do not like it">
+                <i class="fa-solid fa-trash"></i> 🗑️ Delete Video & Discard
+              </button>
+            </div>
+          </div>
+
+          <!-- YouTube Publish Form -->
+          <div class="lg:col-span-7 glass bg-slate-900/80 p-5 rounded-xl border border-slate-800 space-y-3.5">
+            <div>
+              <label class="block text-xs font-semibold text-slate-300 mb-1">YouTube Title</label>
+              <input type="text" id="director-pub-title" class="w-full glass bg-slate-950 px-3 py-2 rounded-lg border border-slate-700 text-xs text-white font-semibold focus:outline-none focus:border-brand-cyan">
+            </div>
+
+            <div>
+              <label class="block text-xs font-semibold text-slate-300 mb-1">Description</label>
+              <textarea id="director-pub-desc" rows="3" class="w-full glass bg-slate-950 px-3 py-2 rounded-lg border border-slate-700 text-xs text-white focus:outline-none focus:border-brand-cyan"></textarea>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label class="block text-xs font-semibold text-slate-300 mb-1">Tags (Comma-Separated)</label>
+                <input type="text" id="director-pub-tags" value="#Shorts, #Viral, #Mystery, #HindiStories" class="w-full glass bg-slate-950 px-3 py-2 rounded-lg border border-slate-700 text-xs text-white focus:outline-none focus:border-brand-cyan">
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-300 mb-1">Privacy Status</label>
+                <select id="director-pub-privacy" class="w-full glass bg-slate-950 px-3 py-2 rounded-lg border border-slate-700 text-xs text-white focus:outline-none focus:border-brand-cyan">
+                  <option value="public" selected>🌍 Public (Instant Live)</option>
+                  <option value="unlisted">🔗 Unlisted (Link Only)</option>
+                  <option value="private">🔒 Private (Draft)</option>
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-xs font-semibold text-slate-300 mb-1">Pinned Comment (Auto-Debate)</label>
+              <textarea id="director-pub-pinned" rows="2" class="w-full glass bg-slate-950 px-3 py-2 rounded-lg border border-slate-700 text-xs text-white focus:outline-none focus:border-brand-cyan"></textarea>
+            </div>
+
+            <div class="pt-2">
+              <button onclick="publishDirectorVideoNow()" id="btn-director-publish" class="w-full py-3 rounded-xl bg-gradient-to-r from-red-600 via-rose-600 to-red-700 hover:from-red-500 hover:to-rose-500 text-white text-xs font-extrabold transition flex items-center justify-center gap-2 shadow-xl">
+                <i class="fa-brands fa-youtube text-base"></i> 🚀 Upload to YouTube Now
+              </button>
+            </div>
+
+            <div id="director-pub-feedback" class="hidden text-xs text-center py-2 rounded-lg bg-black/40"></div>
+          </div>
+        </div>
+      </div>
+
     </div>
 
     <!-- ================================================================= -->
@@ -343,6 +809,99 @@
     </div>
   </div>
 
+  <!-- ================================================================= -->
+  <!-- SERVER STORAGE & MEMORY CLEANER MODAL -->
+  <!-- ================================================================= -->
+  <div id="storage-modal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="glass-card max-w-lg w-full p-6 rounded-2xl border border-brand-border space-y-5 shadow-2xl">
+      <!-- Modal Header -->
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <h3 class="font-bold text-lg text-white flex items-center gap-2">
+          <i class="fa-solid fa-hard-drive text-brand-cyan"></i> Server Storage & Memory Cleaner
+        </h3>
+        <button onclick="closeStorageModal()" class="text-slate-400 hover:text-white transition">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <!-- Live Disk Bar & Summary -->
+      <div class="space-y-2">
+        <div class="flex items-center justify-between text-xs">
+          <span class="text-slate-400">Total Disk: <b id="sm-disk-total" class="text-white">-- GB</b></span>
+          <span class="text-slate-400">Free Space: <b id="sm-disk-free" class="text-brand-cyan text-sm">-- GB</b></span>
+          <span class="text-slate-400">Used: <b id="sm-disk-used-pct" class="text-amber-400">--%</b></span>
+        </div>
+        <div class="w-full h-3 rounded-full bg-slate-800 overflow-hidden border border-slate-700/50">
+          <div id="sm-disk-bar" class="h-full bg-gradient-to-r from-brand-cyan to-brand-red transition-all duration-500" style="width: 50%;"></div>
+        </div>
+      </div>
+
+      <!-- Cleanable Categories Breakdown -->
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+        <div class="p-3 rounded-xl bg-slate-900/80 border border-slate-800 flex flex-col justify-between">
+          <div class="text-slate-400 flex items-center gap-1.5 mb-1">
+            <i class="fa-solid fa-film text-purple-400"></i> Rendered Videos
+          </div>
+          <div class="text-base font-bold text-white"><span id="sm-videos-size">--</span> <span class="text-xs text-slate-500 font-normal">MB</span></div>
+          <div class="text-[10px] text-slate-500 mt-1">output/shorts & longform</div>
+        </div>
+        <div class="p-3 rounded-xl bg-slate-900/80 border border-slate-800 flex flex-col justify-between">
+          <div class="text-slate-400 flex items-center gap-1.5 mb-1">
+            <i class="fa-solid fa-bolt text-amber-400"></i> Temp Chunks
+          </div>
+          <div class="text-base font-bold text-white"><span id="sm-temp-size">--</span> <span class="text-xs text-slate-500 font-normal">MB</span></div>
+          <div class="text-[10px] text-slate-500 mt-1">temp/ & audio cuts</div>
+        </div>
+        <div class="p-3 rounded-xl bg-slate-900/80 border border-slate-800 flex flex-col justify-between">
+          <div class="text-slate-400 flex items-center gap-1.5 mb-1">
+            <i class="fa-solid fa-photo-film text-cyan-400"></i> Stock Cache
+          </div>
+          <div class="text-base font-bold text-white"><span id="sm-stock-size">--</span> <span class="text-xs text-slate-500 font-normal">MB</span></div>
+          <div class="text-[10px] text-slate-500 mt-1">assets/stock_cache</div>
+        </div>
+      </div>
+
+      <div class="p-3 rounded-xl bg-amber-950/20 border border-amber-500/25 text-xs text-amber-300 flex items-start gap-2">
+        <i class="fa-solid fa-triangle-exclamation mt-0.5 text-amber-400 flex-shrink-0"></i>
+        <span>Yahan se files delete karne par YouTube par already uploaded videos bilkul safe rahenge. Sirf server ki memory free hogi.</span>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="space-y-2 pt-1">
+        <!-- Button 1: Purge Temp & Stock Cache -->
+        <button onclick="executeStoragePurge('temp_and_stock')" id="btn-purge-cache" class="w-full py-2.5 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-bold transition flex items-center justify-between group">
+          <div class="flex items-center gap-2">
+            <i class="fa-solid fa-broom text-amber-400"></i>
+            <span>Clean Temp Chunks & Stock Video Cache</span>
+          </div>
+          <span class="text-[10px] text-slate-400 group-hover:text-white">Safe Daily Clean &rarr;</span>
+        </button>
+
+        <!-- Button 2: Delete All Rendered Videos -->
+        <button onclick="executeStoragePurge('videos_only')" id="btn-purge-videos" class="w-full py-2.5 px-4 rounded-xl bg-rose-950/40 hover:bg-rose-950/70 text-rose-300 border border-rose-800/40 text-xs font-bold transition flex items-center justify-between group">
+          <div class="flex items-center gap-2">
+            <i class="fa-solid fa-film text-rose-400"></i>
+            <span>Delete All Rendered Videos from Server</span>
+          </div>
+          <span class="text-[10px] text-rose-400 group-hover:text-rose-200">Free Video Space &rarr;</span>
+        </button>
+
+        <!-- Button 3: Full Deep Purge -->
+        <button onclick="executeStoragePurge('all')" id="btn-purge-all" class="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-rose-700 to-red-600 hover:from-rose-600 hover:to-red-500 text-white text-xs font-black shadow-lg neon-glow-red transition flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <i class="fa-solid fa-trash-can"></i>
+            <span>Full Storage Purge (Delete All Videos + Temp + Cache)</span>
+          </div>
+          <span class="text-[10px] text-white/80">Maximum Free Space &rarr;</span>
+        </button>
+      </div>
+
+      <div class="flex items-center justify-end border-t border-slate-800/80 pt-3">
+        <button onclick="closeStorageModal()" class="px-4 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-300">Close</button>
+      </div>
+    </div>
+  </div>
+
   <!-- JAVASCRIPT APP LOGIC -->
   <script>
     let currentFilter = 'all';
@@ -375,8 +934,9 @@
       }
 
       if (tabId === 'videos') loadVideos();
-      if (tabId === 'alien') loadAlienChapters();
       if (tabId === 'media') loadMediaFiles();
+      if (tabId === 'autopilot') loadSlotsMatrix();
+      if (tabId === 'aivideo') loadDirectorOptions();
     }
 
     // Clocks and Status
@@ -387,7 +947,22 @@
         document.getElementById('clock-ist').textContent = data.time_ist.split(' ')[1] + ' ' + data.time_ist.split(' ')[2];
         document.getElementById('clock-edt').textContent = data.time_edt.split(' ')[1] + ' ' + data.time_edt.split(' ')[2];
         document.getElementById('quota-used').textContent = data.today_uploads_count;
-        document.getElementById('alien-active-part').textContent = `Part ${data.current_alien_part}`;
+
+        // Server Disk Storage Widget
+        if (data.disk_free_gb !== undefined) {
+          const dfEl = document.getElementById('header-disk-free');
+          if (dfEl) dfEl.textContent = data.disk_free_gb;
+          const badgeEl = document.getElementById('header-disk-badge');
+          if (badgeEl) {
+            if (data.disk_free_gb < 2) {
+              badgeEl.textContent = 'LOW';
+              badgeEl.className = 'px-1 py-0.2 text-[9px] font-bold rounded bg-rose-950 text-rose-400 border border-rose-500/30 animate-pulse';
+            } else {
+              badgeEl.textContent = 'OK';
+              badgeEl.className = 'px-1 py-0.2 text-[9px] font-bold rounded bg-emerald-950 text-emerald-400 border border-emerald-500/30';
+            }
+          }
+        }
 
         const termBadge = document.getElementById('term-status-badge');
         if (data.is_generating) {
@@ -412,6 +987,28 @@
       try {
         const res = await fetch('/api/videos');
         const data = await res.json();
+
+        if (data.auth_required) {
+          loader.innerHTML = `
+            <div class="glass-card p-8 rounded-2xl border border-amber-500/30 bg-amber-950/20 text-center max-w-lg mx-auto my-8">
+              <i class="fa-brands fa-youtube text-5xl text-red-500 mb-4"></i>
+              <h3 class="text-lg font-bold text-white mb-2">YouTube Account Login Required</h3>
+              <p class="text-xs text-slate-300 mb-5 leading-relaxed">
+                Google OAuth security policy ke anusaar token expire ho chuka hai.<br>
+                Live YouTube videos aur schedule dekhne ke liye token refresh karein.
+              </p>
+              <div class="bg-slate-900/80 p-3 rounded-xl border border-slate-700/60 text-left text-xs mb-4">
+                <div class="text-slate-400 font-semibold mb-1">1-Click Fast Fix (Local Terminal):</div>
+                <code class="text-cyan-400 font-mono select-all">python run.py auth</code>
+                <div class="text-[11px] text-slate-400 mt-1">Browser me Google sign-in karte hi token automatically Oracle VM par sync ho jayega.</div>
+              </div>
+              <button onclick="promptPasteToken()" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-600 text-xs text-slate-200 transition">
+                <i class="fa-solid fa-paste mr-1"></i> Paste Token JSON Manually
+              </button>
+            </div>`;
+          return;
+        }
+
         allVideos = data.videos || [];
         loader.classList.add('hidden');
 
@@ -422,6 +1019,27 @@
         renderVideoCards();
       } catch (err) {
         loader.innerHTML = `<div class="text-red-400"><i class="fa-solid fa-triangle-exclamation mb-2"></i><br>Failed to fetch YouTube videos: ${err.message}</div>`;
+      }
+    }
+
+    async function promptPasteToken() {
+      const raw = prompt("Paste your token.json content here:");
+      if (!raw) return;
+      try {
+        const res = await fetch('/api/auth/save_token', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token_json: raw }),
+        });
+        const data = await res.json();
+        if (data.success) {
+          showToast("Token updated successfully! Reloading videos...");
+          setTimeout(loadVideos, 1000);
+        } else {
+          showToast(data.detail || "Error saving token", true);
+        }
+      } catch (e) {
+        showToast("Error updating token: " + e.message, true);
       }
     }
 
@@ -571,93 +1189,548 @@
       }
     }
 
-    // Alien Chapters Tab
-    async function loadAlienChapters() {
-      const grid = document.getElementById('alien-chapters-grid');
-      grid.innerHTML = '<div class="col-span-full text-center py-10 text-slate-500"><i class="fa-solid fa-spinner fa-spin"></i> Loading 16 chapters curriculum...</div>';
+    // =================================================================
+    // =================================================================
+    // DYNAMIC AUTOPILOT SLOTS MATRIX & BOT PERSISTENCE
+    // =================================================================
+    let currentSlotsConfig = { slots: [], active_preset: 'viral_5', presets: {} };
+    let hasUnsavedSlotChanges = false;
 
+    function markSlotsUnsaved() {
+      hasUnsavedSlotChanges = true;
+      document.querySelectorAll('.slot-sync-status').forEach(el => {
+        el.innerHTML = '<span class="text-amber-400 font-bold flex items-center gap-1.5"><i class="fa-solid fa-triangle-exclamation animate-pulse"></i> Unsaved Changes — Click "Save Slot Settings"</span>';
+      });
+      document.querySelectorAll('.btn-save-slots').forEach(btn => {
+        btn.classList.add('ring-2', 'ring-amber-400', 'animate-pulse');
+      });
+    }
+
+    function markSlotsSaved(count) {
+      hasUnsavedSlotChanges = false;
+      document.querySelectorAll('.slot-sync-status').forEach(el => {
+        el.innerHTML = `<span class="text-emerald-400 font-bold flex items-center gap-1.5"><i class="fa-solid fa-circle-check"></i> Bot Schedule Active: ${count} Slots synced with config/slots_config.json</span>`;
+      });
+      document.querySelectorAll('.btn-save-slots').forEach(btn => {
+        btn.classList.remove('ring-2', 'ring-amber-400', 'animate-pulse');
+      });
+    }
+
+    function syncDomToSlotsConfig() {
+      const slots = currentSlotsConfig.slots || [];
+      slots.forEach(slot => {
+        const nicheInput = document.getElementById(`slot-niche-${slot.id}`);
+        if (nicheInput) slot.niche = nicheInput.value.trim();
+
+        const timeInput = document.getElementById(`slot-time-${slot.id}`);
+        if (timeInput) {
+          const parts = timeInput.value.split(':');
+          if (parts.length >= 2) {
+            const h = parseInt(parts[0], 10);
+            const m = parseInt(parts[1], 10);
+            if (!isNaN(h) && !isNaN(m)) {
+              slot.hour = Math.min(23, Math.max(0, h));
+              slot.minute = Math.min(59, Math.max(0, m));
+            }
+          }
+        }
+
+        const langSelect = document.getElementById(`slot-lang-${slot.id}`);
+        if (langSelect) slot.language = langSelect.value;
+
+        const voiceSelect = document.getElementById(`slot-voice-${slot.id}`);
+        if (voiceSelect) slot.voice = voiceSelect.value;
+
+        const bgmSelect = document.getElementById(`slot-bgm-${slot.id}`);
+        if (bgmSelect) slot.bgm = bgmSelect.value;
+
+        const fmtSelect = document.getElementById(`slot-format-${slot.id}`);
+        if (fmtSelect) slot.format = fmtSelect.value;
+      });
+
+      const privacySelect = document.getElementById('matrix-privacy-select');
+      if (privacySelect) currentSlotsConfig.upload_privacy = privacySelect.value;
+
+      const uploadCheck = document.getElementById('matrix-upload-check');
+      if (uploadCheck) currentSlotsConfig.auto_upload = uploadCheck.checked;
+    }
+
+    async function loadSlotsMatrix() {
       try {
-        const res = await fetch('/api/alien/chapters');
+        const res = await fetch('/api/autopilot/slots');
         const data = await res.json();
-        grid.innerHTML = '';
+        currentSlotsConfig = data;
 
-        // Also populate select dropdown in generator form
-        const partSelect = document.getElementById('alien-part-select');
-        partSelect.innerHTML = `<option value="">Auto-Detect Next (Part ${data.current_part})</option>`;
-        data.chapters.forEach(ch => {
-          const opt = document.createElement('option');
-          opt.value = ch.part;
-          opt.textContent = `Part ${ch.part}: ${ch.title_en}`;
-          if (ch.part === data.current_part) opt.selected = true;
-          partSelect.appendChild(opt);
-        });
+        const privacySelect = document.getElementById('matrix-privacy-select');
+        if (privacySelect && data.upload_privacy) {
+          privacySelect.value = data.upload_privacy;
+        }
+        const uploadCheck = document.getElementById('matrix-upload-check');
+        if (uploadCheck && data.auto_upload !== undefined) {
+          uploadCheck.checked = Boolean(data.auto_upload);
+        }
 
-        data.chapters.forEach(ch => {
-          const card = document.createElement('div');
-          const isCurrent = ch.is_current;
-          card.className = `glass-card p-5 rounded-2xl border transition ${isCurrent ? 'border-brand-cyan shadow-lg neon-glow-cyan' : 'border-brand-border'}`;
-
-          const enStatus = ch.en_done
-            ? `<a href="${ch.en_video_url}" target="_blank" class="px-2.5 py-1 rounded bg-emerald-950 text-emerald-400 border border-emerald-500/30 text-xs font-bold hover:bg-emerald-900 transition flex items-center gap-1"><i class="fa-solid fa-check"></i> EN Live</a>`
-            : `<button onclick="quickGenAlien(${ch.part}, 'en')" class="px-2.5 py-1 rounded bg-slate-800 hover:bg-cyan-900 text-cyan-300 text-xs font-semibold transition">Gen EN</button>`;
-
-          const hiStatus = ch.hi_done
-            ? `<a href="${ch.hi_video_url}" target="_blank" class="px-2.5 py-1 rounded bg-emerald-950 text-emerald-400 border border-emerald-500/30 text-xs font-bold hover:bg-emerald-900 transition flex items-center gap-1"><i class="fa-solid fa-check"></i> HI Live</a>`
-            : `<button onclick="quickGenAlien(${ch.part}, 'hi')" class="px-2.5 py-1 rounded bg-slate-800 hover:bg-cyan-900 text-cyan-300 text-xs font-semibold transition">Gen HI</button>`;
-
-          card.innerHTML = `
-            <div class="flex items-center justify-between mb-3">
-              <span class="text-xs font-black tracking-wider px-2 py-0.5 rounded ${isCurrent ? 'bg-brand-cyan text-black' : 'bg-slate-800 text-brand-cyan'}">PART ${ch.part}</span>
-              <div class="flex items-center gap-2">${enStatus} ${hiStatus}</div>
-            </div>
-            <h4 class="font-bold text-white text-sm mb-1">${ch.title_en}</h4>
-            <h5 class="text-xs text-slate-300 font-hindi mb-3">${ch.title_hi}</h5>
-            <div class="p-2.5 rounded-xl bg-slate-900/70 border border-slate-800/80 text-xs space-y-1 mb-2">
-              <div class="text-cyan-300 font-semibold"><i class="fa-solid fa-file-shield text-[10px]"></i> Proof: ${ch.evidence_proof}</div>
-              <div class="text-slate-400 italic">"${ch.key_quote}"</div>
-            </div>
-            <div class="text-[11px] text-slate-500">${ch.book_chapter}</div>
-          `;
-          grid.appendChild(card);
-        });
+        renderSlotsMatrix();
+        markSlotsSaved((currentSlotsConfig.slots || []).length);
       } catch (err) {
-        grid.innerHTML = `<div class="text-red-400 text-center py-10">Error loading chapters: ${err.message}</div>`;
+        console.error('Failed to load slots matrix:', err);
       }
     }
 
-    async function quickGenAlien(part, lang) {
-      if (!confirm(`Generate Alien Interview Part ${part} in ${lang.toUpperCase()} and upload to YouTube?`)) return;
+    function updateMatrixPrivacy(val) {
+      currentSlotsConfig.upload_privacy = val;
+      markSlotsUnsaved();
+    }
+
+    function updateMatrixUpload(checked) {
+      currentSlotsConfig.auto_upload = checked;
+      markSlotsUnsaved();
+    }
+
+    function renderSlotsMatrix(highlightId = null) {
+      const container = document.getElementById('slots-matrix-list');
+      const badge = document.getElementById('slot-count-badge');
+      if (!container) return;
+
+      const slots = currentSlotsConfig.slots || [];
+      const shortCount = slots.filter(s => s.format !== 'landscape_long').length;
+      const longCount = slots.filter(s => s.format === 'landscape_long').length;
+      if (badge) {
+        badge.textContent = `${slots.length} Slots (${shortCount} Shorts • ${longCount} Long Videos)`;
+      }
+
+      // Update preset buttons styling
+      ['viral_5', 'master_12', 'shorts_10', 'balanced_7', 'starter_3'].forEach(p => {
+        const btn = document.getElementById(`preset-btn-${p}`);
+        if (btn) {
+          if (currentSlotsConfig.active_preset === p) {
+            btn.className = 'preset-btn px-3 py-1.5 rounded-lg bg-slate-800 text-brand-cyan border border-brand-cyan/40 font-semibold shadow';
+          } else {
+            btn.className = 'preset-btn px-3 py-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition';
+          }
+        }
+      });
+
+      if (slots.length === 0) {
+        container.innerHTML = `
+          <div class="text-center py-8 text-slate-500 text-xs">
+            No slots configured. Click "+ Add New Slot" or pick a preset above to begin.
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = slots.map((slot, index) => {
+        const timeDisplay = `${String(slot.hour !== undefined ? slot.hour : 8).padStart(2, '0')}:${String(slot.minute !== undefined ? slot.minute : 0).padStart(2, '0')}`;
+        const tz = (slot.tz || 'IST').toUpperCase();
+        const isHindi = (slot.language || 'Hindi').toLowerCase() === 'hindi' || slot.language === 'hi';
+        const isLong = (slot.format === 'landscape_long');
+        const slotVoice = (slot.voice || (isHindi ? 'akashvani' : 'adam')).toLowerCase();
+        const slotBgm = (slot.bgm || 'auto').toLowerCase();
+
+        const rowBg = isLong 
+          ? 'bg-amber-950/25 hover:bg-amber-950/35 border border-amber-500/40 rounded-xl p-3 flex flex-wrap lg:grid lg:grid-cols-12 gap-2.5 items-center text-xs transition shadow-sm'
+          : 'bg-slate-900/90 hover:bg-slate-900 border border-slate-800 rounded-xl p-3 flex flex-wrap lg:grid lg:grid-cols-12 gap-2.5 items-center text-xs transition';
+
+        return `
+          <div id="slot-row-${slot.id}" class="${rowBg}">
+            <!-- Slot Index, Time & Timezone (Col 2) -->
+            <div class="lg:col-span-2 flex items-center gap-2">
+              <span class="font-mono font-bold ${isLong ? 'text-amber-400 bg-amber-950/60 border border-amber-500/40' : 'text-cyan-400 bg-slate-950 border border-slate-800'} w-6 h-6 rounded flex items-center justify-center text-[11px] shrink-0">#${index + 1}</span>
+              
+              <div class="flex items-center gap-1 bg-slate-950 px-2 py-1 rounded border ${isLong ? 'border-amber-500/40' : 'border-slate-800'}">
+                <input id="slot-time-${slot.id}" type="text" value="${timeDisplay}" 
+                  oninput="updateSlotTime('${slot.id}', this.value); markSlotsUnsaved();"
+                  onchange="updateSlotTime('${slot.id}', this.value); markSlotsUnsaved();"
+                  class="bg-transparent text-white font-mono font-bold w-12 text-center focus:outline-none" 
+                  title="24hr Time (HH:MM)">
+                <button type="button" id="slot-tz-${slot.id}" onclick="toggleSlotTz('${slot.id}')" 
+                  class="text-[10px] px-1.5 py-0.5 rounded bg-slate-800 ${isLong ? 'text-amber-300' : 'text-cyan-300'} font-bold hover:bg-slate-700 transition" title="Click to toggle IST/EDT">
+                  ${tz}
+                </button>
+              </div>
+            </div>
+
+            <!-- Topic / Niche (Col 3) -->
+            <div class="lg:col-span-3 flex items-center min-w-0">
+              <input id="slot-niche-${slot.id}" type="text" value="${slot.niche || 'Trending Mystery'}" 
+                oninput="updateSlotField('${slot.id}', 'niche', this.value); markSlotsUnsaved();"
+                onchange="updateSlotField('${slot.id}', 'niche', this.value); markSlotsUnsaved();"
+                class="w-full bg-slate-950 border ${isLong ? 'border-amber-500/30 text-amber-200' : 'border-slate-800 text-slate-200'} px-2.5 py-1.5 rounded-lg truncate focus:outline-none focus:border-brand-cyan"
+                placeholder="Topic / Niche">
+            </div>
+
+            <!-- Language (Col 1) -->
+            <div class="lg:col-span-1">
+              <select id="slot-lang-${slot.id}" onchange="handleSlotLanguageChange('${slot.id}', this.value)" 
+                class="w-full bg-slate-950 border border-slate-800 text-slate-200 text-xs px-2 py-1.5 rounded-lg focus:outline-none focus:border-brand-cyan cursor-pointer">
+                <option value="Hindi" ${isHindi ? 'selected' : ''}>🇮🇳 Hindi</option>
+                <option value="English" ${!isHindi ? 'selected' : ''}>🇺🇸 English</option>
+              </select>
+            </div>
+
+            <!-- Voice Selection (Col 2) with Play Preview Button -->
+            <div class="lg:col-span-2 flex items-center gap-1.5">
+              <select id="slot-voice-${slot.id}" onchange="updateSlotField('${slot.id}', 'voice', this.value); markSlotsUnsaved();" 
+                class="w-full bg-slate-950 border border-slate-800 text-slate-200 text-xs px-2 py-1.5 rounded-lg focus:outline-none focus:border-brand-cyan cursor-pointer">
+                <optgroup label="Hindi Voices">
+                  <option value="akashvani" ${slotVoice === 'akashvani' ? 'selected' : ''}>🎙️ आकाशवाणी (Cosmic Echo Devavani)</option>
+                  <option value="madhur" ${slotVoice === 'madhur' ? 'selected' : ''}>🎙️ Madhur (HI Male Viral)</option>
+                  <option value="swara" ${slotVoice === 'swara' ? 'selected' : ''}>🎙️ Swara (HI Female)</option>
+                </optgroup>
+                <optgroup label="English Voices">
+                  <option value="adam" ${slotVoice === 'adam' ? 'selected' : ''}>🎙️ Adam (US Male Viral #1)</option>
+                  <option value="christopher" ${slotVoice === 'christopher' ? 'selected' : ''}>🎙️ Christopher (Deep)</option>
+                  <option value="guy" ${slotVoice === 'guy' ? 'selected' : ''}>🎙️ Guy (Storyteller)</option>
+                  <option value="aria" ${slotVoice === 'aria' ? 'selected' : ''}>🎙️ Aria (US Female)</option>
+                  <option value="andrew" ${slotVoice === 'andrew' ? 'selected' : ''}>🎙️ Andrew (Tech)</option>
+                </optgroup>
+              </select>
+              <button type="button" onclick="playSlotVoicePreview('${slot.id}')" title="Play Voice Preview" 
+                class="p-1.5 rounded-lg bg-slate-950 hover:bg-cyan-950 text-cyan-400 border border-slate-800 hover:border-cyan-500/50 transition shrink-0">
+                <i id="v-icon-${slot.id}" class="fa-solid fa-volume-high text-xs"></i>
+              </button>
+            </div>
+
+            <!-- BGM Selection (Col 2) with Play Preview Button -->
+            <div class="lg:col-span-2 flex items-center gap-1.5">
+              <select id="slot-bgm-${slot.id}" onchange="updateSlotField('${slot.id}', 'bgm', this.value); markSlotsUnsaved();" 
+                class="w-full bg-slate-950 border border-slate-800 text-slate-200 text-xs px-2 py-1.5 rounded-lg focus:outline-none focus:border-brand-cyan cursor-pointer">
+                <option value="auto" ${slotBgm === 'auto' ? 'selected' : ''}>🎯 Auto (Topic Match)</option>
+                <option value="psychology" ${slotBgm === 'psychology' ? 'selected' : ''}>🧠 Dark Psychology</option>
+                <option value="space" ${slotBgm === 'space' ? 'selected' : ''}>🌌 Cosmic Space</option>
+                <option value="history" ${slotBgm === 'history' ? 'selected' : ''}>⚔️ History & Bharat</option>
+                <option value="mystery" ${slotBgm === 'mystery' ? 'selected' : ''}>🕵️ Eerie Mystery</option>
+                <option value="alien" ${slotBgm === 'alien' ? 'selected' : ''}>🛸 Alien Sci-Fi</option>
+                <option value="none" ${slotBgm === 'none' ? 'selected' : ''}>🔇 None (Speech Only)</option>
+              </select>
+              <button type="button" onclick="playSlotBgmPreview('${slot.id}')" title="Play BGM Preview" 
+                class="p-1.5 rounded-lg bg-slate-950 hover:bg-purple-950 text-purple-400 border border-slate-800 hover:border-purple-500/50 transition shrink-0">
+                <i id="bgm-icon-${slot.id}" class="fa-solid fa-music text-xs"></i>
+              </button>
+            </div>
+
+            <!-- Format: 9:16 Short vs 16:9 Long (Col 1) -->
+            <div class="lg:col-span-1">
+              <select id="slot-format-${slot.id}" onchange="handleSlotFormatChange('${slot.id}', this.value)" 
+                class="w-full bg-slate-950 border ${isLong ? 'border-amber-500/60 text-amber-300 font-bold' : 'border-slate-800 text-cyan-400 font-medium'} text-[11px] px-2 py-1.5 rounded-lg focus:outline-none cursor-pointer">
+                <option value="short" ${!isLong ? 'selected' : ''}>📱 9:16 Short</option>
+                <option value="landscape_long" ${isLong ? 'selected' : ''}>🎬 16:9 Long</option>
+              </select>
+            </div>
+
+            <!-- Action Controls: Run & Delete (Col 1) -->
+            <div class="lg:col-span-1 flex items-center justify-end gap-1.5">
+              <button type="button" onclick="runSingleSlot('${slot.id}')" 
+                title="Run only this slot now"
+                class="px-2.5 py-1.5 rounded-lg ${isLong ? 'bg-amber-950 hover:bg-amber-600 text-amber-300 hover:text-white border border-amber-500/40' : 'bg-red-950/80 hover:bg-red-600 text-red-300 hover:text-white border border-red-500/30'} transition font-bold flex items-center gap-1 shadow">
+                <i class="fa-solid fa-play text-[10px]"></i> Run
+              </button>
+              <button type="button" onclick="deleteSlot('${slot.id}')" 
+                title="Remove slot"
+                class="text-slate-500 hover:text-red-400 p-1.5 transition">
+                <i class="fa-solid fa-xmark"></i>
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      // Auto scroll and highlight newly added or modified slot
+      if (highlightId) {
+        setTimeout(() => {
+          const el = document.getElementById(`slot-row-${highlightId}`);
+          if (el) {
+            el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            el.classList.add('ring-2', 'ring-cyan-400', 'bg-cyan-950/60');
+            setTimeout(() => {
+              el.classList.remove('ring-2', 'ring-cyan-400', 'bg-cyan-950/60');
+            }, 2500);
+          }
+        }, 50);
+      }
+    }
+
+    let currentAudio = null;
+    let activeAudioId = null;
+
+    function stopCurrentAudio() {
+      if (currentAudio) {
+        currentAudio.pause();
+        currentAudio.currentTime = 0;
+        currentAudio = null;
+      }
+      activeAudioId = null;
+      const qvIcon = document.getElementById('quick-v-icon');
+      if (qvIcon) { qvIcon.className = 'fa-solid fa-play text-[10px]'; }
+      const qbIcon = document.getElementById('quick-bgm-icon');
+      if (qbIcon) { qbIcon.className = 'fa-solid fa-play text-[10px]'; }
+
+      document.querySelectorAll('[id^="v-icon-"]').forEach(i => {
+        i.className = 'fa-solid fa-volume-high text-xs';
+      });
+      document.querySelectorAll('[id^="bgm-icon-"]').forEach(i => {
+        i.className = 'fa-solid fa-music text-xs';
+      });
+    }
+
+    function playCustomVoicePreview() {
+      const select = document.getElementById('quick-voice-select');
+      const voice = select ? select.value : 'akashvani';
+      playAudioStream(`/api/audio/preview/voice/${voice}`, 'quick-voice', 'quick-v-icon');
+    }
+
+    function playCustomBgmPreview() {
+      const select = document.getElementById('quick-bgm-select');
+      const bgm = select ? select.value : 'psychology';
+      playAudioStream(`/api/audio/preview/bgm/${bgm}`, 'quick-bgm', 'quick-bgm-icon');
+    }
+
+    function playSlotVoicePreview(slotId) {
+      const slot = (currentSlotsConfig.slots || []).find(s => s.id === slotId);
+      const voice = slot ? (slot.voice || (slot.language === 'Hindi' ? 'akashvani' : 'adam')) : 'akashvani';
+      playAudioStream(`/api/audio/preview/voice/${voice}`, `v-${slotId}`, `v-icon-${slotId}`);
+    }
+
+    function playSlotBgmPreview(slotId) {
+      const slot = (currentSlotsConfig.slots || []).find(s => s.id === slotId);
+      const bgm = slot ? (slot.bgm || 'auto') : 'auto';
+      if (bgm === 'none') {
+        showToast('No BGM set for this slot (Speech Only).');
+        return;
+      }
+      playAudioStream(`/api/audio/preview/bgm/${bgm}`, `bgm-${slotId}`, `bgm-icon-${slotId}`);
+    }
+
+    function playAudioStream(url, audioId, iconId) {
+      if (activeAudioId === audioId) {
+        stopCurrentAudio();
+        return;
+      }
+      stopCurrentAudio();
+
+      activeAudioId = audioId;
+      const icon = document.getElementById(iconId);
+      if (icon) {
+        icon.className = 'fa-solid fa-stop text-red-400 text-xs animate-pulse';
+      }
+
+      currentAudio = new Audio(url);
+      currentAudio.onended = () => { stopCurrentAudio(); };
+      currentAudio.onerror = () => {
+        stopCurrentAudio();
+        showToast('Audio preview currently synthesizing or unavailable...', true);
+      };
+      currentAudio.play().catch(e => {
+        stopCurrentAudio();
+        console.error('Audio play error:', e);
+      });
+    }
+
+    function handleSlotFormatChange(id, formatVal) {
+      const slot = (currentSlotsConfig.slots || []).find(s => s.id === id);
+      if (slot) {
+        slot.format = formatVal;
+        const isLong = (formatVal === 'landscape_long');
+        const row = document.getElementById(`slot-row-${id}`);
+        const fmtSelect = document.getElementById(`slot-format-${id}`);
+        if (row) {
+          row.className = isLong 
+            ? 'bg-amber-950/25 hover:bg-amber-950/35 border border-amber-500/40 rounded-xl p-3 flex flex-wrap lg:grid lg:grid-cols-12 gap-2.5 items-center text-xs transition shadow-sm'
+            : 'bg-slate-900/90 hover:bg-slate-900 border border-slate-800 rounded-xl p-3 flex flex-wrap lg:grid lg:grid-cols-12 gap-2.5 items-center text-xs transition';
+        }
+        if (fmtSelect) {
+          fmtSelect.className = `w-full bg-slate-950 border ${isLong ? 'border-amber-500/60 text-amber-300 font-bold' : 'border-slate-800 text-cyan-400 font-medium'} text-[11px] px-2 py-1.5 rounded-lg focus:outline-none cursor-pointer`;
+        }
+        // Update summary badge
+        const badge = document.getElementById('slot-count-badge');
+        const slots = currentSlotsConfig.slots || [];
+        const shortCount = slots.filter(s => s.format !== 'landscape_long').length;
+        const longCount = slots.filter(s => s.format === 'landscape_long').length;
+        if (badge) {
+          badge.textContent = `${slots.length} Slots (${shortCount} Shorts • ${longCount} Long Videos)`;
+        }
+        markSlotsUnsaved();
+      }
+    }
+
+    function handleSlotLanguageChange(id, langValue) {
+      const slot = (currentSlotsConfig.slots || []).find(s => s.id === id);
+      if (slot) {
+        slot.language = langValue;
+        const isHindi = langValue.toLowerCase() === 'hindi' || langValue === 'hi';
+        if (isHindi && !['madhur', 'swara', 'akashvani'].includes(slot.voice)) {
+          slot.voice = 'akashvani';
+        } else if (!isHindi && ['madhur', 'swara', 'akashvani'].includes(slot.voice)) {
+          slot.voice = 'adam';
+        }
+
+        const vSelect = document.getElementById(`slot-voice-${id}`);
+        if (vSelect) {
+          vSelect.value = slot.voice;
+        }
+        markSlotsUnsaved();
+      }
+    }
+
+    function updateSlotField(id, field, value) {
+      const slot = (currentSlotsConfig.slots || []).find(s => s.id === id);
+      if (slot) {
+        slot[field] = value;
+        markSlotsUnsaved();
+      }
+    }
+
+    function updateSlotTime(id, timeStr) {
+      const parts = timeStr.split(':');
+      if (parts.length >= 2) {
+        const h = parseInt(parts[0], 10);
+        const m = parseInt(parts[1], 10);
+        const slot = (currentSlotsConfig.slots || []).find(s => s.id === id);
+        if (slot && !isNaN(h) && !isNaN(m)) {
+          slot.hour = Math.min(23, Math.max(0, h));
+          slot.minute = Math.min(59, Math.max(0, m));
+          markSlotsUnsaved();
+        }
+      }
+    }
+
+    function toggleSlotTz(id) {
+      const slot = (currentSlotsConfig.slots || []).find(s => s.id === id);
+      if (slot) {
+        slot.tz = (slot.tz === 'IST' ? 'EDT' : 'IST');
+        const tzBtn = document.getElementById(`slot-tz-${id}`);
+        if (tzBtn) {
+          tzBtn.textContent = slot.tz;
+        }
+        markSlotsUnsaved();
+      }
+    }
+
+    async function addNewSlot() {
+      // 1. Gather all existing typed values from DOM
+      syncDomToSlotsConfig();
+
+      const slots = currentSlotsConfig.slots || [];
+      const newId = `slot_${Date.now()}`;
+
+      // Calculate next scheduled time (+2 hours after last slot or 10:00 AM)
+      let nextHour = 10;
+      let nextMinute = 0;
+      if (slots.length > 0) {
+        const last = slots[slots.length - 1];
+        nextHour = (Number(last.hour !== undefined ? last.hour : 10) + 2) % 24;
+        nextMinute = Number(last.minute !== undefined ? last.minute : 0);
+      }
+
+      const newSlot = {
+        id: newId,
+        hour: nextHour,
+        minute: nextMinute,
+        tz: 'IST',
+        niche: 'Mysterious Ancient Secrets & Science',
+        language: 'Hindi',
+        voice: 'akashvani',
+        bgm: 'auto',
+        format: 'short',
+        status: 'ready'
+      };
+
+      slots.push(newSlot);
+      currentSlotsConfig.slots = slots;
+      currentSlotsConfig.active_preset = 'custom';
+
+      // Re-render and scroll directly to new row
+      renderSlotsMatrix(newId);
+
+      // Auto-save immediately to server so background bot and disk stay in sync!
+      await saveSlotsConfiguration(true);
+      showToast(`✅ Slot #${slots.length} added and saved to bot schedule!`);
+    }
+
+    async function deleteSlot(id) {
+      syncDomToSlotsConfig();
+      const idx = (currentSlotsConfig.slots || []).findIndex(s => s.id === id);
+      if (!confirm(`Are you sure you want to remove Slot #${idx + 1}?`)) return;
+
+      currentSlotsConfig.slots = (currentSlotsConfig.slots || []).filter(s => s.id !== id);
+      currentSlotsConfig.active_preset = 'custom';
+      renderSlotsMatrix();
+      await saveSlotsConfiguration(true);
+      showToast('Slot removed & schedule saved.');
+    }
+
+    async function applyPreset(presetName) {
+      if (!confirm(`⚠️ Template '${presetName}' load karne se aapke current customized slots replace ho jayenge.\n\nKya aap template load karna chahte hain?`)) {
+        return;
+      }
       try {
-        const res = await fetch('/api/generate/alien', {
-          method: 'POST',
-          headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({ part: part, lang: lang, upload: true, privacy: 'public' })
-        });
-        const data = await res.json();
-        showToast(data.message || 'Generation started!');
-        switchTab('terminal');
+        const res = await fetch(`/api/autopilot/slots/preset/${presetName}`, { method: 'POST' });
+        const result = await res.json();
+        if (result.success) {
+          currentSlotsConfig = result.data;
+          renderSlotsMatrix();
+          markSlotsSaved((currentSlotsConfig.slots || []).length);
+          showToast(`Template '${presetName}' loaded (${currentSlotsConfig.slots.length} slots)!`);
+        } else {
+          showToast(result.message || 'Error applying preset', true);
+        }
       } catch (err) {
         showToast(err.message, true);
       }
     }
 
-    // Generator Tab Form
-    async function handleAlienSubmit(e) {
-      e.preventDefault();
-      const partVal = document.getElementById('alien-part-select').value;
-      const lang = document.getElementById('alien-lang-select').value;
-      const privacy = document.getElementById('alien-privacy-select').value;
-      const upload = document.getElementById('alien-upload-check').checked;
-
-      const part = partVal ? parseInt(partVal) : null;
+    async function saveSlotsConfiguration(silent = false) {
       try {
-        const res = await fetch('/api/generate/alien', {
-          method: 'POST',
-          headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({ part: part, lang: lang, upload: upload, privacy: privacy })
+        syncDomToSlotsConfig();
+
+        const saveBtns = document.querySelectorAll('.btn-save-slots');
+        saveBtns.forEach(btn => {
+          btn.disabled = true;
+          btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin text-xs"></i> Saving...';
         });
+
+        const res = await fetch('/api/autopilot/slots/save', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(currentSlotsConfig)
+        });
+        const result = await res.json();
+
+        saveBtns.forEach(btn => {
+          btn.disabled = false;
+          btn.innerHTML = '<i class="fa-solid fa-floppy-disk text-xs"></i> Save Slot Settings';
+        });
+
+        if (result.success) {
+          markSlotsSaved((currentSlotsConfig.slots || []).length);
+          if (!silent) {
+            showToast(`✅ Settings Saved! Bot will generate strictly using ${currentSlotsConfig.slots.length} configured slots.`);
+          }
+          return true;
+        } else {
+          showToast(result.message || 'Failed to save settings', true);
+          return false;
+        }
+      } catch (err) {
+        console.error('Error saving slot configuration:', err);
+        showToast(err.message || 'Error saving slots', true);
+        const saveBtns = document.querySelectorAll('.btn-save-slots');
+        saveBtns.forEach(btn => {
+          btn.disabled = false;
+          btn.innerHTML = '<i class="fa-solid fa-floppy-disk text-xs"></i> Save Slot Settings';
+        });
+        return false;
+      }
+    }
+
+    async function runSingleSlot(slotId) {
+      if (!confirm(`Run slot '${slotId}' immediately?`)) return;
+      try {
+        await saveSlotsConfiguration(true);
+        const res = await fetch(`/api/autopilot/run_slot/${slotId}`, { method: 'POST' });
         const data = await res.json();
-        showToast(data.message || 'Alien Short generation started!');
+        showToast(data.message || `Started generation for ${slotId}!`);
         switchTab('terminal');
       } catch (err) {
         showToast(err.message, true);
@@ -665,8 +1738,10 @@
     }
 
     async function handleAutopilotTrigger() {
-      if (!confirm('Run the full 7-slot Autopilot batch now across USA & India peak hours?')) return;
+      const count = (currentSlotsConfig.slots || []).length;
+      if (!confirm(`Run all ${count} active slots in the Autopilot batch across USA & India peak hours?`)) return;
       try {
+        await saveSlotsConfiguration(true);
         const res = await fetch('/api/autopilot/run', { method: 'POST' });
         const data = await res.json();
         showToast(data.message || 'Autopilot batch started!');
@@ -677,14 +1752,37 @@
     }
 
     // Media & Video Player Tab
+    // Publish tracker cache
+    let publishTracker = {};
+    let lastPublishResult = null;
+    let currentMediaFilename = null;
+
+    async function loadPublishStatus() {
+      try {
+        const res = await fetch('/api/media/publish_status');
+        const data = await res.json();
+        publishTracker = data.published || {};
+        lastPublishResult = data.last_publish || null;
+      } catch (e) {
+        console.log('Could not load publish status:', e);
+        publishTracker = {};
+        lastPublishResult = null;
+      }
+    }
+
     async function loadMediaFiles() {
       const list = document.getElementById('media-list');
       list.innerHTML = '<div class="text-slate-500 py-4"><i class="fa-solid fa-spinner fa-spin"></i> Loading files...</div>';
+
+      // Load publish status first
+      await loadPublishStatus();
 
       try {
         const res = await fetch('/api/media/list');
         const data = await res.json();
         list.innerHTML = '';
+        const countBadge = document.getElementById('media-count-badge');
+        if (countBadge) countBadge.textContent = `${data.files ? data.files.length : 0} files`;
 
         if (!data.files || data.files.length === 0) {
           list.innerHTML = '<div class="text-slate-500 py-4">No rendered MP4 files found in output/shorts/</div>';
@@ -692,9 +1790,17 @@
         }
 
         data.files.forEach((f, idx) => {
+          const isPublished = !!publishTracker[f.filename];
+          const pubInfo = publishTracker[f.filename];
           const item = document.createElement('div');
           item.className = 'glass p-3 rounded-xl border border-slate-800 flex items-center justify-between hover:border-brand-cyan transition cursor-pointer';
           item.onclick = () => playMedia(f.filename, f.stream_url);
+
+          const publishBadge = isPublished
+            ? `<a href="${pubInfo.url}" target="_blank" class="px-2 py-0.5 rounded-full bg-green-900/50 text-green-400 text-[10px] font-bold border border-green-700/40 hover:bg-green-800/60 transition flex items-center gap-1">
+                <i class="fa-brands fa-youtube text-[9px]"></i> Published
+              </a>`
+            : `<span class="px-2 py-0.5 rounded-full bg-slate-800 text-slate-500 text-[10px] font-semibold border border-slate-700">Unpublished</span>`;
 
           item.innerHTML = `
             <div class="flex items-center gap-3 overflow-hidden">
@@ -703,10 +1809,14 @@
               </div>
               <div class="truncate">
                 <div class="text-sm font-semibold text-white truncate">${f.filename}</div>
-                <div class="text-xs text-slate-400">${f.size_mb} MB • ${f.modified}</div>
+                <div class="text-xs text-slate-400">${f.size_mb} MB &bull; ${f.modified}</div>
               </div>
             </div>
-            <button class="px-3 py-1 rounded bg-brand-cyan/20 text-brand-cyan hover:bg-brand-cyan/30 text-xs font-bold">Play</button>
+            <div class="flex items-center gap-2 flex-shrink-0">
+              ${publishBadge}
+              <button class="px-3 py-1 rounded bg-brand-cyan/20 text-brand-cyan hover:bg-brand-cyan/30 text-xs font-bold">Play</button>
+              <button onclick="event.stopPropagation(); deleteVideoFile('${f.filename}')" class="px-2.5 py-1 rounded bg-rose-950/70 text-rose-400 hover:bg-rose-900 border border-rose-800/40 text-xs font-bold transition flex items-center justify-center" title="Delete Video"><i class="fa-solid fa-trash"></i></button>
+            </div>
           `;
           list.appendChild(item);
 
@@ -721,10 +1831,297 @@
     }
 
     function playMedia(filename, url) {
+      currentMediaFilename = filename;
       document.getElementById('player-title').textContent = filename;
       const player = document.getElementById('html5-player');
       player.src = url;
       player.play().catch(e => console.log('Autoplay blocked:', e));
+
+      // Update publish controls
+      const controls = document.getElementById('publish-controls');
+      const statusBadge = document.getElementById('publish-status-badge');
+      const btnPublish = document.getElementById('btn-publish');
+      const pubOptions = document.getElementById('publish-options');
+      controls.classList.remove('hidden');
+
+      if (publishTracker[filename]) {
+        const info = publishTracker[filename];
+        statusBadge.innerHTML = `
+          <div class="px-3 py-2 rounded-lg bg-green-900/30 border border-green-700/40 text-center">
+            <div class="text-green-400 text-xs font-bold flex items-center justify-center gap-1.5">
+              <i class="fa-solid fa-circle-check"></i> Already Published
+            </div>
+            <a href="${info.url}" target="_blank" class="text-brand-cyan text-[11px] hover:underline">${info.url}</a>
+            <div class="text-slate-500 text-[10px] mt-0.5">${info.date ? new Date(info.date).toLocaleDateString() : ''}</div>
+          </div>`;
+        btnPublish.classList.add('hidden');
+        pubOptions.classList.add('hidden');
+      } else {
+        statusBadge.innerHTML = `
+          <div class="px-3 py-1.5 rounded-lg bg-amber-900/20 border border-amber-700/30 text-center">
+            <span class="text-amber-400 text-xs font-semibold"><i class="fa-solid fa-triangle-exclamation"></i> Not published yet</span>
+          </div>`;
+        btnPublish.classList.remove('hidden');
+        pubOptions.classList.remove('hidden');
+      }
+    }
+
+    async function publishCurrentVideo() {
+      if (!currentMediaFilename) return alert('No video selected!');
+
+      // Double-check duplicate
+      if (publishTracker[currentMediaFilename]) {
+        return alert('This video is already published to YouTube! URL: ' + publishTracker[currentMediaFilename].url);
+      }
+
+      const privacy = document.getElementById('publish-privacy').value;
+
+      if (!confirm(`Publish "${currentMediaFilename}" to YouTube as ${privacy.toUpperCase()}?`)) return;
+
+      const btn = document.getElementById('btn-publish');
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Uploading to YouTube...';
+
+      try {
+        const res = await fetch('/api/media/publish', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ filename: currentMediaFilename, privacy: privacy })
+        });
+        const data = await res.json();
+
+        if (res.status === 409) {
+          alert('Duplicate! ' + data.detail);
+          btn.innerHTML = '<i class="fa-solid fa-circle-check"></i> Already Published';
+          return;
+        }
+
+        if (!res.ok) {
+          alert('Error: ' + (data.detail || 'Upload failed'));
+          btn.disabled = false;
+          btn.innerHTML = '<i class="fa-brands fa-youtube"></i> Publish to YouTube';
+          return;
+        }
+
+        btn.innerHTML = '<i class="fa-solid fa-cloud-arrow-up"></i> Publishing in background...';
+        btn.classList.remove('from-red-600', 'to-red-500');
+        btn.classList.add('from-amber-600', 'to-amber-500');
+
+        // Poll for completion
+        const targetFile = currentMediaFilename;
+        const pollPublish = setInterval(async () => {
+          await loadPublishStatus();
+          if (publishTracker[targetFile]) {
+            clearInterval(pollPublish);
+            btn.innerHTML = '<i class="fa-solid fa-circle-check"></i> Published!';
+            btn.classList.remove('from-amber-600', 'to-amber-500');
+            btn.classList.add('from-green-600', 'to-green-500');
+            playMedia(targetFile, document.getElementById('html5-player').src);
+            loadMediaFiles(); // Refresh list badges
+          } else if (lastPublishResult && lastPublishResult.filename === targetFile && lastPublishResult.status === 'error') {
+            clearInterval(pollPublish);
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fa-brands fa-youtube"></i> Publish to YouTube';
+            btn.classList.remove('from-amber-600', 'to-amber-500');
+            btn.classList.add('from-red-600', 'to-red-500');
+            alert('❌ YouTube Upload Failed!\n\nReason: ' + (lastPublishResult.error || 'Unknown upload error'));
+          }
+        }, 3000);
+
+        // Stop polling after 5 minutes
+        setTimeout(() => clearInterval(pollPublish), 300000);
+
+      } catch (err) {
+        alert('Network error: ' + err.message);
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-brands fa-youtube"></i> Publish to YouTube';
+      }
+    }
+
+    async function deleteVideoFile(filename) {
+      if (!filename) return;
+      if (!confirm(`Kya aap sach me video "${filename}" ko delete karna chahte hain?`)) return;
+
+      try {
+        const res = await fetch(`/api/media/delete/${encodeURIComponent(filename)}`, { method: 'POST' });
+        const data = await res.json();
+        if (data.success) {
+          showToast(`🗑️ Video "${filename}" delete ho gaya!`);
+          if (currentMediaFilename === filename) {
+            currentMediaFilename = null;
+            const player = document.getElementById('html5-player');
+            if (player) { player.pause(); player.src = ''; }
+            const pTitle = document.getElementById('player-title');
+            if (pTitle) pTitle.textContent = 'Select a video below to play';
+            const pControls = document.getElementById('publish-controls');
+            if (pControls) pControls.classList.add('hidden');
+          }
+          if (currentRenderedFilename === filename) {
+            currentRenderedFilename = null;
+            const resPanel = document.getElementById('director-result-panel');
+            if (resPanel) resPanel.classList.add('hidden');
+            const dPlayer = document.getElementById('director-preview-player');
+            if (dPlayer) { dPlayer.pause(); dPlayer.src = ''; }
+          }
+          loadMediaFiles();
+        } else {
+          showToast(data.detail || 'Delete failed', true);
+        }
+      } catch (err) {
+        showToast('Error deleting video: ' + err.message, true);
+      }
+    }
+
+    function deleteCurrentActiveVideo() {
+      if (currentMediaFilename) {
+        deleteVideoFile(currentMediaFilename);
+      } else {
+        showToast('Pehle list me se koi video select kijiye!', true);
+      }
+    }
+
+    async function deleteCurrentDirectorVideo() {
+      if (!currentRenderedFilename) return showToast('Pehle koi video generate hona chahiye!', true);
+      if (!confirm(`Review pasand nahi aaya? Kya aap "${currentRenderedFilename}" ko delete aur discard karna chahte hain?`)) return;
+
+      try {
+        const res = await fetch(`/api/media/delete/${encodeURIComponent(currentRenderedFilename)}`, { method: 'POST' });
+        const data = await res.json();
+        if (data.success) {
+          showToast('🗑️ Video successfully delete aur discard kar diya gaya!');
+          const dPlayer = document.getElementById('director-preview-player');
+          if (dPlayer) { dPlayer.pause(); dPlayer.src = ''; }
+          document.getElementById('director-result-panel').classList.add('hidden');
+          currentRenderedFilename = null;
+          loadMediaFiles();
+        } else {
+          showToast(data.detail || 'Delete failed', true);
+        }
+      } catch (err) {
+        showToast('Delete error: ' + err.message, true);
+      }
+    }
+
+    // =========================================================================
+    // SERVER STORAGE & MEMORY CLEANER LOGIC
+    // =========================================================================
+    async function openStorageModal() {
+      document.getElementById('storage-modal').classList.remove('hidden');
+      await loadStorageDetails();
+    }
+
+    function closeStorageModal() {
+      document.getElementById('storage-modal').classList.add('hidden');
+    }
+
+    async function loadStorageDetails() {
+      try {
+        const res = await fetch('/api/system/storage');
+        const data = await res.json();
+        const totalEl = document.getElementById('sm-disk-total');
+        if (totalEl) totalEl.textContent = `${data.disk_total_gb} GB`;
+        const freeEl = document.getElementById('sm-disk-free');
+        if (freeEl) freeEl.textContent = `${data.disk_free_gb} GB`;
+        const usedEl = document.getElementById('sm-disk-used-pct');
+        if (usedEl) usedEl.textContent = `${data.disk_used_pct}%`;
+        const barEl = document.getElementById('sm-disk-bar');
+        if (barEl) barEl.style.width = `${Math.min(100, data.disk_used_pct)}%`;
+
+        const vSize = document.getElementById('sm-videos-size');
+        if (vSize) vSize.textContent = data.videos_size_mb;
+        const tSize = document.getElementById('sm-temp-size');
+        if (tSize) tSize.textContent = data.temp_size_mb;
+        const sSize = document.getElementById('sm-stock-size');
+        if (sSize) sSize.textContent = data.stock_size_mb;
+
+        // Sync header widget
+        const dfEl = document.getElementById('header-disk-free');
+        if (dfEl) dfEl.textContent = data.disk_free_gb;
+        const badgeEl = document.getElementById('header-disk-badge');
+        if (badgeEl) {
+          if (data.disk_free_gb < 2) {
+            badgeEl.textContent = 'LOW';
+            badgeEl.className = 'px-1 py-0.2 text-[9px] font-bold rounded bg-rose-950 text-rose-400 border border-rose-500/30 animate-pulse';
+          } else {
+            badgeEl.textContent = 'OK';
+            badgeEl.className = 'px-1 py-0.2 text-[9px] font-bold rounded bg-emerald-950 text-emerald-400 border border-emerald-500/30';
+          }
+        }
+      } catch (err) {
+        console.error('Failed to load storage details:', err);
+      }
+    }
+
+    async function executeStoragePurge(mode) {
+      let promptMsg = '';
+      let cleanVideos = false;
+      let cleanTemp = false;
+      let cleanStock = false;
+
+      if (mode === 'temp_and_stock') {
+        promptMsg = 'Kya aap Temporary Render Files aur Cached Stock Videos ko delete karna chahte hain? (Rendered videos safe rahenge)';
+        cleanTemp = true;
+        cleanStock = true;
+      } else if (mode === 'videos_only') {
+        promptMsg = 'Kya aap saari rendered videos ko server disk se delete karna chahte hain? (YouTube par uploaded videos safe rahenge)';
+        cleanVideos = true;
+      } else if (mode === 'all') {
+        promptMsg = '⚠️ FULL PURGE: Kya aap saari Rendered Videos, Temp Chunks aur Stock Caches ko delete karke maximum storage free karna chahte hain?';
+        cleanVideos = true;
+        cleanTemp = true;
+        cleanStock = true;
+      }
+
+      if (!confirm(promptMsg)) return;
+
+      try {
+        showToast('Storage cleaning in progress, please wait...');
+        const res = await fetch('/api/system/storage/purge', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            clean_videos: cleanVideos,
+            clean_temp: cleanTemp,
+            clean_stock: cleanStock
+          })
+        });
+        const data = await res.json();
+        if (data.success) {
+          showToast(`✅ ${data.message}`);
+          await loadStorageDetails();
+          loadMediaFiles();
+          loadStatus();
+        } else {
+          showToast(data.detail || 'Purge failed', true);
+        }
+      } catch (err) {
+        showToast('Purge error: ' + err.message, true);
+      }
+    }
+
+    async function deleteAllVideos() {
+      if (!confirm('Kya aap sach me server se saari generated videos delete karke memory free karna chahte hain? (YouTube par already uploaded videos bilkul safe rahenge)')) return;
+      try {
+        showToast('Server se saare videos delete ho rahe hain...');
+        const res = await fetch('/api/media/delete_all', { method: 'POST' });
+        const data = await res.json();
+        if (data.success) {
+          showToast(`✅ ${data.deleted_count} videos delete ho gaye (${data.freed_mb} MB free ho gayi)!`);
+          const player = document.getElementById('html5-player');
+          if (player) { player.pause(); player.src = ''; }
+          currentMediaFilename = null;
+          loadMediaFiles();
+          loadStatus();
+          const smModal = document.getElementById('storage-modal');
+          if (smModal && !smModal.classList.contains('hidden')) {
+            loadStorageDetails();
+          }
+        } else {
+          showToast(data.detail || 'Delete failed', true);
+        }
+      } catch (err) {
+        showToast('Delete error: ' + err.message, true);
+      }
     }
 
     // Terminal Logs
@@ -763,16 +2160,745 @@
       document.getElementById('terminal-body').innerHTML = '<div class="text-slate-500">// Terminal Cleared.</div>';
     }
 
+    // =================================================================
+    // TAB 4: CUSTOM STORY & VIDEO STUDIO (STORY -> VOICE & BGM -> REVIEW -> UPLOAD)
+    // =================================================================
+    let studioVideoFormat = 'short'; // 'short' (9:16) or 'landscape_long' (16:9)
+    let studioLanguage = 'hi'; // 'hi', 'hinglish', 'en'
+    let currentAuditionAudio = null;
+    let currentBgmAudio = null;
+    let directorPollTimer = null;
+    let currentRenderedFilename = null;
+
+    function selectStudioFormat(fmt) {
+      studioVideoFormat = fmt;
+      const btnShort = document.getElementById('btn-format-short');
+      const btnLong = document.getElementById('btn-format-long');
+      const hint = document.getElementById('script-format-hint');
+      const genBtn = document.getElementById('btn-director-render');
+
+      if (fmt === 'short') {
+        if (btnShort) btnShort.className = 'px-3.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 bg-brand-cyan text-black shadow-md';
+        if (btnLong) btnLong.className = 'px-3.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 text-slate-400 hover:text-white';
+        if (hint) hint.textContent = 'Target for Shorts: 120-140 words (~50s)';
+        if (genBtn) genBtn.innerHTML = '<i class="fa-solid fa-play"></i> 🎬 Generate 9:16 Short Video Now';
+      } else {
+        if (btnShort) btnShort.className = 'px-3.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 text-slate-400 hover:text-white';
+        if (btnLong) btnLong.className = 'px-3.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 bg-brand-cyan text-black shadow-md';
+        if (hint) hint.textContent = 'Target for Long: 300-450 words (~2.5-3.5 min)';
+        if (genBtn) genBtn.innerHTML = '<i class="fa-solid fa-play"></i> 🎬 Generate 16:9 Full Documentary Video Now';
+      }
+      updateScriptStats();
+    }
+
+    function selectStudioLang(lang) {
+      studioLanguage = lang;
+      const btnHi = document.getElementById('btn-lang-hi');
+      const btnHinglish = document.getElementById('btn-lang-hinglish');
+      const btnEn = document.getElementById('btn-lang-en');
+
+      [btnHi, btnHinglish, btnEn].forEach(b => {
+        if (b) b.className = 'px-3 py-1.5 rounded-lg text-xs font-bold transition text-slate-400 hover:text-white';
+      });
+
+      if (lang === 'hi' && btnHi) {
+        btnHi.className = 'px-3 py-1.5 rounded-lg text-xs font-bold transition bg-purple-600 text-white shadow-md';
+      } else if (lang === 'hinglish' && btnHinglish) {
+        btnHinglish.className = 'px-3 py-1.5 rounded-lg text-xs font-bold transition bg-purple-600 text-white shadow-md';
+      } else if (lang === 'en' && btnEn) {
+        btnEn.className = 'px-3 py-1.5 rounded-lg text-xs font-bold transition bg-purple-600 text-white shadow-md';
+      }
+    }
+
+    function updateScriptStats() {
+      const text = document.getElementById('director-script-input').value.trim();
+      const words = text ? text.split(/\s+/).filter(Boolean).length : 0;
+      const estSec = Math.round(words / 2.6);
+      document.getElementById('script-word-count').textContent = words;
+      document.getElementById('script-est-duration').textContent = estSec + 's';
+    }
+
+    function injectHookTemplate(type) {
+      const area = document.getElementById('director-script-input');
+      let current = area.value.trim();
+      let hook = '';
+      if (type === 'shock') {
+        hook = studioLanguage === 'en'
+          ? "If you think you know everything, the next 30 seconds will blow your mind!"
+          : "Agar aapko lagta hai ki aap sab jante hain, toh agle 30 seconds aapke hosh uda denge!";
+      } else if (type === 'secret') {
+        hook = studioLanguage === 'en'
+          ? "99% of people have no idea why this was kept top secret for 50 years..."
+          : "99% log nahi jante ki is sachayi ko 50 saalon tak duniya se chhipa kar kyu rakha gaya tha!";
+      }
+      if (hook) {
+        area.value = hook + " " + current;
+        updateScriptStats();
+        showToast('⚡ Opening 3-Second Viral Hook inject ho gaya!');
+      }
+    }
+
+    function injectOutroTemplate(type) {
+      const area = document.getElementById('director-script-input');
+      let current = area.value.trim();
+      let outro = '';
+      if (type === 'debate') {
+        outro = studioLanguage === 'en'
+          ? "What is the real truth according to you? Comment YES or NO below right now!"
+          : "Aapke hisaab se iska ashirwad ya sach kya hai? Comment me YES ya NO likhkar turant batao!";
+      } else if (type === 'subscribe') {
+        outro = studioLanguage === 'en'
+          ? "If you want to discover more shocking real incidents, LIKE this video and SUBSCRIBE right now!"
+          : "Aisi hi aankhein khol dene wali sachhi ghatnao ke liye video ko LIKE karein aur channel ko abhi SUBSCRIBE karein!";
+      }
+      if (outro) {
+        area.value = current + " " + outro;
+        updateScriptStats();
+        showToast('🔔 High-Engagement Outro inject ho gaya!');
+      }
+    }
+
+    async function writeStoryFromIdea() {
+      const scriptInput = document.getElementById('director-script-input');
+      const titleInput = document.getElementById('director-video-title');
+      const rawText = scriptInput.value.trim() || titleInput.value.trim();
+
+      if (!rawText) {
+        return showToast('Idea ya topic likhiye (jaise "Bermuda triangle mystery") aur click karein!', true);
+      }
+
+      const btn = document.getElementById('btn-write-story');
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Writing Story...';
+
+      try {
+        const res = await fetch('/api/director/enhance_script', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({
+            raw_script: rawText,
+            topic: titleInput.value.trim() || null,
+            language: studioLanguage,
+            video_format: studioVideoFormat
+          })
+        });
+        const data = await res.json();
+        if (data.success) {
+          scriptInput.value = data.full_narration;
+          updateScriptStats();
+
+          if (data.titles && data.titles.length > 0) {
+            titleInput.value = data.titles[0];
+            const titlesBox = document.getElementById('director-suggested-titles');
+            titlesBox.innerHTML = '';
+            data.titles.forEach(t => {
+              const div = document.createElement('div');
+              div.className = 'cursor-pointer hover:underline text-[11px] truncate text-brand-cyan';
+              div.textContent = '• ' + t;
+              div.onclick = () => { titleInput.value = t; };
+              titlesBox.appendChild(div);
+            });
+          }
+
+          if (data.pinned_comment) {
+            document.getElementById('director-pinned-preview').textContent = `"${data.pinned_comment}"`;
+            const pubPinned = document.getElementById('director-pub-pinned');
+            if (pubPinned) pubPinned.value = data.pinned_comment;
+          }
+
+          const combined = (data.full_narration + " " + (data.titles ? data.titles.join(" ") : "")).toLowerCase();
+          const isReal = ['real', 'incident', 'punarjanam', 'shanti devi', 'gandhi', 'proof', 'saboot', 'history', 'itihaas', 'investigation', 'mystery'].some(k => combined.includes(k));
+          const incChk = document.getElementById('director-real-incident-mode');
+          if (incChk) {
+            incChk.checked = isReal || incChk.checked;
+          }
+
+          showToast('✅ AI ne complete engaging story ready kar di!');
+        } else {
+          showToast(data.detail || 'Could not generate story', true);
+        }
+      } catch (err) {
+        showToast('Story generation error: ' + err.message, true);
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> ✨ Write Story from Idea (AI)';
+      }
+    }
+
+    async function enhanceCurrentScript() {
+      const scriptInput = document.getElementById('director-script-input');
+      const titleInput = document.getElementById('director-video-title');
+      const rawText = scriptInput.value.trim();
+
+      if (!rawText) return showToast('Pehle script ya rough story enter kijiye!', true);
+
+      const btn = document.getElementById('btn-enhance-script');
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Polishing Hook...';
+
+      try {
+        const res = await fetch('/api/director/enhance_script', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({
+            raw_script: rawText,
+            topic: titleInput.value.trim() || null,
+            language: studioLanguage,
+            video_format: studioVideoFormat
+          })
+        });
+        const data = await res.json();
+        if (data.success) {
+          scriptInput.value = data.full_narration;
+          updateScriptStats();
+
+          if (data.titles && data.titles.length > 0) {
+            titleInput.value = data.titles[0];
+            const titlesBox = document.getElementById('director-suggested-titles');
+            titlesBox.innerHTML = '';
+            data.titles.forEach(t => {
+              const div = document.createElement('div');
+              div.className = 'cursor-pointer hover:underline text-[11px] truncate text-brand-cyan';
+              div.textContent = '• ' + t;
+              div.onclick = () => { titleInput.value = t; };
+              titlesBox.appendChild(div);
+            });
+          }
+
+          if (data.pinned_comment) {
+            document.getElementById('director-pinned-preview').textContent = `"${data.pinned_comment}"`;
+            const pubPinned = document.getElementById('director-pub-pinned');
+            if (pubPinned) pubPinned.value = data.pinned_comment;
+          }
+
+          showToast('✅ Script viral high-retention hook ke sath enhance ho gayi!');
+        } else {
+          showToast(data.detail || 'Could not enhance script', true);
+        }
+      } catch (err) {
+        showToast('Enhance error: ' + err.message, true);
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-bolt"></i> ⚡ Enhance Hook & Retention (AI)';
+      }
+    }
+
+    function playStudioVoicePreview() {
+      const voice = document.getElementById('director-select-voice').value;
+      const btn = document.getElementById('btn-studio-voice-play');
+
+      if (currentAuditionAudio && !currentAuditionAudio.paused) {
+        currentAuditionAudio.pause();
+        currentAuditionAudio = null;
+        btn.innerHTML = '<i class="fa-solid fa-play text-[10px]"></i> ▶ Play Voice';
+        btn.className = 'px-3 py-1 rounded-lg bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold transition flex items-center gap-1.5 shadow';
+        return;
+      }
+
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin text-[10px]"></i> Loading...';
+      const previewUrl = `/api/audio/preview/voice/${encodeURIComponent(voice)}`;
+      
+      currentAuditionAudio = new Audio(previewUrl);
+      currentAuditionAudio.play().then(() => {
+        btn.innerHTML = '<i class="fa-solid fa-stop text-[10px]"></i> ⏹ Stop Voice';
+        btn.className = 'px-3 py-1 rounded-lg bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold transition flex items-center gap-1.5 shadow';
+      }).catch(err => {
+        console.error('Audio play error:', err);
+        btn.innerHTML = '<i class="fa-solid fa-play text-[10px]"></i> ▶ Play Voice';
+        btn.className = 'px-3 py-1 rounded-lg bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold transition flex items-center gap-1.5 shadow';
+        showToast('Voice preview play error', true);
+      });
+
+      currentAuditionAudio.onended = () => {
+        btn.innerHTML = '<i class="fa-solid fa-play text-[10px]"></i> ▶ Play Voice';
+        btn.className = 'px-3 py-1 rounded-lg bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold transition flex items-center gap-1.5 shadow';
+      };
+    }
+
+    function playStudioBgmPreview() {
+      const bgm = document.getElementById('director-select-bgm').value;
+      const btn = document.getElementById('btn-studio-bgm-play');
+
+      if (bgm === 'none') return showToast('No BGM selected (Silent mode)');
+
+      if (currentBgmAudio && !currentBgmAudio.paused) {
+        currentBgmAudio.pause();
+        currentBgmAudio = null;
+        btn.innerHTML = '<i class="fa-solid fa-play text-[10px]"></i> ▶ Play BGM';
+        btn.className = 'px-3 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition flex items-center gap-1.5 shadow';
+        return;
+      }
+
+      const previewUrl = `/api/audio/preview/bgm/${encodeURIComponent(bgm)}`;
+      currentBgmAudio = new Audio(previewUrl);
+      const vol = parseFloat(document.getElementById('slider-bgm-volume').value || 0.16);
+      currentBgmAudio.volume = vol;
+
+      currentBgmAudio.play().then(() => {
+        btn.innerHTML = '<i class="fa-solid fa-stop text-[10px]"></i> ⏹ Stop BGM';
+        btn.className = 'px-3 py-1 rounded-lg bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold transition flex items-center gap-1.5 shadow';
+      }).catch(err => {
+        console.error('BGM play error:', err);
+        btn.innerHTML = '<i class="fa-solid fa-play text-[10px]"></i> ▶ Play BGM';
+        btn.className = 'px-3 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition flex items-center gap-1.5 shadow';
+        showToast('BGM preview play error', true);
+      });
+
+      currentBgmAudio.onended = () => {
+        btn.innerHTML = '<i class="fa-solid fa-play text-[10px]"></i> ▶ Play BGM';
+        btn.className = 'px-3 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition flex items-center gap-1.5 shadow';
+      };
+    }
+
+    async function startDirectorRender() {
+      const script = document.getElementById('director-script-input').value.trim();
+      if (!script) return showToast('Pehle story / script likhiye ya generate kijiye!', true);
+
+      let title = document.getElementById('director-video-title').value.trim();
+      if (!title) {
+        title = script.split(/[.!?\n]/)[0].substring(0, 50) + (studioVideoFormat === 'short' ? ' #Shorts' : '');
+        document.getElementById('director-video-title').value = title;
+      }
+
+      const voice = document.getElementById('director-select-voice').value;
+      const speed = parseFloat(document.getElementById('slider-voice-speed').value || 0.92);
+      const bgm = document.getElementById('director-select-bgm').value;
+      const volume = parseFloat(document.getElementById('slider-bgm-volume').value || 0.16);
+      const subStyle = document.getElementById('director-select-subtitle-style').value;
+
+      const btn = document.getElementById('btn-director-render');
+      const statusDiv = document.getElementById('director-render-status');
+      const statusText = document.getElementById('director-render-status-text');
+
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Compositing Video...';
+      if (statusDiv) statusDiv.classList.remove('hidden');
+      if (statusText) statusText.textContent = `Rendering ${studioVideoFormat === 'short' ? '9:16 Short' : '16:9 Long Video'} in background...`;
+
+      try {
+        const res = await fetch('/api/director/render', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({
+            script_text: script,
+            title: title,
+            voice: voice,
+            voice_speed: speed,
+            bgm_filename: bgm,
+            bgm_volume: volume,
+            subtitle_style: subStyle,
+            video_format: studioVideoFormat,
+            language: studioLanguage,
+            real_incident_mode: document.getElementById('director-real-incident-mode') ? document.getElementById('director-real-incident-mode').checked : false,
+            visual_mode: document.getElementById('director-visual-mode') ? document.getElementById('director-visual-mode').value : 'multi_cinematic',
+            auto_viral_hook: document.getElementById('director-auto-viral-hook') ? document.getElementById('director-auto-viral-hook').checked : true
+          })
+        });
+        const data = await res.json();
+        if (data.success) {
+          showToast('Rendering start ho chuki hai! Progress track ho rahi hai...');
+          pollDirectorResult();
+        } else {
+          showToast(data.detail || 'Failed to start rendering', true);
+          btn.disabled = false;
+          btn.innerHTML = `<i class="fa-solid fa-play"></i> 🎬 Generate ${studioVideoFormat === 'short' ? '9:16 Short' : '16:9 Long'} Video Now`;
+          if (statusDiv) statusDiv.classList.add('hidden');
+        }
+      } catch (err) {
+        showToast('Render trigger error: ' + err.message, true);
+        btn.disabled = false;
+        btn.innerHTML = `<i class="fa-solid fa-play"></i> 🎬 Generate ${studioVideoFormat === 'short' ? '9:16 Short' : '16:9 Long'} Video Now`;
+        if (statusDiv) statusDiv.classList.add('hidden');
+      }
+    }
+
+    function pollDirectorResult() {
+      if (directorPollTimer) clearInterval(directorPollTimer);
+
+      directorPollTimer = setInterval(async () => {
+        try {
+          const res = await fetch('/api/director/last_result');
+          const data = await res.json();
+
+          if (data && data.video_filename) {
+            clearInterval(directorPollTimer);
+            directorPollTimer = null;
+
+            currentRenderedFilename = data.video_filename;
+            const resPanel = document.getElementById('director-result-panel');
+            const player = document.getElementById('director-preview-player');
+            const container = document.getElementById('director-video-container');
+            const specs = document.getElementById('director-res-specs');
+            const dlBtn = document.getElementById('btn-director-download');
+
+            player.src = data.stream_url;
+            if (dlBtn) {
+              dlBtn.href = data.stream_url;
+              dlBtn.setAttribute('download', data.video_filename);
+            }
+
+            const isLong = (data.is_long || data.format === 'landscape_long' || studioVideoFormat === 'landscape_long');
+            if (isLong) {
+              if (container) {
+                container.className = 'w-full max-w-[560px] aspect-[16/9] bg-black rounded-2xl overflow-hidden border-2 border-brand-cyan/40 shadow-2xl relative';
+              }
+              if (specs) specs.textContent = `1920x1080 (16:9 Long) • ${data.size_mb} MB • ${Math.round(data.duration)}s`;
+            } else {
+              if (container) {
+                container.className = 'w-full max-w-[280px] aspect-[9/16] bg-black rounded-2xl overflow-hidden border-2 border-brand-cyan/40 shadow-2xl relative';
+              }
+              if (specs) specs.textContent = `1080x1920 (9:16 Short) • ${data.size_mb} MB • ${Math.round(data.duration)}s`;
+            }
+
+            // Populate upload fields
+            const pubTitle = document.getElementById('director-pub-title');
+            if (pubTitle) pubTitle.value = data.title || document.getElementById('director-video-title').value;
+            
+            const pubDesc = document.getElementById('director-pub-desc');
+            if (pubDesc) {
+              pubDesc.value = (data.title || '') + "\n\n" + document.getElementById('director-script-input').value.substring(0, 180) + "...\n\n#AutoTube #Viral";
+            }
+
+            const pinnedPreview = document.getElementById('director-pinned-preview');
+            const pubPinned = document.getElementById('director-pub-pinned');
+            if (pubPinned && !pubPinned.value && pinnedPreview) {
+              pubPinned.value = pinnedPreview.textContent.replace(/"/g, '').trim();
+            }
+
+            resPanel.classList.remove('hidden');
+            resPanel.scrollIntoView({ behavior: 'smooth' });
+
+            const btn = document.getElementById('btn-director-render');
+            const statusDiv = document.getElementById('director-render-status');
+            btn.disabled = false;
+            btn.innerHTML = `<i class="fa-solid fa-play"></i> 🎬 Generate ${isLong ? '16:9 Long' : '9:16 Short'} Video Now`;
+            if (statusDiv) statusDiv.classList.add('hidden');
+
+            showToast('🎉 Video render complete! Player me review kijiye.');
+          }
+        } catch (err) {
+          console.error('Polling director result error:', err);
+        }
+      }, 4000);
+    }
+
+    async function publishDirectorVideoNow() {
+      if (!currentRenderedFilename) return showToast('Pehle video render kijiye!', true);
+
+      const title = document.getElementById('director-pub-title').value.trim();
+      const desc = document.getElementById('director-pub-desc').value.trim();
+      const tagsRaw = document.getElementById('director-pub-tags').value.trim();
+      const privacy = document.getElementById('director-pub-privacy').value;
+      const pinned = document.getElementById('director-pub-pinned').value.trim();
+      const btn = document.getElementById('btn-director-publish');
+      const feedback = document.getElementById('director-pub-feedback');
+
+      if (!confirm(`"${title}" ko YouTube par upload karein (${privacy.toUpperCase()})?`)) return;
+
+      const tags = tagsRaw.split(',').map(t => t.trim()).filter(Boolean);
+
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Uploading to YouTube...';
+      feedback.classList.remove('hidden');
+      feedback.className = 'text-xs text-brand-cyan py-2 rounded-lg bg-black/40';
+      feedback.textContent = 'Video YouTube par upload ho raha hai... Please wait...';
+
+      try {
+        const res = await fetch('/api/director/publish', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({
+            filename: currentRenderedFilename,
+            title: title,
+            description: desc || null,
+            tags: tags.length ? tags : null,
+            privacy: privacy,
+            pinned_comment: pinned || null
+          })
+        });
+        const data = await res.json();
+        if (data.success) {
+          feedback.className = 'text-xs text-emerald-400 py-2 rounded-lg bg-emerald-950/40 border border-emerald-500/30 font-bold';
+          feedback.innerHTML = `🎉 Video YouTube par successfully upload ho gaya! <a href="${data.url}" target="_blank" class="underline text-brand-cyan ml-1">Video Dekhein ↗</a>`;
+          showToast('✅ Upload to YouTube successful!');
+          loadVideos();
+        } else {
+          feedback.className = 'text-xs text-rose-400 py-2 rounded-lg bg-rose-950/40 border border-rose-500/30 font-bold';
+          feedback.textContent = 'Upload failed: ' + (data.detail || 'Error occurred');
+          showToast('Upload failed: ' + (data.detail || 'Error'), true);
+        }
+      } catch (err) {
+        feedback.className = 'text-xs text-rose-400 py-2 rounded-lg bg-rose-950/40 border border-rose-500/30 font-bold';
+        feedback.textContent = 'Error: ' + err.message;
+        showToast(err.message, true);
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-brands fa-youtube text-base"></i> 🚀 Upload to YouTube Now';
+      }
+    }
+
+    async function loadDirectorOptions() {
+      try {
+        const res = await fetch('/api/director/options');
+        const data = await res.json();
+
+        // Voices dropdown
+        const vSelect = document.getElementById('director-select-voice');
+        if (vSelect && data.voices) {
+          const currentVal = vSelect.value;
+          vSelect.innerHTML = '';
+          data.voices.forEach(v => {
+            const opt = document.createElement('option');
+            opt.value = v.id;
+            opt.textContent = `${v.name}`;
+            vSelect.appendChild(opt);
+          });
+          if (currentVal) vSelect.value = currentVal;
+        }
+
+        // BGM dropdown
+        const bgmSelect = document.getElementById('director-select-bgm');
+        if (bgmSelect && data.bgm_tracks) {
+          const currentBgm = bgmSelect.value;
+          bgmSelect.innerHTML = '';
+          data.bgm_tracks.forEach(t => {
+            const opt = document.createElement('option');
+            opt.value = t.filename;
+            opt.textContent = t.title;
+            bgmSelect.appendChild(opt);
+          });
+          if (currentBgm) bgmSelect.value = currentBgm;
+        }
+
+        // Subtitle styles dropdown
+        const subSelect = document.getElementById('director-select-subtitle-style');
+        if (subSelect && data.subtitle_styles) {
+          const currentSub = subSelect.value;
+          subSelect.innerHTML = '';
+          data.subtitle_styles.forEach(s => {
+            const opt = document.createElement('option');
+            opt.value = s.id;
+            opt.textContent = s.name;
+            subSelect.appendChild(opt);
+          });
+          if (currentSub) subSelect.value = currentSub;
+        }
+      } catch (err) {
+        console.error('Error loading director options:', err);
+      }
+    }
+
+    async function submitMotionClipGeneration() {
+      const asset = document.getElementById('select-motion-asset').value;
+      const prompt = document.getElementById('input-motion-prompt').value.trim();
+
+      const btn = document.getElementById('btn-generate-motion');
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Generating Motion Video...';
+
+      try {
+        const res = await fetch('/api/generate/motion_clip', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ asset_name: asset, custom_prompt: prompt || null })
+        });
+        const data = await res.json();
+        if (data.success) {
+          showToast(`Started generating motion clip for ${asset}!`);
+          switchTab('terminal');
+        } else {
+          showToast(data.detail || 'Failed to start motion clip', true);
+        }
+      } catch (err) {
+        showToast(err.message, true);
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-play"></i> Generate 5s Movie Video Clip';
+      }
+    }
+
+    async function loadCharacterClips() {
+      const grid = document.getElementById('character-clips-grid');
+      grid.innerHTML = '<div class="col-span-full text-center py-6 text-slate-500"><i class="fa-solid fa-spinner fa-spin"></i> Loading clips...</div>';
+
+      try {
+        const res = await fetch('/api/media/character_clips');
+        const data = await res.json();
+        grid.innerHTML = '';
+
+        if (!data.clips || data.clips.length === 0) {
+          grid.innerHTML = `
+            <div class="col-span-full text-center py-8 text-slate-500">
+              <i class="fa-solid fa-clapperboard text-3xl mb-2 text-slate-600 block"></i>
+              No motion video clips generated yet. Use the panel above to generate your first 5-second character clip!
+            </div>
+          `;
+          return;
+        }
+
+        data.clips.forEach(clip => {
+          const card = document.createElement('div');
+          card.className = 'glass-card p-3 rounded-xl border border-brand-border flex flex-col justify-between';
+          card.innerHTML = `
+            <div>
+              <div class="w-full h-44 bg-black rounded-lg overflow-hidden mb-2 border border-slate-800">
+                <video src="${clip.stream_url}" controls class="w-full h-full object-cover"></video>
+              </div>
+              <div class="font-bold text-xs text-white truncate">${clip.asset_stem}</div>
+              <div class="text-[10px] text-slate-400">${clip.size_mb} MB • 5s 9:16 HD</div>
+            </div>
+            <button onclick="playMedia('${clip.filename}', '${clip.stream_url}'); switchTab('media');" class="mt-2 w-full py-1 rounded bg-brand-cyan/20 hover:bg-brand-cyan/30 text-brand-cyan text-[11px] font-bold transition flex items-center justify-center gap-1">
+              <i class="fa-solid fa-expand text-[10px]"></i> Open in Big Player
+            </button>
+          `;
+          grid.appendChild(card);
+        });
+      } catch (err) {
+        grid.innerHTML = `<div class="col-span-full text-red-400 py-4">Error loading clips: ${err.message}</div>`;
+      }
+    }
+
+    async function loadHarvesterStatus() {
+      const stateEl = document.getElementById('stat-harvester-state');
+      const totalEl = document.getElementById('stat-harvester-total');
+      const compEl = document.getElementById('stat-harvester-completed');
+      const pendEl = document.getElementById('stat-harvester-pending');
+      const badgeEl = document.getElementById('harvester-badge');
+      const toggleBtn = document.getElementById('btn-toggle-harvester');
+      const grid = document.getElementById('vault-clips-grid');
+
+      try {
+        const res = await fetch('/api/harvester/status');
+        const data = await res.json();
+
+        // Update stats
+        if (stateEl) stateEl.textContent = data.is_running ? 'Running 24/7' : 'Idle';
+        if (totalEl) totalEl.textContent = data.total_jobs;
+        if (compEl) compEl.textContent = data.completed_count;
+        if (pendEl) pendEl.textContent = data.pending_count;
+
+        if (badgeEl) {
+          if (data.is_running) {
+            badgeEl.textContent = 'Active (24/7 Background)';
+            badgeEl.className = 'px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-950 text-emerald-400 border border-emerald-500/30 animate-pulse';
+          } else {
+            badgeEl.textContent = 'Idle';
+            badgeEl.className = 'px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-800 text-slate-400 border border-slate-700';
+          }
+        }
+
+        if (toggleBtn) {
+          if (data.is_running) {
+            toggleBtn.innerHTML = '<i class="fa-solid fa-pause"></i> Pause Harvester';
+            toggleBtn.className = 'px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold transition shadow-lg flex items-center gap-2';
+          } else {
+            toggleBtn.innerHTML = '<i class="fa-solid fa-play"></i> Start 24/7 Harvester';
+            toggleBtn.className = 'px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold transition shadow-lg flex items-center gap-2';
+          }
+        }
+
+        // Render vault clips
+        if (grid) {
+          if (!data.clips || data.clips.length === 0) {
+            grid.innerHTML = `
+              <div class="col-span-full text-center py-8 text-slate-500">
+                <i class="fa-solid fa-box-open text-3xl mb-2 text-slate-600 block"></i>
+                No harvested clips in vault yet. Start the 24/7 harvester to start capturing clips automatically!
+              </div>
+            `;
+          } else {
+            grid.innerHTML = '';
+            data.clips.forEach(clip => {
+              const card = document.createElement('div');
+              card.className = 'glass-card p-3 rounded-xl border border-brand-border flex flex-col justify-between hover:border-brand-cyan/40 transition';
+              const streamUrl = `/api/harvester/stream/${encodeURIComponent(clip.filename)}`;
+              card.innerHTML = `
+                <div>
+                  <div class="w-full h-44 bg-black rounded-lg overflow-hidden mb-2 border border-slate-800 relative group">
+                    <video src="${streamUrl}" controls preload="metadata" class="w-full h-full object-cover"></video>
+                  </div>
+                  <div class="flex items-center justify-between mb-1">
+                    <span class="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-brand-cyan/10 text-brand-cyan border border-brand-cyan/20 truncate max-w-[140px]">${clip.category || 'AI Clip'}</span>
+                    <span class="text-[10px] text-slate-400 font-mono">${clip.size_mb} MB</span>
+                  </div>
+                  <div class="font-bold text-xs text-white truncate" title="${clip.filename}">${clip.filename}</div>
+                  <div class="text-[10px] text-slate-500 mt-0.5">${clip.modified || ''}</div>
+                </div>
+                <button onclick="playMedia('${clip.filename.replace(/'/g, "\\'")}', '${streamUrl}'); switchTab('media');" class="mt-3 w-full py-1.5 rounded-lg bg-brand-cyan/15 hover:bg-brand-cyan/25 text-brand-cyan text-xs font-semibold transition flex items-center justify-center gap-1.5">
+                  <i class="fa-solid fa-expand text-[10px]"></i> Open in Big Player
+                </button>
+              `;
+              grid.appendChild(card);
+            });
+          }
+        }
+      } catch (err) {
+        console.error('Harvester status error:', err);
+      }
+    }
+
+    async function toggleHarvester() {
+      const toggleBtn = document.getElementById('btn-toggle-harvester');
+      const isCurrentlyRunning = toggleBtn && toggleBtn.textContent.includes('Pause');
+      const endpoint = isCurrentlyRunning ? '/api/harvester/stop' : '/api/harvester/start';
+
+      try {
+        if (toggleBtn) toggleBtn.disabled = true;
+        const res = await fetch(endpoint, { method: 'POST' });
+        const data = await res.json();
+        if (data.success) {
+          showToast(data.message || 'Harvester updated');
+          await loadHarvesterStatus();
+        } else {
+          showToast('Failed to update harvester', true);
+        }
+      } catch (err) {
+        showToast(err.message, true);
+      } finally {
+        if (toggleBtn) toggleBtn.disabled = false;
+      }
+    }
+
+    async function uploadClipToVault(input) {
+      if (!input.files || input.files.length === 0) return;
+      const file = input.files[0];
+      const formData = new FormData();
+      formData.append('file', file);
+
+      showToast(`Uploading "${file.name}" to Vault...`);
+      try {
+        const res = await fetch('/api/harvester/upload', {
+          method: 'POST',
+          body: formData,
+        });
+        const data = await res.json();
+        if (data.success) {
+          showToast(`✅ ${data.message || 'Clip uploaded to vault!'}`);
+          await loadHarvesterStatus();
+        } else {
+          showToast(`❌ Upload failed: ${data.detail || 'Error'}`, true);
+        }
+      } catch (err) {
+        showToast(`❌ Upload error: ${err.message}`, true);
+      } finally {
+        input.value = '';
+      }
+    }
+
     // Initial Load & Polling intervals
     function refreshAllData() {
       loadStatus();
       loadVideos();
+      loadHarvesterStatus();
+      loadSlotsMatrix();
       showToast('Dashboard refreshed!');
     }
 
     window.onload = () => {
       loadStatus();
       loadVideos();
+      loadHarvesterStatus();
+      loadSlotsMatrix();
       setInterval(loadStatus, 10000);
       setInterval(pollLogs, 3000);
     };
