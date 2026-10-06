@@ -45,12 +45,34 @@ class TTSResult(BaseModel):
     scene_durations: Optional[List[float]] = None
 
 
+def _normalize_scene_token(w: str) -> str:
+    """Normalize word token for speech-to-script alignment (strips punctuation & virams)."""
+    import re
+    if not w:
+        return ""
+    return re.sub(r"[^\w]", "", w.lower(), flags=re.UNICODE)
+
+
+def _get_scene_narration(scene: Any) -> str:
+    """Safely retrieve narration or spoken text from any scene object or dictionary."""
+    if isinstance(scene, dict):
+        return str(scene.get("narration") or scene.get("text") or "").strip()
+    return str(getattr(scene, "narration", "") or getattr(scene, "text", "") or "").strip()
+
+
 def compute_scene_durations(
     scenes: List[Any],
     words: List[TimedWord],
     total_duration: float,
 ) -> List[float]:
-    """Calculate the precise spoken duration for each scene using word timestamps."""
+    """Calculate the precise spoken duration for each scene using semantic token alignment and speech pauses.
+
+    Eliminates scene-to-voice drift by:
+    1. Semantically matching scene boundary words against Edge-TTS TimedWord tokens.
+    2. Detecting natural acoustic breath/sentence pauses between scene transitions.
+    3. Placing cuts right in the pause window after the scene's last spoken syllable.
+    4. Exact drift compensation so the cumulative sum matches total_duration to the millisecond.
+    """
     if not scenes:
         return [round(total_duration, 2)] if total_duration > 0 else [5.0]
 
@@ -58,36 +80,140 @@ def compute_scene_durations(
     if num_scenes == 1:
         return [round(total_duration, 2)]
 
-    scene_word_counts = []
+    # Extract scene narrations and normalized tokens
+    scene_token_lists = []
     for s in scenes:
-        narration = getattr(s, "narration", "") or ""
-        count = len(narration.split())
-        scene_word_counts.append(max(1, count))
+        narr = _get_scene_narration(s)
+        toks = [_normalize_scene_token(w) for w in narr.split() if _normalize_scene_token(w)]
+        scene_token_lists.append(toks)
 
+    scene_word_counts = [max(1, len(toks)) for toks in scene_token_lists]
     total_words = sum(scene_word_counts)
+
     if not words or len(words) < num_scenes:
         # Fallback to proportional duration based on word count
         proportions = [count / total_words for count in scene_word_counts]
-        return [round(max(1.5, total_duration * p), 2) for p in proportions]
+        durations = []
+        accum = 0.0
+        for idx, p in enumerate(proportions):
+            if idx == num_scenes - 1:
+                dur = max(1.5, round(total_duration - accum, 2))
+            else:
+                dur = max(1.5, round(total_duration * p, 2))
+                accum += dur
+            durations.append(dur)
+        diff = round(total_duration - sum(durations), 2)
+        durations[-1] = round(durations[-1] + diff, 2)
+        return durations
 
+    word_tokens = [_normalize_scene_token(w.word) for w in words]
+    num_words = len(words)
+
+    cut_timestamps: List[float] = []
+    curr_idx = 0
+
+    for s_idx in range(num_scenes - 1):
+        s_toks = scene_token_lists[s_idx]
+        next_toks = scene_token_lists[s_idx + 1]
+
+        target_last = s_toks[-1] if s_toks else ""
+        target_prev_last = s_toks[-2] if len(s_toks) >= 2 else ""
+        target_first = next_toks[0] if next_toks else ""
+        target_second = next_toks[1] if len(next_toks) >= 2 else ""
+
+        est_len = len(s_toks) if s_toks else max(1, total_words // num_scenes)
+        expected_end = curr_idx + est_len - 1
+
+        remaining_scenes = (num_scenes - 1) - s_idx
+        min_k = curr_idx
+        max_k = num_words - 1 - remaining_scenes
+
+        # Search window centered around expected_end
+        win_radius = max(6, int(est_len * 0.45))
+        win_start = max(min_k, expected_end - win_radius)
+        win_end = min(max_k, expected_end + win_radius)
+
+        if win_start > win_end:
+            win_start = min_k
+            win_end = max_k
+
+        best_k = expected_end
+        best_score = -99999.0
+
+        for k in range(win_start, win_end + 1):
+            score = 0.0
+            wk = word_tokens[k]
+            wk_next = word_tokens[k + 1] if k + 1 < num_words else ""
+
+            # 1. Match last word of current scene
+            if target_last and wk == target_last:
+                score += 16.0
+            elif target_last and (target_last in wk or wk in target_last):
+                score += 8.0
+
+            # 2. Match second-to-last word of current scene
+            if k > curr_idx and target_prev_last and word_tokens[k - 1] == target_prev_last:
+                score += 9.0
+
+            # 3. Match first word of next scene
+            if target_first and wk_next == target_first:
+                score += 16.0
+            elif target_first and (target_first in wk_next or wk_next in target_first):
+                score += 8.0
+
+            # 4. Match second word of next scene
+            if k + 2 < num_words and target_second and word_tokens[k + 2] == target_second:
+                score += 9.0
+
+            # 5. Natural acoustic pause between sentences in TTS voiceover
+            pause = (words[k + 1].start - words[k].end) if k + 1 < num_words else 0.0
+            if pause >= 0.20:
+                score += 12.0
+            elif pause >= 0.10:
+                score += 6.0
+            elif pause < -0.05:
+                score -= 6.0
+
+            # 6. Proximity penalty to expected length
+            dist = abs(k - expected_end)
+            score -= 0.6 * dist
+
+            if score > best_score:
+                best_score = score
+                best_k = k
+
+        # Clamp best_k within [min_k, max_k]
+        best_k = max(min_k, min(max_k, best_k))
+
+        # Calculate exact cut timestamp (with micro-cushion during acoustic pause)
+        word_end_time = words[best_k].end
+        next_word_start = words[best_k + 1].start if best_k + 1 < num_words else word_end_time
+        pause_gap = max(0.0, next_word_start - word_end_time)
+
+        # Place cut slightly after word ends (50ms - 150ms buffer) but strictly before next sentence
+        cut_time = word_end_time + min(0.15, pause_gap * 0.5)
+        cut_timestamps.append(cut_time)
+
+        curr_idx = best_k + 1
+
+    # Convert cut timestamps to scene durations
     durations: List[float] = []
-    current_word_idx = 0
-    prev_end_time = 0.0
-
-    for idx, s in enumerate(scenes):
-        if idx == num_scenes - 1:
-            dur = max(1.5, total_duration - prev_end_time)
-            durations.append(round(dur, 2))
-            break
-
-        w_count = scene_word_counts[idx]
-        target_idx = min(len(words) - 1, current_word_idx + w_count - 1)
-        end_time = words[target_idx].end
-        dur = max(1.5, end_time - prev_end_time)
+    prev_time = 0.0
+    for cut in cut_timestamps:
+        dur = max(1.5, cut - prev_time)
         durations.append(round(dur, 2))
-        prev_end_time = end_time
-        current_word_idx = target_idx + 1
+        prev_time = cut
 
+    final_dur = max(1.5, total_duration - prev_time)
+    durations.append(round(final_dur, 2))
+
+    # Exact drift compensation to ensure sum(durations) == round(total_duration, 2)
+    diff = round(total_duration - sum(durations), 2)
+    durations[-1] = round(durations[-1] + diff, 2)
+
+    print_info(
+        f"Synchronized speech-to-scene durations ({len(durations)} scenes, total {total_duration:.2f}s): {durations}"
+    )
     return durations
 
 
@@ -117,6 +243,7 @@ class TTSEngine:
         output_audio_path: Path,
         voice: Optional[str] = None,
         api_key: Optional[str] = None,
+        scenes: Optional[List[Any]] = None,
     ) -> TTSResult:
         """Synthesize voiceover using ElevenLabs API with character-level alignment."""
         has_devanagari = any("\u0900" <= c <= "\u097f" for c in text)
@@ -209,6 +336,10 @@ class TTSEngine:
         self._export_srt(words, srt_path)
         self._export_karaoke_ass(words, ass_path)
 
+        computed_scene_durations = None
+        if scenes:
+            computed_scene_durations = compute_scene_durations(scenes, words, duration)
+
         print_success(
             f"ElevenLabs voiceover generated: {output_audio_path.name} ({duration:.2f}s, {len(words)} words, voice: {voice_id})"
         )
@@ -218,6 +349,7 @@ class TTSEngine:
             subtitles_ass_path=ass_path,
             words=words,
             duration_seconds=duration,
+            scene_durations=computed_scene_durations,
         )
 
     @staticmethod
@@ -288,6 +420,7 @@ class TTSEngine:
         pitch: Optional[str] = None,
         width: int = 1080,
         height: int = 1920,
+        scenes: Optional[List[Any]] = None,
     ) -> TTSResult:
         """Synchronous wrapper to run async synthesis (safe inside running event loops)."""
         try:
@@ -308,6 +441,7 @@ class TTSEngine:
                         pitch=pitch,
                         width=width,
                         height=height,
+                        scenes=scenes,
                     )
                 )
                 return future.result()
@@ -321,6 +455,7 @@ class TTSEngine:
                 pitch=pitch,
                 width=width,
                 height=height,
+                scenes=scenes,
             )
         )
 
@@ -333,6 +468,7 @@ class TTSEngine:
         pitch: Optional[str] = None,
         width: int = 1080,
         height: int = 1920,
+        scenes: Optional[List[Any]] = None,
     ) -> TTSResult:
         """Synthesize text into speech and extract word & sentence boundaries."""
         # Tier 1: ElevenLabs Ultra-Realistic Synthesis (with character-level synchronization)
@@ -344,6 +480,7 @@ class TTSEngine:
                     output_audio_path=output_audio_path,
                     voice=voice,
                     api_key=self.elevenlabs_api_key,
+                    scenes=scenes,
                 )
             except Exception as e:
                 print_warning(
@@ -490,6 +627,10 @@ class TTSEngine:
 
         self._export_karaoke_ass(words, ass_path, width=width, height=height)
 
+        computed_scene_durations = None
+        if scenes:
+            computed_scene_durations = compute_scene_durations(scenes, words, duration)
+
         print_success(
             f"Voiceover generated: {output_audio_path.name} ({duration:.2f}s, {len(words)} words)"
         )
@@ -499,6 +640,7 @@ class TTSEngine:
             subtitles_ass_path=ass_path,
             words=words,
             duration_seconds=duration,
+            scene_durations=computed_scene_durations,
         )
 
     def _export_srt(

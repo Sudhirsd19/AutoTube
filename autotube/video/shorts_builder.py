@@ -29,8 +29,14 @@ class ShortsBuilder:
         scene_assets: Optional[List[Path]] = None,
         scene_durations: Optional[List[float]] = None,
         subtitles_file: Optional[Path] = None,
+        music_path: Optional[Path] = None,
+        width: Optional[int] = None,
+        height: Optional[int] = None,
     ) -> Optional[Path]:
-        """Compose audio, background visuals, and animated subtitles into a final Short."""
+        """Compose audio, background visuals, and animated subtitles into a final Short or Landscape Video."""
+        v_width = width or self.width
+        v_height = height or self.height
+
         output_path.parent.mkdir(parents=True, exist_ok=True)
         temp_dir = self.cfg.paths.temp_dir
         temp_dir.mkdir(parents=True, exist_ok=True)
@@ -40,21 +46,54 @@ class ShortsBuilder:
             print_error("Audio duration could not be determined.")
             return None
 
-        # Auto-mix narration speech with dramatic background music and hook SFX
+        # Unified multi-scene asset list (supports mix of videos and high-res photos)
+        multi_assets = scene_assets or scene_videos or scene_visuals
+        if multi_assets:
+            # Ensure assets actually exist on disk
+            multi_assets = [Path(p) for p in multi_assets if p and Path(p).exists()]
+
+        # 1-to-1 Alignment: Enforce that visual assets count exactly matches scene_durations count
+        if scene_durations and multi_assets:
+            target_scene_count = len(scene_durations)
+            if len(multi_assets) < target_scene_count:
+                print_info(
+                    f"Padding visual assets from {len(multi_assets)} to {target_scene_count} to match speech scenes..."
+                )
+                import itertools
+                cycle_iter = itertools.cycle(list(multi_assets))
+                multi_assets = [next(cycle_iter) for _ in range(target_scene_count)]
+            elif len(multi_assets) > target_scene_count:
+                print_info(
+                    f"Trimming visual assets from {len(multi_assets)} to {target_scene_count} to match speech scenes..."
+                )
+                multi_assets = multi_assets[:target_scene_count]
+
+        # Calculate exact cut timestamps for micro-transition sound effects
+        cut_timestamps: List[float] = []
+        if multi_assets and len(multi_assets) > 1:
+            curr_elapsed = 0.0
+            for idx in range(len(multi_assets) - 1):
+                if scene_durations and idx < len(scene_durations):
+                    dur_p = float(scene_durations[idx])
+                else:
+                    dur_p = duration / len(multi_assets)
+                curr_elapsed += dur_p
+                cut_timestamps.append(round(curr_elapsed, 3))
+
+        # Auto-mix narration speech with calm mysterious background music and micro-cut whooshes
         bgm_mgr = BackgroundMusicManager()
         mixed_audio_path = temp_dir / f"master_audio_{output_path.stem}.mp3"
         master_audio = bgm_mgr.mix_voice_and_music(
             voice_path=audio_path,
             output_mixed_path=mixed_audio_path,
-            include_whoosh=True,
+            music_path=music_path,
+            include_whoosh=False,
             topic=output_path.stem,
+            cut_timestamps=cut_timestamps,
         )
 
         raw_video_path = temp_dir / f"raw_{output_path.stem}.mp4"
         success = False
-
-        # Unified multi-scene asset list (supports mix of videos and high-res photos)
-        multi_assets = scene_assets or scene_videos or scene_visuals
 
         # Fallback single scene video if only 1 passed
         if multi_assets and len(multi_assets) == 1 and not background_video and not background_image:
@@ -77,12 +116,12 @@ class ShortsBuilder:
                 rendered_clips.append(clip_path)
 
                 if idx == num_scenes - 1:
-                    # Final clip takes all remaining audio duration to guarantee 100% sync
-                    dur_per_scene = max(1.5, duration - elapsed_rendered)
+                    # Final clip takes all remaining audio duration to guarantee exact overall duration
+                    dur_per_scene = max(1.5, round(duration - elapsed_rendered, 3))
                 elif scene_durations and idx < len(scene_durations):
                     dur_per_scene = float(scene_durations[idx])
                 else:
-                    dur_per_scene = duration / num_scenes
+                    dur_per_scene = round(duration / num_scenes, 3)
 
                 elapsed_rendered += dur_per_scene
 
@@ -91,8 +130,8 @@ class ShortsBuilder:
                 if is_video:
                     vf = (
                         f"fps={self.fps},"
-                        f"scale={self.width}:{self.height}:force_original_aspect_ratio=increase,"
-                        f"crop={self.width}:{self.height},"
+                        f"scale={v_width}:{v_height}:force_original_aspect_ratio=increase,"
+                        f"crop={v_width}:{v_height},"
                         f"setsar=1,"
                         f"format=yuv420p"
                     )
@@ -116,7 +155,9 @@ class ShortsBuilder:
                         "-c:v",
                         "libx264",
                         "-preset",
-                        "veryfast",
+                        "ultrafast",
+                        "-threads",
+                        "4",
                         "-an",
                         str(clip_path),
                     ]
@@ -125,36 +166,38 @@ class ShortsBuilder:
                     # High-res photo / AI visual with dynamic continuous motion (0% Freeze Guarantee!)
                     total_frames = max(1, int(dur_per_scene * self.fps))
                     motion_type = idx % 5
+                    p_factor = f"min(1.0,on/{total_frames})"
                     if motion_type == 0:
                         # Smooth continuous Zoom-In (1.0 -> 1.25) across entire scene duration
-                        zoom_expr = f"1.0+0.25*(on/{total_frames})"
+                        zoom_expr = f"min(1.25,1.0+0.25*{p_factor})"
                         x_expr = "iw/2-(iw/zoom/2)"
                         y_expr = "ih/2-(ih/zoom/2)"
                     elif motion_type == 1:
                         # Smooth continuous Zoom-Out (1.25 -> 1.05) across entire scene duration
-                        zoom_expr = f"1.25-0.20*(on/{total_frames})"
+                        zoom_expr = f"max(1.05,1.25-0.20*{p_factor})"
                         x_expr = "iw/2-(iw/zoom/2)"
                         y_expr = "ih/2-(ih/zoom/2)"
                     elif motion_type == 2:
                         # Cinematic Pan Left-to-Right with steady framing
                         zoom_expr = "1.15"
-                        x_expr = f"(iw-iw/zoom)*(on/{total_frames})"
+                        x_expr = f"(iw-iw/zoom)*{p_factor}"
                         y_expr = "ih/2-(ih/zoom/2)"
                     elif motion_type == 3:
                         # Cinematic Pan Right-to-Left with steady framing
                         zoom_expr = "1.15"
-                        x_expr = f"(iw-iw/zoom)*(1.0-(on/{total_frames}))"
+                        x_expr = f"(iw-iw/zoom)*(1.0-{p_factor})"
                         y_expr = "ih/2-(ih/zoom/2)"
                     else:
                         # Cinematic Diagonal Tilt & Zoom
-                        zoom_expr = f"1.06+0.18*(on/{total_frames})"
-                        x_expr = f"(iw-iw/zoom)*(on/{total_frames})"
-                        y_expr = f"(ih-ih/zoom)*(on/{total_frames})"
+                        zoom_expr = f"min(1.24,1.06+0.18*{p_factor})"
+                        x_expr = f"(iw-iw/zoom)*{p_factor}"
+                        y_expr = f"(ih-ih/zoom)*{p_factor}"
 
+                    scale_res = "2560:1440" if v_width > v_height else "1200:2133"
                     vf = (
-                        f"scale=1200:2133:force_original_aspect_ratio=increase,"
-                        f"crop=1200:2133,"
-                        f"zoompan=z='{zoom_expr}':d={total_frames}:x='{x_expr}':y='{y_expr}':s={self.width}x{self.height}:fps={self.fps},"
+                        f"scale={scale_res}:force_original_aspect_ratio=increase,"
+                        f"crop={scale_res},"
+                        f"zoompan=z='{zoom_expr}':d={total_frames}:x='{x_expr}':y='{y_expr}':s={v_width}x{v_height}:fps={self.fps},"
                         f"setsar=1,"
                         f"format=yuv420p"
                     )
@@ -174,7 +217,9 @@ class ShortsBuilder:
                         "-c:v",
                         "libx264",
                         "-preset",
-                        "veryfast",
+                        "ultrafast",
+                        "-threads",
+                        "4",
                         "-an",
                         str(clip_path),
                     ]
@@ -207,7 +252,8 @@ class ShortsBuilder:
                 "aac",
                 "-b:a",
                 "192k",
-                "-shortest",
+                "-t",
+                f"{duration:.3f}",
                 str(raw_video_path),
             ]
             success = run_ffmpeg(concat_args, desc="Stitching synchronized multi-scene sequence")
@@ -217,8 +263,8 @@ class ShortsBuilder:
             print_info(f"Using background video: {background_video.name}")
             vf = (
                 f"fps={self.fps},"
-                f"scale={self.width}:{self.height}:force_original_aspect_ratio=increase,"
-                f"crop={self.width}:{self.height},"
+                f"scale={v_width}:{v_height}:force_original_aspect_ratio=increase,"
+                f"crop={v_width}:{v_height},"
                 f"setsar=1,"
                 f"format=yuv420p"
             )
@@ -251,10 +297,12 @@ class ShortsBuilder:
         elif background_image and background_image.exists():
             print_info(f"Using background visual with continuous zoom: {background_image.name}")
             total_frames = max(1, int(duration * self.fps))
+            scale_res = "2560:1440" if v_width > v_height else "1200:2133"
+            p_factor = f"min(1.0,on/{total_frames})"
             vf = (
-                f"scale=1200:2133:force_original_aspect_ratio=increase,"
-                f"crop=1200:2133,"
-                f"zoompan=z='1.0+0.22*(on/{total_frames})':d={total_frames}:x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':s={self.width}x{self.height}:fps={self.fps},"
+                f"scale={scale_res}:force_original_aspect_ratio=increase,"
+                f"crop={scale_res},"
+                f"zoompan=z='min(1.25,1.0+0.22*{p_factor})':d={total_frames}:x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':s={v_width}x{v_height}:fps={self.fps},"
                 f"setsar=1,"
                 f"format=yuv420p"
             )
@@ -287,7 +335,7 @@ class ShortsBuilder:
         else:
             print_info("No background provided, creating aesthetic motion canvas...")
             vf = (
-                f"color=c=0x0f172a:s={self.width}x{self.height}:r={self.fps},"
+                f"color=c=0x0f172a:s={v_width}x{v_height}:r={self.fps},"
                 f"format=yuv420p"
             )
             args = [
