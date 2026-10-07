@@ -2,6 +2,7 @@ from autotube.voice.voice_director import (
     choose_subject_voice,
     detect_language,
     is_voice_language_compatible,
+    resolve_voice_for_content,
 )
 
 
@@ -30,3 +31,30 @@ def test_language_compatibility():
     assert is_voice_language_compatible("hi_deep_cinematic_male", "hi")
     assert not is_voice_language_compatible("en_deep_cinematic_male", "hi")
     assert is_voice_language_compatible("en_deep_british_male", "en")
+
+
+def test_resolve_auto_voice_uses_generated_subject():
+    assert resolve_voice_for_content(
+        "auto",
+        "What Happens Inside a Black Hole?",
+        "A black hole bends spacetime around its event horizon.",
+        "en",
+    ) == "en_deep_cinematic_male"
+
+
+def test_resolve_incompatible_voice_fails_closed_to_language_safe_voice():
+    assert resolve_voice_for_content(
+        "en_deep_cinematic_male",
+        "Mahabharat Mystery",
+        "यह महाभारत का एक रहस्यमय प्रसंग है।",
+        "hi",
+    ) == "hi_authoritative_male"
+
+
+def test_resolve_explicit_compatible_voice_preserves_choice():
+    assert resolve_voice_for_content(
+        "hi_deep_cinematic_male",
+        "Black Hole",
+        "यह अंतरिक्ष की कहानी है।",
+        "hi",
+    ) == "hi_deep_cinematic_male"
