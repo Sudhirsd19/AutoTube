@@ -266,9 +266,11 @@ class TTSEngine:
         print_info(f"Synthesizing ElevenLabs voiceover (Voice ID: {voice_id}, Model: eleven_multilingual_v2)...")
 
         url = f"https://api.elevenlabs.io/v1/text-to-speech/{voice_id}/with-timestamps"
+        language_code = "hi" if has_devanagari or v_key in {"madhur", "swara", "akashvani", "hindi", "hi"} else "en"
         payload = json.dumps({
             "text": text,
             "model_id": "eleven_multilingual_v2",
+            "language_code": language_code,
             "voice_settings": {
                 "stability": 0.50,
                 "similarity_boost": 0.75,
@@ -512,11 +514,10 @@ class TTSEngine:
         use_elevenlabs = bool(self.elevenlabs_api_key) and (raw_elevenlabs_id or legacy_elevenlabs_alias)
 
         # Hindi aliases must never silently use an English-premade ElevenLabs voice.
-        if is_hindi_target and v_key in {"madhur", "swara", "akashvani", "hindi", "hi"}:
+        if is_hindi_target and not raw_elevenlabs_id:
             use_elevenlabs = bool(
                 self.elevenlabs_api_key
                 and os.getenv("ELEVENLABS_HINDI_VOICE_ID", "").strip()
-                and raw_elevenlabs_id
             )
 
         if use_elevenlabs:
