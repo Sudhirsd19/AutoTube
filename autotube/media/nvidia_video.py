@@ -33,6 +33,7 @@ class NvidiaVideoGenerator:
         image_path: Optional[Path] = None,
         output_path: Optional[Path] = None,
         duration_seconds: int = 5,
+        allow_stock_fallback: bool = True,
     ) -> Optional[Path]:
         """Generate a video clip using NVIDIA NIM. If key missing or busy, falls back smoothly."""
         if not output_path:
@@ -80,7 +81,11 @@ class NvidiaVideoGenerator:
             except Exception as e:
                 print_warning(f"NVIDIA NIM API call failed or queued: {e}. Activating smart fallback...")
 
-        # Step 2: Fallback to Pexels HD Portrait Stock Clip
+        # Optional provider-local Pexels fallback. Director Studio disables this
+        # because it has a centralized global reuse/content-fingerprint guard.
+        if not allow_stock_fallback:
+            return None
+
         print_info("Smart Fallback: Searching HD Portrait Stock Clips (Pexels)...")
         try:
             from autotube.media.pexels_video import PexelsVideoFetcher
