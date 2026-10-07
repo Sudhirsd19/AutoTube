@@ -577,10 +577,9 @@ class TTSEngine:
 
         for attempt in range(1, max_attempts + 1):
             try:
+                # Preserve the resolved voice on every retry. A retry must never silently
+                # switch to a different narrator profile.
                 curr_voice = selected_voice
-                # On final attempt, fallback to bulletproof baseline voice if specialized voice had issues
-                if attempt == max_attempts:
-                    curr_voice = "hi-IN-MadhurNeural" if is_hindi else "en-US-ChristopherNeural"
 
                 communicate = edge_tts.Communicate(
                     text=processed_text,
@@ -633,14 +632,21 @@ class TTSEngine:
         # Get authoritative duration using ffmpeg
         duration = get_media_duration(output_audio_path)
 
-        # Convert boundaries to TimedWords
+        # Convert boundaries to TimedWords.
+        # Prefer authoritative WordBoundary events when available. Edge-TTS can emit
+        # both WordBoundary and SentenceBoundary events; processing both duplicates
+        # spoken tokens and can corrupt scene-cut calculations.
         words: List[TimedWord] = []
-        for b in raw_boundaries:
-            start_sec = b["offset"] / 10_000_000.0
-            dur_sec = b["duration"] / 10_000_000.0
-            b_text = b["text"].strip()
+        word_boundaries = [b for b in raw_boundaries if b.get("type") == "WordBoundary"]
+        sentence_boundaries = [b for b in raw_boundaries if b.get("type") == "SentenceBoundary"]
 
-            if b["type"] == "WordBoundary":
+        if word_boundaries:
+            for b in word_boundaries:
+                start_sec = b["offset"] / 10_000_000.0
+                dur_sec = b["duration"] / 10_000_000.0
+                b_text = b["text"].strip()
+                if not b_text:
+                    continue
                 words.append(
                     TimedWord(
                         word=b_text,
@@ -649,9 +655,12 @@ class TTSEngine:
                         duration=round(dur_sec, 3),
                     )
                 )
-            elif b["type"] == "SentenceBoundary":
-                # Break sentence into words with proportional duration
-                sentence_words = b_text.split()
+        else:
+            # SentenceBoundary fallback only when WordBoundary events are unavailable.
+            for b in sentence_boundaries:
+                start_sec = b["offset"] / 10_000_000.0
+                dur_sec = b["duration"] / 10_000_000.0
+                sentence_words = b["text"].split()
                 if not sentence_words:
                     continue
                 total_chars = max(1, sum(len(w) for w in sentence_words))

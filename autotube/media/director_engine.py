@@ -14,6 +14,7 @@ from autotube.utils.file_utils import sanitize_filename
 from autotube.voice.tts_engine import TTSEngine, ELEVENLABS_VOICES
 from autotube.voice.voice_director import choose_subject_voice, is_voice_language_compatible
 from autotube.media.background_music import BackgroundMusicManager
+from autotube.media.visual_quality_gate import VisualQualityGate
 from autotube.video.shorts_builder import ShortsBuilder
 from autotube.video.subtitle_burner import burn_subtitles
 from autotube.uploader.youtube_upload import YouTubeUploader
@@ -621,6 +622,8 @@ Output STRICT JSON with these keys:
         vg = VisualGenerator()
         nvidia = NvidiaVideoGenerator()
         multi_agg = MultiStockAggregator()
+        # Studio motion scenes require actual frame-level semantic validation.
+        multi_agg.visual_quality_gate.strict = True
 
         for idx, scene in enumerate(scene_specs):
             sentence = str(scene["narration"]).strip()
@@ -770,22 +773,53 @@ Output STRICT JSON with these keys:
                             )
                             acquired_video = None
 
+                # Every video-first asset must pass the same strict frame-level QA.
+                if acquired_video and visual_mode in ("multi_cinematic", "multi_best", "auto", "hybrid", "stock"):
+                    acquired_path = Path(acquired_video)
+                    if acquired_path.suffix.lower() not in {".mp4", ".mov", ".webm", ".mkv"}:
+                        print_warning(f"   ⚠️ Non-video asset returned for Scene {idx+1}; rejecting.")
+                        acquired_video = None
+                    else:
+                        qa = multi_agg.visual_quality_gate.verify(
+                            acquired_path,
+                            sentence,
+                            scene_plan,
+                        )
+                        if not qa.get("accepted"):
+                            print_warning(
+                                f"   ⚠️ Frame QA rejected Scene {idx+1}: "
+                                f"{qa.get('reason', 'visual mismatch')}"
+                            )
+                            acquired_video = None
+
                 if not acquired_video and visual_engine in ("pexels", "auto"):
                     for english_q in deduped_queries[:4]:
-                        acquired_video = multi_agg.get_fresh_pexels_video(
+                        candidate = multi_agg.get_fresh_pexels_video(
                             search_query=english_q,
                             scene_index=idx,
                             orientation=orientation,
                         )
-                        if acquired_video:
+                        if not candidate:
+                            continue
+                        qa = multi_agg.visual_quality_gate.verify(
+                            candidate,
+                            sentence,
+                            scene_plan,
+                        )
+                        if qa.get("accepted"):
+                            acquired_video = candidate
                             print_success(
-                                f"   🎬 [Pexels Video Fallback] Scene {idx+1} acquired fresh motion footage "
+                                f"   🎬 [Pexels Video Fallback] Scene {idx+1} acquired fresh, QA-approved motion footage "
                                 f"with query: '{english_q}'"
                             )
                             break
+                        print_warning(
+                            f"   ⚠️ Pexels fallback QA rejected Scene {idx+1}: "
+                            f"{qa.get('reason', 'visual mismatch')}"
+                        )
 
                 if not acquired_video:
-                    raise RuntimeError(f"No valid visual asset acquired for scene {idx+1}.")
+                    raise RuntimeError(f"No QA-approved motion visual acquired for scene {idx+1}.")
 
                 acquired_path = Path(acquired_video)
                 if not acquired_path.exists() or acquired_path.stat().st_size < 5000:
