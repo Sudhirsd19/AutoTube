@@ -51,7 +51,7 @@ class _StubNasa:
 def test_multi_stock_nasa_dispatcher_is_present():
     aggregator = object.__new__(MultiStockAggregator)
     aggregator.nasa_fetcher = _StubNasa()
-    assert aggregator.search_nasa("black hole", 4) == [{"query": "black hole", "limit": 4}]
+    assert aggregator.search_nasa("black hole", 4) == [{"query": "black hole", "limit": 8}]
 
 
 def test_multi_stock_strict_video_mode_returns_none_for_motion_fallback():
