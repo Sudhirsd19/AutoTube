@@ -1,6 +1,7 @@
 """Text-to-speech engine using ElevenLabs with automatic Thanos Edge-TTS fallback."""
 
 import asyncio
+import os
 import base64
 import json
 from pathlib import Path
@@ -254,9 +255,13 @@ class TTSEngine:
         elif v_key in ELEVENLABS_VOICES:
             voice_id = ELEVENLABS_VOICES[v_key]
         elif has_devanagari or v_key in ("madhur", "swara", "hindi", "hi"):
-            voice_id = "pNInz6obpgDQGcFmaJgB"  # Adam Multilingual v2 (Super natural viral Hindi narrator)
+            voice_id = os.getenv("ELEVENLABS_HINDI_VOICE_ID", "").strip()
+            if not voice_id:
+                raise RuntimeError(
+                    "A native Hindi ElevenLabs voice ID is not configured; native Edge-TTS Hindi will be used."
+                )
         else:
-            voice_id = ELEVENLABS_VOICES.get(v_key, "pNInz6obpgDQGcFmaJgB")  # Default to Adam (#1 most used viral voice)
+            voice_id = ELEVENLABS_VOICES.get(v_key, "pNInz6obpgDQGcFmaJgB")
 
         print_info(f"Synthesizing ElevenLabs voiceover (Voice ID: {voice_id}, Model: eleven_multilingual_v2)...")
 
@@ -498,8 +503,23 @@ class TTSEngine:
                         except Exception:
                             pass
 
-        # Tier 1: ElevenLabs Ultra-Realistic Synthesis (with character-level synchronization)
-        if self.elevenlabs_api_key:
+        # Tier 1: ElevenLabs only for explicit/raw ElevenLabs IDs or legacy aliases.
+        # Modern AutoTube catalog profiles are backed by specific native Edge-TTS voices;
+        # sending those friendly IDs to ElevenLabs would otherwise collapse them to Adam.
+        v_key = (voice or "").lower().strip()
+        raw_elevenlabs_id = bool(voice) and len(str(voice).strip()) >= 18 and " " not in str(voice).strip()
+        legacy_elevenlabs_alias = v_key in set(ELEVENLABS_VOICES) and not v_key.startswith(("hi_", "en_"))
+        use_elevenlabs = bool(self.elevenlabs_api_key) and (raw_elevenlabs_id or legacy_elevenlabs_alias)
+
+        # Hindi aliases must never silently use an English-premade ElevenLabs voice.
+        if is_hindi_target and v_key in {"madhur", "swara", "akashvani", "hindi", "hi"}:
+            use_elevenlabs = bool(
+                self.elevenlabs_api_key
+                and os.getenv("ELEVENLABS_HINDI_VOICE_ID", "").strip()
+                and raw_elevenlabs_id
+            )
+
+        if use_elevenlabs:
             try:
                 return await asyncio.to_thread(
                     self._synthesize_elevenlabs,
@@ -511,7 +531,7 @@ class TTSEngine:
                 )
             except Exception as e:
                 print_warning(
-                    f"ElevenLabs synthesis unavailable or quota reached ({e}). Falling back to Edge-TTS..."
+                    f"ElevenLabs synthesis unavailable or quota reached ({e}). Falling back to native Edge-TTS..."
                 )
 
         profile = get_voice_profile(voice)
