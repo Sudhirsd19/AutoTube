@@ -43,7 +43,7 @@ video:
       position: "bottom"
 
 voice:
-  default_voice: "adam"               # ElevenLabs #1 Most Used Voice (Adam) / Fallback: Christopher
+  default_voice: "auto"               # ElevenLabs #1 Most Used Voice (Adam) / Fallback: Christopher
   hindi_voice: "madhur"               # Natural Hindi Documentary Voice / Adam Multilingual
   rate: "+0%"
   pitch: "+0Hz"
