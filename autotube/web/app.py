@@ -982,6 +982,7 @@ async def preview_voice(voice_name: str):
         from autotube.voice.tts_engine import TTSEngine
         is_hi = v.startswith("hi") or "hindi" in v or v in ("akashvani", "akashwani", "madhur", "swara")
         sample_text = "ब्रह्मांड के अनंत रहस्यों में आपका स्वागत है। ब्लैक होल के अंदर वक्त ठहर जाता है।" if is_hi else "Welcome to the edge of the universe. Beyond the event horizon, time stands still."
+        engine = TTSEngine(default_voice=v)
         engine.synthesize(text=sample_text, output_audio_path=target, voice=v)
         if target.exists():
             return FileResponse(target, media_type="audio/mpeg")
