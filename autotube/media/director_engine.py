@@ -660,7 +660,9 @@ Output STRICT JSON with these keys:
                             scene_plan=scene_plan,
                             archival_pool=None,
                             allow_archival_fallback=False,
-                            allow_ai_fallback=True,
+                            # Director Studio is video-first: do not silently replace
+                            # missing motion footage with a static AI/Pexels image.
+                            allow_ai_fallback=False,
                         )
                 elif visual_mode == "real_only":
                     if not archival_fetcher:
@@ -702,7 +704,9 @@ Output STRICT JSON with these keys:
                             scene_plan=scene_plan,
                             archival_pool=None,
                             allow_archival_fallback=False,
-                            allow_ai_fallback=True,
+                            # Director Studio is video-first: do not silently replace
+                            # missing motion footage with a static AI/Pexels image.
+                            allow_ai_fallback=False,
                         )
                 elif visual_mode == "stock":
                     acquired_video = multi_agg.get_best_scene_asset(
