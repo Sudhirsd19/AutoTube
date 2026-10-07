@@ -107,6 +107,21 @@ def choose_subject_voice(title: str, script_text: str, language: str = "hi") -> 
     return VOICE_RULES[lang][category]
 
 
+def resolve_voice_for_content(
+    configured_voice: str | None,
+    title: str,
+    script_text: str,
+    language: str,
+) -> str:
+    """Resolve automatic or incompatible voices from the complete narration context."""
+    requested = (configured_voice or "").strip()
+    if requested.lower() in {"", "auto", "automatic", "smart", "default"}:
+        return choose_subject_voice(title=title, script_text=script_text, language=language)
+    if not is_voice_language_compatible(requested, language):
+        return choose_subject_voice(title=title, script_text=script_text, language=language)
+    return requested
+
+
 def is_voice_language_compatible(voice_id: str, language: str) -> bool:
     """Check catalog-style voice IDs without importing catalog data."""
     key = (voice_id or "").lower()
