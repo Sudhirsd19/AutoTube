@@ -27,11 +27,10 @@ jobs:
           pip install pytest ruff
       - name: Syntax check
         run: python -m compileall -q autotube tests
-      - name: Ruff (new video QA code)
+      - name: Ruff (subject-aware voice code)
         run: >-
           ruff check
-          autotube/media/nasa_media.py
-          autotube/media/visual_quality_gate.py
-          tests/test_nasa_and_frame_qa.py
+          autotube/voice/voice_director.py
+          tests/test_subject_aware_voice.py
       - name: Tests
         run: pytest -q
