@@ -105,7 +105,7 @@ Accept only when confidence >= {self.min_confidence}, coverage >= {self.min_cove
                     )
                     raw = (response.text or "").strip()
                     fence = chr(96) * 3
-                            if raw.startswith(fence + "json"):
+                    if raw.startswith(fence + "json"):
                         raw = raw[len(fence) + 4:].split(fence, 1)[0].strip()
                     elif raw.startswith(fence):
                         raw = raw[len(fence):].split(fence, 1)[0].strip()
