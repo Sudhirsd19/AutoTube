@@ -12,6 +12,7 @@ from autotube.config import PROJECT_ROOT, get_config
 from autotube.utils.console import print_info, print_success, print_warning, print_error
 from autotube.utils.file_utils import sanitize_filename
 from autotube.voice.tts_engine import TTSEngine, ELEVENLABS_VOICES
+from autotube.voice.voice_director import choose_subject_voice, is_voice_language_compatible
 from autotube.media.background_music import BackgroundMusicManager
 from autotube.video.shorts_builder import ShortsBuilder
 from autotube.video.subtitle_burner import burn_subtitles
@@ -449,7 +450,7 @@ Output STRICT JSON with these keys:
         self,
         script_text: str,
         title: str,
-        voice: str = "hi_deep_cinematic_male",
+        voice: str = "auto",
         voice_speed: float = 0.92,
         bgm_filename: Optional[str] = None,
         bgm_volume: float = 0.16,
@@ -542,14 +543,31 @@ Output STRICT JSON with these keys:
 
         if progress_callback: progress_callback(10, f"Synthesizing AI Voiceover ({voice}) for {format_label}...")
 
+        # Resolve voice from subject + language unless the user explicitly selected one.
+        selected_voice = str(voice or "").strip()
+        if selected_voice.lower() in {"", "auto", "automatic", "smart"}:
+            selected_voice = choose_subject_voice(
+                title=title,
+                script_text=active_script,
+                language=language,
+            )
+            print_info(f"🎙️ Auto Voice Director: '{selected_voice}' selected for subject/language.")
+        elif not is_voice_language_compatible(selected_voice, language):
+            auto_voice = choose_subject_voice(title=title, script_text=active_script, language=language)
+            print_warning(
+                f"Voice '{selected_voice}' does not match target language '{language}'. "
+                f"Using subject-matched voice '{auto_voice}'."
+            )
+            selected_voice = auto_voice
+
         # 1. Synthesize Voice using the exact scene contract for word-level scene timing.
         voice_audio = TEMP_DIR / f"{slug}_voice.mp3"
         rate_str = f"+{int((voice_speed - 1.0) * 100)}%" if voice_speed >= 1.0 else f"-{int((1.0 - voice_speed) * 100)}%"
-        tts = TTSEngine(default_voice=voice, rate=rate_str)
+        tts = TTSEngine(default_voice=selected_voice, rate=rate_str)
         tts_res = tts.synthesize(
             text=active_script,
             output_audio_path=voice_audio,
-            voice=voice,
+            voice=selected_voice,
             scenes=scene_specs,
         )
         total_duration = tts_res.duration_seconds

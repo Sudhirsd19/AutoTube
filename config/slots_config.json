@@ -12,7 +12,7 @@
         "tz": "IST",
         "niche": "Mind Glitch & Subconscious",
         "language": "Hindi",
-        "voice": "madhur",
+        "voice": "auto",
         "format": "short",
         "status": "ready",
         "bgm": "auto"
@@ -24,7 +24,7 @@
         "tz": "IST",
         "niche": "Quantum Science & Paradoxes",
         "language": "English",
-        "voice": "adam",
+        "voice": "auto",
         "format": "short",
         "status": "ready",
         "bgm": "auto"
@@ -36,7 +36,7 @@
         "tz": "IST",
         "niche": "Bharat Ka Prachin Vigyan",
         "language": "Hindi",
-        "voice": "madhur",
+        "voice": "auto",
         "format": "short",
         "status": "ready",
         "bgm": "auto"
@@ -48,7 +48,7 @@
         "tz": "IST",
         "niche": "Simulation & Matrix Glitch",
         "language": "English",
-        "voice": "adam",
+        "voice": "auto",
         "format": "short",
         "status": "ready",
         "bgm": "auto"
@@ -60,7 +60,7 @@
         "tz": "IST",
         "niche": "Dark Psychology & Body Language",
         "language": "Hindi",
-        "voice": "madhur",
+        "voice": "auto",
         "format": "short",
         "status": "ready",
         "bgm": "auto"
@@ -72,7 +72,7 @@
         "tz": "IST",
         "niche": "Ocean & Deep Earth Terrors",
         "language": "English",
-        "voice": "adam",
+        "voice": "auto",
         "format": "short",
         "status": "ready",
         "bgm": "auto"
@@ -84,7 +84,7 @@
         "tz": "IST",
         "niche": "प्राचीन भारत के अनसुलझे रहस्य व खोया विज्ञान",
         "language": "Hindi",
-        "voice": "madhur",
+        "voice": "auto",
         "format": "landscape_long",
         "status": "ready",
         "bgm": "auto"
@@ -96,7 +96,7 @@
         "tz": "IST",
         "niche": "Rahasyamay Itihas & Khopiya Sach",
         "language": "Hindi",
-        "voice": "madhur",
+        "voice": "auto",
         "format": "short",
         "status": "ready",
         "bgm": "auto"
@@ -108,7 +108,7 @@
         "tz": "IST",
         "niche": "Cosmic Horror & Deep Space",
         "language": "English",
-        "voice": "adam",
+        "voice": "auto",
         "format": "short",
         "status": "ready",
         "bgm": "auto"
@@ -120,7 +120,7 @@
         "tz": "IST",
         "niche": "AI & Future World Anomalies",
         "language": "English",
-        "voice": "adam",
+        "voice": "auto",
         "format": "short",
         "status": "ready",
         "bgm": "auto"
@@ -132,7 +132,7 @@
         "tz": "EDT",
         "niche": "Declassified Government Secrets & Mysteries",
         "language": "English",
-        "voice": "adam",
+        "voice": "auto",
         "format": "landscape_long",
         "status": "ready",
         "bgm": "auto"
@@ -144,7 +144,7 @@
         "tz": "IST",
         "niche": "Bizarre Unsolved Conspiracies",
         "language": "English",
-        "voice": "adam",
+        "voice": "auto",
         "format": "short",
         "status": "ready",
         "bgm": "auto"
@@ -158,7 +158,7 @@
         "tz": "IST",
         "niche": "Mind Glitch & Subconscious",
         "language": "Hindi",
-        "voice": "madhur",
+        "voice": "auto",
         "format": "short",
         "status": "ready",
         "bgm": "auto"
@@ -170,7 +170,7 @@
         "tz": "EDT",
         "niche": "Quantum Science & Paradoxes",
         "language": "English",
-        "voice": "adam",
+        "voice": "auto",
         "format": "short",
         "status": "ready",
         "bgm": "auto"
@@ -182,7 +182,7 @@
         "tz": "IST",
         "niche": "Bharat Ka Prachin Vigyan",
         "language": "Hindi",
-        "voice": "madhur",
+        "voice": "auto",
         "format": "short",
         "status": "ready",
         "bgm": "auto"
@@ -194,7 +194,7 @@
         "tz": "EDT",
         "niche": "Simulation & Matrix Glitch",
         "language": "English",
-        "voice": "adam",
+        "voice": "auto",
         "format": "short",
         "status": "ready",
         "bgm": "auto"
@@ -206,7 +206,7 @@
         "tz": "IST",
         "niche": "Dark Psychology & Body Language",
         "language": "Hindi",
-        "voice": "madhur",
+        "voice": "auto",
         "format": "short",
         "status": "ready",
         "bgm": "auto"
@@ -218,7 +218,7 @@
         "tz": "EDT",
         "niche": "Ocean & Deep Earth Terrors",
         "language": "English",
-        "voice": "adam",
+        "voice": "auto",
         "format": "short",
         "status": "ready",
         "bgm": "auto"
@@ -230,7 +230,7 @@
         "tz": "IST",
         "niche": "Dark History & Mythological Secrets",
         "language": "Hindi",
-        "voice": "madhur",
+        "voice": "auto",
         "format": "short",
         "status": "ready",
         "bgm": "auto"
@@ -242,7 +242,7 @@
         "tz": "EDT",
         "niche": "Cosmic Horror & Deep Space",
         "language": "English",
-        "voice": "adam",
+        "voice": "auto",
         "format": "short",
         "status": "ready",
         "bgm": "auto"
@@ -254,7 +254,7 @@
         "tz": "EDT",
         "niche": "AI & Future World Anomalies",
         "language": "English",
-        "voice": "adam",
+        "voice": "auto",
         "format": "short",
         "status": "ready",
         "bgm": "auto"
@@ -266,7 +266,7 @@
         "tz": "EDT",
         "niche": "Bizarre Unsolved Conspiracies",
         "language": "English",
-        "voice": "adam",
+        "voice": "auto",
         "format": "short",
         "status": "ready",
         "bgm": "auto"
@@ -280,7 +280,7 @@
         "tz": "IST",
         "niche": "Psychology / Life Hacks",
         "language": "Hindi",
-        "voice": "madhur",
+        "voice": "auto",
         "format": "short",
         "status": "ready",
         "bgm": "auto"
@@ -292,7 +292,7 @@
         "tz": "IST",
         "niche": "Science & Quantum Paradoxes",
         "language": "Hindi",
-        "voice": "madhur",
+        "voice": "auto",
         "format": "short",
         "status": "ready",
         "bgm": "auto"
@@ -304,7 +304,7 @@
         "tz": "EDT",
         "niche": "Unsolved Ancient Mysteries",
         "language": "English",
-        "voice": "adam",
+        "voice": "auto",
         "format": "short",
         "status": "ready",
         "bgm": "auto"
@@ -316,7 +316,7 @@
         "tz": "IST",
         "niche": "Dark History & Mythological Secrets",
         "language": "Hindi",
-        "voice": "madhur",
+        "voice": "auto",
         "format": "short",
         "status": "ready",
         "bgm": "auto"
@@ -328,7 +328,7 @@
         "tz": "IST",
         "niche": "Ancient Civilizations & Lost Science",
         "language": "Hindi",
-        "voice": "madhur",
+        "voice": "auto",
         "format": "landscape_long",
         "status": "ready",
         "bgm": "auto"
@@ -340,7 +340,7 @@
         "tz": "EDT",
         "niche": "Deep Space & Astronomy",
         "language": "English",
-        "voice": "adam",
+        "voice": "auto",
         "format": "short",
         "status": "ready",
         "bgm": "auto"
@@ -352,7 +352,7 @@
         "tz": "EDT",
         "niche": "AI & Future Tech Wonders",
         "language": "English",
-        "voice": "adam",
+        "voice": "auto",
         "format": "short",
         "status": "ready",
         "bgm": "auto"
@@ -366,7 +366,7 @@
         "tz": "IST",
         "niche": "Psychology & Motivation",
         "language": "Hindi",
-        "voice": "madhur",
+        "voice": "auto",
         "format": "short",
         "status": "ready",
         "bgm": "auto"
@@ -378,7 +378,7 @@
         "tz": "EDT",
         "niche": "Unsolved Ancient Mysteries",
         "language": "English",
-        "voice": "adam",
+        "voice": "auto",
         "format": "short",
         "status": "ready",
         "bgm": "auto"
@@ -390,7 +390,7 @@
         "tz": "IST",
         "niche": "Dark Mythology Secrets",
         "language": "Hindi",
-        "voice": "madhur",
+        "voice": "auto",
         "format": "short",
         "status": "ready",
         "bgm": "auto"
@@ -404,7 +404,7 @@
         "tz": "IST",
         "niche": "psychology",
         "language": "Hindi",
-        "voice": "madhur",
+        "voice": "auto",
         "format": "short",
         "status": "ready",
         "label": "08:30 AM IST - Dark Psychology & Mind Hacks (Hindi Short)",
@@ -417,7 +417,7 @@
         "tz": "IST",
         "niche": "bharat_vigyan",
         "language": "Hindi",
-        "voice": "madhur",
+        "voice": "auto",
         "format": "short",
         "status": "ready",
         "label": "12:45 PM IST - Bharat Ka Prachin Vigyan & Mandir Rahasya (Hindi Short)",
@@ -430,7 +430,7 @@
         "tz": "IST",
         "niche": "space",
         "language": "Hindi",
-        "voice": "madhur",
+        "voice": "auto",
         "format": "short",
         "status": "ready",
         "label": "04:30 PM IST - Cosmic Horror & Deep Space Paradoxes (Hindi Short)",
@@ -443,7 +443,7 @@
         "tz": "IST",
         "niche": "animal_secrets",
         "language": "Hindi",
-        "voice": "madhur",
+        "voice": "auto",
         "format": "short",
         "status": "ready",
         "label": "07:15 PM IST - Animal Secrets & Insane Superpowers (Hindi Short)",
@@ -456,7 +456,7 @@
         "tz": "IST",
         "niche": "history",
         "language": "Hindi",
-        "voice": "madhur",
+        "voice": "auto",
         "format": "short",
         "status": "ready",
         "label": "09:30 PM IST - Unsolved History & Dark Cursed Mysteries (Hindi Short)",
@@ -472,7 +472,7 @@
       "tz": "IST",
       "niche": "Dark Psychology",
       "language": "Hindi",
-      "voice": "madhur",
+      "voice": "auto",
       "format": "short",
       "status": "ready",
       "bgm": "auto"
@@ -484,7 +484,7 @@
       "tz": "IST",
       "niche": "Bharat Ka Vigyan",
       "language": "Hindi",
-      "voice": "madhur",
+      "voice": "auto",
       "format": "short",
       "status": "ready",
       "bgm": "history"
@@ -496,7 +496,7 @@
       "tz": "IST",
       "niche": "Space Anomalies",
       "language": "English",
-      "voice": "christopher",
+      "voice": "auto",
       "format": "short",
       "status": "ready",
       "bgm": "mystery"
@@ -508,7 +508,7 @@
       "tz": "IST",
       "niche": "Animal Secrets",
       "language": "Hindi",
-      "voice": "madhur",
+      "voice": "auto",
       "format": "short",
       "status": "ready",
       "bgm": "auto"
@@ -520,7 +520,7 @@
       "tz": "IST",
       "niche": "Ancient Bharat History",
       "language": "Hindi",
-      "voice": "madhur",
+      "voice": "auto",
       "format": "landscape_long",
       "status": "ready",
       "bgm": "history"
