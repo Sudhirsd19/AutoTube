@@ -532,6 +532,12 @@ Return STRICT JSON with keys:
             print_warning(f"Pixabay search error for '{query}': {e}")
         return results
 
+    def search_nasa(self, query: str, limit: int = 4) -> List[Dict[str, Any]]:
+        """Search NASA public video media for space/science scenes."""
+        if not self.nasa_fetcher.is_configured():
+            return []
+        return self.nasa_fetcher.search_videos(query=query, limit=limit)
+
     # -------------------------------------------------------------
     # 3. PARALLEL MULTI-SOURCE SEARCH DISPATCHER
     # -------------------------------------------------------------
