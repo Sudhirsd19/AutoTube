@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Dict, Iterable
+from collections.abc import Iterable
 
 
 SPACE_KEYS = (
@@ -41,7 +41,7 @@ VIRAL_KEYS = (
 )
 
 
-VOICE_RULES: Dict[str, Dict[str, str]] = {
+VOICE_RULES: dict[str, dict[str, str]] = {
     "hi": {
         "space": "hi_deep_cinematic_male",
         "science": "hi_calm_male",
