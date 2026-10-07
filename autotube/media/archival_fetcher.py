@@ -417,14 +417,19 @@ Archive search engines (Wikimedia Commons & Wikipedia) STRICTLY REQUIRE CONCISE 
             if len(downloaded_paths) >= count:
                 break
 
-            target_img = self.temp_dir / f"archival_{slug}_{idx}_{int(time.time())}.jpg"
+            media_kind = cand.get("media_kind", "image")
+            suffix = ".mp4" if media_kind == "video" else ".jpg"
+            target_media = self.temp_dir / f"archival_{slug}_{idx}_{int(time.time())}{suffix}"
             if progress_callback:
                 progress_callback(
                     48 + int((len(downloaded_paths) / max(1, count)) * 6),
-                    f"Acquiring authentic archival document/photo ({len(downloaded_paths)+1}/{count}): {cand.get('title', '')[:35]}..."
+                    f"Acquiring authentic archival media ({len(downloaded_paths)+1}/{count}): {cand.get('title', '')[:35]}..."
                 )
 
-            saved = self.download_and_prepare_image(cand["url"], target_img)
+            if media_kind == "video":
+                saved = self.download_and_prepare_video(cand["url"], target_media)
+            else:
+                saved = self.download_and_prepare_image(cand["url"], target_media)
             if saved and saved.exists():
                 downloaded_paths.append(saved)
                 print_success(f"Archival Proof Sourced: [{cand.get('source')}] {cand.get('title')} -> {saved.name}")
