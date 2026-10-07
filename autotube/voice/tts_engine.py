@@ -471,6 +471,33 @@ class TTSEngine:
         scenes: Optional[List[Any]] = None,
     ) -> TTSResult:
         """Synthesize text into speech and extract word & sentence boundaries."""
+        # Smart Hindi Phonetic Normalization (Devanagari, Number Expansion, Acronyms, Loanwords)
+        is_hindi_target = (
+            "hi-IN" in str(voice or "").lower()
+            or any(k in str(voice or "").lower() for k in ("hi", "hindi", "madhur", "swara", "akashvani"))
+            or any("\u0900" <= c <= "\u097f" for c in text)
+        )
+        if is_hindi_target:
+            from autotube.voice.hindi_normalizer import normalize_hindi_for_tts
+            text = normalize_hindi_for_tts(text)
+            if scenes:
+                for s in scenes:
+                    if isinstance(s, dict):
+                        if "narration" in s:
+                            s["narration"] = normalize_hindi_for_tts(str(s["narration"]))
+                        elif "text" in s:
+                            s["text"] = normalize_hindi_for_tts(str(s["text"]))
+                    elif hasattr(s, "narration") and getattr(s, "narration"):
+                        try:
+                            s.narration = normalize_hindi_for_tts(str(s.narration))
+                        except Exception:
+                            pass
+                    elif hasattr(s, "text") and getattr(s, "text"):
+                        try:
+                            s.text = normalize_hindi_for_tts(str(s.text))
+                        except Exception:
+                            pass
+
         # Tier 1: ElevenLabs Ultra-Realistic Synthesis (with character-level synchronization)
         if self.elevenlabs_api_key:
             try:

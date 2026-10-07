@@ -27,13 +27,33 @@ class ThumbnailGenerator:
         print_info(f"Generating high-CTR thumbnail for: '{title}'...")
 
         # Base Image
+        img = None
         if background_image and background_image.exists():
-            img = Image.open(background_image).convert("RGB")
-            img = img.resize((self.width, self.height), Image.Resampling.LANCZOS)
-            # Increase contrast and saturation slightly
-            img = ImageEnhance.Contrast(img).enhance(1.2)
-            img = ImageEnhance.Color(img).enhance(1.25)
-        else:
+            bg_img_path = background_image
+            if background_image.suffix.lower() in [".mp4", ".mov", ".mkv", ".webm", ".avi"]:
+                extracted_frame = output_path.parent / f"{output_path.stem}_frame.jpg"
+                from autotube.utils.ffmpeg_helper import run_ffmpeg
+                run_ffmpeg([
+                    "-ss", "00:00:01",
+                    "-i", str(background_image),
+                    "-vframes", "1",
+                    "-q:v", "2",
+                    str(extracted_frame),
+                ])
+                if extracted_frame.exists():
+                    bg_img_path = extracted_frame
+
+            try:
+                img = Image.open(bg_img_path).convert("RGB")
+                img = img.resize((self.width, self.height), Image.Resampling.LANCZOS)
+                # Increase contrast and saturation slightly
+                img = ImageEnhance.Contrast(img).enhance(1.2)
+                img = ImageEnhance.Color(img).enhance(1.25)
+            except Exception as e:
+                print_warning(f"Could not load thumbnail background: {e}")
+                img = None
+
+        if img is None:
             # Gradient canvas
             img = Image.new("RGB", (self.width, self.height), (15, 23, 42))
             draw = ImageDraw.Draw(img)

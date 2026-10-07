@@ -88,6 +88,27 @@ def get_media_duration(file_path: Path) -> float:
     return 0.0
 
 
+def get_media_dimensions(file_path: Path) -> tuple:
+    """Get the width and height of a video file."""
+    import re
+    ffmpeg_exe = get_ffmpeg_path()
+    cmd = [ffmpeg_exe, "-i", str(file_path), "-f", "null", "-"]
+    result = subprocess.run(
+        cmd,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+    )
+    for line in result.stderr.splitlines():
+        if "Stream #0:" in line and "Video:" in line:
+            m = re.search(r",\s*(\d{3,4})x(\d{3,4})", line)
+            if m:
+                return int(m.group(1)), int(m.group(2))
+    return 1080, 1920
+
+
 def create_solid_color_video(
     output_path: Path,
     duration: float,

@@ -19,7 +19,19 @@ output/temp/
 config/token.json
 config/client_secrets.json
 config/auth_url.txt
+config/chrome_flow_profile/
 
 # IDE
 .vscode/
 .idea/
+
+# Cache and large media downloads
+assets/stock_cache/
+assets/pexels_videos/
+assets/cache/
+config/edge_flow_profile/
+*.tar.gz
+*.mp4
+temp/
+scratch/
+

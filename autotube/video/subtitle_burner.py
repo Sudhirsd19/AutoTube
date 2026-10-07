@@ -62,8 +62,18 @@ def burn_subtitles(
         )
         current_v = "[v_hook]"
 
-    # 3. Subscribe badge overlay (Appears around 60% of video for 7 seconds)
-    if subscribe_badge and subscribe_badge.exists():
+    # 3. Like, Subscribe & Bell outro banner (Appears during last 6.5s during spoken Outro CTA)
+    bell_banner = Path("assets/like_subscribe_bell_banner.png")
+    if bell_banner.exists():
+        inputs.extend(["-i", str(bell_banner)])
+        bell_idx = (len(inputs) // 2) - 1
+        outro_start = max(1.0, vid_dur - 6.5)
+        outro_end = max(1.5, vid_dur - 0.2)
+        filter_steps.append(
+            f"{current_v}[{bell_idx}:v]overlay=(W-w)/2:H-h-180:enable='between(t,{outro_start:.1f},{outro_end:.1f})'[v_sub_cta]"
+        )
+        current_v = "[v_sub_cta]"
+    elif subscribe_badge and subscribe_badge.exists():
         inputs.extend(["-i", str(subscribe_badge)])
         sub_idx = (len(inputs) // 2) - 1
         sub_start = max(4.0, vid_dur * 0.60)
@@ -72,6 +82,28 @@ def burn_subtitles(
             f"{current_v}[{sub_idx}:v]overlay=(W-w)/2:1320:enable='between(t,{sub_start:.1f},{sub_end:.1f})'[v_sub_cta]"
         )
         current_v = "[v_sub_cta]"
+
+    # 4. Classified TOP SECRET stamp badge overlay (Appears from t=0.5 to t=4.0 for intense hook retention)
+    classified_badge = Path("assets/classified_badge.png")
+    if classified_badge.exists():
+        inputs.extend(["-i", str(classified_badge)])
+        class_idx = (len(inputs) // 2) - 1
+        filter_steps.append(
+            f"{current_v}[{class_idx}:v]overlay=(W-w)/2:280:enable='between(t,0.4,4.2)'[v_class]"
+        )
+        current_v = "[v_class]"
+
+    # 5. Sleek Neon Progress Bar (Psychological Completion Booster for 9:16 Vertical Shorts)
+    try:
+        from autotube.utils.ffmpeg_helper import get_media_dimensions
+        w_val, h_val = get_media_dimensions(input_video)
+        if h_val > w_val and vid_dur > 0:
+            filter_steps.append(
+                f"{current_v}drawbox=x=0:y=ih-8:w='iw*(t/{vid_dur:.2f})':h=6:color=0x38bdf8@0.9:t=fill[v_prog]"
+            )
+            current_v = "[v_prog]"
+    except Exception:
+        pass
 
     # If no filters applied, just copy
     if not filter_steps:
@@ -92,7 +124,9 @@ def burn_subtitles(
             "-crf",
             "23",
             "-preset",
-            "veryfast",
+            "ultrafast",
+            "-threads",
+            "4",
             "-c:a",
             "copy",
             str(output_video),

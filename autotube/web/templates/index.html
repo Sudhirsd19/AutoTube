@@ -625,7 +625,7 @@
 
         <!-- REAL INCIDENT / HISTORICAL ARCHIVE PROOF MODE -->
         <div class="p-3.5 rounded-xl bg-amber-950/25 border border-amber-500/30 flex items-start gap-3">
-          <input type="checkbox" id="director-real-incident-mode" checked class="mt-0.5 w-4 h-4 rounded text-amber-500 bg-slate-900 border-slate-700 focus:ring-0 cursor-pointer">
+          <input type="checkbox" id="director-real-incident-mode" class="mt-0.5 w-4 h-4 rounded text-amber-500 bg-slate-900 border-slate-700 focus:ring-0 cursor-pointer">
           <div class="flex-1">
             <label for="director-real-incident-mode" class="text-xs font-bold text-amber-300 flex items-center gap-2 cursor-pointer">
               <i class="fa-solid fa-landmark text-amber-400"></i> 📜 Real Story / Historical Incident Mode (Authentic Photos, Scanned Archives & Proofs)
@@ -2307,10 +2307,10 @@
           }
 
           const combined = (data.full_narration + " " + (data.titles ? data.titles.join(" ") : "")).toLowerCase();
-          const isReal = ['real', 'incident', 'punarjanam', 'shanti devi', 'gandhi', 'proof', 'saboot', 'history', 'itihaas', 'investigation', 'mystery'].some(k => combined.includes(k));
+          const isReal = ['shanti devi', 'gandhi', 'subhas bose', 'netaji', 'punarjanam', '1947 roswell'].some(k => combined.includes(k));
           const incChk = document.getElementById('director-real-incident-mode');
-          if (incChk) {
-            incChk.checked = isReal || incChk.checked;
+          if (incChk && isReal) {
+            incChk.checked = true;
           }
 
           showToast('✅ AI ne complete engaging story ready kar di!');

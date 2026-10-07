@@ -1,5 +1,7 @@
 """YouTube video upload manager using YouTube Data API v3."""
 
+import json
+from datetime import datetime
 from pathlib import Path
 from typing import List, Optional
 from googleapiclient.discovery import build
@@ -16,6 +18,7 @@ class YouTubeUploader:
     def __init__(self, auth: Optional[YouTubeAuth] = None):
         self.auth = auth or YouTubeAuth()
         self.cfg = get_config()
+        self.last_error: Optional[str] = None
 
     def upload_video(
         self,
@@ -28,6 +31,7 @@ class YouTubeUploader:
         publish_at: Optional[str] = None,
         thumbnail_path: Optional[Path] = None,
         pinned_comment: Optional[str] = None,
+        chapters: Optional[List[tuple]] = None,
     ) -> Optional[str]:
         """Upload video file to YouTube with metadata, optional thumbnail and auto engagement comment."""
         if not video_path.exists():
@@ -42,45 +46,91 @@ class YouTubeUploader:
         privacy = privacy_status or self.cfg.youtube.default_privacy
         category = category_id or self.cfg.youtube.default_category
 
-        # Ensure high-traffic SEO tags
-        base_viral_tags = [
-            "Shorts",
-            "YouTube Shorts",
-            "Viral",
-            "Trending",
-            "Space",
-            "Science Facts",
-            "Mind Blowing",
-            "Mysteries",
-            "Universe",
-        ]
+        is_short = "#Shorts" in title or (tags and "#Shorts" in tags)
+        if is_short:
+            base_viral_tags = [
+                "Shorts",
+                "YouTube Shorts",
+                "Viral",
+                "Trending",
+                "Space",
+                "Science Facts",
+                "Mind Blowing",
+                "Mysteries",
+                "Universe",
+            ]
+        else:
+            base_viral_tags = [
+                "Documentary",
+                "Full Documentary",
+                "Sci-Fi",
+                "History",
+                "Space Mysteries",
+                "Science",
+                "Cosmic",
+                "Universe",
+            ]
         clean_tags = list(dict.fromkeys((tags or []) + base_viral_tags))
 
+        # Check latest longform documentary for Shorts-to-Long Funnel cross-promotion
+        latest_long = None
+        latest_long_file = Path("config/latest_longform_video.json")
+        if latest_long_file.exists():
+            try:
+                latest_long = json.loads(latest_long_file.read_text(encoding="utf-8"))
+            except Exception:
+                pass
+
+        funnel_desc = ""
+        funnel_pin = ""
+        if is_short and latest_long and latest_long.get("video_url"):
+            l_url = latest_long["video_url"]
+            l_title = latest_long.get("title", "Full Documentary")
+            funnel_desc = (
+                f"\n🎬 MUST WATCH FULL 16:9 DOCUMENTARY:\n"
+                f"👉 {l_title}\n"
+                f"🔗 {l_url}\n"
+            )
+            funnel_pin = f"\n\n🎬 Watch Full 16:9 Documentary: {l_url}"
+
+        # Automatic Interactive YouTube Chapters for Long Videos
+        chapters_block = ""
+        if not is_short and chapters:
+            chapter_lines = ["\n📌 CHAPTERS / TIMESTAMPS:"]
+            for sec, ch_name in chapters:
+                m, s = divmod(int(sec), 60)
+                chapter_lines.append(f"{m:02d}:{s:02d} - {ch_name}")
+            chapters_block = "\n".join(chapter_lines) + "\n"
+
         # Ensure 1-click subscription link and engagement CTA in description
+        channel_handle = "@cosmochro"
+        sub_link = f"https://www.youtube.com/{channel_handle}?sub_confirmation=1"
         sub_cta_block = (
             "\n\n"
-            "🔔 SUBSCRIBE for Daily Cosmic Mysteries & Mind-Blowing Facts:\n"
-            "👉 https://www.youtube.com/@skd_animate?sub_confirmation=1\n\n"
-            "💬 Which theory shocked you the most? Drop your comment below!\n"
-            "⚡ Share this with a friend who loves science & mysteries!\n\n"
-            "#Shorts #SpaceFacts #Mystery #Trending #Viral"
+            + chapters_block
+            + funnel_desc
+            + "🔔 SUBSCRIBE for Daily Cosmic Mysteries & Mind-Blowing Facts:\n"
+            f"👉 {sub_link}\n\n"
+            "💬 Which revelation shocked you the most? Drop your comment below!\n"
+            "⚡ Share this video with a friend who loves science & mysteries!\n\n"
+            f"{'#Shorts ' if is_short else ''}#AlienInterview #Documentary #SpaceMysteries #Trending #Viral"
         )
         if "sub_confirmation=1" not in description:
             full_description = (description.rstrip() + sub_cta_block)[:5000]
         else:
             full_description = description[:5000]
 
-        # Optimize pinned comment with high-engagement question + 1-click auto-subscribe link
-        sub_link = "https://www.youtube.com/@skd_animate?sub_confirmation=1"
+        # Optimize pinned comment with high-engagement question + funnel link + 1-click auto-subscribe link
         if pinned_comment:
             if "sub_confirmation=1" not in pinned_comment:
-                effective_pinned_comment = f"{pinned_comment.strip()}\n\n👉 Subscribe to @skd_animate for Part 2:\n{sub_link}"
+                effective_pinned_comment = f"{pinned_comment.strip()}{funnel_pin}\n\n👉 Subscribe to {channel_handle} for more:\n{sub_link}"
             else:
-                effective_pinned_comment = pinned_comment
+                effective_pinned_comment = f"{pinned_comment.strip()}{funnel_pin}"
         else:
             effective_pinned_comment = (
-                "🔥 Which mystery shocked you the most? Comment below! 👇\n"
-                f"👉 Subscribe to @skd_animate for Part 2 releasing today:\n{sub_link}"
+                "🔥 What do you think is the real truth? Type 1 or Type 2 below! 👇\n"
+                f"{funnel_pin}\n"
+                f"👉 Subscribe to {channel_handle} for more deep mysteries:\n{sub_link}"
             )
 
         # If scheduling release, privacy status must be 'private'
@@ -147,12 +197,42 @@ class YouTubeUploader:
             if effective_pinned_comment:
                 self.post_comment(video_id=video_id, comment_text=effective_pinned_comment)
 
+            # Record latest longform video for future Shorts funnel cross-promotion
+            if not is_short and video_id:
+                try:
+                    latest_long_file = Path("config/latest_longform_video.json")
+                    latest_long_file.parent.mkdir(parents=True, exist_ok=True)
+                    latest_long_file.write_text(
+                        json.dumps(
+                            {
+                                "video_id": video_id,
+                                "video_url": video_url,
+                                "title": title,
+                                "uploaded_at": datetime.now().isoformat(),
+                            },
+                            indent=2,
+                            ensure_ascii=False,
+                        ),
+                        encoding="utf-8",
+                    )
+                    print_info(f"Recorded latest longform video for Shorts funnel: {video_id}")
+                except Exception as se:
+                    print_warning(f"Could not save latest longform video info: {se}")
+
             return video_url
 
         except HttpError as e:
+            err_text = str(e)
+            if "uploadLimitExceeded" in err_text:
+                self.last_error = "YouTube Daily Upload Limit Exceeded! Your channel reached its daily limit of video uploads (~6-10 per day). YouTube will reset this limit in 24 hours."
+            elif "quotaExceeded" in err_text:
+                self.last_error = "YouTube API Quota Exceeded for today (10,000 units/day). Limit resets at midnight Pacific Time."
+            else:
+                self.last_error = f"YouTube API Error: {e}"
             print_error(f"YouTube API HTTP error: {e}")
             return None
         except Exception as e:
+            self.last_error = f"Upload failed: {e}"
             print_error(f"Upload failed: {e}")
             return None
 

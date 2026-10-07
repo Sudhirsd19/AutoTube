@@ -13,11 +13,141 @@ from autotube.utils.console import print_error, print_info, print_success, print
 
 # Recommended modern models with automatic fallback
 CANDIDATE_MODELS = [
-    "gemini-3.1-flash-lite-preview",
+    "gemini-3.5-flash-lite",
+    "gemini-3.1-flash-lite",
+    "gemini-3.5-flash",
     "gemini-3.8-flash",
-    "gemini-flash-latest",
-    "gemini-3-flash-preview",
 ]
+
+
+def get_subject_outro_text(topic: str, language: str = "en") -> str:
+    """Return a natural, subject-tailored Outro CTA containing like, subscribe, and support."""
+    t_lower = topic.lower()
+    is_hindi = language.lower() in ("hi", "hindi")
+
+    if any(k in t_lower for k in ("space", "antariksh", "galaxy", "black hole", "cosmic", "universe", "planet", "astronomy", "nasa")):
+        if is_hindi:
+            return "ऐसे ही अंतरिक्ष और ब्रह्मांड के रहस्यमयी इंफॉर्मेटिव वीडियोज़ के लिए हमें लाइक और सब्सक्राइब करें और सपोर्ट करें।"
+        else:
+            return "For more mind-bending cosmic mysteries and informative space videos, make sure to like, subscribe, and support our channel!"
+
+    elif any(k in t_lower for k in ("bharat", "temple", "mandir", "ancient india", "vedic", "kailasa", "dwarka", "history", "itihas", "empire", "archaeology")):
+        if is_hindi:
+            return "ऐसे ही प्राचीन भारत और इतिहास के अनसुलझे रहस्यों के इंफॉर्मेटिव वीडियोज़ के लिए हमें लाइक और सब्सक्राइब करें और सपोर्ट करें।"
+        else:
+            return "For more untold historical facts and ancient mysteries, please like, subscribe, and support our channel!"
+
+    elif any(k in t_lower for k in ("psychology", "brain", "mind", "dimag", "human behavior", "subconscious", "manipulation", "glitch in")):
+        if is_hindi:
+            return "ऐसे ही दिमाग हिला देने वाले साइकोलॉजिकल फैक्ट्स और माइंड हैक्स के इंफॉर्मेटिव वीडियोज़ के लिए हमें लाइक और सब्सक्राइब करें और सपोर्ट करें।"
+        else:
+            return "For more fascinating psychology hacks and human mind mysteries, please like, subscribe, and support our channel!"
+
+    elif any(k in t_lower for k in ("science", "physics", "quantum", "paradox", "dilation", "atom", "biology")):
+        if is_hindi:
+            return "ऐसे ही हैरान कर देने वाले साइंस फैक्ट्स और पैराडॉक्स के इंफॉर्मेटिव वीडियोज़ के लिए हमें लाइक और सब्सक्राइब करें और सपोर्ट करें।"
+        else:
+            return "For more incredible science facts and mind-blowing paradoxes, hit like, subscribe, and support our channel!"
+
+    elif any(k in t_lower for k in ("matrix", "simulation", "mandela", "time slip", "dimension")):
+        if is_hindi:
+            return "ऐसे ही सिमुलेशन प्रूफ्स और मैट्रिक्स ग्लिच के इंफॉर्मेटिव वीडियोज़ के लिए हमें लाइक और सब्सक्राइब करें और सपोर्ट करें।"
+        else:
+            return "For more reality glitches and simulation evidence videos, remember to like, subscribe, and support our channel!"
+
+    elif any(k in t_lower for k in ("ocean", "sea", "trench", "samundar", "marianas", "water")):
+        if is_hindi:
+            return "ऐसे ही गहरे समंदर और दुनिया के अनसुलझे रहस्यों के इंफॉर्मेटिव वीडियोज़ के लिए हमें लाइक और सब्सक्राइब करें और सपोर्ट करें।"
+        else:
+            return "For more deep ocean terrors and mysterious secrets, make sure to like, subscribe, and support our channel!"
+
+    elif any(k in t_lower for k in ("alien", "ufo", "roswell", "extraterrestrial")):
+        if is_hindi:
+            return "ऐसे ही डीक्लासिफाइड एलियन फाइल्स और रहस्यमयी इंफॉर्मेटिव वीडियोज़ के लिए हमें लाइक और सब्सक्राइब करें और सपोर्ट करें।"
+        else:
+            return "For more declassified extraterrestrial files and informative documentaries, please like, subscribe, and support our channel!"
+
+    else:
+        if is_hindi:
+            return "ऐसे ही रहस्यमयी और ज्ञानवर्धक इंफॉर्मेटिव वीडियोज़ के लिए हमें लाइक और सब्सक्राइब करें और सपोर्ट करें।"
+        else:
+            return "For more exciting and informative deep-dive videos like this, please like, subscribe, and support our channel!"
+
+
+def generate_polarizing_debate_comment(topic: str, language: str = "en") -> str:
+    """Generate high-velocity, low-friction binary debate question (Type 1 or Type 2) to trigger algorithm comments."""
+    t_lower = topic.lower()
+    is_hindi = language.lower() in ("hi", "hindi")
+
+    if any(k in t_lower for k in ("space", "antariksh", "galaxy", "black hole", "cosmic", "universe", "planet", "alien", "ufo")):
+        if is_hindi:
+            return "💥 सच क्या है? Type 1 अगर आप मानते हैं कि ब्रह्मांड में एलियंस मौजूद हैं, Type 2 अगर हम पूरे ब्रह्मांड में बिल्कुल अकेले हैं! अपनी राय नीचे कमेंट करें! 👇👽"
+        else:
+            return "💥 What do you believe? Type 1 if you think alien life definitely exists in the universe, Type 2 if humans are completely alone! Drop your answer below! 👇👽"
+
+    elif any(k in t_lower for k in ("bharat", "temple", "mandir", "ancient india", "vedic", "kailasa", "dwarka", "history", "itihas", "archaeology", "pyramid")):
+        if is_hindi:
+            return "🏛️ असली सच्चाई क्या है? Type 1 अगर आपको लगता है हमारे पूर्वजों के पास कोई एडवांस गुप्त तकनीक थी, Type 2 अगर यह सिर्फ साधारण छेनी-हथौड़े से बना था! नीचे बताएं! 👇⚡"
+        else:
+            return "🏛️ What's the real truth? Type 1 if you believe ancient civilizations had lost advanced technology, Type 2 if it was built strictly with primitive tools! Let's debate below! 👇⚡"
+
+    elif any(k in t_lower for k in ("matrix", "simulation", "mandela", "time slip", "dimension")):
+        if is_hindi:
+            return "🤖 सिमुलेशन या हकीकत? Type 1 अगर आपको लगता है कि हम किसी कंप्यूटर सिमुलेशन में जी रहे हैं, Type 2 अगर यह दुनिया 100% असली है! नीचे कमेंट करें! 👇💻"
+        else:
+            return "🤖 Simulation or Reality? Type 1 if you think we're living inside a computer simulation, Type 2 if reality is 100% genuine! Drop your vote below! 👇💻"
+
+    elif any(k in t_lower for k in ("ocean", "sea", "trench", "samundar", "marianas")):
+        if is_hindi:
+            return "🌊 समंदर का रहस्य! Type 1 अगर समंदर की गहराइयों में आज भी विशालकाय अज्ञात जीव छिपे हैं, Type 2 अगर ऐसा कुछ नहीं है! अपनी राय दें! 👇🦈"
+        else:
+            return "🌊 Deep Ocean Secret! Type 1 if you believe giant undiscovered creatures lurk in the ocean trenches, Type 2 if science already knows everything! Vote below! 👇🦈"
+
+    elif any(k in t_lower for k in ("psychology", "brain", "mind", "dimag", "human behavior", "subconscious")):
+        if is_hindi:
+            return "🧠 दिमाग का खेल! Type 1 अगर आपने यह साइकोलॉजिकल स्थिति कभी अपनी जिंदगी में महसूस की है, Type 2 अगर कभी नहीं! नीचे बताएं! 👇"
+        else:
+            return "🧠 Mind Mystery! Type 1 if you have personally experienced this psychological phenomenon, Type 2 if never in your life! Comment below! 👇"
+
+    else:
+        if is_hindi:
+            return "🔥 आपकी क्या राय है? Type 1 अगर आप इससे 100% सहमत हैं, Type 2 अगर आप असहमत हैं! नीचे कमेंट में अपनी राय बताएं! 👇"
+        else:
+            return "🔥 What's your take? Type 1 if you 100% agree with this, Type 2 if you disagree! Drop your reasoning in the comments below! 👇"
+
+
+def ensure_subject_outro_cta(script: ShortScript, topic: str, language: str) -> ShortScript:
+    """Ensure that the final scene ends with the subject-specific CTA and high-engagement polarizing pinned comment is set."""
+    if not script or not script.scenes:
+        return script
+
+    outro_text = get_subject_outro_text(topic, language)
+    last_scene = script.scenes[-1]
+    last_text = last_scene.narration.strip()
+
+    lower_last = last_text.lower()
+    has_sub = "subscribe" in lower_last or "सब्सक्राइब" in lower_last
+    has_like = "like" in lower_last or "लाइक" in lower_last
+    has_support = "support" in lower_last or "सपोर्ट" in lower_last
+
+    if not (has_sub and has_like and has_support):
+        if len(last_text.split()) < 15:
+            last_scene.narration = f"{last_text} {outro_text}".strip()
+        else:
+            last_scene.narration = f"{last_text}. {outro_text}"
+
+        last_scene.visual_subject = "youtube subscribe like bell animation"
+        last_scene.search_keywords = ["subscribe button", "youtube subscribe bell"]
+
+    script.narration = " ".join(s.narration.strip() for s in script.scenes if s.narration.strip())
+    script.call_to_action = outro_text
+
+    # Ensure polarizing debate pinned comment is set
+    cur_comment = getattr(script, "pinned_comment", "") or ""
+    if not cur_comment or "What would you do" in cur_comment:
+        script.pinned_comment = generate_polarizing_debate_comment(topic, language)
+
+    return script
 
 
 class ScriptGenerator:
@@ -49,14 +179,25 @@ class ScriptGenerator:
         sys_prompt = HINDI_SHORTS_SYSTEM_PROMPT if is_hindi else SHORTS_SYSTEM_PROMPT
         lang_note = "in natural Hindi/Hinglish (narration) with English visual search keywords" if is_hindi else "in English"
 
-        min_words = 125 if target_duration >= 45 else int(target_duration * 2.5)
-        max_words = 145 if target_duration >= 45 else int(target_duration * 2.9)
+        if target_duration < 60:
+            target_duration = 60
 
-        prompt = f"""Generate a high-retention viral YouTube Short script about: '{topic}' {lang_note}.
-Target duration: {target_duration} seconds (MANDATORY: 45 to 55 seconds).
+        if target_duration >= 90:
+            min_words = int(target_duration * 1.9)
+            max_words = int(target_duration * 2.3)
+            scene_guide = "8 to 14 sequential documentary scenes in 'scenes'"
+            dur_label = f"{target_duration} seconds (Full In-Depth Documentary)"
+        else:
+            min_words = 155
+            max_words = 190
+            scene_guide = "6 to 10 sequential scenes in 'scenes'"
+            dur_label = f"{target_duration} seconds (MANDATORY: Minimum 1 full minute, 60 to 75 seconds)"
+
+        prompt = f"""Generate a high-retention viral YouTube video script about: '{topic}' {lang_note}.
+Target duration: {dur_label}.
 
 MANDATORY STRUCTURAL REQUIREMENTS:
-1. Break the entire script into 4 to 6 sequential scenes in 'scenes'.
+1. Break the entire script into {scene_guide}.
 2. For each scene in 'scenes':
    - 'scene_number': 1, 2, 3, 4, 5...
    - 'narration': 1-2 punchy spoken sentences for this scene ({'in Hindi' if is_hindi else 'in English'}).
@@ -66,7 +207,8 @@ MANDATORY STRUCTURAL REQUIREMENTS:
 3. TOTAL SPOKEN WORDS across all scenes MUST be between {min_words} and {max_words} words.
 4. Set the top-level 'narration' field to the combined text of all scene narrations.
 5. High-converting climax cliffhanger CTA in the final scene.
-6. Seamless infinite loop: ending sentence flows back into opening hook."""
+6. Seamless infinite loop: ending sentence flows back into opening hook.
+7. STRICT ANTI-REPETITION MANDATE: Do NOT use stock opening cliches ('Did you know', 'Imagine if'). Present a completely fresh, unique, factually grounded story angle."""
 
         for model_name in CANDIDATE_MODELS:
             try:
@@ -83,8 +225,8 @@ MANDATORY STRUCTURAL REQUIREMENTS:
                 )
                 data = json.loads(response.text)
                 script = ShortScript(**data)
-                # Ensure narration is 100% strictly constructed from individual scene narrations
-                # so speech word counts and scene boundaries align with 100% precision
+                # Ensure spoken outro CTA matches subject with like, subscribe, support
+                script = ensure_subject_outro_cta(script, topic, language)
                 if script.scenes:
                     script.narration = " ".join(s.narration.strip() for s in script.scenes if s.narration.strip())
                 print_success(f"AI Script successfully generated with {model_name}!")
@@ -352,17 +494,19 @@ Provide title, description, tags, and each scene with spoken narration and visua
             ),
         ]
         narration = " ".join(s.narration for s in scenes)
-        return ShortScript(
+        is_hi = any('\u0900' <= c <= '\u097f' for c in topic)
+        fb_script = ShortScript(
             title=f"The Hidden Truth About {clean_topic}! #Shorts",
             topic=topic,
             hook=hook,
             scenes=scenes,
             narration=narration,
-            call_to_action="Subscribe for more mind-blowing facts!",
+            call_to_action=get_subject_outro_text(topic, "hi" if is_hi else "en"),
             visual_keywords=[s.visual_subject for s in scenes],
             tags=["#Shorts", "#viral", "#facts", f"#{clean_topic.replace(' ', '')}"],
             estimated_duration_sec=target_duration,
         )
+        return ensure_subject_outro_cta(fb_script, topic, "hi" if is_hi else "en")
 
     def _generate_fallback_long(
         self, topic: str, num_scenes: int
@@ -408,10 +552,10 @@ Provide title, description, tags, and each scene with spoken narration and visua
             ),
             Scene(
                 scene_number=6,
-                narration="The future is arriving faster than anyone anticipated. If you enjoyed this breakdown, like and subscribe.",
+                narration=f"The future is arriving faster than anyone anticipated. {get_subject_outro_text(topic, 'en')}",
                 visual_query=f"{topic_lower} conclusion summary",
                 visual_description=f"Concluding montage related to {clean_topic}",
-                estimated_duration_sec=5.0,
+                estimated_duration_sec=6.0,
             ),
         ]
         return LongVideoScript(

@@ -138,7 +138,7 @@ def shorts(
     visuals: str = typer.Option(
         "auto",
         "--visuals",
-        help="Visuals mode: 'auto' (smart cascade), 'ai' (FREE Wan2.1 AI Video), 'veo' (Google Veo), 'stock' (Pexels), or 'ai3d' (Pixar Animation)",
+        help="Visuals mode: 'auto' (smart cascade: Veo -> Pexels HD Stock & AI), 'veo' (Google Veo), 'stock' (Pexels), or 'ai3d' (Pixar Animation)",
     ),
     upload: bool = typer.Option(False, "--upload", help="Automatically upload to YouTube after generation"),
     privacy: str = typer.Option("public", "--privacy", help="Privacy: private, unlisted, or public"),
@@ -225,30 +225,10 @@ def shorts(
         except (VeoQuotaExceededError, Exception) as veo_err:
             err_msg = getattr(veo_err, "message", str(veo_err))
             print_warning(f"⚠️ Google AI Studio (Veo) Quota Exceeded / Limit Reached ({err_msg})")
-            print_info("🔄 Attempting Free AI Video Generation (Wan2.1)...")
+            print_info("🔄 Switching to Verified Real Motion Stock Footage & Photorealistic AI...")
             scene_videos = None
 
-    # --- Tier 1.5: Free AI Video via HuggingFace Wan2.1 (100% Free!) ---
-    if not scene_videos and not is_3d and visuals.lower() != "stock":
-        if is_free_ai or (is_auto_or_veo and not scene_videos):
-            try:
-                from autotube.media.free_video_gen import FreeVideoGenerator
-                free_gen = FreeVideoGenerator()
-                if free_gen.is_available() and script.scenes:
-                    print_step(3, total_steps, "🎬 Generating FREE Cinematic AI Videos (Wan2.1 Engine)")
-                    ai_videos = free_gen.generate_scene_videos(
-                        scenes=script.scenes,
-                        output_dir=cfg.paths.temp_dir,
-                        orientation="portrait",
-                        max_scenes=min(len(script.scenes), 3),  # Limit to 3 for speed
-                    )
-                    if ai_videos and len(ai_videos) >= 1:
-                        scene_videos = ai_videos
-                        print_success(f"Generated {len(ai_videos)} FREE AI video scenes! 🎬")
-            except Exception as free_err:
-                print_warning(f"Free AI video unavailable: {free_err}")
-
-    # --- Tier 2: Fallback Engine (Strictly Verified Scene Assets or 3D AI Visuals) ---
+    # --- Tier 2: Verified Real Motion Stock Footage & AI Visuals ---
     if not scene_videos:
         if is_3d:
             print_step(3, total_steps, "Generating 3D Pixar Animation Scene Visuals (Pollinations AI Engine)")
@@ -419,6 +399,17 @@ def video(
     if upload:
         print_step(6, total_steps, "Uploading Video & Thumbnail to YouTube")
         uploader = YouTubeUploader()
+        chapters = []
+        if script.scenes:
+            curr_sec = 0.0
+            for idx, sc in enumerate(script.scenes):
+                ch_title = getattr(sc, "visual_query", f"Part {idx+1}").strip().title()
+                chapters.append((curr_sec, ch_title))
+                if idx < len(scene_durations):
+                    curr_sec += scene_durations[idx]
+                else:
+                    curr_sec += 6.0
+
         uploader.upload_video(
             video_path=final_path,
             title=script.title,
@@ -426,6 +417,7 @@ def video(
             tags=script.tags,
             privacy_status=privacy,
             thumbnail_path=thumb_path,
+            chapters=chapters,
         )
 
 
@@ -644,129 +636,205 @@ def cartoon(
 
 
 @app.command()
-def alien(
-    part: Optional[int] = typer.Option(None, "--part", "-p", help="Specific episode part number (1-8, default: next tracked chapter)"),
+def cinematic(
+    topic: str = typer.Option(..., "--topic", "-t", help="Topic for the 3D cinematic realistic video"),
+    orientation: str = typer.Option("landscape", "--orientation", "-o", help="Orientation: 'landscape' (16:9 widescreen 1920x1080) or 'portrait' (9:16 vertical 1080x1920)"),
+    voice: Optional[str] = typer.Option(None, "--voice", "-v", help="AI Voice (e.g. madhur, christopher, adam, guy)"),
     lang: str = typer.Option("hi", "--lang", "-l", help="Language: 'hi' for Hindi or 'en' for English"),
-    voice: Optional[str] = typer.Option(None, "--voice", "-v", help="AI Voice (default: thanos_hi for Hindi, thanos_en for English)"),
+    duration: int = typer.Option(50, "--duration", "-d", help="Target duration in seconds (45-60s)"),
     upload: bool = typer.Option(False, "--upload", help="Automatically upload to YouTube after generation"),
-    privacy: str = typer.Option("unlisted", "--privacy", help="Privacy: private, unlisted, or public"),
+    privacy: str = typer.Option("public", "--privacy", help="Privacy: private, unlisted, or public"),
 ):
-    """Generate an episode of the 'Alien Interview' book series (Roswell 1947 & Airl transcripts) with proof citations & 3-Tier Visual Waterfall."""
+    """Generate an ultra-realistic 3D Cinematic video (16:9 Landscape or 9:16 Vertical) using 100% free AI 3D realism & continuous motion."""
     print_banner()
     cfg = get_config()
-    is_hindi = lang.lower() in ("hi", "hindi")
-    selected_voice = voice or ("madhur" if is_hindi else "adam")
+    slug = sanitize_filename(topic)
     total_steps = 5 if upload else 4
 
-    from autotube.scripting.alien_tracker import AlienSeriesTracker
-    from autotube.media.visual_waterfall import acquire_scene_visuals_waterfall
-    tracker = AlienSeriesTracker()
-    chapter = tracker.get_current_chapter(part_override=part)
-    part_num = chapter["part_number"]
-    topic = chapter["title_hi"] if is_hindi else chapter["title_en"]
-    slug = sanitize_filename(f"alien_interview_part_{part_num}_{'hi' if is_hindi else 'en'}")
+    is_landscape = orientation.lower() in ("landscape", "16:9", "wide", "widescreen", "horizontal")
+    v_w = 1920 if is_landscape else 1080
+    v_h = 1080 if is_landscape else 1920
+    folder_name = "longform" if is_landscape else "shorts"
 
-    # 1. Script Generation
-    print_step(1, total_steps, f"Writing Alien Interview Script Part {part_num} ({'Hindi' if is_hindi else 'English'})")
+    if not voice:
+        voice = "madhur" if lang.lower() in ("hi", "hindi") else "christopher"
+
+    # 1. Script Generation with Subject Outro CTA
+    print_step(1, total_steps, f"Generating 3D Cinematic Story Script ({'Hindi' if lang.lower() in ('hi', 'hindi') else 'English'})")
     script_gen = ScriptGenerator()
-    script = script_gen.generate_alien_script(part=part_num, language=lang, target_duration=65)
+    script = script_gen.generate_short_script(topic, target_duration=duration, language=lang)
 
     print_panel(
-        f"[bold yellow]Episode:[/bold yellow] Part {part_num}: {topic}\n\n"
-        f"[bold cyan]Documented Proof:[/bold cyan] {chapter['evidence_proof']}\n\n"
-        f"[bold green]Alien Airl Quote:[/bold green] \"{chapter['key_quote']}\"\n\n"
+        f"[bold yellow]Hook:[/bold yellow] {script.hook}\n\n"
         f"[bold white]Narration:[/bold white]\n{script.narration}\n\n"
-        f"[bold magenta]Tags:[/bold magenta] {' '.join(script.tags)}",
-        title=f"🛸 Alien Interview: {script.title}",
+        f"[bold cyan]CTA:[/bold cyan] {getattr(script, 'call_to_action', '')}\n\n"
+        f"[bold cyan]Tags:[/bold cyan] {' '.join(script.tags)}",
+        title=f"3D Cinematic Script: {script.title}",
     )
 
-    # 2. Voiceover Synthesis (Real Dialogue: Matilda [Nurse] + Airl [Alien])
-    print_step(2, total_steps, "Synthesizing Real Dialogue Interview (Nurse Matilda + Alien Airl)")
-    tts = TTSEngine(default_voice=selected_voice)
-    audio_path = cfg.paths.temp_dir / f"{slug}_voice.mp3"
-    tts_result = tts.synthesize_dialogue(
-        scenes=script.scenes,
+    # 2. Voiceover Synthesis & Dynamic Subtitles
+    print_step(2, total_steps, f"Synthesizing Narration Voiceover ({voice}) & Timestamps")
+    tts = TTSEngine(default_voice=voice)
+    audio_path = cfg.paths.temp_dir / f"{slug}_cinematic_voice.mp3"
+    tts_result = tts.synthesize(
+        text=script.narration,
         output_audio_path=audio_path,
-        language=lang,
+        voice=voice,
+        width=v_w,
+        height=v_h,
     )
 
-    if tts_result.scene_durations and len(tts_result.scene_durations) == len(script.scenes):
-        scene_durations = tts_result.scene_durations
-    else:
-        from autotube.voice.tts_engine import compute_scene_durations
-        scene_durations = compute_scene_durations(
-            scenes=script.scenes,
-            words=tts_result.words,
-            total_duration=tts_result.duration_seconds,
+    from autotube.voice.tts_engine import compute_scene_durations
+    scene_durations = compute_scene_durations(
+        scenes=script.scenes,
+        words=tts_result.words,
+        total_duration=tts_result.duration_seconds,
+    )
+
+    # 3. High-Retention Multi-Shot Visuals Acquisition (Zero Blank Screens, Multiple Cuts)
+    shots_count = max(len(script.scenes) * 2, int(tts_result.duration_seconds / 5.0), 10)
+    print_step(3, total_steps, f"Acquiring {shots_count} Multiple Realistic Visual Cuts ({'16:9 Landscape' if is_landscape else '9:16 Vertical'})")
+
+    stock_fetcher = StockFetcher()
+    scene_visuals = []
+
+    # Build rich shot queries combining scene subjects and angle modifiers
+    shot_queries = []
+    if script.scenes:
+        for s in script.scenes:
+            subj = getattr(s, "visual_subject", "")
+            if subj:
+                shot_queries.append(subj)
+            keywords = getattr(s, "search_keywords", [])
+            for kw in keywords:
+                if kw and kw not in shot_queries:
+                    shot_queries.append(kw)
+    if not shot_queries:
+        shot_queries = script.visual_keywords or [topic]
+
+    angle_modifiers = [
+        "aerial drone shot",
+        "close up macro detail",
+        "wide panoramic view",
+        "dramatic lighting",
+        "ancient architecture",
+        "monolithic ancient stone",
+        "ruins sunset view",
+        "deep mysterious corridor",
+        "sacred shrine temple",
+        "high angle perspective",
+        "sculpture carvings detail",
+        "canyon excavation",
+    ]
+
+    expanded_queries = []
+    base_subject = shot_queries[0] if shot_queries else topic
+    for q in shot_queries:
+        expanded_queries.append(q)
+    for mod in angle_modifiers:
+        expanded_queries.append(f"{base_subject} {mod}")
+
+    orientation_val = "landscape" if is_landscape else "portrait"
+    import random
+    for q in expanded_queries:
+        asset = stock_fetcher.fetch_best_visual_for_scene(
+            subject=q,
+            narration=script.narration,
+            output_dir=cfg.paths.temp_dir,
+            orientation=orientation_val,
+            require_video=False,
         )
+        if asset and asset.exists() and asset not in scene_visuals:
+            scene_visuals.append(asset)
+        if len(scene_visuals) >= shots_count:
+            break
 
-    # 3. 3-Tier Visual Waterfall
-    print_step(3, total_steps, "Acquiring Visuals (Hugging Face -> 8 AM Gemini Cutoff -> Verified Stock/AI)")
-    scene_assets = acquire_scene_visuals_waterfall(
-        script=script,
-        output_dir=cfg.paths.temp_dir,
-        slug=slug,
-        orientation="portrait",
-        max_scenes=len(script.scenes) if script.scenes else 8,
-        max_hf_retries=2,
-        cutoff_hour=8,
-    )
+    if scene_visuals and len(scene_visuals) < shots_count:
+        while len(scene_visuals) < shots_count:
+            scene_visuals.append(random.choice(scene_visuals[:len(scene_visuals)]))
 
-    # 4. Render 9:16 Vertical Video & Burn Subtitles
-    print_step(4, total_steps, "Rendering 9:16 Video & Burning Subtitles")
+    # 4. Video Compositing, Ken Burns Dynamic Camera Motion, Subtitles & Outro Sync
+    print_step(4, total_steps, f"Compositing {len(scene_visuals)}-Shot Video ({v_w}x{v_h}) & Burning Subtitles")
     builder = ShortsBuilder()
-    output_short_path = cfg.paths.output_dir / "shorts" / f"{slug}.mp4"
+    output_dir = cfg.paths.output_dir / folder_name
+    output_dir.mkdir(parents=True, exist_ok=True)
+    output_video_path = output_dir / f"{slug}.mp4"
+
     final_path = builder.build_short(
         audio_path=tts_result.audio_path,
-        output_path=output_short_path,
-        scene_assets=scene_assets,
+        output_path=output_video_path,
+        scene_visuals=scene_visuals,
         scene_durations=scene_durations,
         subtitles_file=tts_result.subtitles_ass_path,
+        width=v_w,
+        height=v_h,
     )
 
     if not final_path or not final_path.exists():
-        print_error("Failed to render Alien Short.")
-        return
+        print_error("Failed to render 3D Cinematic video.")
+        return None
 
-    print_success(f"Alien Short successfully rendered: {final_path.resolve()}")
+    print_success(f"🎬 3D Cinematic Video successfully rendered: {final_path.resolve()}")
 
     # 5. YouTube Upload
     if upload:
-        print_step(5, total_steps, "Uploading Alien Short to YouTube")
+        print_step(5, total_steps, "Uploading 3D Cinematic Video to YouTube")
         uploader = YouTubeUploader()
-        video_url = uploader.upload_video(
+        suffix = "[Full Documentary]" if is_landscape else "#Shorts"
+        chapters = []
+        if is_landscape and script.scenes:
+            curr_sec = 0.0
+            for idx, sc in enumerate(script.scenes):
+                ch_name = getattr(sc, "visual_subject", f"Part {idx + 1}").strip().title()
+                if not ch_name or ch_name == f"Part {idx + 1}":
+                    ch_name = f"Chapter {idx + 1}: {sc.narration[:30]}..."
+                chapters.append((curr_sec, ch_name))
+                if idx < len(scene_durations):
+                    curr_sec += scene_durations[idx]
+                else:
+                    curr_sec += 5.5
+
+        uploader.upload_video(
             video_path=final_path,
-            title=f"{script.title} #Shorts #AlienInterview",
-            description=(
-                f"{script.narration}\n\n"
-                f"Evidence / Proof Cited: {chapter['evidence_proof']}\n"
-                f"Based on 'Alien Interview' (Lawrence R. Spencer / Matilda MacElroy transcripts)\n\n"
-                f"{' '.join(script.tags)}"
-            ),
-            tags=script.tags + ["alien interview", "roswell 1947", "airl", "the domain", "prison planet"],
+            title=f"{script.title} {suffix}",
+            description=f"{script.narration}\n\n{' '.join(script.tags)}",
+            tags=script.tags + ["3D", "cinematic", "unreal engine 5", "documentary"],
             privacy_status=privacy,
             pinned_comment=getattr(script, "pinned_comment", None),
+            chapters=chapters if is_landscape else None,
         )
-        if video_url:
-            tracker.mark_part_completed(part=part_num, lang=lang, video_id=video_url.split("/")[-1])
-    else:
-        tracker.mark_part_completed(part=part_num, lang=lang, video_id="rendered_local")
+    return final_path
+
+
+@app.command()
+def alien(
+    lang: str = typer.Option("both", "--lang", "-l", help="Language: 'both' (English + Hindi), 'hi' (Hindi only), or 'en' (English only)"),
+    upload: bool = typer.Option(False, "--upload", help="Automatically upload to YouTube after generation"),
+    privacy: str = typer.Option("public", "--privacy", help="Privacy: private, unlisted, or public"),
+):
+    """Generate complete 16:9 Widescreen Master Alien Interview Documentary Video (Full story, English & Hindi)."""
+    print_banner()
+    from autotube.video.alien_full_documentary import AlienFullDocumentaryProducer
+
+    producer = AlienFullDocumentaryProducer()
+    producer.produce(language=lang, upload=upload, privacy=privacy)
 
 
 @app.command()
 def autopilot(
-    count: int = typer.Option(7, "--count", "-c", help="Number of videos to generate and schedule daily (Default: 7 slots)"),
-    niche: str = typer.Option("mixed", "--niche", "-n", help="Niche: mixed (all 7 daily slots including Alien Interview), space, science, history, psychology, mystery, alien"),
+    count: Optional[int] = typer.Option(None, "--count", "-c", help="Number of videos to generate and schedule (Default: all active matrix slots)"),
+    niche: str = typer.Option("mixed", "--niche", "-n", help="Niche: mixed (all daily slots), space, science, history, psychology, mystery, alien"),
     voice: Optional[str] = typer.Option(None, "--voice", "-v", help="AI Voice narrator"),
-    lang: str = typer.Option("mixed", "--lang", "-l", help="Language: 'mixed' (4 English + 3 Hindi), 'hi' (All Hindi), or 'en' (All English)"),
+    lang: str = typer.Option("mixed", "--lang", "-l", help="Language: 'mixed' (English & Hindi), 'hi' (All Hindi), or 'en' (All English)"),
     upload: bool = typer.Option(True, "--upload/--no-upload", help="Upload to YouTube"),
     schedule: bool = typer.Option(True, "--schedule/--no-schedule", help="Stagger across peak hours (USA peak hours for English & India peak hours for Hindi)"),
+    slot_id: Optional[str] = typer.Option(None, "--slot-id", help="Execute only a specific slot from slot matrix"),
 ):
-    """Fully automated batch creation and scheduled publishing for YouTube Shorts (7 videos/day)."""
+    """Fully automated batch creation and scheduled publishing for YouTube Shorts."""
     from autotube.scheduler.autopilot import AutoPilot
 
     pilot = AutoPilot(niche=niche, voice=voice, language=lang)
-    pilot.run_daily_batch(count=count, upload=upload, schedule=schedule)
+    pilot.run_daily_batch(count=count, upload=upload, schedule=schedule, slot_id=slot_id)
 
 
 @app.command()
@@ -861,5 +929,45 @@ def web(
     uvicorn.run("autotube.web.app:app", host=host, port=port, reload=reload)
 
 
+@app.command()
+def flow_login():
+    """Log into Google Flow (Google AI Pro account) in Chrome to enable automated 3D & realistic video generation."""
+    from autotube.media.google_flow_login import setup_google_flow_session
+    print_banner()
+    setup_google_flow_session()
+
+
+@app.command()
+def auth(
+    sync_remote: bool = typer.Option(True, "--sync-remote", help="Automatically sync generated token to Oracle Cloud VM"),
+):
+    """Authorize or refresh YouTube OAuth credentials (opens browser login)."""
+    print_banner()
+    print_info("Starting YouTube OAuth Authentication Flow...")
+    auth_mgr = YouTubeAuth()
+    creds = auth_mgr.get_credentials(interactive=True)
+    if creds and creds.valid:
+        print_success("YouTube Authentication SUCCESSFUL! Token saved locally.")
+        if sync_remote:
+            try:
+                import subprocess
+                token_path = auth_mgr.token_file
+                ssh_key = Path.home() / ".ssh" / "id_rsa_oracle"
+                if ssh_key.exists() and token_path.exists():
+                    print_info("Syncing updated token to Oracle Cloud VM (140.245.10.14)...")
+                    key_str = str(ssh_key).replace("\\", "/")
+                    tok_str = str(token_path).replace("\\", "/")
+                    cmd = f'scp -i "{key_str}" -o StrictHostKeyChecking=no "{tok_str}" opc@140.245.10.14:/home/opc/AutoTube/config/token.json'
+                    subprocess.run(cmd, shell=True, check=True)
+                    print_success("Token successfully synced to Oracle Cloud VM!")
+                    subprocess.run(f'ssh -i "{key_str}" -o StrictHostKeyChecking=no opc@140.245.10.14 "sudo systemctl restart autotube-dashboard.service"', shell=True)
+                    print_success("Remote dashboard restarted with fresh YouTube credentials!")
+            except Exception as e:
+                print_warning(f"Could not auto-sync token to Oracle VM: {e}")
+    else:
+        print_error("YouTube Authentication failed or cancelled.")
+
+
 if __name__ == "__main__":
     app()
+

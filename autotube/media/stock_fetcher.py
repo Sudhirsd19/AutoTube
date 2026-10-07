@@ -58,9 +58,13 @@ VOCAL_THEME_VIDEO_QUERIES = [
     (r"\b(pyramid|egypt|giza|sphinx|pharaoh|ancient civilization|ruins)\b", [
         "ancient pyramid desert", "egyptian giza aerial", "ancient temple ruins", "desert sand storm"
     ]),
+    # Black Hole, Singularity, Event Horizon, Spaghettification, Cosmic Tabahi
+    (r"\b(black hole|singularity|event horizon|spaghettification|wormhole|astrophysics)\b", [
+        "black hole", "black hole space", "cosmic black hole", "space vortex", "galaxy space"
+    ]),
     # Space, Universe, Galaxy, Cosmos, Stars, Planet, Earth
-    (r"\b(space|universe|galaxy|cosmos|stars|planet|earth|orbit|black hole)\b", [
-        "space galaxy stars", "earth rotating in space", "cosmic nebula colorful", "black hole void"
+    (r"\b(space|universe|galaxy|cosmos|stars|planet|earth|orbit)\b", [
+        "space galaxy stars", "earth rotating in space", "cosmic nebula colorful", "deep space galaxy"
     ]),
     # Psychology, Manipulation, Hypnosis, Dark Mind
     (r"\b(psychology|dark psychology|manipulation|eyes|hypnosis|subconscious)\b", [
@@ -69,6 +73,18 @@ VOCAL_THEME_VIDEO_QUERIES = [
     # Ocean, Mariana, Deep Sea, Trench, Abyss
     (r"\b(ocean|mariana|deep sea|underwater|trench|abyss|water)\b", [
         "deep underwater dark", "abyssal ocean waves", "submarine sonar ocean", "dark water bubbles"
+    ]),
+    # Ancient Indian Architecture, Temples, Prachin Vigyan, Monolith, Pillar, Carvings
+    (r"\b(temple|mandir|kailasa|ellora|brihadeeswarar|thanjavur|padmanabhaswamy|lepakshi|ram setu|dwarka|konark|hampi|stone|carving|pillar|monolith|basalt|ruins|ancient india|prachin|vedic|architecture)\b", [
+        "ancient indian temple architecture", "ancient stone temple carvings", "hindu temple drone aerial", "ancient rock carved temple", "rock cut cave temple", "ancient stone pillars monument", "ancient archaeological ruins"
+    ]),
+    # Animals, Predators, Birds, Wildlife, Speed, Flight, Bite Force
+    (r"\b(animal|creature|bird|falcon|cheetah|predator|prey|crocodile|alligator|shrimp|mantis|badger|jellyfish|axolotl|tardigrade|snake|cobra|eagle|tiger|lion|shark|bite|flight|wings|diving|hunt|beast)\b", [
+        "peregrine falcon flying sky", "wild cheetah sprinting", "crocodile underwater jaws", "macro ocean shrimp coral", "honey badger wildlife", "wild eagle catching prey", "wild predator hunting close up", "colorful wild bird flying"
+    ]),
+    # History, Army, Soldiers, Battle, Tomb, King, Emperor, Ancient War
+    (r"\b(genghis khan|tomb|soldier|army|cavalry|emperor|king|medieval|ancient battle|warfare|sword|shield|archaeological|parchment|manuscript|relic)\b", [
+        "ancient medieval army marching", "cavalry horse riding battlefield", "ancient king golden tomb", "dark ancient archaeological excavation", "vintage historical parchment reading", "ancient stone fortress aerial"
     ]),
 ]
 
@@ -170,8 +186,8 @@ class StockFetcher:
             return None
 
         headers = {"Authorization": self.pexels_key}
-        # Randomize page offset (1-5) to avoid always getting the same first results
-        page = random.randint(1, 5)
+        # Randomize page offset (1-2) to avoid jumping past available stock results
+        page = random.randint(1, 2)
         url = (
             f"https://api.pexels.com/videos/search?"
             f"query={requests.utils.quote(clean_q)}"
@@ -181,11 +197,22 @@ class StockFetcher:
         try:
             print_info(f"Searching stock video for: '{clean_q}' (page {page}, {orientation})...")
             resp = requests.get(url, headers=headers, timeout=12)
-            if resp.status_code != 200:
-                return None
+            videos = []
+            if resp.status_code == 200:
+                videos = resp.json().get("videos", [])
 
-            data = resp.json()
-            videos = data.get("videos", [])
+            # If portrait returned nothing or too few results, search without orientation
+            # (since shorts_builder automatically center-crops landscape videos to vertical 9:16)
+            if not videos and orientation == "portrait":
+                fallback_url = (
+                    f"https://api.pexels.com/videos/search?"
+                    f"query={requests.utils.quote(clean_q)}"
+                    f"&per_page=15&page=1"
+                )
+                fb_resp = requests.get(fallback_url, headers=headers, timeout=12)
+                if fb_resp.status_code == 200:
+                    videos = fb_resp.json().get("videos", [])
+
             if not videos:
                 return None
 
@@ -475,6 +502,7 @@ class StockFetcher:
         subject: str,
         keywords: Optional[List[str]] = None,
         narration: Optional[str] = None,
+        description: Optional[str] = None,
         output_dir: Optional[Path] = None,
         orientation: str = "portrait",
         require_video: bool = False,
@@ -483,15 +511,34 @@ class StockFetcher:
         1. Genuine Relevant Pexels Stock Video
         2. Genuine Pixabay Stock Video (if key available)
         3. Pollinations Photorealistic AI Visual matching the exact spoken lyrics (with continuous Ken Burns motion!)
-        4. Universal motion footage fallback
+        4. Context-aware motion video fallbacks (strictly matching niche domain)
         """
         cfg = get_config()
         out_dir = output_dir or cfg.paths.temp_dir
         out_dir.mkdir(parents=True, exist_ok=True)
 
+        try:
+            from autotube.media.multi_stock_aggregator import MultiStockAggregator
+            multi_agg = MultiStockAggregator()
+            scene_text = f"{subject} {' '.join(keywords or [])} {description or ''} {narration or ''}".strip()
+            res_asset = multi_agg.get_best_scene_asset(
+                scene_text=scene_text or subject,
+                title=subject,
+                scene_index=0,
+                orientation=orientation,
+            )
+            if res_asset and res_asset.exists():
+                return res_asset
+        except Exception:
+            pass
+
         candidates = [subject]
         if keywords:
             candidates.extend(keywords)
+        if description:
+            clean_desc_words = " ".join([w for w in description.split() if w.lower() not in STOP_WORDS][:4])
+            if clean_desc_words and clean_desc_words not in candidates:
+                candidates.append(clean_desc_words)
 
         # 1. Try Pexels Video with direct subject and keywords (with strict relevance)
         for q in candidates:
@@ -511,7 +558,7 @@ class StockFetcher:
                     return vid
 
         # 1.3. Thematic Video Queries (if vocal narration has clear semantic archetypes)
-        context_text = f"{subject} {' '.join(keywords or [])} {narration or ''}"
+        context_text = f"{subject} {' '.join(keywords or [])} {description or ''} {narration or ''}"
         thematic_queries = self.get_vocal_theme_video_queries(context_text)
         for q in thematic_queries:
             vid = self.search_and_download_video(q, output_dir=out_dir, orientation=orientation, require_relevance=True)
@@ -528,22 +575,35 @@ class StockFetcher:
 
             # Enrich AI prompt with concrete cinematic scene context
             lower_subj = clean_subj.lower()
+            lower_desc = (description or "").lower()
             lower_narr = (narration or "").lower()
+            combined_ctx = f"{lower_subj} {lower_desc} {lower_narr}"
 
-            if any(k in lower_subj or k in lower_narr for k in ("nurse", "matilda", "interrogat")):
+            # Specialized Niche Templates for 100% Authentic Imagery:
+            if any(k in combined_ctx for k in ("kailasa", "ellora", "rock cut", "mountain", "monolith")):
+                ai_prompt = "authentic National Geographic 8k photograph, ancient monolithic rock-cut Kailasa Temple Ellora carved top-down from single basalt mountain cliff, intricate ancient Hindu stone pillars, stunning aerial drone view, real historical architecture photography"
+            elif any(k in combined_ctx for k in ("padmanabhaswamy", "vault", "naga", "serpent", "snake lock")):
+                ai_prompt = "authentic 8k photograph, mystical ancient stone temple vault B with two giant carved cobras, sacred serpent door lock, golden flickering oil lamp light, National Geographic documentary"
+            elif any(k in combined_ctx for k in ("brihadeeswarar", "thanjavur", "dome", "granite")):
+                ai_prompt = "authentic drone aerial photograph of Brihadeeswarar Temple Thanjavur towering vimana and 80-ton single granite stone dome, ancient Chola architecture, sunset golden lighting, 8k"
+            elif any(k in combined_ctx for k in ("iron pillar", "delhi pillar", "rustproof", "metallurgy")):
+                ai_prompt = "authentic photograph of 1600-year-old rustproof iron pillar of Delhi standing in ancient stone courtyard, ancient Sanskrit inscriptions, archaeological photography, 8k"
+            elif any(k in combined_ctx for k in ("temple", "mandir", "pillar", "carving", "prachin", "ruins", "shiva")):
+                ai_prompt = f"authentic National Geographic 8k documentary photograph, ancient Indian stone temple architecture, {clean_subj}, intricately carved granite stone pillars, dramatic lighting, real historical monument"
+            elif any(k in combined_ctx for k in ("falcon", "cheetah", "shrimp", "badger", "jellyfish", "animal", "creature", "predator", "bird", "crocodile")):
+                ai_prompt = f"National Geographic 8k wildlife action photography, {clean_subj}, {description[:80] if description else 'extreme wildlife action shot'}, razor sharp focus, natural habitat, stunning realism"
+            elif any(k in combined_ctx for k in ("nurse", "matilda", "interrogat")):
                 ai_prompt = "cinematic 1947 photograph, young US Army nurse Matilda MacElroy in vintage uniform, wooden interrogation desk, steel microphone, notebook, moody classified Roswell military bunker, dramatic lighting, 8k resolution, photorealistic"
-            elif any(k in lower_subj or k in lower_narr for k in ("alien", "airl", "extraterrestrial", "grey")):
+            elif any(k in combined_ctx for k in ("alien", "airl", "extraterrestrial", "grey")):
                 ai_prompt = "hyperrealistic cinematic close-up of extraterrestrial grey alien Airl, smooth porcelain skin, piercing black obsidian almond eyes, faint psychic blue glow from temple, dark classified Roswell bunker, dramatic volumetric lighting, 8k photorealistic documentary photography"
-            elif any(k in lower_subj or k in lower_narr for k in ("fbi", "memo", "document", "classified")):
+            elif any(k in combined_ctx for k in ("fbi", "memo", "document", "classified")):
                 ai_prompt = "authentic 1947 classified FBI memo stamped TOP SECRET about recovered flying disc in Roswell New Mexico, vintage typewriter text, old aged yellowed paper, dim bunker desk lamp, 8k resolution"
-            elif any(k in lower_subj or k in lower_narr for k in ("prison", "barrier", "grid", "soul", "matrix")):
+            elif any(k in combined_ctx for k in ("prison", "barrier", "grid", "soul", "matrix")):
                 ai_prompt = "cinematic view of planet Earth surrounded by glowing electronic amnesia grid barrier in deep space, cosmic prison matrix, hyperrealistic 8k, dark dramatic universe"
             else:
                 ai_prompt = f"{clean_subj}"
-                if narration:
-                    clean_narr = self.clean_query(narration)
-                    if clean_narr and clean_narr != clean_subj:
-                        ai_prompt += f", {clean_narr[:50]}"
+                if description:
+                    ai_prompt += f", {description[:70]}"
                 ai_prompt += ", cinematic lighting, documentary photography, 8k resolution, dramatic atmosphere, ultra detailed"
 
             img = vis_gen.generate_image(
@@ -559,8 +619,18 @@ class StockFetcher:
         except Exception as e:
             print_warning(f"AI visual generation fallback failed: {e}")
 
-        # 3. Universal motion video fallbacks (if AI generation failed or video strictly requested)
-        for q in UNIVERSAL_MOTION_FALLBACKS:
+        # 3. Context-Aware Motion Video Fallbacks (Strictly matched to subject domain!)
+        context_lower = context_text.lower()
+        if any(k in context_lower for k in ("temple", "mandir", "kailasa", "ellora", "stone", "prachin", "ruins", "monument", "ancient", "bharat", "vedic")):
+            motion_fallbacks = ["ancient indian temple architecture", "ancient stone temple carvings", "hindu temple drone aerial", "ancient archaeological ruins"]
+        elif any(k in context_lower for k in ("animal", "creature", "bird", "falcon", "cheetah", "predator", "wildlife", "beast", "shrimp", "crocodile")):
+            motion_fallbacks = ["wild animal in nature", "peregrine falcon flying sky", "wild cheetah sprinting", "wild predator close up"]
+        elif any(k in context_lower for k in ("history", "army", "soldier", "war", "tomb", "emperor", "king", "cavalry")):
+            motion_fallbacks = ["ancient medieval army marching", "ancient king golden tomb", "dark ancient archaeological excavation"]
+        else:
+            motion_fallbacks = UNIVERSAL_MOTION_FALLBACKS
+
+        for q in motion_fallbacks:
             vid = self.search_and_download_video(q, output_dir=out_dir, orientation=orientation, require_relevance=True)
             if vid and vid.exists():
                 return vid
@@ -585,6 +655,7 @@ class StockFetcher:
             subject = getattr(scene, "visual_subject", "")
             keywords = getattr(scene, "search_keywords", [])
             narration = getattr(scene, "narration", "")
+            description = getattr(scene, "visual_description", "")
             if not subject and hasattr(scene, "visual_query"):
                 subject = getattr(scene, "visual_query", "")
 
@@ -593,6 +664,7 @@ class StockFetcher:
                 subject=subject,
                 keywords=keywords,
                 narration=narration,
+                description=description,
                 output_dir=output_dir,
                 orientation=orientation,
                 require_video=require_video,
@@ -606,6 +678,7 @@ class StockFetcher:
                         subject=alt_kw,
                         keywords=[subject],
                         narration=narration,
+                        description=description,
                         output_dir=output_dir,
                         orientation=orientation,
                         require_video=require_video,

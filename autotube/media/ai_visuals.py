@@ -2,6 +2,8 @@
 
 import random
 import time
+import re
+import shutil
 from pathlib import Path
 from typing import List, Optional
 from PIL import Image, ImageDraw, ImageFilter
@@ -21,7 +23,8 @@ class VisualGenerator:
         height: int = 1920,
         style: str = "realistic",
         seed: Optional[int] = None,
-    ) -> Path:
+        allow_fallback: bool = False,
+    ) -> Optional[Path]:
         """Generate an AI image or fallback graphic with custom style."""
         output_path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -32,10 +35,12 @@ class VisualGenerator:
         if success and output_path.exists() and output_path.stat().st_size > 5000:
             return output_path
 
-        # Fallback to local Pillow graphic
-        return self.create_gradient_fallback(
-            prompt, output_path, width=width, height=height
-        )
+        # Only create gradient graphic if explicitly requested
+        if allow_fallback:
+            return self.create_gradient_fallback(
+                prompt, output_path, width=width, height=height
+            )
+        return None
 
     def fetch_scene_visuals(
         self,
@@ -81,8 +86,10 @@ class VisualGenerator:
         if seed is None:
             seed = random.randint(1000, 999999)
 
-        if style.lower() in ("cartoon", "pixar", "3d", "ai3d", "dltoons", "3danimation"):
+        if style.lower() in ("cartoon", "pixar", "ai3d", "dltoons", "3danimation"):
             style_suffix = "3D Pixar Disney animation style, cute expressive 3D character, Unreal Engine 5 render, cinematic lighting, high detail, masterpiece"
+        elif style.lower() in ("3d_cinematic", "cinematic_3d", "realistic_3d", "3d_realistic", "3d", "cinematic"):
+            style_suffix = "3D cinematic hyperrealistic CGI render, Unreal Engine 5, Octane Render, 8k resolution, ray tracing, volumetric atmospheric lighting, photorealistic textures, dramatic cinematic depth of field, IMAX cinematography, highly detailed"
         elif style.lower() in ("anime", "ghibli"):
             style_suffix = "Studio Ghibli modern anime animation style, lush aesthetic, vibrant colorful, beautiful anime digital art"
         elif style.lower() in ("comic", "2d"):
@@ -99,9 +106,9 @@ class VisualGenerator:
         gen_h = 1344 if is_vertical else 768
 
         endpoints = [
-            f"https://image.pollinations.ai/prompt/{encoded}?width={gen_w}&height={gen_h}&nologo=true&seed={seed}",
-            f"https://image.pollinations.ai/prompt/{encoded}?model=flux&width={gen_w}&height={gen_h}&nologo=true&seed={seed}",
             f"https://image.pollinations.ai/prompt/{encoded}?model=sana&width={gen_w}&height={gen_h}&nologo=true&seed={seed}",
+            f"https://image.pollinations.ai/prompt/{encoded}?model=sana&width={gen_w}&height={gen_h}&nologo=true&seed={random.randint(100, 99999)}",
+            f"https://image.pollinations.ai/prompt/{encoded}?model=sana&width={gen_w}&height={gen_h}&nologo=true",
         ]
 
         headers = {
@@ -112,16 +119,37 @@ class VisualGenerator:
             for url in endpoints:
                 try:
                     print_info(f"Generating AI [{style.upper()}] visual for: '{prompt[:45]}...'")
-                    resp = requests.get(url, headers=headers, timeout=60)
+                    resp = requests.get(url, headers=headers, timeout=25)
                     if resp.status_code == 200 and len(resp.content) > 5000 and "image" in resp.headers.get("content-type", ""):
                         with open(output_path, "wb") as f:
                             f.write(resp.content)
                         print_success(f"AI visual saved: {output_path.name}")
                         return True
+                    elif resp.status_code == 402:
+                        print_warning("Pollinations rate-limit (402). Attempting real photo fallback...")
+                        break
                 except Exception as e:
                     print_warning(f"Pollinations fetch attempt error: {e}")
                     time.sleep(1)
                     continue
+
+        # If Pollinations failed or 402 rate-limited, fall back to high-res Pexels Photo
+        try:
+            from autotube.media.pexels_video import PexelsVideoFetcher
+            pv = PexelsVideoFetcher()
+            if pv.is_configured():
+                # Extract clean English keywords from prompt
+                stop_w = {"masterpiece", "detailed", "lighting", "render", "resolution", "cinematic", "photorealistic", "style", "vintage", "highly", "dramatic"}
+                words = [w for w in re.findall(r"[a-zA-Z]{3,}", prompt) if w.lower() not in stop_w]
+                clean_q = " ".join(words[:3]) if words else prompt[:30]
+                if clean_q:
+                    photo_path = pv.get_scene_photo(clean_q, orientation="portrait" if is_vertical else "landscape")
+                    if photo_path and photo_path.exists() and photo_path.stat().st_size > 10000:
+                        shutil.copy(photo_path, output_path)
+                        print_success(f"Pexels authentic photo fallback saved: {output_path.name}")
+                        return True
+        except Exception as pe:
+            print_warning(f"Pexels photo fallback notice: {pe}")
 
         return False
 

@@ -27,10 +27,12 @@ Key Viral Rules:
 1. TOTAL LENGTH: The total spoken narration across all scenes MUST be between 120 and 145 words (lasting 48-55 seconds).
 2. High-Curiosity Title: Click-worthy title with series/mystery brackets.
 3. Instant Shock Hook (Scene 1): First 3 seconds must shock or amaze. Never say 'Hello' or 'Did you know'.
-4. Climax & Cliffhanger Subscribe CTA (Last Scene): End with an unresolved mystery teasing the next episode to compel subscription.
+4. MANDATORY SPOKEN OUTRO CTA (Final Scene): The final spoken sentence of the script MUST explicitly tell the viewer to like, subscribe, and support the channel, customized to the video's subject!
+   Example Format: "For more mind-bending [subject-specific: cosmic / ancient historical / psychology / science] videos like this, please like, subscribe, and support our channel!"
 5. Pinned Comment: A provocative engagement question for comments.
 6. The top-level 'narration' field should contain the combined narration text of all scenes.
 7. EVERY scene's visual_subject MUST be unique and directly related to the specific sentence being spoken. NO two scenes should have the same visual.
+8. ZERO STORY REPETITION & NO CLICHES: Never use generic stock phrasing (e.g. 'What if I told you', 'Have you ever wondered'). Deliver fresh, deeply factual, unique narrative angles that feel completely original to this specific topic.
 
 Return the result as valid JSON matching the ShortScript schema.
 """
@@ -59,10 +61,18 @@ Key Viral Rules for Indian Audience:
 1. अनिवार्य कुल लंबाई: सभी दृश्यों को मिलाकर कुल Narration 120 से 145 शब्दों के बीच होना चाहिए (48 से 55 सेकंड)।
 2. High-Curiosity Title: हिंदी और अंग्रेजी का आकर्षक शीर्षक।
 3. Instant Shock Hook (Scene 1): पहले 2 सेकंड में चौंकाने वाला सवाल या दृश्य। 'नमस्ते' या 'दोस्तों' कभी न बोलें।
-4. Climax & Cliffhanger CTA (Last Scene): आख़िरी दृश्य में सस्पेंस चरम पर ले जाएं और सब्सक्राइब करने का रोमांचक कारण दें।
+4. अनिवार्य अंतिम Outro व CTA (Last Scene): अंतिम बोले जाने वाले वाक्य में अनिवार्य रूप से विषय के अनुसार दर्शकों को लाइक, सब्सक्राइब और सपोर्ट करने के लिए कहना होगा!
+   उदाहरण प्रारूप: "ऐसे ही [विषय अनुसार: अंतरिक्ष के / प्राचीन इतिहास के / साइकोलॉजी के / साइंस के] इंफॉर्मेटिव वीडियोज़ के लिए हमें लाइक और सब्सक्राइब करें और सपोर्ट करें।"
 5. Pinned Comment: दर्शकों को कमेंट करने पर मजबूर करने वाला सवाल।
 6. टॉप-लेवल 'narration' फील्ड में सभी सीन्स का पूरा जुड़ा हुआ टेक्स्ट रखें।
 7. प्रत्येक दृश्य का visual_subject अद्वितीय होना चाहिए और बोले जा रहे वाक्य से सीधे संबंधित होना चाहिए।
+8. हर बार बिल्कुल नई कहानी (ZERO REPETITION): पुरानी घिसी-पिटी बातें या एक जैसी कहानियां न दोहराएं। हर बार नए चौंकाने वाले तथ्य, वैज्ञानिक खोज और अनसुलझे रहस्य लाएं।
+9. विशेष नियम - "प्राचीन भारत व खोया विज्ञान" (Prachin Vigyan - Impossible & Amazing Historical Secrets):
+   - केवल वही ऐतिहासिक विषय और खोजें चुनें जो आज के आधुनिक वैज्ञानिकों और इंजीनियरों के लिए भी 'असंभव' (Impossible Engineering / Lost Ancient Tech) जैसे लगते हैं!
+   - उदाहरण: एलोरा का कैलाश मंदिर (एक ही विशाल पर्वत को ऊपर से नीचे काटकर 4 लाख टन पत्थर हटाना), दिल्ली का 1600 साल पुराना जंग-रोधी लौह स्तंभ, तंजावुर मंदिर का 80 टन का अखंड गुंबद, पद्मनाभस्वामी का नागा बंधम वॉल्ट बी, लेपाक्षी का झूलता खंभा, राम सेतु के तैरते पत्थर, कोणार्क के चुंबकीय चक्र!
+   - दृश्यों (Visuals) में 100% वास्तविक ऐतिहासिक भारतीय मंदिर की नक्काशी, असली पुरातात्विक संरचनाएं, और प्राचीन शिलालेख ही वर्णित करें! कभी भी फालतू या असंबंधित दृश्य न दें!
+10. विशेष नियम - "जीव-जंतुओं के रहस्य" (Animal Secrets & Superpowers):
+   - दृश्यों में उस विशिष्ट जीव, पक्षी या शिकारी की वास्तविक क्रिया (390 km/h dive, underwater bullet shockwave, predator bite, macro closeup) ही स्पष्ट अंग्रेजी में वर्णित करें!
 
 Return the result as valid JSON matching the ShortScript schema.
 """
@@ -74,7 +84,9 @@ Key Rules:
 1. Narrative Structure:
    - Scene 1: Cinematic Hook & Problem Statement
    - Middle Scenes: Engaging breakdown, chronological story, or key insights with smooth transitions
-   - Final Scene: Climax, philosophical takeaway, and call to action
+   - Final Scene: Climax, philosophical takeaway, and a spoken Outro CTA:
+     In Hindi: "ऐसे ही [विषय अनुसार] इंफॉर्मेटिव वीडियोज़ के लिए हमें लाइक और सब्सक्राइब करें और सपोर्ट करें।"
+     In English: "For more mind-bending [subject-specific] informative videos like this, please like, subscribe, and support our channel!"
 2. Every scene must have:
    - Natural spoken narration
    - Specific, high-quality visual query (for stock footage / AI image prompt)

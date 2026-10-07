@@ -52,7 +52,7 @@ voice:
 media:
   stock_provider: "pexels"            # pexels, pixabay, or local
   image_provider: "pollinations"      # pollinations, local
-  background_music_volume: 0.14       # 14% volume for Hollywood ambient track
+  background_music_volume: 0.12       # Subtle, calm, mysterious ambient score
 
 youtube:
   client_secrets_file: "config/client_secrets.json"

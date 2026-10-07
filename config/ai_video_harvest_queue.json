@@ -1,0 +1,103 @@
+{
+  "jobs": [
+    {
+      "id": "airl_speaking_telepathic",
+      "title": "Airl Telepathic Speech",
+      "category": "alien",
+      "prompt": "Alien Airl with large black almond eyes communicating telepathically in 1947 dark interrogation room, head tilting subtly, blinking, dramatic shadows, cinematic movie shot, 4k",
+      "source_image": "assets/alien_interview/airl_speaking.jpg",
+      "output_filename": "airl_speaking_telepathic.mp4",
+      "status": "pending",
+      "retries": 0,
+      "completed_at": null
+    },
+    {
+      "id": "airl_eyes_macro_stars",
+      "title": "Airl Cosmic Eyes Macro",
+      "category": "alien",
+      "prompt": "Extreme macro close-up of Alien Airl's large glossy black almond eyes reflecting cosmic stars and swinging bulb, subtle twitch, 4k movie shot",
+      "source_image": "assets/alien_interview/airl_eyes_macro.jpg",
+      "output_filename": "airl_eyes_macro_stars.mp4",
+      "status": "pending",
+      "retries": 0,
+      "completed_at": null
+    },
+    {
+      "id": "nurse_matilda_microphone",
+      "title": "Nurse Matilda at Vintage Mic",
+      "category": "alien",
+      "prompt": "1947 military nurse Matilda MacElroy speaking with emotion into vintage carbon microphone, subtle lip movement, blinking, uniform collar, dim hangar lighting, cinematic movie shot, 4k",
+      "source_image": "assets/alien_interview/nurse_matilda.jpg",
+      "output_filename": "nurse_matilda_microphone.mp4",
+      "status": "pending",
+      "retries": 0,
+      "completed_at": null
+    },
+    {
+      "id": "roswell_desert_crash_site",
+      "title": "Roswell 1947 UFO Crash Site",
+      "category": "alien",
+      "prompt": "1947 Roswell New Mexico desert at night, smoking metallic disc wreckage of crashed flying saucer under military searchlights, army trucks, cinematic noir, 4k",
+      "source_image": null,
+      "output_filename": "roswell_desert_crash_site.mp4",
+      "status": "pending",
+      "retries": 0,
+      "completed_at": null
+    },
+    {
+      "id": "domain_expeditionary_fleet",
+      "title": "The Domain Space Fleet",
+      "category": "alien",
+      "prompt": "Cinematic flying saucer disc starships of The Domain gliding silently through deep cosmic void and glowing purple nebula, starlight reflections, 4k",
+      "source_image": "assets/alien_interview/domain_cosmic_projection.jpg",
+      "output_filename": "domain_expeditionary_fleet.mp4",
+      "status": "pending",
+      "retries": 0,
+      "completed_at": null
+    },
+    {
+      "id": "kailasa_temple_ellora_monolith",
+      "title": "Kailasa Temple Monolithic Wonder",
+      "category": "bharat_vigyan",
+      "prompt": "Ancient Kailasa Temple carved from solid basalt mountain rock in Ellora, top-down drone camera drifting, golden sunset light, mystical ancient India, 4k",
+      "source_image": null,
+      "output_filename": "kailasa_temple_ellora_monolith.mp4",
+      "status": "pending",
+      "retries": 0,
+      "completed_at": null
+    },
+    {
+      "id": "padmanabhaswamy_vault_b_gate",
+      "title": "Padmanabhaswamy Vault B Door",
+      "category": "bharat_vigyan",
+      "prompt": "Ancient mystical iron door of Padmanabhaswamy Temple Vault B with engraved cobras, torchlight flickering, golden temple treasures, sacred mystery, 4k",
+      "source_image": null,
+      "output_filename": "padmanabhaswamy_vault_b_gate.mp4",
+      "status": "pending",
+      "retries": 0,
+      "completed_at": null
+    },
+    {
+      "id": "man_from_taured_customs",
+      "title": "The Man From Taured (1954)",
+      "category": "glitch_matrix",
+      "prompt": "1954 mysterious man in vintage trenchcoat holding passport at Tokyo airport customs counter, customs officers perplexed, noir film grain, 4k",
+      "source_image": null,
+      "output_filename": "man_from_taured_customs.mp4",
+      "status": "pending",
+      "retries": 0,
+      "completed_at": null
+    },
+    {
+      "id": "earth_prison_matrix_grid",
+      "title": "Earth Amnesia Matrix Screen",
+      "category": "glitch_matrix",
+      "prompt": "Planet Earth from deep space surrounded by glowing electromagnetic amnesia grid lines, electric blue sparks in dark cosmos, cinematic sci-fi, 4k",
+      "source_image": null,
+      "output_filename": "earth_prison_matrix_grid.mp4",
+      "status": "pending",
+      "retries": 0,
+      "completed_at": null
+    }
+  ]
+}

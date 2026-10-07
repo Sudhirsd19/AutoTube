@@ -45,6 +45,10 @@ class BackgroundMusicManager:
         cat = "mystery"
         if any(w in text for w in ("alien", "roswell", "airl", "ufo", "domain", "extraterrestrial")):
             cat = "alien"
+            calm_alien_track = self.assets_dir / "alien" / "roswell_mystery_calm.mp3"
+            if calm_alien_track.exists():
+                print_info(f"Selected Calm & Mysterious Ambient BGM: {calm_alien_track.name}")
+                return calm_alien_track
         elif any(w in text for w in ("space", "galaxy", "universe", "black hole", "cosmos", "stars", "planet")):
             cat = "space"
         elif any(w in text for w in ("history", "bharat", "king", "emperor", "war", "battle", "empire", "ancient rome")):
@@ -78,14 +82,18 @@ class BackgroundMusicManager:
         include_whoosh: bool = True,
         niche: Optional[str] = None,
         topic: Optional[str] = None,
+        cut_timestamps: Optional[List[float]] = None,
     ) -> Path:
-        """Mix speech voiceover with background music and hook SFX with dynamic audio ducking and Thanos DSP."""
+        """Mix speech voiceover with background music, hook SFX, and micro-transition cut whooshes."""
         import random
 
-        volume = music_volume if music_volume is not None else (self.music_volume or 0.14)
+        # Calm, subtle, mysterious volume (0.12)
+        volume = music_volume if music_volume is not None else (self.music_volume or 0.12)
 
-        # If no music specified, pick subject-matched BGM
-        if not music_path:
+        # If explicit 'none', skip BGM. Otherwise if no music specified, pick subject-matched BGM
+        if str(music_path).lower() == "none" or (isinstance(music_path, Path) and music_path.name.lower() == "none"):
+            music_path = None
+        elif not music_path:
             music_path = self.get_music_for_subject(niche=niche, topic=topic)
 
         whoosh_sfx = self.get_sfx_path("whoosh_hit.wav") if include_whoosh else None
@@ -103,66 +111,84 @@ class BackgroundMusicManager:
 
         codec = "libmp3lame" if output_mixed_path.suffix.lower() == ".mp3" else "aac"
 
-        # Thanos Titan Resonance DSP: sub-bass weight (75Hz), chest resonance (150Hz), presence, and broadcast trailer compression
+        # Voice clarity filter for crisp archival broadcast
         voice_filter = (
-            "equalizer=f=75:width_type=o:width=1.5:g=6,"
-            "equalizer=f=150:width_type=o:width=1.2:g=5,"
-            "equalizer=f=3200:width_type=o:width=1.2:g=2.5,"
-            "compand=attacks=0.02:decays=0.2:points=-80/-80|-30/-18|-15/-8|0/-2:gain=3.5,"
-            "loudnorm=I=-14:TP=-1.0:LRA=7"
+            "equalizer=f=80:width_type=o:width=1.5:g=3,"
+            "equalizer=f=3000:width_type=o:width=1.2:g=2"
         )
 
-        if music_path and music_path.exists() and whoosh_sfx:
-            # 3-input mix: heavy voice + audible bgm + opening whoosh SFX
-            filter_complex = (
-                f"[0:a]{voice_filter}[voice];"
-                f"[1:a]aloop=loop=-1:size=2e+09,volume={volume},"
-                f"afade=t=out:st={fade_out_start:.2f}:d=1.5[bg];"
-                f"[2:a]volume=0.35[sfx];"
-                f"[voice][bg][sfx]amix=inputs=3:duration=first:dropout_transition=2:normalize=0[out]"
-            )
-            args = [
-                "-i",
-                str(voice_path),
-                "-i",
-                str(music_path),
-                "-i",
-                str(whoosh_sfx),
-                "-filter_complex",
-                filter_complex,
-                "-map",
-                "[out]",
-                "-c:a",
-                codec,
-                "-b:a",
-                "192k",
-                str(output_mixed_path),
-            ]
-        elif music_path and music_path.exists():
-            # 2-input mix: heavy voice + audible bgm
-            filter_complex = (
-                f"[0:a]{voice_filter}[voice];"
-                f"[1:a]aloop=loop=-1:size=2e+09,volume={volume},"
-                f"afade=t=out:st={fade_out_start:.2f}:d=1.5[bg];"
-                f"[voice][bg]amix=inputs=2:duration=first:dropout_transition=2:normalize=0[out]"
-            )
-            args = [
-                "-i",
-                str(voice_path),
-                "-i",
-                str(music_path),
-                "-filter_complex",
-                filter_complex,
-                "-map",
-                "[out]",
-                "-c:a",
-                codec,
-                "-b:a",
-                "192k",
-                str(output_mixed_path),
-            ]
-        else:
+        # Lowpass at 3500Hz removes high harsh frequencies, creating a warm, calm, mysterious ambient atmosphere
+        bgm_filter = (
+            f"aloop=loop=-1:size=2e+09,lowpass=f=3500,volume={volume},"
+            f"afade=t=in:st=0:d=1.5,afade=t=out:st={fade_out_start:.2f}:d=2.0"
+        )
+
+        # Dynamic inputs & filter chain supporting Voice + BGM + Hook Whoosh + Micro-Cut Whooshes + Outro Bell Ding
+        bell_sfx = self.get_sfx_path("youtube_bell_ding.wav")
+        bell_delay_ms = max(0, int((duration - 4.2) * 1000)) if duration >= 8.0 else None
+
+        inputs = ["-i", str(voice_path)]
+        filter_parts = [f"[0:a]{voice_filter}[voice]"]
+        mix_inputs = ["[voice]"]
+
+        if music_path and music_path.exists():
+            if music_path.is_dir():
+                sub_files = [f for f in music_path.rglob("*.mp3") if f.is_file()] + [f for f in music_path.rglob("*.wav") if f.is_file()]
+                music_path = sub_files[0] if sub_files else None
+
+        if music_path and music_path.is_file():
+            inputs.extend(["-i", str(music_path)])
+            music_idx = (len(inputs) // 2) - 1
+            filter_parts.append(f"[{music_idx}:a]{bgm_filter}[bg]")
+            mix_inputs.append("[bg]")
+
+        if whoosh_sfx and whoosh_sfx.exists():
+            inputs.extend(["-i", str(whoosh_sfx)])
+            whoosh_idx = (len(inputs) // 2) - 1
+            filter_parts.append(f"[{whoosh_idx}:a]volume=0.15[sfx]")
+            mix_inputs.append("[sfx]")
+
+        # Micro SFX on scene cuts (Dopamine Reset every 4-6 seconds)
+        valid_cuts = [t for t in (cut_timestamps or []) if 2.5 < t < (duration - 4.5)]
+        if whoosh_sfx and whoosh_sfx.exists() and valid_cuts:
+            inputs.extend(["-i", str(whoosh_sfx)])
+            cut_whoosh_idx = (len(inputs) // 2) - 1
+            n_cuts = min(12, len(valid_cuts))  # Cap at 12 cuts for clean audio mix
+            selected_cuts = valid_cuts[:n_cuts]
+            split_tags = "".join(f"[cw_{i}]" for i in range(n_cuts))
+            filter_parts.append(f"[{cut_whoosh_idx}:a]asplit={n_cuts}{split_tags}")
+            for i, ts in enumerate(selected_cuts):
+                delay_ms = int(ts * 1000)
+                filter_parts.append(f"[cw_{i}]adelay={delay_ms}|{delay_ms},volume=0.12[cut_sfx_{i}]")
+                mix_inputs.append(f"[cut_sfx_{i}]")
+
+        if bell_sfx and bell_sfx.exists() and bell_delay_ms is not None:
+            inputs.extend(["-i", str(bell_sfx)])
+            bell_idx = (len(inputs) // 2) - 1
+            filter_parts.append(f"[{bell_idx}:a]adelay={bell_delay_ms}|{bell_delay_ms},volume=0.35[bell]")
+            mix_inputs.append("[bell]")
+
+        num_inputs = len(mix_inputs)
+        if num_inputs == 1:
             return voice_path
+
+        filter_parts.append(f"{''.join(mix_inputs)}amix=inputs={num_inputs}:duration=first:dropout_transition=2:normalize=0[mix]")
+        filter_parts.append("[mix]loudnorm=I=-14:TP=-1.0:LRA=7[out]")
+
+        filter_complex = ";".join(filter_parts)
+        args = inputs + [
+            "-filter_complex",
+            filter_complex,
+            "-map",
+            "[out]",
+            "-c:a",
+            codec,
+            "-b:a",
+            "192k",
+            "-t",
+            f"{duration:.2f}",
+            str(output_mixed_path),
+        ]
 
         track_name = music_path.name if music_path else "none"
         success = run_ffmpeg(
