@@ -52,3 +52,29 @@ def test_multi_stock_nasa_dispatcher_is_present():
     aggregator = object.__new__(MultiStockAggregator)
     aggregator.nasa_fetcher = _StubNasa()
     assert aggregator.search_nasa("black hole", 4) == [{"query": "black hole", "limit": 4}]
+
+
+def test_multi_stock_strict_video_mode_returns_none_for_motion_fallback():
+    aggregator = object.__new__(MultiStockAggregator)
+    aggregator.gather_candidates = lambda **kwargs: []
+    aggregator.rank_and_select = lambda *args, **kwargs: None
+    aggregator.visual_quality_gate = None
+    aggregator.pexels_fetcher = None
+    scene_plan = {
+        "subject": "black hole",
+        "action": "swirling in deep space",
+        "environment": "deep space",
+        "must_show": ["black hole", "accretion disk"],
+        "avoid": ["cartoon", "daylight"],
+        "search_queries": ["black hole", "black hole space", "cosmic vortex"],
+    }
+
+    result = aggregator.get_best_scene_asset(
+        scene_text="A black hole swallows matter.",
+        title="Black Hole",
+        scene_index=0,
+        scene_plan=scene_plan,
+        allow_ai_fallback=False,
+    )
+
+    assert result is None
