@@ -792,7 +792,10 @@ Output STRICT JSON with these keys:
                             )
                             acquired_video = None
 
-                if not acquired_video and visual_engine in ("pexels", "auto"):
+                # Pexels is the final real-motion fallback for every video-first Studio mode.
+                # Previously this was gated by visual_engine, so multi_cinematic could exhaust
+                # MultiStock/NVIDIA and then fail every scene without ever trying Pexels.
+                if not acquired_video and visual_mode in ("multi_cinematic", "multi_best", "auto", "hybrid", "stock"):
                     for english_q in deduped_queries[:4]:
                         candidate = multi_agg.get_fresh_pexels_video(
                             search_query=english_q,
