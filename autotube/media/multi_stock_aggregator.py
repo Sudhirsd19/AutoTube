@@ -222,21 +222,48 @@ class MultiStockAggregator:
         fallback_avoid = ["cartoon", "smiling", "modern office", "smartphone", "laptop", "talking head", "carving", "pumpkin", "face mask", "helmet", "blue sky", "daylight beach"]
         fallback_queries = ["cinematic dramatic mystery", "atmospheric suspense cinematic", "dark moody cinematic"]
 
-        is_space_or_black_hole = any(k in s_lower or k in t_lower for k in (
-            "black hole", "blackhole", "event horizon", "accretion", "singularity", "spaghetti",
-            "space", "antariksh", "brahmand", "galaxy", "universe", "planet", "stars", "cosmos", "solar system", "grah", "dharati"
+        # Story topic sets the genre, but the CURRENT SENTENCE owns the visual subject.
+        # Never let a title such as "Black Hole Sound" force every scene to use the
+        # same black-hole query; that was the root cause of repeated footage.
+        scene_is_bh = any(k in s_lower for k in (
+            "black hole", "blackhole", "event horizon", "accretion", "singularity", "spaghetti"
         ))
+        scene_is_space = any(k in s_lower for k in (
+            "space", "antariksh", "brahmand", "galaxy", "universe", "planet", "stars",
+            "cosmos", "solar system", "grah", "dharati", "perseus", "nasa", "chandra"
+        ))
+        story_is_space = any(k in t_lower for k in (
+            "black hole", "blackhole", "event horizon", "accretion", "singularity", "spaghetti",
+            "space", "antariksh", "brahmand", "galaxy", "universe", "planet", "stars",
+            "cosmos", "solar system"
+        ))
+        is_space_or_black_hole = scene_is_bh or scene_is_space or story_is_space
 
-        if any(k in s_lower or k in t_lower for k in ("black hole", "blackhole", "event horizon", "accretion", "singularity", "spaghetti")):
+        if scene_is_bh:
             fallback_subject = "black hole cosmic singularity"
             fallback_must_show = ["black hole", "cosmic vortex", "deep space", "singularity"]
             fallback_avoid += ["generic galaxy", "earth daytime", "blue sky", "nature", "sunny", "phone", "office", "helmet", "face mask", "clouds"]
             fallback_queries = ["black hole", "black hole space", "cosmic vortex", "planet earth space"]
+        elif any(k in s_lower for k in ("nasa", "chandra", "perseus", "galaxy cluster")):
+            fallback_subject = "Perseus galaxy cluster pressure waves"
+            fallback_must_show = ["Perseus galaxy cluster", "concentric pressure ripples", "hot intracluster gas"]
+            fallback_avoid += ["generic galaxy", "earth daytime", "people", "office", "phone"]
+            fallback_queries = ["Perseus cluster", "galaxy cluster", "space pressure waves"]
+        elif any(k in s_lower for k in ("sound", "aawaz", "awaaz", "pressure wave", "pressure waves", "audio", "sunkar")):
+            fallback_subject = "cosmic pressure waves in hot galaxy-cluster gas"
+            fallback_must_show = ["pressure wave ripples", "hot cosmic gas", "black hole environment"]
+            fallback_avoid += ["generic microphone", "concert", "human singer", "office", "phone"]
+            fallback_queries = ["space sound waves", "cosmic pressure waves", "galaxy cluster gas"]
+        elif any(k in s_lower for k in ("57 octaves", "octaves", "human ear", "hear", "frequency", "pitch")):
+            fallback_subject = "extreme low-frequency cosmic sound visualization"
+            fallback_must_show = ["frequency spectrum", "cosmic wave visualization", "deep space"]
+            fallback_avoid += ["musician", "piano performance", "concert", "microphone", "office"]
+            fallback_queries = ["sound frequency", "frequency spectrum", "cosmic waves"]
         elif is_space_or_black_hole:
             fallback_subject = "deep outer space and planets"
-            fallback_must_show = ["deep space galaxy", "planet earth space", "stars"]
+            fallback_must_show = ["deep space", "distant stars", "cosmic environment"]
             fallback_avoid += ["earth daytime", "city", "people", "beach", "clouds", "phone", "office"]
-            fallback_queries = ["deep space galaxy", "planet earth space", "outer space cosmos"]
+            fallback_queries = ["deep space galaxy", "deep space stars", "outer space cosmos"]
         elif any(k in s_lower or k in t_lower for k in ("temple", "mandir", "ancient", "prachin", "underground", "chamber", "kailasa")):
             fallback_subject = "ancient temple mystery"
             fallback_must_show = ["ancient stone temple", "underground chamber", "carvings"]
@@ -348,7 +375,9 @@ Return STRICT JSON with keys:
                             forbidden_query_words = {"comment", "icon", "subscribe", "social", "phone", "iphone", "typing", "circuit", "motherboard", "computer", "desk", "office", "person", "man", "woman"}
                             clean_qs = [q for q in clean_qs if not any(fw in q.lower() for fw in forbidden_query_words)]
 
-                            is_bh_specific = any(k in s_lower or k in t_lower for k in ("black hole", "blackhole", "event horizon", "singularity", "spaghetti"))
+                            # Only the current scene can make a scene black-hole-specific.
+                            # The story title must never overwrite scene-specific Gemini queries.
+                            is_bh_specific = any(k in s_lower for k in ("black hole", "blackhole", "event horizon", "singularity", "spaghetti"))
 
                             if is_cta:
                                 data["subject"] = "cosmic black hole event horizon finale" if is_bh_specific else "majestic deep space galaxy finale"
