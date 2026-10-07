@@ -152,7 +152,7 @@ class VoiceAuditionRequest(BaseModel):
 class DirectorRenderRequest(BaseModel):
     script_text: str
     title: str
-    voice: str = "hi_deep_cinematic_male"
+    voice: str = "auto"
     voice_speed: float = 0.92
     bgm_filename: Optional[str] = "auto"
     bgm_volume: float = 0.16
