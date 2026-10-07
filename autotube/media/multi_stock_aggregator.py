@@ -31,6 +31,7 @@ GEMINI_HTTP_TIMEOUT_MS = 15_000
 # Cache directory for multi-stock downloads
 STOCK_CACHE_DIR = PROJECT_ROOT / "assets" / "stock_cache"
 USED_STOCK_HISTORY = PROJECT_ROOT / "config" / "used_stock_history.json"
+MAX_REUSE_HISTORY = 5000
 
 HTTP_HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
@@ -63,6 +64,7 @@ class MultiStockAggregator:
 
         self.session_used_ids: Set[str] = set()
         self.persistent_used_ids: Set[str] = self._load_used_ids()
+        self.persistent_used_hashes: Set[str] = self._load_used_hashes()
         self._gemini_client = None
 
     def _load_used_ids(self) -> Set[str]:
@@ -70,26 +72,101 @@ class MultiStockAggregator:
             if USED_STOCK_HISTORY.exists():
                 with open(USED_STOCK_HISTORY, "r", encoding="utf-8") as f:
                     data = json.load(f)
-                    return set(data.get("used_ids", [])[-500:])
+                    return set(data.get("used_ids", [])[-MAX_REUSE_HISTORY:])
         except Exception:
             pass
         return set()
 
-    def _record_used_id(self, media_id: str) -> None:
+    def _load_used_hashes(self) -> Set[str]:
+        try:
+            if USED_STOCK_HISTORY.exists():
+                with open(USED_STOCK_HISTORY, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                    return set(data.get("used_hashes", [])[-MAX_REUSE_HISTORY:])
+        except Exception:
+            pass
+        return set()
+
+    @staticmethod
+    def _asset_sha256(path: Path) -> str:
+        digest = hashlib.sha256()
+        with open(path, "rb") as fh:
+            for chunk in iter(lambda: fh.read(1024 * 1024), b""):
+                digest.update(chunk)
+        return digest.hexdigest()
+
+    def _record_used_id(self, media_id: str, asset_path: Optional[Path] = None) -> None:
         str_id = str(media_id)
         self.session_used_ids.add(str_id)
         self.persistent_used_ids.add(str_id)
+        asset_hash = None
+        if asset_path and asset_path.exists():
+            try:
+                asset_hash = self._asset_sha256(asset_path)
+                self.persistent_used_hashes.add(asset_hash)
+            except Exception as exc:
+                print_warning(f"Could not fingerprint reused asset {asset_path.name}: {exc}")
         try:
-            existing = []
+            data: Dict[str, Any] = {"used_ids": [], "used_hashes": []}
             if USED_STOCK_HISTORY.exists():
                 with open(USED_STOCK_HISTORY, "r", encoding="utf-8") as f:
-                    existing = json.load(f).get("used_ids", [])
-            if str_id not in existing:
-                existing.append(str_id)
+                    loaded = json.load(f)
+                    if isinstance(loaded, dict):
+                        data.update(loaded)
+            existing_ids = [str(v) for v in data.get("used_ids", [])]
+            if str_id not in existing_ids:
+                existing_ids.append(str_id)
+            existing_hashes = [str(v) for v in data.get("used_hashes", [])]
+            if asset_hash and asset_hash not in existing_hashes:
+                existing_hashes.append(asset_hash)
             with open(USED_STOCK_HISTORY, "w", encoding="utf-8") as f:
-                json.dump({"used_ids": existing[-500:]}, f, indent=2)
-        except Exception:
-            pass
+                json.dump(
+                    {
+                        **data,
+                        "used_ids": existing_ids[-MAX_REUSE_HISTORY:],
+                        "used_hashes": existing_hashes[-MAX_REUSE_HISTORY:],
+                    },
+                    f,
+                    indent=2,
+                )
+        except Exception as exc:
+            print_warning(f"Could not persist media reuse history: {exc}")
+
+    def _record_asset_fingerprint(self, path: Path, label: str = "external") -> bool:
+        if not path.exists() or path.stat().st_size < 5000:
+            return False
+        try:
+            asset_hash = self._asset_sha256(path)
+        except Exception as exc:
+            print_warning(f"Could not fingerprint {label} asset: {exc}")
+            return False
+        if asset_hash in self.persistent_used_hashes:
+            return False
+        self.persistent_used_hashes.add(asset_hash)
+        try:
+            data: Dict[str, Any] = {"used_ids": [], "used_hashes": []}
+            if USED_STOCK_HISTORY.exists():
+                with open(USED_STOCK_HISTORY, "r", encoding="utf-8") as f:
+                    loaded = json.load(f)
+                    if isinstance(loaded, dict):
+                        data.update(loaded)
+            hashes = [str(v) for v in data.get("used_hashes", [])]
+            if asset_hash not in hashes:
+                hashes.append(asset_hash)
+            with open(USED_STOCK_HISTORY, "w", encoding="utf-8") as f:
+                json.dump(
+                    {
+                        **data,
+                        "used_ids": [str(v) for v in data.get("used_ids", [])][-MAX_REUSE_HISTORY:],
+                        "used_hashes": hashes[-MAX_REUSE_HISTORY:],
+                    },
+                    f,
+                    indent=2,
+                )
+            return True
+        except Exception as exc:
+            print_warning(f"Could not persist {label} asset fingerprint: {exc}")
+            return True
 
     def _is_session_used(self, media_id: str) -> bool:
         return str(media_id) in self.session_used_ids
@@ -98,8 +175,16 @@ class MultiStockAggregator:
         return str(media_id) in self.persistent_used_ids
 
     def _is_used(self, media_id: str) -> bool:
-        """Check if media was used in the current render session to guarantee scene diversity."""
-        return str(media_id) in self.session_used_ids
+        """Reject media already used in this render or in recent completed renders."""
+        return str(media_id) in self.session_used_ids or str(media_id) in self.persistent_used_ids
+
+    def _is_asset_hash_used(self, path: Path) -> bool:
+        if not path.exists():
+            return False
+        try:
+            return self._asset_sha256(path) in self.persistent_used_hashes
+        except Exception:
+            return False
 
     def _get_gemini_client(self):
         if self._gemini_client is not None:
@@ -547,7 +632,8 @@ Return STRICT JSON with keys:
         """Search NASA public video media for space/science scenes."""
         if not self.nasa_fetcher.is_configured():
             return []
-        return self.nasa_fetcher.search_videos(query=query, limit=limit)
+        results = self.nasa_fetcher.search_videos(query=query, limit=limit * 2)
+        return [item for item in results if not self._is_used(str(item.get("id") or ""))][:limit]
 
     # -------------------------------------------------------------
     # 3. PARALLEL MULTI-SOURCE SEARCH DISPATCHER
@@ -702,7 +788,9 @@ Return STRICT JSON with keys:
                 fresh_candidates.append(cand)
 
         # Prioritize fresh unused videos so each scene has a distinct cut
-        candidates_pool = fresh_candidates if fresh_candidates else filtered_candidates
+        # Never recycle a recently-used asset simply because it remains semantically relevant.
+        # When the fresh pool is empty, return None so the caller can use another motion source.
+        candidates_pool = fresh_candidates
         if not candidates_pool:
             return None
 
@@ -788,7 +876,10 @@ Output STRICT JSON with:
         cache_file = STOCK_CACHE_DIR / f"{sanitize_filename(cand_id)}_{url_hash}.mp4"
 
         if cache_file.exists() and cache_file.stat().st_size > 50000:
-            self._record_used_id(cand_id)
+            if self._is_asset_hash_used(cache_file):
+                print_info(f"   ♻️ Rejecting previously-used cached clip: {cand_id}")
+                return None
+            self._record_used_id(cand_id, cache_file)
             return cache_file
 
         try:
@@ -799,7 +890,14 @@ Output STRICT JSON with:
                     for chunk in resp.iter_content(chunk_size=65536):
                         f.write(chunk)
                 if cache_file.stat().st_size > 50000:
-                    self._record_used_id(cand_id)
+                    if self._is_asset_hash_used(cache_file):
+                        print_info(f"   ♻️ Rejecting duplicate video content: {cand_id}")
+                        try:
+                            cache_file.unlink()
+                        except Exception:
+                            pass
+                        return None
+                    self._record_used_id(cand_id, cache_file)
                     size_mb = round(cache_file.stat().st_size / (1024 * 1024), 2)
                     print_success(f"   ✅ [Multi-Stock] Saved: {cache_file.name} ({size_mb} MB)")
                     return cache_file
