@@ -33,7 +33,14 @@ class VisualQualityGate:
             return None
         try:
             from google import genai
-            self._client = genai.Client(api_key=key)
+            from google.genai import types
+            self._client = genai.Client(
+                api_key=key,
+                http_options=types.HttpOptions(
+                    timeout=GEMINI_HTTP_TIMEOUT_MS,
+                    retry_options=types.HttpRetryOptions(attempts=1),
+                ),
+            )
         except Exception:
             self._client = None
         return self._client
