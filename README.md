@@ -9,7 +9,8 @@
 - 🤖 **AI Scriptwriting:** Generates structured, high-hook viral scripts using Google Gemini (with smart offline fallback templates).
 - 🎙️ **Neural Voiceover (Edge-TTS):** Ultra high-quality Microsoft Neural voices (US, UK, Hindi/Indian, etc.) with zero API cost and millisecond word-level timestamps.
 - 🎨 **Dynamic Animated Subtitles:** Word-by-word karaoke highlight animations (Alex Hormozi / MrBeast style) rendered directly via FFmpeg libass.
-- 🎥 **Visual Asset Engine:** Integrates free stock footage (Pexels / Pixabay), zero-auth AI image generation (Pollinations.ai), and aesthetic gradient motion backdrops.
+- 🎥 **Visual Asset Engine:** Multi-source footage from Pexels, Pixabay, Mixkit and Coverr, NASA public space/science video search, scene-specific archival media from Wikimedia/Wikipedia, plus AI visual fallback.
+- 🔍 **Frame-Level Visual QA:** When `GEMINI_API_KEY` is configured, selected footage is sampled across the clip and checked against the exact scene narration before it is accepted; `AUTOTUBE_FRAME_QA_STRICT=1` makes QA fail-closed.
 - 🖼️ **High-CTR Thumbnail Generator:** Automatically produces 1280x720 clickable thumbnails with bold typography, outlines, and lighting accents.
 - 🚀 **YouTube Data API v3 Auto-Upload:** OAuth2 token management, video uploads, metadata injection (Title, Description, Tags, Category), scheduling, and custom thumbnail publishing.
 - 🛠️ **Built-in Portable FFmpeg:** Uses bundled `imageio-ffmpeg` binary out-of-the-box (no manual FFmpeg installation required).
