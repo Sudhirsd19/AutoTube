@@ -890,14 +890,16 @@ Output STRICT JSON with:
             if ai_img and ai_img.exists() and ai_img.stat().st_size > 5000:
                 return ai_img
 
-            # Fallback to Pexels HD Photo only as last resort
-            photo_pick = self.pexels_fetcher.get_scene_photo(q_info.get("primary_query") or "mysterious scene", orientation=orientation, scene_index=scene_index)
-            if photo_pick and photo_pick.exists():
-                return photo_pick
+            # Scene-specific photo is acceptable because its query is tied to this scene.
+            photo_query = q_info.get("primary_query") or (queries[0] if queries else "")
+            if photo_query:
+                photo_pick = self.pexels_fetcher.get_scene_photo(
+                    photo_query,
+                    orientation=orientation,
+                    scene_index=scene_index,
+                )
+                if photo_pick and photo_pick.exists():
+                    return photo_pick
 
-        # Ultimate fallback
-        safe_v2 = self.pexels_fetcher.get_scene_video("mysterious dramatic cinematic", orientation=orientation, scene_index=scene_index)
-        if safe_v2 and safe_v2.exists():
-            return safe_v2
-
-        raise RuntimeError("Could not acquire any visual asset for scene.")
+        # No generic fallback: an unrelated clip would break scene-to-narration integrity.
+        raise RuntimeError("Could not acquire a semantically valid visual asset for scene.")

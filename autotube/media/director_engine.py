@@ -359,7 +359,7 @@ Output STRICT JSON with these keys:
             protected = protected.replace(src, repl)
         protected = re.sub(r"(?<=\d)\.(?=\d)", "<decimal>", protected)
 
-        parts = [p.strip() for p in re.split(r"[.!?।॥]+\s*|\n+", protected) if p and p.strip()]
+        parts = [p.strip() for p in re.split(r"(?<=[.!?।॥])\s+|\n+", protected) if p and p.strip()]
         restored = []
         for part in parts:
             for src, repl in protected_tokens.items():
