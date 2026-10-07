@@ -1,3 +1,4 @@
+from autotube.media.multi_stock_aggregator import MultiStockAggregator
 from autotube.media.nasa_media import NasaMediaFetcher
 from autotube.media.visual_quality_gate import VisualQualityGate
 
@@ -37,3 +38,17 @@ def test_frame_gate_strict_without_api(tmp_path, monkeypatch):
     result = VisualQualityGate().verify(asset, "A black hole in deep space.")
     assert result["accepted"] is False
     assert result["mode"] == "metadata_only"
+
+
+class _StubNasa:
+    def is_configured(self):
+        return True
+
+    def search_videos(self, query, limit=4):
+        return [{"query": query, "limit": limit}]
+
+
+def test_multi_stock_nasa_dispatcher_is_present():
+    aggregator = object.__new__(MultiStockAggregator)
+    aggregator.nasa_fetcher = _StubNasa()
+    assert aggregator.search_nasa("black hole", 4) == [{"query": "black hole", "limit": 4}]
