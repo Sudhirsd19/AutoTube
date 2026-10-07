@@ -13,6 +13,7 @@ from pydantic import BaseModel
 from autotube.utils.console import print_info, print_success, print_warning
 from autotube.utils.ffmpeg_helper import get_media_duration
 from autotube.voice.voices import get_voice_id, get_voice_profile
+from autotube.voice.voice_director import choose_subject_voice
 
 
 ELEVENLABS_VOICES: Dict[str, str] = {
@@ -478,6 +479,12 @@ class TTSEngine:
         scenes: Optional[List[Any]] = None,
     ) -> TTSResult:
         """Synthesize text into speech and extract word & sentence boundaries."""
+        # Resolve auto voice here too, so scheduled/batch paths are safe even when
+        # they call TTSEngine directly without passing through DirectorEngine.
+        requested_voice = str(voice or "").strip()
+        if requested_voice.lower() in {"", "auto", "automatic", "smart"}:
+            voice = choose_subject_voice("", text, language="auto")
+            print_info(f"🎙️ TTS Auto Voice: selected '{voice}' from narration subject/language.")
         # Smart Hindi Phonetic Normalization (Devanagari, Number Expansion, Acronyms, Loanwords)
         is_hindi_target = (
             "hi-IN" in str(voice or "").lower()
