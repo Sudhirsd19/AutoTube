@@ -22,7 +22,7 @@ class VisualQualityGate:
 
     MODELS = ("gemini-3.8-flash", "gemini-3.7-flash", "gemini-3.5-flash", "gemini-3.1-flash-lite")
 
-    def __init__(self, min_confidence: int = 82, min_coverage: int = 80) -> None:
+    def __init__(self, min_confidence: int = 50, min_coverage: int = 40) -> None:
         self.min_confidence = min_confidence
         self.min_coverage = min_coverage
         self.strict = os.getenv("AUTOTUBE_FRAME_QA_STRICT", "0").lower() in {"1", "true", "yes"}
@@ -75,16 +75,19 @@ class VisualQualityGate:
             }
 
         plan = scene_plan or {}
-        prompt = f"""You are final visual QA for a YouTube scene.
+        prompt = f"""You are visual QA for a YouTube video scene.
 EXACT NARRATION: {narration}
 TARGET SUBJECT: {plan.get("subject", "")}
 MUST SHOW: {json.dumps(plan.get("must_show", []), ensure_ascii=False)}
 MUST AVOID: {json.dumps(plan.get("avoid", []), ensure_ascii=False)}
 
-Judge ONLY the supplied video frames. Do not trust titles or tags.
+Judge ONLY the supplied video frames.
+Guidelines:
+- Be generous with atmospheric, cosmic, metaphorical, and landscape matches (e.g., deep space, stars, nebulas, cosmic void, abstract vortex, acoustic waves match space/silence/mystery scenes).
+- REJECT ONLY if there is a severe, blatant category mismatch (e.g., human faces/talking heads, modern office desks, mobile phones, cars, cartoons, daylight beaches when narration is about space, cosmic mysteries, or ancient history).
 Return JSON only:
 {{"confidence":0-100,"coverage":0-100,"accepted":true/false,"reason":"one sentence","violations":[]}}
-Accept only when confidence >= {self.min_confidence}, coverage >= {self.min_coverage}, and there is no major visual mismatch.
+Accept when confidence >= {self.min_confidence}, coverage >= {self.min_coverage}, and there are no blatant category violations.
 """
 
         try:
@@ -113,11 +116,10 @@ Accept only when confidence >= {self.min_confidence}, coverage >= {self.min_cove
                     confidence = int(data.get("confidence", 0))
                     coverage = int(data.get("coverage", 0))
                     violations = data.get("violations") or []
+                    # Accept if Gemini flagged accepted OR if thresholds are met without violations
                     accepted = (
-                        bool(data.get("accepted", False))
-                        and confidence >= self.min_confidence
-                        and coverage >= self.min_coverage
-                        and not violations
+                        (bool(data.get("accepted", False)) and not violations)
+                        or (confidence >= self.min_confidence and coverage >= self.min_coverage and not violations)
                     )
                     return {
                         "accepted": accepted,

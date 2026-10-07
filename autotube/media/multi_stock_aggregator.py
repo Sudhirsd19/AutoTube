@@ -1033,9 +1033,8 @@ Output STRICT JSON with:
         if winner:
             ranked_candidates = [winner] + [c for c in ranked_candidates if c is not winner]
 
-        # Inspect a wider candidate pool. We deliberately let frame QA decide
-        # instead of discarding clips solely because metadata_coverage < 50.
-        for cand in ranked_candidates[:12]:
+        # Inspect top 4 candidates (not 12), saving minutes of download and Gemini vision time.
+        for cand in ranked_candidates[:4]:
             cand_id = cand.get("id")
             if not cand_id or self._is_used(cand_id):
                 continue
