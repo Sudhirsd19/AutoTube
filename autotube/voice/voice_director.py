@@ -1,9 +1,5 @@
 """Subject-aware voice selection for AutoTube narration."""
 
-from __future__ import annotations
-
-from collections.abc import Iterable
-
 
 SPACE_KEYS = (
     "black hole", "blackhole", "space", "antariksh", "brahmand", "galaxy",
@@ -65,7 +61,7 @@ VOICE_RULES: dict[str, dict[str, str]] = {
 }
 
 
-def _has_any(text: str, keys: Iterable[str]) -> bool:
+def _has_any(text: str, keys: tuple[str, ...]) -> bool:
     lowered = text.lower()
     return any(key in lowered for key in keys)
 
