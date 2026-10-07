@@ -281,8 +281,25 @@ Output STRICT JSON with these keys:
             (("police", "committee", "investigation", "jaanch", "report", "proof"), "vintage detective crime investigation papers"),
             (("alien", "ufo", "roswell"), "flying saucer ufo crash site vintage"),
         ]
+        # Current narration sentence is authoritative. The story title is only a
+        # fallback; otherwise every scene in a "black hole" story gets the same query.
         for triggers, query in mappings:
-            if any(k in s_lower for k in triggers) or any(k in t_lower for k in triggers):
+            if any(k in s_lower for k in triggers):
+                return query
+
+        # Fine-grained science concepts need distinct visual searches.
+        if any(k in s_lower for k in ("nasa", "chandra", "perseus", "galaxy cluster")):
+            return "Perseus galaxy cluster"
+        if any(k in s_lower for k in ("sound", "aawaz", "awaaz", "pressure wave", "pressure waves", "audio")):
+            return "cosmic pressure waves"
+        if any(k in s_lower for k in ("57 octaves", "octaves", "frequency", "pitch", "human ear", "hear")):
+            return "sound frequency spectrum"
+        if any(k in s_lower for k in ("speed", "speed badha", "sped", "recorded audio", "raw audio")):
+            return "scientific audio waveform"
+
+        # Topic-level mapping is deliberately last.
+        for triggers, query in mappings:
+            if any(k in t_lower for k in triggers):
                 return query
 
         # Fallback: find English words or topic
@@ -297,13 +314,22 @@ Output STRICT JSON with these keys:
         s_lower = sentence.lower()
         t_lower = topic.lower()
 
-        # Check for Astronomy / Black Hole / Cosmic Space
-        if any(k in t_lower or k in s_lower for k in ("black hole", "blackhole", "singularity", "event horizon", "spaghetti")):
-            return "cinematic photorealistic black hole accretion disk warping spacetime and light near planet Earth, massive cosmic singularity, gravitational lensing, deep space void, IMAX astronomy movie still, 8k"
-        elif any(k in t_lower or k in s_lower for k in ("space", "antariksh", "brahmand", "galaxy", "universe", "planet", "solar system", "stars", "cosmos")):
-            if any(k in s_lower for k in ("earth", "dharati", "grah", "neela grah")):
-                return "cinematic photorealistic view of planet Earth floating in deep space with glowing atmosphere and cosmic stars, 8k NASA James Webb telescope photo"
-            return "cinematic deep space cosmic view of colorful swirling spiral galaxy, vibrant glowing nebulae and distant stars, IMAX astronomy documentary still, 8k"
+        # Current sentence owns the concrete visual. Do not let the story title
+        # force the same black-hole/galaxy image onto every scene.
+        if any(k in s_lower for k in ("nasa", "chandra", "perseus", "galaxy cluster")):
+            return "NASA Chandra Perseus galaxy cluster, concentric X-ray pressure ripples, hot intracluster gas, cinematic scientific visualization, 8k"
+        if any(k in s_lower for k in ("pressure wave", "pressure waves", "sound", "aawaz", "awaaz")):
+            return "cosmic pressure waves rippling through hot galaxy cluster gas around a black hole, scientific visualization, cinematic 8k"
+        if any(k in s_lower for k in ("57 octaves", "octaves", "frequency", "pitch", "human ear", "hear")):
+            return "extreme low frequency spectrum visualization, cosmic sound wave, scientific audio waveform, deep space, cinematic 8k"
+        if any(k in s_lower for k in ("raw audio", "recorded audio", "speed", "sped", "57 times")):
+            return "astronomical audio waveform and sonification visualization, cosmic data converted to sound, cinematic 8k"
+        if any(k in s_lower for k in ("black hole", "blackhole", "singularity", "event horizon", "spaghetti")):
+            return "cinematic photorealistic black hole accretion disk, event horizon, gravitational lensing, deep space void, IMAX astronomy movie still, 8k"
+        if any(k in s_lower for k in ("earth", "dharati", "planet", "grah", "neela grah")):
+            return "cinematic photorealistic planet Earth floating in deep space, glowing atmosphere, cosmic stars, astronomy documentary still, 8k"
+        if any(k in s_lower for k in ("space", "antariksh", "brahmand", "galaxy", "universe", "solar system", "stars", "cosmos")):
+            return "cinematic deep space cosmic view, distant stars and nebulae, astronomy documentary still, 8k"
 
         # Check for historical mysteries
         if "bose" in t_lower or "netaji" in t_lower:
