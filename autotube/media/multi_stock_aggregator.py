@@ -909,6 +909,29 @@ Output STRICT JSON with:
     # -------------------------------------------------------------
     # 6. MASTER SCENE ASSET ACQUISITION (SEMANTIC COVERAGE GUARANTEE)
     # -------------------------------------------------------------
+    def get_fresh_pexels_video(
+        self,
+        search_query: str,
+        scene_index: int = 0,
+        orientation: str = "portrait",
+    ) -> Optional[Path]:
+        """Download a fresh Pexels motion clip using the same global reuse guard."""
+        candidates = self.search_pexels(
+            query=search_query,
+            orientation=orientation,
+            limit=12,
+        )
+        slug = sanitize_filename(search_query[:40] or "pexels_fallback")
+        for candidate in candidates:
+            downloaded = self.download_candidate(candidate, slug)
+            if downloaded and downloaded.exists():
+                print_info(
+                    f"   🎬 [Guarded Pexels] Fresh motion clip selected for scene {scene_index + 1}: "
+                    f"'{candidate.get('title', '')[:55]}'"
+                )
+                return downloaded
+        return None
+
     def get_best_scene_asset(
         self,
         scene_text: str,
