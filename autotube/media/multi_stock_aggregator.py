@@ -821,8 +821,12 @@ Output STRICT JSON with:
         allow_archival_fallback: bool = False,
         allow_ai_fallback: bool = True,
         scene_plan: Optional[Dict[str, Any]] = None,
-    ) -> Path:
-        """Acquire the single best visual asset across all sources with 100% fail-safe coverage and visual coverage gating."""
+    ) -> Optional[Path]:
+        """Acquire the best motion visual, returning None when motion footage is unavailable.
+
+        Callers can then continue to a dedicated motion-video fallback chain instead of
+        this method raising before those fallbacks get a chance to run.
+        """
         target_w = 1080 if orientation == "portrait" else 1920
         target_h = 1920 if orientation == "portrait" else 1080
         slug = sanitize_filename(title[:30])
@@ -936,5 +940,11 @@ Output STRICT JSON with:
                 if photo_pick and photo_pick.exists():
                     return photo_pick
 
-        # No generic fallback: an unrelated clip would break scene-to-narration integrity.
-        raise RuntimeError("Could not acquire a semantically valid visual asset for scene.")
+        # No generic fallback: an unrelated clip or static image would break
+        # scene-to-narration integrity. Returning None intentionally lets DirectorEngine
+        # continue to the dedicated NVIDIA/Pexels motion-video fallback chain.
+        print_warning(
+            f"   ⚠️ No validated motion footage available for scene {scene_index+1}; "
+            "returning control to the motion-video fallback chain."
+        )
+        return None
