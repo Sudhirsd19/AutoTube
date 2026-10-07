@@ -580,25 +580,18 @@ Output STRICT JSON with these keys:
             include_whoosh=not is_long,
         )
 
-        # 3. Source Authentic Historical / Archival Proofs ONLY if Real Incident Mode explicitly enabled
-        archival_visuals: List[Path] = []
-        if real_incident_mode and (visual_mode in ("hybrid", "real_only", "multi_cinematic")):
+        # 3. Real-incident archive access is resolved per narration scene.
+        # This prevents a global archive pool from placing the wrong entity's photo underneath a different sentence.
+        archival_fetcher = None
+        if real_incident_mode and visual_mode in ("hybrid", "real_only", "multi_cinematic"):
             try:
-                if progress_callback: progress_callback(42, "📜 Real Incident Mode: Searching historical archives & genuine proof photos...")
                 from autotube.media.archival_fetcher import ArchivalFetcher
-                fetcher = ArchivalFetcher()
-                archival_visuals = fetcher.fetch_archival_visuals(
-                    topic=title,
-                    script_text=script_text,
-                    count=max_scene_count,
-                    progress_callback=progress_callback,
-                )
-                if archival_visuals:
-                    print_success(f"Archival Mode: Sourced {len(archival_visuals)} authentic historical photos/documents!")
-            except Exception as e:
-                print_warning(f"Error fetching archival visuals: {e}")
+                archival_fetcher = ArchivalFetcher()
+            except Exception as exc:
+                print_warning(f"Archival fetcher unavailable: {exc}")
 
-        if progress_callback: progress_callback(55, f"Acquiring visual scenes ({orientation} {target_width}x{target_height}, Mode: {visual_mode})...")
+        if progress_callback:
+            progress_callback(55, f"Acquiring visual scenes ({orientation} {target_width}x{target_height}, Mode: {visual_mode})...")
 
         # 4. Acquire Video Scene Assets (Multi-Source AI Best Match / Hybrid Real Archives / AI Visuals)
         scene_assets_by_scene: Dict[int, Path] = {}
@@ -621,23 +614,49 @@ Output STRICT JSON with these keys:
 
             try:
                 if visual_mode in ("multi_cinematic", "multi_best", "auto"):
-                    if progress_callback:
-                        progress_callback(55 + int((idx / max(1, len(scene_specs))) * 18), f"🔍 Scene {idx+1}/{len(scene_specs)}: semantic visual search + validation...")
-                    acquired_video = multi_agg.get_best_scene_asset(
-                        scene_text=sentence,
-                        title=title,
-                        scene_index=idx,
-                        orientation=orientation,
-                        scene_plan=scene_plan,
-                        archival_pool=archival_visuals if real_incident_mode else None,
-                        allow_archival_fallback=False,
-                        allow_ai_fallback=True,
+                    historical = any(
+                        k in sentence.lower()
+                        for k in (
+                            "193", "194", "195", "196", "197", "archiv", "document", "report",
+                            "committee", "investigation", "classified", "gandhi", "bose", "netaji",
+                            "roswell", "shanti devi", "punarjanam", "rebirth",
+                        )
                     )
+                    if real_incident_mode and historical and archival_fetcher:
+                        archive_hits = archival_fetcher.fetch_archival_visuals(
+                            topic=title,
+                            script_text=sentence,
+                            count=1,
+                            progress_callback=progress_callback,
+                        )
+                        if archive_hits:
+                            acquired_video = archive_hits[0]
+                    if not acquired_video:
+                        if progress_callback:
+                            progress_callback(55 + int((idx / max(1, len(scene_specs))) * 18), f"🔍 Scene {idx+1}/{len(scene_specs)}: semantic visual search + validation...")
+                        acquired_video = multi_agg.get_best_scene_asset(
+                            scene_text=sentence,
+                            title=title,
+                            scene_index=idx,
+                            orientation=orientation,
+                            scene_plan=scene_plan,
+                            archival_pool=None,
+                            allow_archival_fallback=False,
+                            allow_ai_fallback=True,
+                        )
                 elif visual_mode == "real_only":
-                    if archival_visuals and idx < len(archival_visuals):
-                        acquired_video = archival_visuals[idx]
+                    if not archival_fetcher:
+                        raise RuntimeError(f"Archival mode unavailable for scene {idx+1}.")
+                    archive_hits = archival_fetcher.fetch_archival_visuals(
+                        topic=title,
+                        script_text=sentence,
+                        count=1,
+                        progress_callback=progress_callback,
+                    )
+                    if archive_hits:
+                        acquired_video = archive_hits[0]
                     else:
-                        raise RuntimeError(f"No archival asset available for scene {idx+1}.")
+                        raise RuntimeError(f"No scene-specific archival asset available for scene {idx+1}.")
                 elif visual_mode == "hybrid":
                     is_historical_scene = any(
                         k in sentence.lower()
@@ -647,9 +666,16 @@ Output STRICT JSON with these keys:
                             "roswell", "shanti devi", "punarjanam", "rebirth",
                         )
                     )
-                    if is_historical_scene and archival_visuals and idx < len(archival_visuals):
-                        acquired_video = archival_visuals[idx]
-                    else:
+                    if is_historical_scene and archival_fetcher:
+                        archive_hits = archival_fetcher.fetch_archival_visuals(
+                            topic=title,
+                            script_text=sentence,
+                            count=1,
+                            progress_callback=progress_callback,
+                        )
+                        if archive_hits:
+                            acquired_video = archive_hits[0]
+                    if not acquired_video:
                         acquired_video = multi_agg.get_best_scene_asset(
                             scene_text=sentence,
                             title=title,
