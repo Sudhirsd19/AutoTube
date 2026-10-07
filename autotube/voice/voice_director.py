@@ -74,7 +74,7 @@ def _has_any(text: str, keys: Iterable[str]) -> bool:
 def detect_language(text: str, requested: str = "hi") -> str:
     """Return hi/en using explicit request first, then script content."""
     req = (requested or "").lower().strip()
-    if req in {"hi", "hindi"}:
+    if req in {"hi", "hindi", "hinglish", "hi-en"}:
         return "hi"
     if req in {"en", "english"}:
         return "en"
