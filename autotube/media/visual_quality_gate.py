@@ -14,10 +14,13 @@ from typing import Any, Dict, List, Optional
 import imageio_ffmpeg
 
 
+GEMINI_HTTP_TIMEOUT_MS = int(os.getenv("AUTOTUBE_GEMINI_HTTP_TIMEOUT_MS", "60000"))
+
+
 class VisualQualityGate:
     """Final frame-level QA. Uses Gemini when GEMINI_API_KEY is present."""
 
-    MODELS = ("gemini-3.8-flash", "gemini-3.5-flash", "gemini-3.1-flash-lite")
+    MODELS = ("gemini-3.8-flash", "gemini-3.7-flash", "gemini-3.5-flash", "gemini-3.1-flash-lite")
 
     def __init__(self, min_confidence: int = 82, min_coverage: int = 80) -> None:
         self.min_confidence = min_confidence
@@ -41,7 +44,8 @@ class VisualQualityGate:
                     retry_options=types.HttpRetryOptions(attempts=1),
                 ),
             )
-        except Exception:
+        except Exception as exc:
+            print(f"[FrameQA] Gemini client initialization failed: {type(exc).__name__}: {exc}")
             self._client = None
         return self._client
 
@@ -101,7 +105,7 @@ Accept only when confidence >= {self.min_confidence}, coverage >= {self.min_cove
                     )
                     raw = (response.text or "").strip()
                     fence = chr(96) * 3
-                    if raw.startswith(fence + "json"):
+                            if raw.startswith(fence + "json"):
                         raw = raw[len(fence) + 4:].split(fence, 1)[0].strip()
                     elif raw.startswith(fence):
                         raw = raw[len(fence):].split(fence, 1)[0].strip()
@@ -125,7 +129,8 @@ Accept only when confidence >= {self.min_confidence}, coverage >= {self.min_cove
                         "mode": "frame_qa",
                         "model": model,
                     }
-                except Exception:
+                except Exception as exc:
+                    print(f"[FrameQA] Gemini model {model} failed: {type(exc).__name__}: {exc}")
                     continue
         finally:
             for p in frames:
@@ -160,7 +165,7 @@ Accept only when confidence >= {self.min_confidence}, coverage >= {self.min_cove
                 timeout=15,
             )
             text_out = proc.stderr or ""
-            match = re.search(r"Duration: (\\d+):(\\d+):(\\d+)(?:\\.(\\d+))?", text_out)
+            match = re.search(r"Duration: (\d+):(\d+):(\d+)(?:\.(\d+))?", text_out)
             if not match:
                 return 0.0
             hours, minutes, seconds = (int(match.group(i)) for i in range(1, 4))
