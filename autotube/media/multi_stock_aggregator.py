@@ -25,6 +25,9 @@ from autotube.media.ai_visuals import VisualGenerator
 from autotube.media.nasa_media import NasaMediaFetcher
 from autotube.media.visual_quality_gate import VisualQualityGate
 
+# Keep visual planning/ranking bounded. A network/API stall must never block a render.
+GEMINI_HTTP_TIMEOUT_MS = 15_000
+
 # Cache directory for multi-stock downloads
 STOCK_CACHE_DIR = PROJECT_ROOT / "assets" / "stock_cache"
 USED_STOCK_HISTORY = PROJECT_ROOT / "config" / "used_stock_history.json"
@@ -105,7 +108,14 @@ class MultiStockAggregator:
         if api_key:
             try:
                 from google import genai
-                self._gemini_client = genai.Client(api_key=api_key)
+                from google.genai import types
+                self._gemini_client = genai.Client(
+                    api_key=api_key,
+                    http_options=types.HttpOptions(
+                        timeout=GEMINI_HTTP_TIMEOUT_MS,
+                        retry_options=types.HttpRetryOptions(attempts=1),
+                    ),
+                )
             except Exception as e:
                 print_warning(f"Could not init Gemini client in MultiStockAggregator: {e}")
         return self._gemini_client
@@ -204,6 +214,7 @@ Return STRICT JSON with keys:
 """
         for model in CANDIDATE_GEMINI_MODELS:
             try:
+                print_info(f"   🤖 Gemini visual planner: trying {model} (timeout {GEMINI_HTTP_TIMEOUT_MS / 1000:.0f}s)...")
                 resp = client.models.generate_content(
                     model=model,
                     contents=prompt,
@@ -732,6 +743,7 @@ Output STRICT JSON with:
 """
                 for model in CANDIDATE_GEMINI_MODELS:
                     try:
+                        print_info(f"   🤖 Gemini semantic ranker: trying {model} (timeout {GEMINI_HTTP_TIMEOUT_MS / 1000:.0f}s)...")
                         resp = client.models.generate_content(
                             model=model,
                             contents=prompt,
