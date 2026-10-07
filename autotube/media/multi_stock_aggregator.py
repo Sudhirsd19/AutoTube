@@ -176,7 +176,9 @@ class MultiStockAggregator:
 
     def _is_used(self, media_id: str) -> bool:
         """Reject media already used in this render or in recent completed renders."""
-        return str(media_id) in self.session_used_ids or str(media_id) in self.persistent_used_ids
+        session_used = getattr(self, "session_used_ids", set())
+        persistent_used = getattr(self, "persistent_used_ids", set())
+        return str(media_id) in session_used or str(media_id) in persistent_used
 
     def _is_asset_hash_used(self, path: Path) -> bool:
         if not path.exists():
