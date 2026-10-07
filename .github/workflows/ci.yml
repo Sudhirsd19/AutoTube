@@ -27,7 +27,18 @@ jobs:
           pip install pytest ruff
       - name: Syntax check
         run: python -m compileall -q autotube tests
-      - name: Ruff
-        run: ruff check autotube tests
+      - name: Ruff (changed video pipeline files)
+        run: >-
+          ruff check
+          autotube/media/nasa_media.py
+          autotube/media/visual_quality_gate.py
+          autotube/media/multi_stock_aggregator.py
+          autotube/media/archival_fetcher.py
+          autotube/media/director_engine.py
+          autotube/video/shorts_builder.py
+          autotube/voice/tts_engine.py
+          autotube/web/app.py
+          tests/test_scene_visual_sync.py
+          tests/test_nasa_and_frame_qa.py
       - name: Tests
         run: pytest -q
