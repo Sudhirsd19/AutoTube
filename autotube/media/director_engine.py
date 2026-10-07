@@ -738,19 +738,42 @@ Output STRICT JSON with these keys:
                 else:
                     raise RuntimeError(f"Unsupported visual mode: {visual_mode}")
 
-                if not acquired_video and visual_engine in ("nvidia", "auto") and nvidia.is_configured():
-                    english_q = (
-                        (scene_plan or {}).get("search_queries") or
-                        [self._extract_visual_search_query(sentence, title, idx)]
-                    )[0]
-                    acquired_video = nvidia.generate_video(prompt=english_q, output_path=scene_target)
+                # Dedicated motion-video fallback chain. MultiStockAggregator can return
+                # None after strict video/QA filtering; do not stop the scene there.
+                fallback_queries = list((scene_plan or {}).get("search_queries") or [])
+                fallback_queries.append(self._extract_visual_search_query(sentence, title, idx))
+                deduped_queries = []
+                for query in fallback_queries:
+                    clean_query = str(query).strip()
+                    if clean_query and clean_query.lower() not in {q.lower() for q in deduped_queries}:
+                        deduped_queries.append(clean_query)
 
-                if not acquired_video and visual_engine in ("nvidia", "auto") and pexels.is_configured():
-                    english_q = (
-                        (scene_plan or {}).get("search_queries") or
-                        [self._extract_visual_search_query(sentence, title, idx)]
-                    )[0]
-                    acquired_video = pexels.get_scene_video(search_query=english_q, orientation=orientation, scene_index=idx)
+                if not acquired_video and visual_engine in ("nvidia", "auto") and nvidia.is_configured():
+                    for english_q in deduped_queries[:4]:
+                        acquired_video = nvidia.generate_video(
+                            prompt=english_q,
+                            output_path=scene_target,
+                        )
+                        if acquired_video:
+                            print_success(
+                                f"   🎬 [NVIDIA Video Fallback] Scene {idx+1} acquired motion footage "
+                                f"with query: '{english_q}'"
+                            )
+                            break
+
+                if not acquired_video and visual_engine in ("pexels", "auto") and pexels.is_configured():
+                    for english_q in deduped_queries[:4]:
+                        acquired_video = pexels.get_scene_video(
+                            search_query=english_q,
+                            orientation=orientation,
+                            scene_index=idx,
+                        )
+                        if acquired_video:
+                            print_success(
+                                f"   🎬 [Pexels Video Fallback] Scene {idx+1} acquired motion footage "
+                                f"with query: '{english_q}'"
+                            )
+                            break
 
                 if not acquired_video:
                     raise RuntimeError(f"No valid visual asset acquired for scene {idx+1}.")
