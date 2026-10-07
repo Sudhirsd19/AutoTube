@@ -33,4 +33,4 @@ jobs:
           autotube/voice/voice_director.py
           tests/test_subject_aware_voice.py
       - name: Tests
-        run: pytest -q
+        run: python -m pytest -q
