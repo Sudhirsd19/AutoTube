@@ -6,6 +6,7 @@ import json
 import os
 import subprocess
 import tempfile
+import re
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -134,17 +135,61 @@ Accept only when confidence >= {self.min_confidence}, coverage >= {self.min_cove
         }
 
     @staticmethod
-    def _extract_frames(asset_path: Path, count: int = 4) -> List[Path]:
+    def _probe_duration(asset_path: Path) -> float:
+        """Read media duration from ffmpeg metadata without a separate ffprobe dependency."""
+        ffmpeg = imageio_ffmpeg.get_ffmpeg_exe()
+        try:
+            proc = subprocess.run(
+                [ffmpeg, "-hide_banner", "-i", str(asset_path)],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.PIPE,
+                text=True,
+                timeout=15,
+            )
+            text_out = proc.stderr or ""
+            match = re.search(r"Duration: (\\d+):(\\d+):(\\d+)(?:\\.(\\d+))?", text_out)
+            if not match:
+                return 0.0
+            hours, minutes, seconds = (int(match.group(i)) for i in range(1, 4))
+            fraction = match.group(4) or "0"
+            return hours * 3600 + minutes * 60 + seconds + float("0." + fraction)
+        except Exception:
+            return 0.0
+
+    @classmethod
+    def _extract_frames(cls, asset_path: Path, count: int = 4) -> List[Path]:
+        """Sample frames across the whole clip, not just the opening seconds."""
         ffmpeg = imageio_ffmpeg.get_ffmpeg_exe()
         temp_dir = Path(tempfile.mkdtemp(prefix="autotube_frameqa_"))
-        output_pattern = str(temp_dir / "frame_%02d.jpg")
-        cmd = [
-            ffmpeg, "-hide_banner", "-loglevel", "error", "-i", str(asset_path),
-            "-vf", "fps=2,scale=512:-1:force_original_aspect_ratio=decrease",
-            "-q:v", "4", "-frames:v", str(count), "-y", output_pattern
-        ]
-        try:
-            subprocess.run(cmd, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, timeout=25)
-        except Exception:
-            pass
-        return [p for p in sorted(temp_dir.glob("frame_*.jpg")) if p.stat().st_size > 1000]
+        duration = cls._probe_duration(asset_path)
+        if duration <= 0:
+            positions = [0.5 + i * 0.8 for i in range(count)]
+        else:
+            positions = [
+                max(0.0, min(duration - 0.15, duration * fraction))
+                for fraction in (0.10, 0.35, 0.65, 0.90)
+            ][:count]
+
+        outputs: List[Path] = []
+        for index, position in enumerate(positions):
+            output = temp_dir / f"frame_{index:02d}.jpg"
+            cmd = [
+                ffmpeg, "-hide_banner", "-loglevel", "error",
+                "-ss", f"{position:.3f}", "-i", str(asset_path),
+                "-frames:v", "1", "-vf", "scale=512:-1:force_original_aspect_ratio=decrease",
+                "-q:v", "4", "-y", str(output)
+            ]
+            try:
+                subprocess.run(
+                    cmd,
+                    check=True,
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.PIPE,
+                    timeout=15,
+                )
+            except Exception:
+                continue
+            if output.exists() and output.stat().st_size > 1000:
+                outputs.append(output)
+
+        return outputs
