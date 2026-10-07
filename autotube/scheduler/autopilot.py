@@ -23,6 +23,7 @@ from autotube.utils.console import (
 from autotube.utils.file_utils import sanitize_filename
 from autotube.video.shorts_builder import ShortsBuilder
 from autotube.voice.tts_engine import TTSEngine
+from autotube.voice.voice_director import resolve_voice_for_content
 
 def get_timezone(tz_key: str) -> datetime.tzinfo:
     """Return timezone object for US Eastern (EDT/EST) or India (IST).
@@ -51,10 +52,9 @@ def get_viral_voice_for_slot(configured_voice: Optional[str], lang: str) -> str:
     - Hindi: 'madhur' (hi-IN-MadhurNeural, authentic documentary storytelling tone)
     - English: 'christopher' (en-US-ChristopherNeural, deep blockbuster documentary tone)
     """
-    is_hindi = str(lang).lower() in ("hi", "hindi")
     v = (configured_voice or "").strip().lower()
-    if not v or v in ("auto", "default", "akashvani", "swara"):
-        return "madhur" if is_hindi else "christopher"
+    if not v or v in ("auto", "default"):
+        return "auto"
     return configured_voice
 
 
@@ -388,7 +388,22 @@ class AutoPilot:
                     topic, target_duration=target_dur, language=item_lang
                 )
 
-                # Step B: Synthesize Voiceover & Extract Timings
+                # Step B: Resolve the narrator from the complete generated narration.
+                # Topic-only selection is intentionally avoided so the exact script determines
+                # the subject category (space/history/science/mystery/etc.).
+                item_voice = resolve_voice_for_content(
+                    configured_voice=item_voice,
+                    title=script.title or topic,
+                    script_text=script.narration,
+                    language=item_lang,
+                )
+                item["voice"] = item_voice
+                print_info(
+                    f"🎙️ Voice Director: {item_voice} "
+                    f"(language={item_lang}, subject matched from generated narration)"
+                )
+
+                # Step C: Synthesize Voiceover & Extract Timings
                 audio_path = self.cfg.paths.temp_dir / f"{slug}_voice.mp3"
                 tts_res = self.tts.synthesize(
                     text=script.narration,
