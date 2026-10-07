@@ -48,10 +48,7 @@ def get_timezone(tz_key: str) -> datetime.tzinfo:
 
 
 def get_viral_voice_for_slot(configured_voice: Optional[str], lang: str) -> str:
-    """Ensure the #1 most used, viral voice is selected for YouTube Shorts & Documentaries.
-    - Hindi: 'madhur' (hi-IN-MadhurNeural, authentic documentary storytelling tone)
-    - English: 'christopher' (en-US-ChristopherNeural, deep blockbuster documentary tone)
-    """
+    """Return the configured voice, using subject-aware auto selection by default."""
     v = (configured_voice or "").strip().lower()
     if not v or v in ("auto", "default"):
         return "auto"
@@ -69,7 +66,7 @@ DAILY_SCHEDULE_SLOTS = [
         "tz": "ist",
         "niche": "psychology",
         "lang": "hi",
-        "voice": "hi_deep_cinematic_male",
+        "voice": "auto",
         "format": "short",
         "label": "07:30 AM IST - Mind Glitch & Subconscious (Hindi Short)",
     },
@@ -80,7 +77,7 @@ DAILY_SCHEDULE_SLOTS = [
         "tz": "ist",
         "niche": "science",
         "lang": "en",
-        "voice": "en_deep_cinematic_male",
+        "voice": "auto",
         "format": "short",
         "label": "09:30 AM IST (12:00 AM EDT) - Quantum Science & Paradoxes (English Short)",
     },
@@ -91,7 +88,7 @@ DAILY_SCHEDULE_SLOTS = [
         "tz": "ist",
         "niche": "bharat_vigyan",
         "lang": "hi",
-        "voice": "hi_deep_cinematic_male",
+        "voice": "auto",
         "format": "short",
         "label": "12:00 PM IST - Bharat Ka Prachin Vigyan (Hindi Short)",
     },
@@ -102,7 +99,7 @@ DAILY_SCHEDULE_SLOTS = [
         "tz": "ist",
         "niche": "glitch_matrix",
         "lang": "en",
-        "voice": "en_deep_cinematic_male",
+        "voice": "auto",
         "format": "short",
         "label": "02:30 PM IST (05:00 AM EDT) - Simulation / Matrix Glitch (English Short)",
     },
@@ -113,7 +110,7 @@ DAILY_SCHEDULE_SLOTS = [
         "tz": "ist",
         "niche": "psychology",
         "lang": "hi",
-        "voice": "hi_deep_cinematic_male",
+        "voice": "auto",
         "format": "short",
         "label": "04:30 PM IST - Dark Psychology & Body Language (Hindi Short)",
     },
@@ -124,7 +121,7 @@ DAILY_SCHEDULE_SLOTS = [
         "tz": "ist",
         "niche": "mystery",
         "lang": "en",
-        "voice": "en_deep_cinematic_male",
+        "voice": "auto",
         "format": "short",
         "label": "06:15 PM IST (08:45 AM EDT) - Ocean & Deep Earth Terrors (English Short)",
     },
@@ -135,7 +132,7 @@ DAILY_SCHEDULE_SLOTS = [
         "tz": "ist",
         "niche": "bharat_vigyan",
         "lang": "hi",
-        "voice": "hi_deep_cinematic_male",
+        "voice": "auto",
         "format": "landscape_long",
         "label": "08:00 PM IST - प्राचीन भारत के अनसुलझे रहस्य व खोया विज्ञान [16:9 Landscape Documentary] (Hindi Long)",
     },
@@ -146,7 +143,7 @@ DAILY_SCHEDULE_SLOTS = [
         "tz": "ist",
         "niche": "history",
         "lang": "hi",
-        "voice": "hi_deep_cinematic_male",
+        "voice": "auto",
         "format": "short",
         "label": "09:45 PM IST - Rahasyamay Itihas & Khopiya Sach (Hindi Short)",
     },
@@ -157,7 +154,7 @@ DAILY_SCHEDULE_SLOTS = [
         "tz": "ist",
         "niche": "space",
         "lang": "en",
-        "voice": "en_deep_cinematic_male",
+        "voice": "auto",
         "format": "short",
         "label": "11:30 PM IST (02:00 PM EDT) - Cosmic Horror & Deep Space (English Short)",
     },
@@ -168,7 +165,7 @@ DAILY_SCHEDULE_SLOTS = [
         "tz": "ist",
         "niche": "science",
         "lang": "en",
-        "voice": "en_deep_cinematic_male",
+        "voice": "auto",
         "format": "short",
         "label": "01:30 AM IST (04:00 PM EDT) - AI & Future World Anomalies (English Short)",
     },
@@ -179,7 +176,7 @@ DAILY_SCHEDULE_SLOTS = [
         "tz": "us",
         "niche": "mystery",
         "lang": "en",
-        "voice": "en_deep_cinematic_male",
+        "voice": "auto",
         "format": "landscape_long",
         "label": "06:30 PM EDT (04:00 AM IST) - Declassified Government Secrets & Cosmic Mysteries [16:9 Landscape Documentary] (English Long)",
     },
@@ -190,7 +187,7 @@ DAILY_SCHEDULE_SLOTS = [
         "tz": "ist",
         "niche": "mystery",
         "lang": "en",
-        "voice": "en_deep_cinematic_male",
+        "voice": "auto",
         "format": "short",
         "label": "05:45 AM IST (08:15 PM EDT) - Bizarre Unsolved Conspiracies (English Short)",
     },
