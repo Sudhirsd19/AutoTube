@@ -1,4 +1,8 @@
-from autotube.voice.voice_director import choose_subject_voice, detect_language, is_voice_language_compatible
+from autotube.voice.voice_director import (
+    choose_subject_voice,
+    detect_language,
+    is_voice_language_compatible,
+)
 
 
 def test_auto_voice_black_hole_hindi():
