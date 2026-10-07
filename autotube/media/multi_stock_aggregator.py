@@ -993,38 +993,54 @@ Output STRICT JSON with:
         winner = self.rank_and_select(candidates, scene_text, q_info, orientation=orientation)
 
         # Step D: Download best video candidate (Never discard a real video for a static image!)
+        # Metadata is a ranking signal, NOT a hard gate.
+        # A stock clip can visually match the scene even when its title/tags do not
+        # contain every semantic term. Frame-level QA is the authoritative gate.
+        ranked_candidates = sorted(
+            candidates,
+            key=lambda c: float(c.get("score", -9999)),
+            reverse=True,
+        )
         if winner:
-            ai_conf = winner.get("ai_confidence")
-            metadata_coverage = int(winner.get("visual_coverage_pct", 0))
-            if metadata_coverage >= 50 and (ai_conf is None or int(ai_conf) >= 75):
-                downloaded = self.download_candidate(winner, slug)
-                if downloaded and downloaded.exists() and downloaded.stat().st_size > 50000:
-                    qa = self.visual_quality_gate.verify(downloaded, scene_text, scene_plan)
-                    if qa.get("accepted"):
-                        winner["frame_qa"] = qa
-                        return downloaded
-                    print_warning(f"   ⚠️ Frame QA rejected winner for scene {scene_index+1}: {qa.get('reason', 'visual mismatch')}")
+            ranked_candidates = [winner] + [c for c in ranked_candidates if c is not winner]
 
-        # Only try the next highest-ranked candidates that satisfy the same semantic floor.
-        ranked_alternatives = sorted(candidates, key=lambda c: float(c.get("score", -9999)), reverse=True)
-        for alt_cand in ranked_alternatives[:5]:
-            if winner is alt_cand:
-                continue
-            cand_id = alt_cand.get("id")
+        # Inspect a wider candidate pool. We deliberately let frame QA decide
+        # instead of discarding clips solely because metadata_coverage < 50.
+        for cand in ranked_candidates[:12]:
+            cand_id = cand.get("id")
             if not cand_id or self._is_used(cand_id):
                 continue
-            if int(alt_cand.get("visual_coverage_pct", 0)) < 50:
+
+            metadata_coverage = int(cand.get("visual_coverage_pct", 0))
+            ai_conf = cand.get("ai_confidence")
+            if metadata_coverage < 50:
+                print_info(
+                    f"   🔎 Metadata coverage {metadata_coverage}% for '{cand.get('title', '')[:45]}'; "
+                    "sending to frame QA because metadata is not authoritative."
+                )
+            if ai_conf is not None and int(ai_conf) < 75:
+                print_info(
+                    f"   🔎 AI metadata confidence {ai_conf}% for '{cand.get('title', '')[:45]}'; "
+                    "sending to frame QA before rejecting."
+                )
+
+            downloaded = self.download_candidate(cand, slug)
+            if not downloaded or not downloaded.exists() or downloaded.stat().st_size <= 50000:
                 continue
-            if float(alt_cand.get("score", -9999)) < 30:
-                continue
-            downloaded = self.download_candidate(alt_cand, slug)
-            if downloaded and downloaded.exists() and downloaded.stat().st_size > 50000:
-                qa = self.visual_quality_gate.verify(downloaded, scene_text, scene_plan)
-                if qa.get("accepted"):
-                    alt_cand["frame_qa"] = qa
-                    print_info(f"   🎬 Using validated alternative for scene {scene_index+1}: {alt_cand.get('title')}")
-                    return downloaded
-                print_warning(f"   ⚠️ Frame QA rejected alternative for scene {scene_index+1}: {qa.get('reason', 'visual mismatch')}")
+
+            qa = self.visual_quality_gate.verify(downloaded, scene_text, scene_plan)
+            if qa.get("accepted"):
+                cand["frame_qa"] = qa
+                print_info(
+                    f"   🎬 Frame-QA approved scene {scene_index+1}: "
+                    f"'{cand.get('title', '')[:55]}'"
+                )
+                return downloaded
+
+            print_warning(
+                f"   ⚠️ Frame QA rejected candidate for scene {scene_index+1}: "
+                f"{qa.get('reason', 'visual mismatch')}"
+            )
 
         # Step E: Authentic archival proof is opt-in and scene-indexed.
         if allow_archival_fallback and archival_pool and scene_index < len(archival_pool):
