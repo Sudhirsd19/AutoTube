@@ -1374,7 +1374,7 @@
             <div class="lg:col-span-2 flex items-center gap-1.5">
               <select id="slot-voice-${slot.id}" onchange="updateSlotField('${slot.id}', 'voice', this.value); markSlotsUnsaved();" 
                 class="w-full bg-slate-950 border border-slate-800 text-slate-200 text-xs px-2 py-1.5 rounded-lg focus:outline-none focus:border-brand-cyan cursor-pointer">
-                <option value="auto" \${slotVoice === 'auto' ? 'selected' : ''}>🤖 Auto — Subject Matched</option>\n                <optgroup label="Hindi Voices">
+                <option value="auto" ${slotVoice === 'auto' ? 'selected' : ''}>🤖 Auto — Subject Matched</option>
                   <option value="akashvani" ${slotVoice === 'akashvani' ? 'selected' : ''}>🎙️ आकाशवाणी (Cosmic Echo Devavani)</option>
                   <option value="madhur" ${slotVoice === 'madhur' ? 'selected' : ''}>🎙️ Madhur (HI Male Viral)</option>
                   <option value="swara" ${slotVoice === 'swara' ? 'selected' : ''}>🎙️ Swara (HI Female)</option>
