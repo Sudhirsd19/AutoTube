@@ -164,8 +164,7 @@ class DirectorRenderRequest(BaseModel):
     real_incident_mode: bool = False
     visual_mode: Optional[str] = "multi_cinematic"
     auto_viral_hook: bool = True
-
-
+    scenes: Optional[List[Dict[str, Any]]] = None
 
 
 class DirectorPublishRequest(BaseModel):
@@ -1171,6 +1170,7 @@ def run_director_render_task(req_data: dict):
             real_incident_mode=bool(req_data.get("real_incident_mode", False)),
             visual_mode=req_data.get("visual_mode", "multi_cinematic"),
             auto_viral_hook=bool(req_data.get("auto_viral_hook", True)),
+            scenes=req_data.get("scenes"),
             progress_callback=update_progress,
         )
 

@@ -220,6 +220,7 @@ Output STRICT JSON with these keys:
                     "word_count": word_count,
                     "est_seconds": est_seconds,
                     "is_long": is_long,
+                    "scenes": self._split_script_into_scenes(narration, 35 if is_long else 25),
                 }
             except Exception as e:
                 print_warning(f"AI script enhancer error: {e}. Using heuristic fallback...")
@@ -248,6 +249,7 @@ Output STRICT JSON with these keys:
             "word_count": len(full_text.split()),
             "est_seconds": round(len(full_text.split()) / 2.6, 1),
             "is_long": is_long,
+            "scenes": self._split_script_into_scenes(full_text, 35 if is_long else 25),
         }
 
     def generate_voice_audition(self, voice_id: str, sample_text: Optional[str] = None) -> Path:
@@ -328,6 +330,121 @@ Output STRICT JSON with these keys:
         eng_q = self._extract_visual_search_query(sentence, topic, scene_idx)
         return f"{subject}, {eng_q}, highly detailed, dramatic atmospheric lighting, 8k movie still"
 
+    @staticmethod
+    def _normalize_scene_text(text: str) -> str:
+        """Normalize whitespace/punctuation for safe scene-script equivalence checks."""
+        return re.sub(r"\s+", " ", (text or "").strip()).lower()
+
+    @staticmethod
+    def _split_script_into_scenes(script_text: str, max_scenes: int) -> List[Dict[str, Any]]:
+        """Split narration into stable sentence scenes without dropping text."""
+        text = (script_text or "").strip()
+        if not text:
+            return []
+
+        protected = text
+        protected_tokens = {
+            "U.S.": "U<dot>S<dot>",
+            "U.K.": "U<dot>K<dot>",
+            "e.g.": "e<dot>g<dot>",
+            "i.e.": "i<dot>e<dot>",
+            "Mr.": "Mr<dot>",
+            "Mrs.": "Mrs<dot>",
+            "Ms.": "Ms<dot>",
+            "Dr.": "Dr<dot>",
+            "Prof.": "Prof<dot>",
+            "vs.": "vs<dot>",
+        }
+        for src, repl in protected_tokens.items():
+            protected = protected.replace(src, repl)
+        protected = re.sub(r"(?<=\d)\.(?=\d)", "<decimal>", protected)
+
+        parts = [p.strip() for p in re.split(r"[.!?।॥]+\s*|\n+", protected) if p and p.strip()]
+        restored = []
+        for part in parts:
+            for src, repl in protected_tokens.items():
+                part = part.replace(repl, src)
+            part = part.replace("<decimal>", ".").strip()
+            if part:
+                restored.append(part)
+
+        if not restored:
+            restored = [text]
+
+        if max_scenes < 1 or len(restored) <= max_scenes:
+            selected = restored
+        else:
+            selected = restored[: max_scenes - 1]
+            selected.append(" ".join(restored[max_scenes - 1 :]))
+
+        return [
+            {
+                "scene_number": idx + 1,
+                "narration": sentence,
+                "visual_subject": "",
+                "visual_description": "",
+                "search_keywords": [],
+            }
+            for idx, sentence in enumerate(selected)
+        ]
+
+    def _prepare_scene_specs(
+        self,
+        script_text: str,
+        title: str,
+        provided_scenes: Optional[List[Dict[str, Any]]],
+        max_scenes: int,
+    ) -> List[Dict[str, Any]]:
+        """Preserve an existing structured scene plan only when it exactly covers the script."""
+        normalized_script = self._normalize_scene_text(script_text)
+        candidates: List[Dict[str, Any]] = []
+
+        if isinstance(provided_scenes, list):
+            for idx, raw in enumerate(provided_scenes):
+                if not isinstance(raw, dict):
+                    continue
+                narration = str(raw.get("narration") or raw.get("text") or "").strip()
+                if not narration:
+                    continue
+                candidates.append(
+                    {
+                        "scene_number": idx + 1,
+                        "narration": narration,
+                        "visual_subject": str(raw.get("visual_subject") or raw.get("subject") or "").strip(),
+                        "visual_description": str(raw.get("visual_description") or "").strip(),
+                        "search_keywords": list(raw.get("search_keywords") or raw.get("visual_keywords") or []),
+                        "visual_action": str(raw.get("visual_action") or raw.get("action") or "").strip(),
+                        "visual_environment": str(raw.get("visual_environment") or raw.get("environment") or "").strip(),
+                        "must_show": list(raw.get("must_show") or []),
+                        "avoid": list(raw.get("avoid") or []),
+                    }
+                )
+
+            candidate_script = self._normalize_scene_text(" ".join(s["narration"] for s in candidates))
+            if candidates and candidate_script == normalized_script:
+                return candidates[:max_scenes]
+
+        return self._split_script_into_scenes(script_text, max_scenes)
+
+    def _scene_plan_from_spec(self, scene: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        """Convert the preserved scene contract into MultiStockAggregator's scene-plan schema."""
+        subject = str(scene.get("visual_subject") or "").strip()
+        description = str(scene.get("visual_description") or "").strip()
+        queries = [str(q).strip() for q in (scene.get("search_keywords") or []) if str(q).strip()]
+        plan = {
+            "subject": subject,
+            "action": str(scene.get("visual_action") or "").strip(),
+            "environment": str(scene.get("visual_environment") or "").strip(),
+            "must_show": [str(v).strip() for v in scene.get("must_show", []) if str(v).strip()],
+            "avoid": [str(v).strip() for v in scene.get("avoid", []) if str(v).strip()],
+            "search_queries": queries[:4],
+        }
+        if description and not plan["subject"]:
+            plan["subject"] = description[:120]
+        if not any(plan["subject"] or plan["action"] or plan["environment"] or plan["must_show"] or plan["search_queries"]):
+            return None
+        return plan
+
     def render_custom_video(
         self,
         script_text: str,
@@ -344,6 +461,7 @@ Output STRICT JSON with these keys:
         real_incident_mode: bool = False,
         visual_mode: str = "hybrid",
         auto_viral_hook: bool = True,
+        scenes: Optional[List[Dict[str, Any]]] = None,
         progress_callback = None,
     ) -> Dict[str, Any]:
         """Render complete custom Short (9:16) or Long (16:9) video matching user script, voice, BGM, and visual choices."""
@@ -368,30 +486,72 @@ Output STRICT JSON with these keys:
         output_dir.mkdir(parents=True, exist_ok=True)
         final_video_path = output_dir / f"{slug}_{int(time.time())}.mp4"
 
-        # Safeguard: Auto-Inject Ending Debate & Subscribe Outro ONLY if completely absent
+        # Build a stable scene contract before any TTS or visual acquisition.
+        max_scene_count = 35 if is_long else 25
         active_script = script_text.strip()
+        scene_specs = self._prepare_scene_specs(
+            script_text=active_script,
+            title=title,
+            provided_scenes=scenes,
+            max_scenes=max_scene_count,
+        )
+
+        # Safeguard: Auto-Inject Ending Debate & Subscribe Outro ONLY if completely absent.
         if auto_viral_hook and not is_long:
             lower_s = active_script.lower()
-            # If the script already has ANY mention of subscribe, like, comment, share, do NOT duplicate
             has_cta = any(k in lower_s for k in (
                 "subscribe", "सब्सक्राइब", "like", "लाइक", "comment", "कमेंट", "follow", "फॉलो", "share", "शेयर"
             ))
             if not has_cta:
                 lang_l = (language or "hi").lower()
                 if lang_l in ("en", "english"):
-                    cta_addon = " What is your opinion on this? Comment below and subscribe for more amazing facts!"
+                    cta_addon = "What is your opinion on this? Comment below and subscribe for more amazing facts!"
                 else:
-                    cta_addon = " कमेंट में अपनी राय बताएं, वीडियो को लाइक करें और चैनल को सब्सक्राइब जरूर करें!"
-                active_script = f"{active_script} {cta_addon}"
+                    cta_addon = "कमेंट में अपनी राय बताएं, वीडियो को लाइक करें और चैनल को सब्सक्राइब जरूर करें!"
+                active_script = f"{active_script} {cta_addon}".strip()
+                if scene_specs:
+                    scene_specs[-1]["narration"] = f"{scene_specs[-1]['narration']} {cta_addon}".strip()
+                else:
+                    scene_specs = self._prepare_scene_specs(
+                        script_text=active_script,
+                        title=title,
+                        provided_scenes=None,
+                        max_scenes=max_scene_count,
+                    )
                 print_info("Auto Viral Booster: Injected 1 clean Subscribe & Like CTA.")
+
+        if self._normalize_scene_text(" ".join(s["narration"] for s in scene_specs)) != self._normalize_scene_text(active_script):
+            scene_specs = self._prepare_scene_specs(
+                script_text=active_script,
+                title=title,
+                provided_scenes=None,
+                max_scenes=max_scene_count,
+            )
+
+        if len(scene_specs) > max_scene_count:
+            merged = " ".join(s["narration"] for s in scene_specs[max_scene_count - 1 :]).strip()
+            scene_specs = scene_specs[: max_scene_count - 1] + [{
+                **scene_specs[max_scene_count - 1],
+                "scene_number": max_scene_count,
+                "narration": merged,
+            }]
+
+        sentences = [str(s["narration"]).strip() for s in scene_specs if str(s.get("narration", "")).strip()]
+        if not sentences:
+            raise RuntimeError("No valid narration scenes were produced; render blocked.")
 
         if progress_callback: progress_callback(10, f"Synthesizing AI Voiceover ({voice}) for {format_label}...")
 
-        # 1. Synthesize Voice
+        # 1. Synthesize Voice using the exact scene contract for word-level scene timing.
         voice_audio = TEMP_DIR / f"{slug}_voice.mp3"
         rate_str = f"+{int((voice_speed - 1.0) * 100)}%" if voice_speed >= 1.0 else f"-{int((1.0 - voice_speed) * 100)}%"
         tts = TTSEngine(default_voice=voice, rate=rate_str)
-        tts_res = tts.synthesize(text=active_script, output_audio_path=voice_audio, voice=voice)
+        tts_res = tts.synthesize(
+            text=active_script,
+            output_audio_path=voice_audio,
+            voice=voice,
+            scenes=scene_specs,
+        )
         total_duration = tts_res.duration_seconds
 
         if progress_callback: progress_callback(30, "Resolving and mixing Background Music (BGM)...")
@@ -420,13 +580,6 @@ Output STRICT JSON with these keys:
             include_whoosh=not is_long,
         )
 
-        # 1 Scene per Sentence / Line for rapid, high-retention visual pacing!
-        sentences = [s.strip() for s in re.split(r"[.!?।\n]+", active_script) if len(s.strip()) > 3]
-        if not sentences:
-            sentences = [active_script]
-        max_scene_count = min(35 if is_long else 25, len(sentences))
-        sentences = sentences[:max_scene_count]
-
         # 3. Source Authentic Historical / Archival Proofs ONLY if Real Incident Mode explicitly enabled
         archival_visuals: List[Path] = []
         if real_incident_mode and (visual_mode in ("hybrid", "real_only", "multi_cinematic")):
@@ -448,7 +601,8 @@ Output STRICT JSON with these keys:
         if progress_callback: progress_callback(55, f"Acquiring visual scenes ({orientation} {target_width}x{target_height}, Mode: {visual_mode})...")
 
         # 4. Acquire Video Scene Assets (Multi-Source AI Best Match / Hybrid Real Archives / AI Visuals)
-        scene_videos: List[Path] = []
+        scene_assets_by_scene: Dict[int, Path] = {}
+        scene_errors: Dict[int, str] = {}
         from autotube.media.ai_visuals import VisualGenerator
         from autotube.media.nvidia_video import NvidiaVideoGenerator
         from autotube.media.pexels_video import PexelsVideoFetcher
@@ -459,153 +613,150 @@ Output STRICT JSON with these keys:
         pexels = PexelsVideoFetcher()
         multi_agg = MultiStockAggregator()
 
-        for idx, sentence in enumerate(sentences[:max_scene_count]):
+        for idx, scene in enumerate(scene_specs):
+            sentence = str(scene["narration"]).strip()
             scene_target = TEMP_DIR / f"scene_{idx}_{slug}.mp4"
             acquired_video = None
+            scene_plan = self._scene_plan_from_spec(scene)
 
-            # Mode 1: Multi-Source AI Best Match (Mixkit + Coverr + Pexels + Archival) [RECOMMENDED]
-            if visual_mode in ("multi_cinematic", "multi_best", "auto") and not (visual_mode in ("hybrid", "real_only", "ai_only", "stock")):
-                # If real incident mode is active, alternate with archival proofs on odd cuts
-                use_real = (idx % 2 == 1) if (real_incident_mode and archival_visuals) else False
-                if use_real and archival_visuals:
-                    acquired_video = archival_visuals[(idx // 2) % len(archival_visuals)]
-                else:
+            try:
+                if visual_mode in ("multi_cinematic", "multi_best", "auto"):
                     if progress_callback:
-                        progress_callback(55 + int((idx / max_scene_count) * 18), f"🔍 Multi-Stock AI Searching & Ranking Scene {idx+1}/{len(sentences[:max_scene_count])}...")
+                        progress_callback(55 + int((idx / max(1, len(scene_specs))) * 18), f"🔍 Scene {idx+1}/{len(scene_specs)}: semantic visual search + validation...")
                     acquired_video = multi_agg.get_best_scene_asset(
                         scene_text=sentence,
                         title=title,
                         scene_index=idx,
                         orientation=orientation,
-                        archival_pool=archival_visuals,
-                        allow_ai_fallback=False,
+                        scene_plan=scene_plan,
+                        archival_pool=archival_visuals if real_incident_mode else None,
+                        allow_archival_fallback=False,
+                        allow_ai_fallback=True,
                     )
-
-            # Mode 2: 100% Real Archives Only
-            elif visual_mode == "real_only" and archival_visuals:
-                acquired_video = archival_visuals[idx % len(archival_visuals)]
-
-            # Mode 3: Hybrid Mode (Real Archives + AI Visuals)
-            elif visual_mode == "hybrid":
-                use_real = (idx % 2 == 1) if archival_visuals else False
-                if use_real and archival_visuals:
-                    acquired_video = archival_visuals[(idx // 2) % len(archival_visuals)]
-                else:
-                    ai_prompt = self._extract_ai_scene_prompt(sentence, title, idx)
-                    ai_img_path = TEMP_DIR / f"hybrid_ai_{idx}_{slug}.jpg"
-                    if progress_callback:
-                        progress_callback(55 + int((idx / max_scene_count) * 18), f"Generating AI Scene {idx+1}/{len(sentences[:max_scene_count])}...")
-                    ai_res = vg.generate_image(prompt=ai_prompt, output_path=ai_img_path, width=target_width, height=target_height, style="cinematic")
-                    if ai_res and ai_res.exists() and ai_res.stat().st_size > 4000:
-                        acquired_video = ai_res
+                elif visual_mode == "real_only":
+                    if archival_visuals and idx < len(archival_visuals):
+                        acquired_video = archival_visuals[idx]
                     else:
-                        # Fallback to multi-aggregator best stock video
+                        raise RuntimeError(f"No archival asset available for scene {idx+1}.")
+                elif visual_mode == "hybrid":
+                    is_historical_scene = any(
+                        k in sentence.lower()
+                        for k in (
+                            "193", "194", "195", "196", "197", "archiv", "document", "report",
+                            "committee", "investigation", "classified", "gandhi", "bose", "netaji",
+                            "roswell", "shanti devi", "punarjanam", "rebirth",
+                        )
+                    )
+                    if is_historical_scene and archival_visuals and idx < len(archival_visuals):
+                        acquired_video = archival_visuals[idx]
+                    else:
                         acquired_video = multi_agg.get_best_scene_asset(
                             scene_text=sentence,
                             title=title,
                             scene_index=idx,
                             orientation=orientation,
-                            archival_pool=archival_visuals,
+                            scene_plan=scene_plan,
+                            archival_pool=None,
+                            allow_archival_fallback=False,
+                            allow_ai_fallback=True,
                         )
+                elif visual_mode == "stock":
+                    acquired_video = multi_agg.get_best_scene_asset(
+                        scene_text=sentence,
+                        title=title,
+                        scene_index=idx,
+                        orientation=orientation,
+                        scene_plan=scene_plan,
+                        archival_pool=None,
+                        allow_archival_fallback=False,
+                        allow_ai_fallback=False,
+                    )
+                elif visual_mode == "ai_only":
+                    ai_prompt = self._extract_ai_scene_prompt(sentence, title, idx)
+                    ai_img_path = TEMP_DIR / f"pure_ai_{idx}_{slug}.jpg"
+                    if progress_callback:
+                        progress_callback(55 + int((idx / max(1, len(scene_specs))) * 18), f"Generating scene {idx+1}/{len(scene_specs)} with AI visual direction...")
+                    ai_res = vg.generate_image(
+                        prompt=ai_prompt,
+                        output_path=ai_img_path,
+                        width=target_width,
+                        height=target_height,
+                        style="cinematic",
+                    )
+                    if ai_res and ai_res.exists() and ai_res.stat().st_size > 4000:
+                        acquired_video = ai_res
+                    else:
+                        raise RuntimeError(f"AI visual generation failed for scene {idx+1}.")
+                else:
+                    raise RuntimeError(f"Unsupported visual mode: {visual_mode}")
 
-            # Mode 4: Stock Videos Only across Mixkit, Coverr, Pexels
-            elif visual_mode == "stock":
-                if progress_callback:
-                    progress_callback(55 + int((idx / max_scene_count) * 18), f"🎥 Multi-Stock Fetching Scene {idx+1}/{len(sentences[:max_scene_count])}...")
-                acquired_video = multi_agg.get_best_scene_asset(
-                    scene_text=sentence,
-                    title=title,
-                    scene_index=idx,
-                    orientation=orientation,
-                    archival_pool=archival_visuals,
-                    allow_ai_fallback=False,
-                )
+                if not acquired_video and visual_engine in ("nvidia", "auto") and nvidia.is_configured():
+                    english_q = (
+                        (scene_plan or {}).get("search_queries") or
+                        [self._extract_visual_search_query(sentence, title, idx)]
+                    )[0]
+                    acquired_video = nvidia.generate_video(prompt=english_q, output_path=scene_target)
 
-            # Mode 5: Pure AI Generated Scenes
-            elif visual_mode == "ai_only":
-                ai_prompt = self._extract_ai_scene_prompt(sentence, title, idx)
-                ai_img_path = TEMP_DIR / f"pure_ai_{idx}_{slug}.jpg"
-                if progress_callback:
-                    progress_callback(55 + int((idx / max_scene_count) * 18), f"Generating AI Scene {idx+1}/{len(sentences[:max_scene_count])}...")
-                ai_res = vg.generate_image(prompt=ai_prompt, output_path=ai_img_path, width=target_width, height=target_height, style="cinematic")
-                if ai_res and ai_res.exists():
-                    acquired_video = ai_res
+                if not acquired_video and visual_engine in ("nvidia", "auto") and pexels.is_configured():
+                    english_q = (
+                        (scene_plan or {}).get("search_queries") or
+                        [self._extract_visual_search_query(sentence, title, idx)]
+                    )[0]
+                    acquired_video = pexels.get_scene_video(search_query=english_q, orientation=orientation, scene_index=idx)
 
-            # Fallbacks: Nvidia AI / Pexels Stock Video & Photo with English queries
-            if not acquired_video and visual_engine in ("nvidia", "auto") and nvidia.is_configured():
-                english_q = self._extract_visual_search_query(sentence, title, idx)
-                acquired_video = nvidia.generate_video(prompt=english_q, output_path=scene_target)
+                if not acquired_video:
+                    raise RuntimeError(f"No valid visual asset acquired for scene {idx+1}.")
 
-            if not acquired_video and pexels.is_configured():
-                english_q = self._extract_visual_search_query(sentence, title, idx)
-                acquired_video = pexels.get_scene_video(search_query=english_q, orientation=orientation, scene_index=idx)
+                acquired_path = Path(acquired_video)
+                if not acquired_path.exists() or acquired_path.stat().st_size < 5000:
+                    raise RuntimeError(f"Visual asset for scene {idx+1} is missing or too small.")
 
-            if not acquired_video and pexels.is_configured():
-                english_q = self._extract_visual_search_query(sentence, title, idx)
-                acquired_video = pexels.get_scene_photo(search_query=english_q, orientation=orientation, scene_index=idx)
+                scene_assets_by_scene[idx] = acquired_path
+            except Exception as exc:
+                scene_errors[idx] = str(exc)
+                print_error(f"❌ Scene {idx+1} visual acquisition failed: {exc}")
 
-            if not acquired_video and archival_visuals:
-                acquired_video = archival_visuals[idx % len(archival_visuals)]
+        missing = [idx + 1 for idx in range(len(scene_specs)) if idx not in scene_assets_by_scene]
+        if missing:
+            details = "; ".join(
+                f"scene {idx + 1}: {scene_errors.get(idx, 'unknown visual acquisition error')}"
+                for idx in range(len(scene_specs))
+                if idx not in scene_assets_by_scene
+            )
+            raise RuntimeError(
+                "Render blocked: every narration scene must have its own valid visual asset. "
+                f"Missing scenes: {missing}. {details}"
+            )
 
-            if not acquired_video:
-                vault_dir = PROJECT_ROOT / "assets" / "ai_movie_clips"
-                if vault_dir.exists():
-                    vault_clips = sorted([f for f in vault_dir.glob("*.mp4") if f.stat().st_size > 10000])
-                    if vault_clips:
-                        acquired_video = vault_clips[idx % len(vault_clips)]
+        scene_videos = [scene_assets_by_scene[idx] for idx in range(len(scene_specs))]
+        if len(scene_videos) != len(scene_specs):
+            raise RuntimeError("Internal scene mapping error: scene count and visual asset count differ.")
 
-            if not acquired_video:
-                canonical_dir = PROJECT_ROOT / "assets" / "alien_interview" / "videos"
-                if canonical_dir.exists():
-                    all_c = sorted(list(canonical_dir.glob("*.mp4")))
-                    if all_c:
-                        acquired_video = all_c[idx % len(all_c)]
-
-            if acquired_video and acquired_video.exists():
-                scene_videos.append(acquired_video)
-
-        # GUARANTEE 100% VISUAL COVERAGE (Zero Blank Frame Guarantee!)
-        if not scene_videos:
-            if archival_visuals:
-                scene_videos = list(archival_visuals)
-            elif pexels.is_configured():
-                fallback_v = pexels.get_scene_video("mysterious dramatic cinematic", orientation=orientation)
-                if fallback_v:
-                    scene_videos.append(fallback_v)
-
-        # If some scenes were acquired but fewer than needed, cycle them so all cuts are covered
-        needed_scenes = len(sentences[:max_scene_count])
-        if scene_videos and len(scene_videos) < needed_scenes:
-            base_pool = list(scene_videos)
-            while len(scene_videos) < needed_scenes:
-                scene_videos.append(base_pool[len(scene_videos) % len(base_pool)])
-
-        if progress_callback: progress_callback(75, f"Compositing video timeline ({target_width}x{target_height}, {len(scene_videos)} scenes)...")
+        if progress_callback:
+            progress_callback(75, f"Compositing video timeline ({target_width}x{target_height}, {len(scene_videos)} validated scenes)...")
 
         # 4. Composite Video
         builder = ShortsBuilder()
         unsubtitled_video = TEMP_DIR / f"{slug}_unsubbed.mp4"
 
-        num_scenes = max(1, len(scene_videos))
-        # Word-proportional scene durations so scene cuts align with speech transitions
-        scene_word_counts = [max(1, len(s.split())) for s in sentences[:num_scenes]]
-        if len(scene_word_counts) < num_scenes:
-            scene_word_counts.extend([1] * (num_scenes - len(scene_word_counts)))
-        total_words = max(1, sum(scene_word_counts))
-        scene_durations = [round(total_duration * (wc / total_words), 2) for wc in scene_word_counts]
-        if scene_durations:
-            diff = round(total_duration - sum(scene_durations), 2)
-            scene_durations[-1] = max(1.0, round(scene_durations[-1] + diff, 2))
+        num_scenes = len(scene_videos)
+        scene_durations = list(tts_res.scene_durations or [])
+        if len(scene_durations) != num_scenes:
+            raise RuntimeError(f"TTS scene timing mismatch: {len(scene_durations)} durations for {num_scenes} scenes.")
+        if any(d <= 0 for d in scene_durations):
+            raise RuntimeError("TTS produced a non-positive scene duration; render blocked.")
 
-        builder.build_short(
+        build_result = ShortsBuilder().build_short(
             audio_path=mixed_audio if mixed_audio.exists() else tts_res.audio_path,
             output_path=unsubtitled_video,
-            scene_videos=scene_videos if scene_videos else None,
+            scene_videos=scene_videos,
             scene_durations=scene_durations,
             subtitles_file=None,
             width=target_width,
             height=target_height,
         )
+        if not build_result or not unsubtitled_video.exists():
+            raise RuntimeError("Video compositor rejected or failed the scene mapping; render blocked.")
 
         if progress_callback: progress_callback(88, "Applying styled subtitles and audio polish...")
 
@@ -645,6 +796,24 @@ Output STRICT JSON with these keys:
         size_mb = round(final_video_path.stat().st_size / (1024 * 1024), 2)
         print_success(f"Director Video generated: {final_video_path.name} ({size_mb} MB, {total_duration:.1f}s)!")
 
+        scene_manifest = [
+            {
+                "scene_number": idx + 1,
+                "start": round(sum(scene_durations[:idx]), 3),
+                "end": round(sum(scene_durations[: idx + 1]), 3),
+                "narration": scene_specs[idx]["narration"],
+                "asset": scene_videos[idx].name,
+                "visual_subject": scene_specs[idx].get("visual_subject", ""),
+            }
+            for idx in range(num_scenes)
+        ]
+        manifest_path = final_video_path.with_suffix(".manifest.json")
+        try:
+            with open(manifest_path, "w", encoding="utf-8") as mf:
+                json.dump(scene_manifest, mf, ensure_ascii=False, indent=2)
+        except Exception as exc:
+            print_warning(f"Could not write scene manifest: {exc}")
+
         return {
             "success": True,
             "video_filename": final_video_path.name,
@@ -655,4 +824,7 @@ Output STRICT JSON with these keys:
             "title": title,
             "format": video_format,
             "is_long": is_long,
+            "scene_count": num_scenes,
+            "scene_manifest": scene_manifest,
+            "manifest_path": str(manifest_path),
         }

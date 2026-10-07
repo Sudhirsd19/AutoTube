@@ -794,15 +794,37 @@ Output STRICT JSON with:
         scene_index: int = 0,
         orientation: str = "portrait",
         archival_pool: Optional[List[Path]] = None,
+        allow_archival_fallback: bool = False,
         allow_ai_fallback: bool = True,
+        scene_plan: Optional[Dict[str, Any]] = None,
     ) -> Path:
         """Acquire the single best visual asset across all sources with 100% fail-safe coverage and visual coverage gating."""
         target_w = 1080 if orientation == "portrait" else 1920
         target_h = 1920 if orientation == "portrait" else 1080
         slug = sanitize_filename(title[:30])
 
-        # Step A: Perform Deep Scene Understanding & Multi-Angle Queries
-        q_info = self.generate_smart_queries(scene_text, title, scene_index)
+        # Step A: Preserve an upstream structured scene plan when available.
+        if scene_plan:
+            normalized_plan = {
+                "subject": str(scene_plan.get("subject") or "").strip(),
+                "action": str(scene_plan.get("action") or "").strip(),
+                "environment": str(scene_plan.get("environment") or "").strip(),
+                "must_show": [str(v).strip() for v in scene_plan.get("must_show", []) if str(v).strip()],
+                "avoid": [str(v).strip() for v in scene_plan.get("avoid", []) if str(v).strip()],
+                "search_queries": [str(q).strip() for q in scene_plan.get("search_queries", []) if str(q).strip()][:4],
+            }
+            if normalized_plan["subject"] or normalized_plan["must_show"] or normalized_plan["search_queries"]:
+                q_info = {
+                    "primary_query": normalized_plan["search_queries"][0] if normalized_plan["search_queries"] else normalized_plan["subject"],
+                    "alternative_query": normalized_plan["search_queries"][1] if len(normalized_plan["search_queries"]) > 1 else normalized_plan["subject"],
+                    "mood_query": normalized_plan["search_queries"][2] if len(normalized_plan["search_queries"]) > 2 else "cinematic dramatic",
+                    "negative_tags": normalized_plan["avoid"],
+                    "scene_plan": normalized_plan,
+                }
+            else:
+                q_info = self.generate_smart_queries(scene_text, title, scene_index)
+        else:
+            q_info = self.generate_smart_queries(scene_text, title, scene_index)
         scene_plan = q_info.get("scene_plan", {})
         queries = scene_plan.get("search_queries") or [
             q_info.get("primary_query", ""),
@@ -821,33 +843,38 @@ Output STRICT JSON with:
 
         # Step D: Download best video candidate (Never discard a real video for a static image!)
         if winner:
-            downloaded = self.download_candidate(winner, slug)
-            if downloaded and downloaded.exists() and downloaded.stat().st_size > 50000:
-                return downloaded
-
-        # If winner download failed or winner was None, try any available video candidates in order
-        for alt_cand in candidates:
-            cand_id = alt_cand.get("id")
-            if cand_id and not self._is_used(cand_id):
-                downloaded = self.download_candidate(alt_cand, slug)
+            ai_conf = winner.get("ai_confidence")
+            metadata_coverage = int(winner.get("visual_coverage_pct", 0))
+            if metadata_coverage >= 50 and (ai_conf is None or int(ai_conf) >= 75):
+                downloaded = self.download_candidate(winner, slug)
                 if downloaded and downloaded.exists() and downloaded.stat().st_size > 50000:
-                    print_info(f"   🎬 Using alternative fresh video: {alt_cand.get('title')}")
                     return downloaded
 
-        # Step E: Authentic Archival Proof if explicitly provided (e.g. historical mystery mode)
-        if archival_pool and len(archival_pool) > 0:
-            arch_pick = archival_pool[scene_index % len(archival_pool)]
-            print_info(f"   📜 Using authentic archival document fallback: {arch_pick.name}")
-            return arch_pick
+        # Only try the next highest-ranked candidates that satisfy the same semantic floor.
+        ranked_alternatives = sorted(candidates, key=lambda c: float(c.get("score", -9999)), reverse=True)
+        for alt_cand in ranked_alternatives[:5]:
+            if winner is alt_cand:
+                continue
+            cand_id = alt_cand.get("id")
+            if not cand_id or self._is_used(cand_id):
+                continue
+            if int(alt_cand.get("visual_coverage_pct", 0)) < 50:
+                continue
+            if float(alt_cand.get("score", -9999)) < 30:
+                continue
+            downloaded = self.download_candidate(alt_cand, slug)
+            if downloaded and downloaded.exists() and downloaded.stat().st_size > 50000:
+                print_info(f"   🎬 Using validated alternative for scene {scene_index+1}: {alt_cand.get('title')}")
+                return downloaded
 
-        # Step F: Safe stock video fallback (Always prioritize real videos over still images!)
-        search_topic = q_info.get("primary_query") or (queries[0] if queries else "cinematic space")
-        safe_v = self.pexels_fetcher.get_scene_video(search_topic, orientation=orientation, scene_index=scene_index)
-        if safe_v and safe_v.exists():
-            print_info(f"   🎥 Sourced safe stock video: {safe_v.name}")
-            return safe_v
+        # Step E: Authentic archival proof is opt-in and scene-indexed.
+        if allow_archival_fallback and archival_pool and scene_index < len(archival_pool):
+            arch_pick = archival_pool[scene_index]
+            if arch_pick.exists():
+                print_info(f"   📜 Using scene-indexed archival fallback: {arch_pick.name}")
+                return arch_pick
 
-        # Step G: Fallback to AI Visual ONLY if allow_ai_fallback is explicitly True AND all stock videos failed
+        # Step F: Fall back to a scene-specific AI visual rather than unrelated stock footage.
         if allow_ai_fallback:
             must_show_str = ", ".join(scene_plan.get("must_show", []))
             ai_prompt = f"{scene_plan.get('subject', q_info.get('primary_query'))}, {scene_plan.get('action', '')}, {must_show_str}, {scene_plan.get('environment', '')}, cinematic 8k, hyperrealistic movie still, dramatic volumetric lighting, IMAX documentary"

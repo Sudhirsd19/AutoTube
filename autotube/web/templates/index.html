@@ -2169,6 +2169,7 @@
     let currentBgmAudio = null;
     let directorPollTimer = null;
     let currentRenderedFilename = null;
+    let studioScenePlan = null;
 
     function selectStudioFormat(fmt) {
       studioVideoFormat = fmt;
@@ -2210,12 +2211,21 @@
       }
     }
 
+    function invalidateStructuredScenePlan() {
+      studioScenePlan = null;
+    }
+
     function updateScriptStats() {
       const text = document.getElementById('director-script-input').value.trim();
       const words = text ? text.split(/\s+/).filter(Boolean).length : 0;
       const estSec = Math.round(words / 2.6);
       document.getElementById('script-word-count').textContent = words;
       document.getElementById('script-est-duration').textContent = estSec + 's';
+    }
+
+    const studioScriptInput = document.getElementById('director-script-input');
+    if (studioScriptInput) {
+      studioScriptInput.addEventListener('input', invalidateStructuredScenePlan);
     }
 
     function injectHookTemplate(type) {
@@ -2284,6 +2294,7 @@
         });
         const data = await res.json();
         if (data.success) {
+          studioScenePlan = Array.isArray(data.scenes) ? data.scenes : null;
           scriptInput.value = data.full_narration;
           updateScriptStats();
 
@@ -2349,6 +2360,7 @@
         });
         const data = await res.json();
         if (data.success) {
+          studioScenePlan = Array.isArray(data.scenes) ? data.scenes : null;
           scriptInput.value = data.full_narration;
           updateScriptStats();
 
@@ -2491,7 +2503,8 @@
             language: studioLanguage,
             real_incident_mode: document.getElementById('director-real-incident-mode') ? document.getElementById('director-real-incident-mode').checked : false,
             visual_mode: document.getElementById('director-visual-mode') ? document.getElementById('director-visual-mode').value : 'multi_cinematic',
-            auto_viral_hook: document.getElementById('director-auto-viral-hook') ? document.getElementById('director-auto-viral-hook').checked : true
+            auto_viral_hook: document.getElementById('director-auto-viral-hook') ? document.getElementById('director-auto-viral-hook').checked : true,
+            scenes: studioScenePlan
           })
         });
         const data = await res.json();

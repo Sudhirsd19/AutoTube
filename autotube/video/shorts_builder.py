@@ -52,21 +52,15 @@ class ShortsBuilder:
             # Ensure assets actually exist on disk
             multi_assets = [Path(p) for p in multi_assets if p and Path(p).exists()]
 
-        # 1-to-1 Alignment: Enforce that visual assets count exactly matches scene_durations count
+        # Strict scene contract: never recycle or silently trim visuals.
         if scene_durations and multi_assets:
             target_scene_count = len(scene_durations)
-            if len(multi_assets) < target_scene_count:
-                print_info(
-                    f"Padding visual assets from {len(multi_assets)} to {target_scene_count} to match speech scenes..."
+            if len(multi_assets) != target_scene_count:
+                print_error(
+                    f"Scene/visual count mismatch: {len(multi_assets)} visual assets for {target_scene_count} speech scenes. "
+                    "Render blocked; assets will not be recycled across narration."
                 )
-                import itertools
-                cycle_iter = itertools.cycle(list(multi_assets))
-                multi_assets = [next(cycle_iter) for _ in range(target_scene_count)]
-            elif len(multi_assets) > target_scene_count:
-                print_info(
-                    f"Trimming visual assets from {len(multi_assets)} to {target_scene_count} to match speech scenes..."
-                )
-                multi_assets = multi_assets[:target_scene_count]
+                return None
 
         # Calculate exact cut timestamps for micro-transition sound effects
         cut_timestamps: List[float] = []
