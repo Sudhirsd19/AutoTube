@@ -78,3 +78,24 @@ def test_multi_stock_strict_video_mode_returns_none_for_motion_fallback():
     )
 
     assert result is None
+
+
+def test_multi_stock_reuse_guard_checks_persistent_history():
+    aggregator = object.__new__(MultiStockAggregator)
+    aggregator.session_used_ids = set()
+    aggregator.persistent_used_ids = {"pexels_12345"}
+    aggregator.persistent_used_hashes = set()
+    assert aggregator._is_used("pexels_12345") is True
+    assert aggregator._is_used("pexels_99999") is False
+
+
+def test_multi_stock_hash_guard_tracks_external_video(tmp_path):
+    aggregator = object.__new__(MultiStockAggregator)
+    aggregator.session_used_ids = set()
+    aggregator.persistent_used_ids = set()
+    aggregator.persistent_used_hashes = set()
+    asset = tmp_path / "clip.mp4"
+    asset.write_bytes(b"synthetic-video-content" * 500)
+
+    assert aggregator._record_asset_fingerprint(asset, label="test") is True
+    assert aggregator._record_asset_fingerprint(asset, label="test") is False
