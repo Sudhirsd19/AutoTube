@@ -205,6 +205,62 @@ Archive search engines (Wikimedia Commons & Wikipedia) STRICTLY REQUIRE CONCISE 
             print_warning(f"Wikimedia search failed for '{query}': {e}")
             return []
 
+    def search_wikimedia_videos(self, query: str, limit: int = 3) -> List[Dict[str, Any]]:
+        """Search Commons for reusable historical video files."""
+        try:
+            q_clean = " ".join(query.strip().split()[:4])
+            params = {
+                "action": "query",
+                "format": "json",
+                "generator": "search",
+                "gsrnamespace": 6,
+                "gsrsearch": q_clean,
+                "gsrlimit": max(limit * 3, 6),
+                "prop": "imageinfo",
+                "iiprop": "url|mime|size|extmetadata",
+            }
+            resp = self.session.get("https://commons.wikimedia.org/w/api.php", params=params, timeout=10)
+            if resp.status_code != 200:
+                return []
+            pages = resp.json().get("query", {}).get("pages", {})
+            results: List[Dict[str, Any]] = []
+            allowed_prefixes = ("cc by", "cc by sa", "cc0", "public domain", "pdm", "pd us")
+            for page in pages.values():
+                info_rows = page.get("imageinfo") or []
+                if not info_rows:
+                    continue
+                info = info_rows[0]
+                mime = str(info.get("mime") or "").lower()
+                url = str(info.get("url") or "").strip()
+                meta = info.get("extmetadata") or {}
+                license_name = str((meta.get("LicenseShortName") or {}).get("value") or "").lower()
+                license_norm = re.sub(r"[^a-z0-9 ]+", " ", license_name).strip()
+                if not mime.startswith("video/") or not url:
+                    continue
+                if not any(license_norm.startswith(p) for p in allowed_prefixes):
+                    continue
+                if "cc by nc" in license_norm or "noncommercial" in license_norm:
+                    continue
+                if int(info.get("size") or 0) > 80 * 1024 * 1024:
+                    continue
+                results.append({
+                    "title": str(page.get("title") or "").replace("File:", "").strip(),
+                    "url": url,
+                    "mime": mime,
+                    "width": info.get("width", 0),
+                    "height": info.get("height", 0),
+                    "size": info.get("size", 0),
+                    "license": license_name,
+                    "source": "wikimedia_commons_video",
+                    "media_kind": "video",
+                })
+                if len(results) >= limit:
+                    break
+            return results
+        except Exception as e:
+            print_warning(f"Wikimedia video search failed for '{query}': {e}")
+            return []
+
     def search_wikipedia_multi(self, query: str, limit: int = 3) -> List[Dict[str, Any]]:
         """Search Wikipedia using generator=search to get top matching articles and their lead authentic photos."""
         try:
@@ -325,6 +381,35 @@ Archive search engines (Wikimedia Commons & Wikipedia) STRICTLY REQUIRE CONCISE 
                     pass
             return None
 
+    def download_and_prepare_video(self, url: str, output_path: Path, max_bytes: int = 80 * 1024 * 1024) -> Optional[Path]:
+        """Download a bounded-size archival video; FFmpeg validates it later during composition."""
+        try:
+            with self.session.get(url, stream=True, timeout=30) as resp:
+                if resp.status_code != 200:
+                    return None
+                content_length = int(resp.headers.get("Content-Length") or 0)
+                if content_length and content_length > max_bytes:
+                    return None
+                total = 0
+                with open(output_path, "wb") as f:
+                    for chunk in resp.iter_content(chunk_size=262144):
+                        if not chunk:
+                            continue
+                        total += len(chunk)
+                        if total > max_bytes:
+                            f.close()
+                            output_path.unlink(missing_ok=True)
+                            return None
+                        f.write(chunk)
+            if total < 10000 or not output_path.exists():
+                output_path.unlink(missing_ok=True)
+                return None
+            return output_path
+        except Exception as e:
+            print_warning(f"Error downloading archival video ({url[:70]}...): {e}")
+            output_path.unlink(missing_ok=True)
+            return None
+
     def fetch_archival_visuals(
         self,
         topic: str,
@@ -367,6 +452,12 @@ Archive search engines (Wikimedia Commons & Wikipedia) STRICTLY REQUIRE CONCISE 
             # Search Wikimedia Commons for original historical photographs & archives
             commons_found = self.search_wikimedia_commons(q, limit=3)
             for item in commons_found:
+                if item["url"] not in seen_urls:
+                    seen_urls.add(item["url"])
+                    cands.append(item)
+
+            commons_videos = self.search_wikimedia_videos(q, limit=2)
+            for item in commons_videos:
                 if item["url"] not in seen_urls:
                     seen_urls.add(item["url"])
                     cands.append(item)
