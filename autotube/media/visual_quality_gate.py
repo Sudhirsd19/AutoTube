@@ -6,6 +6,7 @@ import json
 import os
 import subprocess
 import tempfile
+import shutil
 import re
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -123,6 +124,11 @@ Accept only when confidence >= {self.min_confidence}, coverage >= {self.min_cove
             for p in frames:
                 try:
                     p.unlink(missing_ok=True)
+                except Exception:
+                    pass
+            if frames:
+                try:
+                    shutil.rmtree(frames[0].parent, ignore_errors=True)
                 except Exception:
                     pass
 
