@@ -22,6 +22,8 @@ from autotube.utils.console import print_info, print_success, print_warning, pri
 from autotube.utils.file_utils import sanitize_filename
 from autotube.media.pexels_video import PexelsVideoFetcher
 from autotube.media.ai_visuals import VisualGenerator
+from autotube.media.nasa_media import NasaMediaFetcher
+from autotube.media.visual_quality_gate import VisualQualityGate
 
 # Cache directory for multi-stock downloads
 STOCK_CACHE_DIR = PROJECT_ROOT / "assets" / "stock_cache"
@@ -50,7 +52,9 @@ class MultiStockAggregator:
     def __init__(self):
         self.cfg = get_config()
         self.pexels_fetcher = PexelsVideoFetcher()
+        self.nasa_fetcher = NasaMediaFetcher()
         self.ai_visuals = VisualGenerator()
+        self.visual_quality_gate = VisualQualityGate()
         STOCK_CACHE_DIR.mkdir(parents=True, exist_ok=True)
         USED_STOCK_HISTORY.parent.mkdir(parents=True, exist_ok=True)
 
@@ -536,7 +540,7 @@ Return STRICT JSON with keys:
         queries: List[str],
         orientation: str = "portrait",
     ) -> List[Dict[str, Any]]:
-        """Dispatch parallel searches across Mixkit, Coverr, Pexels, and Pixabay."""
+        """Dispatch parallel searches across Mixkit, Coverr, Pexels, Pixabay, and NASA when relevant."""
         candidates: List[Dict[str, Any]] = []
         seen_urls: Set[str] = set()
 
@@ -549,6 +553,8 @@ Return STRICT JSON with keys:
                 tasks.append(executor.submit(self.search_coverr, q, orientation, 4))
                 tasks.append(executor.submit(self.search_mixkit, q, 4))
                 tasks.append(executor.submit(self.search_pixabay, q, orientation, 4))
+                if any(k in q.lower() for k in ("nasa", "space", "galaxy", "universe", "planet", "earth", "moon", "mars", "sun", "solar", "astronomy", "rocket", "astronaut", "nebula", "black hole")):
+                    tasks.append(executor.submit(self.search_nasa, q, 4))
 
             for future in as_completed(tasks):
                 try:
@@ -836,7 +842,7 @@ Output STRICT JSON with:
 
         # Step B: Parallel Search across Mixkit, Coverr, Pexels, Pixabay
         candidates = self.gather_candidates(queries=queries, orientation=orientation)
-        print_info(f"[*] Aggregated {len(candidates)} video candidates across Mixkit, Coverr, Pexels & Pixabay.")
+        print_info(f"[*] Aggregated {len(candidates)} video candidates across Mixkit, Coverr, Pexels, Pixabay & NASA where relevant.")
 
         # Step C: AI Semantic Ranking & Coverage Calculation
         winner = self.rank_and_select(candidates, scene_text, q_info, orientation=orientation)
@@ -848,7 +854,11 @@ Output STRICT JSON with:
             if metadata_coverage >= 50 and (ai_conf is None or int(ai_conf) >= 75):
                 downloaded = self.download_candidate(winner, slug)
                 if downloaded and downloaded.exists() and downloaded.stat().st_size > 50000:
-                    return downloaded
+                    qa = self.visual_quality_gate.verify(downloaded, scene_text, scene_plan)
+                    if qa.get("accepted"):
+                        winner["frame_qa"] = qa
+                        return downloaded
+                    print_warning(f"   ⚠️ Frame QA rejected winner for scene {scene_index+1}: {qa.get('reason', 'visual mismatch')}")
 
         # Only try the next highest-ranked candidates that satisfy the same semantic floor.
         ranked_alternatives = sorted(candidates, key=lambda c: float(c.get("score", -9999)), reverse=True)
@@ -864,8 +874,12 @@ Output STRICT JSON with:
                 continue
             downloaded = self.download_candidate(alt_cand, slug)
             if downloaded and downloaded.exists() and downloaded.stat().st_size > 50000:
-                print_info(f"   🎬 Using validated alternative for scene {scene_index+1}: {alt_cand.get('title')}")
-                return downloaded
+                qa = self.visual_quality_gate.verify(downloaded, scene_text, scene_plan)
+                if qa.get("accepted"):
+                    alt_cand["frame_qa"] = qa
+                    print_info(f"   🎬 Using validated alternative for scene {scene_index+1}: {alt_cand.get('title')}")
+                    return downloaded
+                print_warning(f"   ⚠️ Frame QA rejected alternative for scene {scene_index+1}: {qa.get('reason', 'visual mismatch')}")
 
         # Step E: Authentic archival proof is opt-in and scene-indexed.
         if allow_archival_fallback and archival_pool and scene_index < len(archival_pool):
@@ -888,7 +902,10 @@ Output STRICT JSON with:
                 style="cinematic",
             )
             if ai_img and ai_img.exists() and ai_img.stat().st_size > 5000:
-                return ai_img
+                qa = self.visual_quality_gate.verify(ai_img, scene_text, scene_plan)
+                if qa.get("accepted"):
+                    return ai_img
+                print_warning(f"   ⚠️ Frame QA rejected AI visual for scene {scene_index+1}: {qa.get('reason', 'visual mismatch')}")
 
             # Scene-specific photo is acceptable because its query is tied to this scene.
             photo_query = q_info.get("primary_query") or (queries[0] if queries else "")
