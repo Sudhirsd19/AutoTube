@@ -616,12 +616,10 @@ Output STRICT JSON with these keys:
         scene_errors: Dict[int, str] = {}
         from autotube.media.ai_visuals import VisualGenerator
         from autotube.media.nvidia_video import NvidiaVideoGenerator
-        from autotube.media.pexels_video import PexelsVideoFetcher
         from autotube.media.multi_stock_aggregator import MultiStockAggregator
 
         vg = VisualGenerator()
         nvidia = NvidiaVideoGenerator()
-        pexels = PexelsVideoFetcher()
         multi_agg = MultiStockAggregator()
 
         for idx, scene in enumerate(scene_specs):
@@ -750,27 +748,38 @@ Output STRICT JSON with these keys:
 
                 if not acquired_video and visual_engine in ("nvidia", "auto") and nvidia.is_configured():
                     for english_q in deduped_queries[:4]:
+                        if scene_target.exists():
+                            try:
+                                scene_target.unlink()
+                            except Exception:
+                                pass
                         acquired_video = nvidia.generate_video(
                             prompt=english_q,
                             output_path=scene_target,
+                            allow_stock_fallback=False,
                         )
-                        if acquired_video:
-                            print_success(
-                                f"   🎬 [NVIDIA Video Fallback] Scene {idx+1} acquired motion footage "
-                                f"with query: '{english_q}'"
+                        if acquired_video and acquired_video.exists():
+                            if multi_agg._record_asset_fingerprint(acquired_video, label="NVIDIA"):
+                                print_success(
+                                    f"   🎬 [NVIDIA Video Fallback] Scene {idx+1} acquired fresh motion footage "
+                                    f"with query: '{english_q}'"
+                                )
+                                break
+                            print_warning(
+                                f"   ♻️ NVIDIA returned previously-used video for scene {idx+1}; trying next query."
                             )
-                            break
+                            acquired_video = None
 
-                if not acquired_video and visual_engine in ("pexels", "auto") and pexels.is_configured():
+                if not acquired_video and visual_engine in ("pexels", "auto"):
                     for english_q in deduped_queries[:4]:
-                        acquired_video = pexels.get_scene_video(
+                        acquired_video = multi_agg.get_fresh_pexels_video(
                             search_query=english_q,
-                            orientation=orientation,
                             scene_index=idx,
+                            orientation=orientation,
                         )
                         if acquired_video:
                             print_success(
-                                f"   🎬 [Pexels Video Fallback] Scene {idx+1} acquired motion footage "
+                                f"   🎬 [Pexels Video Fallback] Scene {idx+1} acquired fresh motion footage "
                                 f"with query: '{english_q}'"
                             )
                             break
