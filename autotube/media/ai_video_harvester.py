@@ -247,7 +247,7 @@ class VideoHarvester:
             encoded_prompt = urllib.parse.quote(prompt[:120])
             pollinations_video_url = f"https://image.pollinations.ai/prompt/{encoded_prompt}?width=720&height=1280&model=video&nologo=true"
             r = requests.get(pollinations_video_url, timeout=40)
-            if r.status_code == 200 and len(r.content) > 50000 and r.content[:4] == b"\x00\x00\x00\x18" or b"ftyp" in r.content[:32]:
+            if r.status_code == 200 and len(r.content) > 50000 and (r.content[:4] == b"\x00\x00\x00\x18" or b"ftyp" in r.content[:32]):
                 with open(target_path, "wb") as f:
                     f.write(r.content)
                 job["status"] = "completed"

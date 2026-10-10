@@ -118,11 +118,58 @@ class DirectorEngine:
                 client = genai.Client(api_key=gemini_key)
 
                 if is_hindi:
-                    lang_instruction = "Write the entire narration in pure, thrilling, natural Hindi (Devanagari script) with high emotional engagement."
+                    lang_mandate = """CRITICAL LANGUAGE MANDATE: PURE HINDI (DEVANAGARI SCRIPT - देवनागरी लिपि)
+- The entire narration script, hook, body, cliffhanger, titles, and pinned comment MUST be written in authentic, gripping, natural Hindi using DEVANAGARI SCRIPT (हिंदी देवनागरी लिपि).
+- STRICT PROHIBITION: DO NOT write in Hinglish or English/Latin alphabet for Hindi words! (Never write "Kya aap jante hain" or "Agar aapko lagta hai"). Every sentence must be written in proper Devanagari script: "अगर आपको लगता है कि मौत के बाद सब खत्म हो जाता है...".
+- Pure Hindi Devanagari text is strictly mandatory. Universal acronyms/numbers (DNA, NASA, 1935) may appear if needed, but the entire spoken narrative, verbs, vocabulary and sentence structure MUST be 100% Devanagari Hindi."""
+
+                    hook_examples = """- Examples of 3-second opening hook styles (in Devanagari Hindi):
+     * "अगर आपको लगता है कि मौत के बाद सब खत्म हो जाता है, तो अगले 60 सेकंड्स आपके होश उड़ा देंगे!"
+     * "1935 में एक 4 साल की बच्ची ने एक ऐसी रोंगटे खड़े करने वाली सच्चाई बयां की जिसने पूरे देश को हिला दिया..."
+     * "99% लोग नहीं जानते कि इस रहस्य को 50 सालों तक दुनिया से छुपा कर क्यों रखा गया था!"
+"""
+
+                    outro_examples = """     A. Mind-Bending Question / Open Loop: Leave a provocative question ringing in their head (e.g. "क्या यह पुनर्जन्म का सच्चा सबूत था, या विज्ञान का सबसे बड़ा अनसुलझा रहस्य?").
+     B. Polarized Comment Debate Trigger: Challenge the viewer to comment their answer (e.g. "अगर आपको इसका सच पता है तो कमेंट में 'हाँ' या 'ना' लिखकर बताएं!").
+     C. High-Value Subscribe & Like CTA: Compel them to subscribe (e.g. "और ऐसे ही हैरान कर देने वाले रहस्यों और सच्ची घटनाओं के लिए वीडियो को LIKE करें और चैनल को अभी SUBSCRIBE करें!")."""
+
+                    default_pinned = "क्या आपको लगता है कि यह सच हो सकता है? अपनी राय कमेंट में ज़रूर बताएं! 👇"
+                    default_titles = [f"{topic or 'रहस्य'} का चौंकाने वाला सच {'#Shorts' if not is_long else ''}"]
+
                 elif is_hinglish:
-                    lang_instruction = "Write the narration in viral conversational Hinglish (Hindi mixed with English words in Roman script) that young audiences in India love."
+                    lang_mandate = """LANGUAGE MANDATE: CONVERSATIONAL HINGLISH (ROMAN SCRIPT)
+- Write the narration in viral conversational Hinglish (Hindi words written in English/Latin letters) that young audiences in India love.
+- Use English/Roman letters throughout (e.g. "Agar aapko lagta hai ki...", "Kya aap jante hain...")."""
+
+                    hook_examples = """- Examples of 3-second opening hook styles (in Roman Hinglish):
+     * "Agar aapko lagta hai ki maut ke baad sab khatam ho jata hai, toh agle 60 seconds aapke hosh uda denge!"
+     * "1935 me ek 4 saal ki bachhi ne ek aisi sachayi bayaan ki jisne khud Mahatma Gandhi ko hairan kar diya..."
+     * "99% log nahi jante ki is ghatna ko sarkar ne 50 saalon tak top-secret kyu rakha tha!"
+"""
+
+                    outro_examples = """     A. Mind-Bending Question / Open Loop: Leave a provocative question ringing in their head (e.g. "Kya ye sach me punarjanam ka saboot tha, ya science ka sabse bada anjaana rahasya?").
+     B. Polarized Comment Debate Trigger: Challenge the viewer to comment their answer (e.g. "Agar aapko iska sach pata hai toh comment me 'YES' ya 'NO' likhkar batao!").
+     C. High-Value Subscribe & Like CTA: Compel them to subscribe (e.g. "Aur aisi hi hairatangez sachhi ghatnao aur rahasyo ke liye, video ko LIKE karein aur channel ko abhi SUBSCRIBE karein!")."""
+
+                    default_pinned = "Aapka is baare me kya sochna hai? Comment karein 👇"
+                    default_titles = [f"{topic or 'Mystery'} Revealed {'#Shorts' if not is_long else ''}"]
+
                 else:
-                    lang_instruction = "Write the narration in high-energy, suspenseful English with viral pacing and dramatic hooks."
+                    lang_mandate = """LANGUAGE MANDATE: VIRAL ENGLISH
+- Write the narration in high-energy, suspenseful English with viral pacing and dramatic hooks."""
+
+                    hook_examples = """- Examples of 3-second opening hook styles (in English):
+     * "If you think you know what happens after death, the next 60 seconds will completely shatter your reality!"
+     * "In 1935, a four-year-old girl revealed classified details that baffled top scientists..."
+     * "99% of people have no idea why the government kept this incident top-secret for over 50 years!"
+"""
+
+                    outro_examples = """     A. Mind-Bending Question / Open Loop: Leave a provocative question ringing in their head (e.g. "Was this real documented proof of the impossible, or science's greatest unsolved mystery?").
+     B. Polarized Comment Debate Trigger: Challenge the viewer to comment their answer (e.g. "If you believe this is real, type 'YES' or 'NO' in the comments!").
+     C. High-Value Subscribe & Like CTA: Compel them to subscribe (e.g. "For more mind-bending true stories and mysteries, smash the LIKE button and SUBSCRIBE right now!")."""
+
+                    default_pinned = "What do you think really happened? Comment below 👇"
+                    default_titles = [f"{topic or 'Mystery'} Revealed {'#Shorts' if not is_long else ''}"]
 
                 prompt = f"""You are a top-tier viral YouTube Short & Documentary scriptwriter who crafts scripts that retain 80%+ audience retention and drive massive subscriber conversion.
 
@@ -133,8 +180,7 @@ User Topic / Concept / Request:
 "{raw_input}"
 Focus: {topic or 'Mysteries / Real Incidents / History / Mind-Blowing Facts'}
 
-Language Instruction:
-{lang_instruction}
+{lang_mandate}
 
 IMPORTANT CREATIVE INSTRUCTION:
 - If the user provided a 1-line concept, topic, or command (e.g. "Punarjanam pe ek short video banao real incident pe with proof", "Bermuda triangle mystery", etc.), you MUST research/generate a FULL, COMPLETE, deeply thrilling, factual story from scratch based on authentic real-world incidents, records, or historical evidence (e.g. for rebirth, use documented cases like Shanti Devi / Mahatma Gandhi 1935 investigation, Taranjit Singh, etc.).
@@ -149,10 +195,7 @@ STRICT RETENTION & SUBSCRIBER GROWTH BLUEPRINT:
 1. THE 3-SECOND SCROLL-STOPPER OPENING HOOK (CRUCIAL):
    - ABSOLUTELY NO greetings, intros, or generic pleasantries (Never say "Hello dosto", "Aaj hum baat karenge", "Ek baar ki baat hai").
    - The opening MUST punch the viewer immediately with an Impossible Paradox, High-Stakes Warning, or Shocking Truth in the first 10-15 words.
-   - Examples of opening hook styles:
-     * "Agar aapko lagta hai ki maut ke baad sab khatam ho jata hai, toh agle 60 seconds aapke hosh uda denge!"
-     * "1935 me ek 4 saal ki bachhi ne ek aisi sachayi bayaan ki jisne khud Mahatma Gandhi ko hairan kar diya..."
-     * "99% log nahi jante ki is ghatna ko sarkar ne 50 saalon tak top-secret kyu rakha tha!"
+{hook_examples}
 
 2. SUSPENSE-DRIVEN STORY BEATS (BODY):
    - Fast-paced, curiosity-building sentence flow across 8-12 suspenseful story beats.
@@ -160,9 +203,7 @@ STRICT RETENTION & SUBSCRIBER GROWTH BLUEPRINT:
 
 3. THE ENGAGEMENT & SUBSCRIBER CONVERSION OUTRO (MANDATORY):
    - The ending MUST NOT just stop. It must include 3 distinct psychological elements:
-     A. Mind-Bending Question / Open Loop: Leave a provocative question ringing in their head (e.g. "Kya ye sach me punarjanam ka saboot tha, ya science ka sabse bada anjaana rahasya?").
-     B. Polarized Comment Debate Trigger: Challenge the viewer to comment their answer (e.g. "Agar aapko iska sach pata hai toh comment me 'YES' ya 'NO' likhkar batao!").
-     C. High-Value Subscribe & Like CTA: Compel them to subscribe (e.g. "Aur aisi hi hairatangez sachhi ghatnao aur rahasyo ke liye, video ko LIKE karein aur channel ko abhi SUBSCRIBE karein!").
+{outro_examples}
 
 Output STRICT JSON with these keys:
 - "hook": The explosive opening 1-2 sentences (the 3-second hook).
@@ -175,10 +216,9 @@ Output STRICT JSON with these keys:
 """
                 data = None
                 models_to_try = [
-                    "gemini-3.5-flash-lite",
                     "gemini-3.1-flash-lite",
+                    "gemini-3.5-flash-lite",
                     "gemini-3.5-flash",
-                    "gemini-3.8-flash",
                 ]
                 for model_name in models_to_try:
                     for attempt in range(2):
@@ -216,8 +256,8 @@ Output STRICT JSON with these keys:
                     "hook": data.get("hook", ""),
                     "body": data.get("body", ""),
                     "cliffhanger": data.get("cliffhanger", ""),
-                    "titles": data.get("titles", [f"{topic or 'Mystery'} Revealed {'#Shorts' if not is_long else ''}"]),
-                    "pinned_comment": data.get("pinned_comment", "Aapka is baare me kya sochna hai? Comment karein 👇"),
+                    "titles": data.get("titles", default_titles),
+                    "pinned_comment": data.get("pinned_comment", default_pinned),
                     "tags": data.get("tags", ["#Shorts", "#Mystery", "#Viral"] if not is_long else ["#Documentary", "#Mystery", "#History", "#Facts"]),
                     "word_count": word_count,
                     "est_seconds": est_seconds,
@@ -229,10 +269,38 @@ Output STRICT JSON with these keys:
 
         # Heuristic fallback if Gemini unavailable
         words = raw_input.strip().split()
-        est_sec = round(len(words) / 2.6, 1)
         suffix = " #Shorts" if not is_long else ""
-        hook = "Agar aapko lagta hai ki aap sab jante hain, toh agle 45 seconds aapke hosh uda denge!"
-        cliffhanger = "Aapke hisaab se kya ye sach ho sakta hai? Comment me apna jawab zaroor batayein, video ko LIKE karein aur aisi hi hairatangez sachhi kahaniyo ke liye channel ko abhi SUBSCRIBE karein!"
+        if is_hindi:
+            hook = "अगर आपको लगता है कि आप सब जानते हैं, तो अगले 45 सेकंड्स आपके होश उड़ा देंगे!"
+            cliffhanger = "आपके हिसाब से क्या यह सच हो सकता है? कमेंट में अपना जवाब ज़रूर बताएं, वीडियो को LIKE करें और ऐसी ही हैरान कर देने वाली सच्ची कहानियों के लिए चैनल को अभी SUBSCRIBE करें!"
+            titles = [
+                f"{raw_input[:40]}... (सच क्या है?){suffix}",
+                f"99% लोग इसका सच नहीं जानते! 😱{suffix}",
+                f"अनसुलझे रहस्य का चौंकाने वाला सच! ⚠️{suffix}",
+            ]
+            pinned_c = "आपके हिसाब से क्या यह सच हो सकता है? कमेंट में 'हाँ' या 'ना' लिखकर बताएं 👇"
+            tags_list = ["#Shorts", "#Mystery", "#HindiFacts", "#HindiKahaniya"] if not is_long else ["#Documentary", "#HindiDocumentary", "#History", "#Facts"]
+        elif is_hinglish:
+            hook = "Agar aapko lagta hai ki aap sab jante hain, toh agle 45 seconds aapke hosh uda denge!"
+            cliffhanger = "Aapke hisaab se kya ye sach ho sakta hai? Comment me apna jawab zaroor batayein, video ko LIKE karein aur aisi hi hairatangez sachhi kahaniyo ke liye channel ko abhi SUBSCRIBE karein!"
+            titles = [
+                f"{raw_input[:40]}... (Sach Kya Hai?){suffix}",
+                f"99% Log Iska Sach Nahi Jante! 😱{suffix}",
+                f"The Shocking Truth Revealed{suffix}",
+            ]
+            pinned_c = "Aapke hisaab se kya ye sach ho sakta hai? Comment me YES ya NO likhkar batao 👇"
+            tags_list = ["#Shorts", "#Mystery", "#MindBlown", "#Facts"] if not is_long else ["#Documentary", "#Mystery", "#Facts", "#Trending"]
+        else:
+            hook = "If you think you know everything about this, the next 45 seconds will completely blow your mind!"
+            cliffhanger = "What do you think really happened? Tell us in the comments below, LIKE this video, and SUBSCRIBE right now for more incredible mind-bending stories!"
+            titles = [
+                f"{raw_input[:40]}... (The Truth){suffix}",
+                f"99% of People Don't Know This! 😱{suffix}",
+                f"The Shocking Truth Revealed{suffix}",
+            ]
+            pinned_c = "Do you believe this is possible? Let us know in the comments below! 👇"
+            tags_list = ["#Shorts", "#Mystery", "#MindBlown", "#Facts"] if not is_long else ["#Documentary", "#Mystery", "#Facts", "#Trending"]
+
         body_text = raw_input.strip()
         full_text = f"{hook} {body_text} {cliffhanger}"
         return {
@@ -241,13 +309,9 @@ Output STRICT JSON with these keys:
             "hook": hook,
             "body": body_text,
             "cliffhanger": cliffhanger,
-            "titles": [
-                f"{raw_input[:40]}... (Sach Kya Hai?){suffix}",
-                f"99% Log Iska Sach Nahi Jante! 😱{suffix}",
-                f"The Shocking Truth Revealed{suffix}",
-            ],
-            "pinned_comment": "Aapke hisaab se kya ye sach ho sakta hai? Comment me YES ya NO likhkar batao 👇",
-            "tags": ["#Shorts", "#Mystery", "#MindBlown", "#Facts"] if not is_long else ["#Documentary", "#Mystery", "#Facts", "#Trending"],
+            "titles": titles,
+            "pinned_comment": pinned_c,
+            "tags": tags_list,
             "word_count": len(full_text.split()),
             "est_seconds": round(len(full_text.split()) / 2.6, 1),
             "is_long": is_long,
@@ -269,17 +333,18 @@ Output STRICT JSON with these keys:
 
         # Keyword mapping from common Hindi/English concepts to visual keywords
         mappings = [
-            (("black hole", "blackhole", "singularity", "event horizon", "accretion", "spaghetti"), "black hole space"),
-            (("space", "antariksh", "brahmand", "galaxy", "solar system", "universe", "cosmos", "stars"), "deep space galaxy"),
-            (("earth", "dharati", "planet", "neela grah"), "planet earth space"),
-            (("ocean", "samundar", "sea", "underwater", "trench"), "dark deep ocean abyss"),
-            (("brain", "dimag", "mind", "psychology", "soch"), "human brain neural networks glowing"),
-            (("temple", "mandir", "ancient", "prachin", "stone"), "ancient stone temple ruins dramatic"),
-            (("gandhi", "mahatma"), "Mahatma Gandhi archival portrait vintage"),
-            (("shanti devi", "punarjanam", "rebirth", "child", "bachhi"), "vintage 1930s young girl thinking portrait"),
-            (("crowd", "bheed", "station", "train"), "vintage crowd busy street 1930s"),
-            (("police", "committee", "investigation", "jaanch", "report", "proof"), "vintage detective crime investigation papers"),
-            (("alien", "ufo", "roswell"), "flying saucer ufo crash site vintage"),
+            (("black hole", "blackhole", "ब्लैक होल", "singularity", "event horizon", "accretion", "spaghetti"), "black hole space"),
+            (("space", "antariksh", "अंतरिक्ष", "brahmand", "ब्रह्मांड", "galaxy", "सौर मंडल", "solar system", "universe", "cosmos", "stars", "तारे"), "deep space galaxy"),
+            (("earth", "dharati", "धरती", "पृथ्वी", "planet", "ग्रह", "neela grah"), "planet earth space"),
+            (("ocean", "samundar", "समुद्र", "सागर", "sea", "underwater", "trench"), "dark deep ocean abyss"),
+            (("brain", "dimag", "दिमाग", "मस्तिष्क", "mind", "psychology", "soch", "सोच"), "human brain neural networks glowing"),
+            (("temple", "mandir", "मंदिर", "ancient", "prachin", "प्राचीन", "stone", "पत्थर", "गुफा", "गुफाएं", "caves"), "ancient stone temple ruins dramatic"),
+            (("gandhi", "mahatma", "गांधी", "महात्मा"), "Mahatma Gandhi archival portrait vintage"),
+            (("shanti devi", "शांति देवी", "punarjanam", "पुनर्जन्म", "rebirth", "child", "bachhi", "बच्ची"), "vintage 1930s young girl thinking portrait"),
+            (("crowd", "bheed", "भीड़", "station", "train", "ट्रेन", "रेल"), "vintage crowd busy street 1930s"),
+            (("police", "committee", "investigation", "jaanch", "जांच", "report", "proof", "सबूत"), "vintage detective crime investigation papers"),
+            (("alien", "ufo", "roswell", "एलियन"), "flying saucer ufo crash site vintage"),
+            (("mars", "मंगल", "लाल ग्रह"), "mars planet red surface space"),
         ]
         # Current narration sentence is authoritative. The story title is only a
         # fallback; otherwise every scene in a "black hole" story gets the same query.
@@ -899,21 +964,18 @@ Output STRICT JSON with these keys:
                 scene_errors[idx] = str(exc)
                 print_error(f"❌ Scene {idx+1} visual acquisition failed: {exc}")
 
-        # Final Recovery: If 1 or 2 scenes failed all search & generation tiers,
-        # bridge them from the closest valid scene rather than aborting the entire render.
+        # Strict Quality Enforced: Every narration scene must have its own unique visual.
+        # No scene duplication or donor borrowing allowed.
         missing = [i for i in range(len(scene_specs)) if i not in scene_assets_by_scene]
         if missing:
-            print_warning(f"⚠️ Recovering missing visual assets for scenes: {[m + 1 for m in missing]}")
-            if not scene_assets_by_scene:
-                details = "; ".join(
-                    f"scene {idx + 1}: {scene_errors.get(idx, 'unknown visual acquisition error')}"
-                    for idx in missing
-                )
-                raise RuntimeError(f"Render failed: no visual assets could be acquired for any scene. {details}")
-            for m in missing:
-                donor_idx = max([i for i in scene_assets_by_scene.keys() if i < m], default=min(scene_assets_by_scene.keys()))
-                scene_assets_by_scene[m] = scene_assets_by_scene[donor_idx]
-                print_info(f"   🌉 Scene {m + 1} bridged using Scene {donor_idx + 1} asset: {scene_assets_by_scene[m].name}")
+            details = "; ".join(
+                f"scene {idx + 1}: {scene_errors.get(idx, 'unknown visual acquisition error')}"
+                for idx in missing
+            )
+            raise RuntimeError(
+                "Render blocked: every narration scene must have its own unique, exact visual asset. "
+                f"Scene duplication/reuse is strictly disallowed. Missing scenes: {[m + 1 for m in missing]}. {details}"
+            )
 
         scene_videos = [scene_assets_by_scene[idx] for idx in range(len(scene_specs))]
         if len(scene_videos) != len(scene_specs):

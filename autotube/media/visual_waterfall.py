@@ -69,9 +69,12 @@ def acquire_scene_visuals_waterfall(
                     flow_scenes.append(res_clip)
                 else:
                     break
-            if flow_scenes and len(flow_scenes) >= 1:
-                print_success(f"🎬 [Tier 1 Succeeded] Generated {len(flow_scenes)} scenes via Google Flow!")
+            expected_count = len(scenes[:max_scenes]) if scenes else len(queries)
+            if flow_scenes and len(flow_scenes) == expected_count:
+                print_success(f"🎬 [Tier 1 Succeeded] Generated all {len(flow_scenes)}/{expected_count} scenes via Google Flow!")
                 return flow_scenes
+            elif flow_scenes:
+                print_warning(f"⚠️ Google Flow generated partial scenes ({len(flow_scenes)}/{expected_count}). Falling over to complete tier.")
     except Exception as fe:
         print_warning(f"Google Flow Bridge notice: {fe}")
 
@@ -90,6 +93,7 @@ def acquire_scene_visuals_waterfall(
             if not queries:
                 queries = [getattr(script, "topic", "cinematic scene")]
 
+            expected_count = len(queries)
             veo_scenes = veo_gen.generate_scenes(
                 prompts=queries,
                 output_dir=output_dir,
@@ -97,9 +101,11 @@ def acquire_scene_visuals_waterfall(
                 aspect_ratio="9:16" if orientation == "portrait" else "16:9",
                 max_scenes=max_scenes,
             )
-            if veo_scenes and len(veo_scenes) >= 1:
-                print_success(f"🎬 [Tier 1 Succeeded] Generated {len(veo_scenes)} scenes with Gemini Veo!")
+            if veo_scenes and len(veo_scenes) == expected_count:
+                print_success(f"🎬 [Tier 2 Succeeded] Generated all {len(veo_scenes)}/{expected_count} scenes with Gemini Veo!")
                 return veo_scenes
+            elif veo_scenes:
+                print_warning(f"⚠️ Gemini Veo generated partial scenes ({len(veo_scenes)}/{expected_count}). Falling over to complete tier.")
         except (VeoQuotaExceededError, Exception) as gemini_err:
             err_msg = getattr(gemini_err, "message", str(gemini_err))
             print_warning(f"⚠️ Gemini (Veo) skipped or quota exceeded: {err_msg}")
@@ -137,9 +143,13 @@ def acquire_scene_visuals_waterfall(
                 )
                 scene_assets.append(asset)
 
-        if scene_assets:
-            print_success(f"🎬 Acquired {len(scene_assets)} synchronized Multi-Source AI scene visual assets!")
-            return scene_assets
+        expected_count = len(target_scenes) if target_scenes else len(queries[:max_scenes])
+        valid_assets = [a for a in scene_assets if a is not None and a.exists()]
+        if len(valid_assets) == expected_count:
+            print_success(f"🎬 Acquired all {len(valid_assets)} synchronized Multi-Source AI scene visual assets!")
+            return valid_assets
+        else:
+            print_warning(f"⚠️ MultiStockAggregator acquired partial assets ({len(valid_assets)}/{expected_count}). Falling back to secondary fetcher...")
     except Exception as multi_err:
         print_warning(f"MultiStockAggregator fallback notice: {multi_err}")
 

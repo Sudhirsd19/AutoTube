@@ -169,6 +169,8 @@
             <span class="text-[11px] text-slate-400 font-semibold px-2 flex items-center gap-1">
               <i class="fa-solid fa-layer-group text-brand-cyan"></i> Load Template Set:
             </span>
+            <button type="button" onclick="applyPreset('elite_2')" id="preset-btn-elite_2" class="preset-btn px-3 py-1.5 rounded-lg bg-cyan-950/80 text-cyan-300 border border-cyan-500/40 hover:text-white transition font-bold shadow-md">⚡ 2 Elite Space (Viral & Paradox)</button>
+            <button type="button" onclick="applyPreset('growth_4')" id="preset-btn-growth_4" class="preset-btn px-3 py-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition">🚀 4 Viral Growth</button>
             <button type="button" onclick="applyPreset('viral_5')" id="preset-btn-viral_5" class="preset-btn px-3 py-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition">5 Viral (Daily)</button>
             <button type="button" onclick="applyPreset('master_12')" id="preset-btn-master_12" class="preset-btn px-3 py-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition">12 Master (10S+2L)</button>
             <button type="button" onclick="applyPreset('shorts_10')" id="preset-btn-shorts_10" class="preset-btn px-3 py-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition">10 Shorts</button>
@@ -180,6 +182,12 @@
         <!-- Global Slot Settings & Action Controls -->
         <div class="flex flex-wrap items-center justify-between gap-3 bg-slate-900/80 border border-slate-800/90 rounded-xl px-4 py-3 text-xs">
           <div class="flex flex-wrap items-center gap-5">
+            <div class="flex items-center gap-2 bg-slate-950 px-3 py-1.5 rounded-lg border border-slate-800">
+              <input type="checkbox" id="matrix-daemon-check" onchange="updateMatrixDaemon(this.checked)" class="w-4 h-4 rounded text-brand-cyan focus:ring-brand-cyan bg-slate-900 border-slate-700 cursor-pointer">
+              <label for="matrix-daemon-check" class="text-amber-300 font-bold flex items-center gap-1.5 cursor-pointer">
+                <i class="fa-solid fa-robot text-brand-cyan"></i> 24/7 Daily AutoPilot (Auto-Run)
+              </label>
+            </div>
             <div class="flex items-center gap-2">
               <label for="matrix-privacy-select" class="text-slate-400 font-semibold">YouTube Privacy:</label>
               <select id="matrix-privacy-select" onchange="updateMatrixPrivacy(this.value)" class="bg-slate-950 border border-slate-700 text-white text-xs px-3 py-1.5 rounded-lg focus:outline-none focus:border-brand-cyan">
@@ -222,14 +230,34 @@
             <div class="flex items-center gap-1.5 bg-slate-900 px-2 py-1 rounded-lg border border-slate-800">
               <span class="text-[11px] text-slate-400">Voice:</span>
               <select id="quick-voice-select" class="bg-transparent text-white font-medium text-xs focus:outline-none cursor-pointer">
-                <option value="akashvani" selected>🎙️ आकाशवाणी (Cosmic Devavani)</option>
-                <option value="madhur">🎙️ Madhur (Hindi Male Viral)</option>
-                <option value="swara">🎙️ Swara (Hindi Female)</option>
-                <option value="adam">🎙️ Adam (US Male Viral #1)</option>
-                <option value="christopher">🎙️ Christopher (Deep Documentary)</option>
-                <option value="guy">🎙️ Guy (Energetic Storyteller)</option>
-                <option value="aria">🎙️ Aria (Warm US Female)</option>
-                <option value="andrew">🎙️ Andrew (Tech Male)</option>
+                <optgroup label="🇮🇳 HINDI VOICES — SPACE / MYSTERY / SCIENCE" class="bg-slate-900 text-slate-200">
+                  <option value="hi_deep_cinematic_male" selected>🎙️ Deep Cinematic Male Hindi ⭐ BEST</option>
+                  <option value="hi_calm_male">🎙️ Calm Male Hindi (Science Explanations)</option>
+                  <option value="hi_cinematic_male">🎙️ Cinematic Male Hindi (Mystery, रहस्य)</option>
+                  <option value="hi_authoritative_male">🎙️ Authoritative Male Hindi (History, Facts)</option>
+                  <option value="hi_young_male">🎙️ Young Male Hindi (Shorts, Fast Facts)</option>
+                  <option value="hi_deep_female">🎙️ Deep Female Hindi (Mystery, Dark Stories)</option>
+                  <option value="hi_calm_female">🎙️ Calm Female Hindi (Science, Space)</option>
+                  <option value="hi_cinematic_female">🎙️ Cinematic Female Hindi (Emotional)</option>
+                </optgroup>
+                <optgroup label="🇺🇸🇬🇧 ENGLISH VOICES — SPACE / MYSTERY / SCIENCE" class="bg-slate-900 text-slate-200">
+                  <option value="en_deep_cinematic_male">🎙️ Deep Cinematic American Male ⭐ BEST</option>
+                  <option value="en_deep_british_male">🎙️ Deep British Male (Documentary)</option>
+                  <option value="en_calm_british_male">🎙️ Calm British Male (Science, Space)</option>
+                  <option value="en_cinematic_narrator">🎙️ Cinematic Narrator (Mystery, Aliens)</option>
+                  <option value="en_deep_warm_male">🎙️ Deep Warm Male (Cosmic Events)</option>
+                  <option value="en_authoritative_male">🎙️ Authoritative Male (Scientific Facts)</option>
+                  <option value="en_calm_female">🎙️ Calm Female (Space & Science)</option>
+                  <option value="en_cinematic_female">🎙️ Cinematic Female (Mystery & Emotion)</option>
+                </optgroup>
+                <optgroup label="✨ CLASSIC / LEGACY" class="bg-slate-900 text-slate-200">
+                  <option value="akashvani">🎙️ आकाशवाणी (Cosmic Echo Devavani)</option>
+                  <option value="madhur">🎙️ Madhur (Natural Hindi)</option>
+                  <option value="adam">🎙️ Adam (US Male Cinematic #1)</option>
+                  <option value="swara">🎙️ Swara (Hindi Female)</option>
+                  <option value="christopher">🎙️ Christopher (Deep US Male)</option>
+                  <option value="guy">🎙️ Guy (US Storyteller)</option>
+                </optgroup>
               </select>
               <button type="button" onclick="playCustomVoicePreview()" class="px-2.5 py-1 rounded bg-cyan-900 hover:bg-cyan-800 text-cyan-200 font-bold flex items-center gap-1 transition shadow">
                 <i id="quick-v-icon" class="fa-solid fa-play text-[10px]"></i> Play Voice
@@ -430,7 +458,7 @@
               <i class="fa-solid fa-feather-pointed text-brand-cyan"></i> Story / Script Studio
             </h3>
             <span id="script-format-hint" class="text-xs text-brand-cyan bg-cyan-950/60 px-2.5 py-0.5 rounded-full border border-cyan-500/30">
-              Target for Shorts: 120-140 words (~50s)
+              Target for Shorts: 155-190 words (~60-75s)
             </span>
           </div>
           <div class="flex items-center gap-2">
@@ -1254,6 +1282,9 @@
 
       const uploadCheck = document.getElementById('matrix-upload-check');
       if (uploadCheck) currentSlotsConfig.auto_upload = uploadCheck.checked;
+
+      const daemonCheck = document.getElementById('matrix-daemon-check');
+      if (daemonCheck) currentSlotsConfig.autopilot_daemon = daemonCheck.checked;
     }
 
     async function loadSlotsMatrix() {
@@ -1270,12 +1301,22 @@
         if (uploadCheck && data.auto_upload !== undefined) {
           uploadCheck.checked = Boolean(data.auto_upload);
         }
+        const daemonCheck = document.getElementById('matrix-daemon-check');
+        if (daemonCheck && data.autopilot_daemon !== undefined) {
+          daemonCheck.checked = Boolean(data.autopilot_daemon);
+        }
 
         renderSlotsMatrix();
         markSlotsSaved((currentSlotsConfig.slots || []).length);
       } catch (err) {
         console.error('Failed to load slots matrix:', err);
       }
+    }
+
+    function updateMatrixDaemon(checked) {
+      currentSlotsConfig.autopilot_daemon = checked;
+      markSlotsUnsaved();
+      showToast(checked ? '🤖 24/7 Daily AutoPilot enabled! Click "Save Slot Settings" to apply.' : '24/7 Daily AutoPilot disabled.');
     }
 
     function updateMatrixPrivacy(val) {
@@ -1301,7 +1342,7 @@
       }
 
       // Update preset buttons styling
-      ['viral_5', 'master_12', 'shorts_10', 'balanced_7', 'starter_3'].forEach(p => {
+      ['elite_2', 'growth_4', 'viral_5', 'master_12', 'shorts_10', 'balanced_7', 'starter_3'].forEach(p => {
         const btn = document.getElementById(`preset-btn-${p}`);
         if (btn) {
           if (currentSlotsConfig.active_preset === p) {
@@ -1326,7 +1367,8 @@
         const tz = (slot.tz || 'IST').toUpperCase();
         const isHindi = (slot.language || 'Hindi').toLowerCase() === 'hindi' || slot.language === 'hi';
         const isLong = (slot.format === 'landscape_long');
-        const slotVoice = (slot.voice || 'auto').toLowerCase();
+        const defaultVoice = isHindi ? 'hi_deep_cinematic_male' : 'en_deep_cinematic_male';
+        const slotVoice = (slot.voice || defaultVoice).toLowerCase();
         const slotBgm = (slot.bgm || 'auto').toLowerCase();
 
         const rowBg = isLong 
@@ -1371,20 +1413,37 @@
             </div>
 
             <!-- Voice Selection (Col 2) with Play Preview Button -->
-            <div class="lg:col-span-2 flex items-center gap-1.5">
+            <div class="lg:col-span-2 flex items-center gap-1.5 min-w-0">
               <select id="slot-voice-${slot.id}" onchange="updateSlotField('${slot.id}', 'voice', this.value); markSlotsUnsaved();" 
-                class="w-full bg-slate-950 border border-slate-800 text-slate-200 text-xs px-2 py-1.5 rounded-lg focus:outline-none focus:border-brand-cyan cursor-pointer">
-                <option value="auto" ${slotVoice === 'auto' ? 'selected' : ''}>🤖 Auto — Subject Matched</option>
-                  <option value="akashvani" ${slotVoice === 'akashvani' ? 'selected' : ''}>🎙️ आकाशवाणी (Cosmic Echo Devavani)</option>
-                  <option value="madhur" ${slotVoice === 'madhur' ? 'selected' : ''}>🎙️ Madhur (HI Male Viral)</option>
-                  <option value="swara" ${slotVoice === 'swara' ? 'selected' : ''}>🎙️ Swara (HI Female)</option>
+                class="w-full bg-slate-950 border border-slate-800 text-slate-200 text-xs px-2 py-1.5 rounded-lg focus:outline-none focus:border-brand-cyan cursor-pointer truncate">
+                <option value="auto" ${slotVoice === 'auto' ? 'selected' : ''}>🤖 Auto — Subject + Language Matched</option>
+                <optgroup label="🇮🇳 HINDI VOICES — SPACE / MYSTERY / SCIENCE">
+                  <option value="hi_deep_cinematic_male" ${slotVoice === 'hi_deep_cinematic_male' ? 'selected' : ''}>🎙️ Deep Cinematic Male Hindi (Space, Universe, Black Holes) ⭐ BEST</option>
+                  <option value="hi_calm_male" ${slotVoice === 'hi_calm_male' ? 'selected' : ''}>🎙️ Calm Male Hindi (Science Explanations, Astronomy)</option>
+                  <option value="hi_cinematic_male" ${slotVoice === 'hi_cinematic_male' ? 'selected' : ''}>🎙️ Cinematic Male Hindi (Mystery, रहस्य, Unsolved Stories)</option>
+                  <option value="hi_authoritative_male" ${slotVoice === 'hi_authoritative_male' ? 'selected' : ''}>🎙️ Authoritative Male Hindi (History, Educational)</option>
+                  <option value="hi_young_male" ${slotVoice === 'hi_young_male' ? 'selected' : ''}>🎙️ Young Male Hindi (YouTube Shorts, Fast Facts)</option>
+                  <option value="hi_deep_female" ${slotVoice === 'hi_deep_female' ? 'selected' : ''}>🎙️ Deep Female Hindi (Mystery, Paranormal)</option>
+                  <option value="hi_calm_female" ${slotVoice === 'hi_calm_female' ? 'selected' : ''}>🎙️ Calm Female Hindi (Science, Space & Storytelling)</option>
+                  <option value="hi_cinematic_female" ${slotVoice === 'hi_cinematic_female' ? 'selected' : ''}>🎙️ Cinematic Female Hindi (Emotional & Mysterious)</option>
                 </optgroup>
-                <optgroup label="English Voices">
-                  <option value="adam" ${slotVoice === 'adam' ? 'selected' : ''}>🎙️ Adam (US Male Viral #1)</option>
-                  <option value="christopher" ${slotVoice === 'christopher' ? 'selected' : ''}>🎙️ Christopher (Deep)</option>
-                  <option value="guy" ${slotVoice === 'guy' ? 'selected' : ''}>🎙️ Guy (Storyteller)</option>
-                  <option value="aria" ${slotVoice === 'aria' ? 'selected' : ''}>🎙️ Aria (US Female)</option>
-                  <option value="andrew" ${slotVoice === 'andrew' ? 'selected' : ''}>🎙️ Andrew (Tech)</option>
+                <optgroup label="🇺🇸🇬🇧 ENGLISH VOICES — SPACE / MYSTERY / SCIENCE">
+                  <option value="en_deep_cinematic_male" ${slotVoice === 'en_deep_cinematic_male' ? 'selected' : ''}>🎙️ Deep Cinematic American Male (Space Shorts, Universe) ⭐ BEST</option>
+                  <option value="en_deep_british_male" ${slotVoice === 'en_deep_british_male' ? 'selected' : ''}>🎙️ Deep British Male (Premium Space Documentary)</option>
+                  <option value="en_calm_british_male" ${slotVoice === 'en_calm_british_male' ? 'selected' : ''}>🎙️ Calm British Male (Science, Astronomy)</option>
+                  <option value="en_cinematic_narrator" ${slotVoice === 'en_cinematic_narrator' ? 'selected' : ''}>🎙️ Cinematic Male Narrator (Mystery, Aliens)</option>
+                  <option value="en_deep_warm_male" ${slotVoice === 'en_deep_warm_male' ? 'selected' : ''}>🎙️ Deep Warm Male (Cosmic Events, Deep Space)</option>
+                  <option value="en_authoritative_male" ${slotVoice === 'en_authoritative_male' ? 'selected' : ''}>🎙️ Authoritative Male (Scientific Facts)</option>
+                  <option value="en_calm_female" ${slotVoice === 'en_calm_female' ? 'selected' : ''}>🎙️ Calm Female (Space & Science Storytelling)</option>
+                  <option value="en_cinematic_female" ${slotVoice === 'en_cinematic_female' ? 'selected' : ''}>🎙️ Cinematic Female (Mystery & Emotional)</option>
+                </optgroup>
+                <optgroup label="✨ CLASSIC / LEGACY">
+                  <option value="akashvani" ${slotVoice === 'akashvani' ? 'selected' : ''}>🎙️ आकाशवाणी (Cosmic Echo Devavani)</option>
+                  <option value="madhur" ${slotVoice === 'madhur' ? 'selected' : ''}>🎙️ Madhur (Natural Hindi Documentary)</option>
+                  <option value="adam" ${slotVoice === 'adam' ? 'selected' : ''}>🎙️ Adam (US Male Cinematic #1 Viral)</option>
+                  <option value="swara" ${slotVoice === 'swara' ? 'selected' : ''}>🎙️ Swara (Hindi Female)</option>
+                  <option value="christopher" ${slotVoice === 'christopher' ? 'selected' : ''}>🎙️ Christopher (Deep US Male)</option>
+                  <option value="guy" ${slotVoice === 'guy' ? 'selected' : ''}>🎙️ Guy (Conversational Storyteller)</option>
                 </optgroup>
               </select>
               <button type="button" onclick="playSlotVoicePreview('${slot.id}')" title="Play Voice Preview" 
@@ -1477,20 +1536,25 @@
 
     function playCustomVoicePreview() {
       const select = document.getElementById('quick-voice-select');
-      const voice = select ? select.value : 'akashvani';
-      playAudioStream(`/api/audio/preview/voice/${voice}`, 'quick-voice', 'quick-v-icon');
+      const voice = select ? select.value : 'hi_deep_cinematic_male';
+      playAudioStream(`/api/audio/preview/voice/${encodeURIComponent(voice)}`, 'quick-voice', 'quick-v-icon');
     }
 
     function playCustomBgmPreview() {
       const select = document.getElementById('quick-bgm-select');
       const bgm = select ? select.value : 'psychology';
-      playAudioStream(`/api/audio/preview/bgm/${bgm}`, 'quick-bgm', 'quick-bgm-icon');
+      playAudioStream(`/api/audio/preview/bgm/${encodeURIComponent(bgm)}`, 'quick-bgm', 'quick-bgm-icon');
     }
 
     function playSlotVoicePreview(slotId) {
       const slot = (currentSlotsConfig.slots || []).find(s => s.id === slotId);
-      const voice = slot ? (slot.voice || (slot.language === 'Hindi' ? 'akashvani' : 'adam')) : 'akashvani';
-      playAudioStream(`/api/audio/preview/voice/${voice}`, `v-${slotId}`, `v-icon-${slotId}`);
+      const isHindi = slot ? ((slot.language || 'Hindi').toLowerCase() === 'hindi' || slot.language === 'hi') : false;
+      const defaultBest = isHindi ? 'hi_deep_cinematic_male' : 'en_deep_cinematic_male';
+      let voice = slot ? (slot.voice || defaultBest) : defaultBest;
+      if (voice === 'auto') {
+        voice = defaultBest;
+      }
+      playAudioStream(`/api/audio/preview/voice/${encodeURIComponent(voice)}`, `v-${slotId}`, `v-icon-${slotId}`);
     }
 
     function playSlotBgmPreview(slotId) {
@@ -1560,11 +1624,11 @@
       if (slot) {
         slot.language = langValue;
         const isHindi = langValue.toLowerCase() === 'hindi' || langValue === 'hi';
+        const hindiVoices = ['madhur', 'swara', 'akashvani', 'hi_deep_cinematic_male', 'hi_calm_male', 'hi_cinematic_male', 'hi_authoritative_male', 'hi_young_male', 'hi_deep_female', 'hi_calm_female', 'hi_cinematic_female'];
+        const englishVoices = ['adam', 'christopher', 'guy', 'aria', 'andrew', 'en_deep_cinematic_male', 'en_deep_british_male', 'en_calm_british_male', 'en_cinematic_narrator', 'en_deep_warm_male', 'en_authoritative_male', 'en_calm_female', 'en_cinematic_female'];
         if (slot.voice && slot.voice !== 'auto') {
-          const hindiVoices = ['madhur', 'swara', 'akashvani', 'hi_deep_cinematic_male', 'hi_calm_male', 'hi_cinematic_male', 'hi_authoritative_male', 'hi_young_male', 'hi_deep_female', 'hi_calm_female', 'hi_cinematic_female'];
-          const englishVoices = ['adam', 'christopher', 'guy', 'aria', 'andrew', 'en_deep_cinematic_male', 'en_deep_british_male', 'en_calm_british_male', 'en_cinematic_narrator', 'en_deep_warm_male', 'en_authoritative_male', 'en_calm_female', 'en_cinematic_female'];
-          if (isHindi && !hindiVoices.includes(slot.voice)) slot.voice = 'auto';
-          if (!isHindi && !englishVoices.includes(slot.voice)) slot.voice = 'auto';
+          if (isHindi && !hindiVoices.includes(slot.voice)) slot.voice = 'hi_deep_cinematic_male';
+          if (!isHindi && !englishVoices.includes(slot.voice)) slot.voice = 'en_deep_cinematic_male';
         }
 
         const vSelect = document.getElementById(`slot-voice-${id}`);
@@ -1632,7 +1696,7 @@
         tz: 'IST',
         niche: 'Mysterious Ancient Secrets & Science',
         language: 'Hindi',
-        voice: 'auto',
+        voice: 'hi_deep_cinematic_male',
         bgm: 'auto',
         format: 'short',
         status: 'ready'
@@ -2183,7 +2247,7 @@
       if (fmt === 'short') {
         if (btnShort) btnShort.className = 'px-3.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 bg-brand-cyan text-black shadow-md';
         if (btnLong) btnLong.className = 'px-3.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 text-slate-400 hover:text-white';
-        if (hint) hint.textContent = 'Target for Shorts: 120-140 words (~50s)';
+        if (hint) hint.textContent = 'Target for Shorts: 155-190 words (~60-75s)';
         if (genBtn) genBtn.innerHTML = '<i class="fa-solid fa-play"></i> 🎬 Generate 9:16 Short Video Now';
       } else {
         if (btnShort) btnShort.className = 'px-3.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 text-slate-400 hover:text-white';
@@ -2235,13 +2299,21 @@
       let current = area.value.trim();
       let hook = '';
       if (type === 'shock') {
-        hook = studioLanguage === 'en'
-          ? "If you think you know everything, the next 30 seconds will blow your mind!"
-          : "Agar aapko lagta hai ki aap sab jante hain, toh agle 30 seconds aapke hosh uda denge!";
+        if (studioLanguage === 'hi') {
+          hook = "अगर आपको लगता है कि आप सब जानते हैं, तो अगले 30 सेकंड्स आपके होश उड़ा देंगे!";
+        } else if (studioLanguage === 'en') {
+          hook = "If you think you know everything, the next 30 seconds will blow your mind!";
+        } else {
+          hook = "Agar aapko lagta hai ki aap sab jante hain, toh agle 30 seconds aapke hosh uda denge!";
+        }
       } else if (type === 'secret') {
-        hook = studioLanguage === 'en'
-          ? "99% of people have no idea why this was kept top secret for 50 years..."
-          : "99% log nahi jante ki is sachayi ko 50 saalon tak duniya se chhipa kar kyu rakha gaya tha!";
+        if (studioLanguage === 'hi') {
+          hook = "99% लोग नहीं जानते कि इस सच्चाई को 50 सालों तक दुनिया से छुपा कर क्यों रखा गया था...";
+        } else if (studioLanguage === 'en') {
+          hook = "99% of people have no idea why this was kept top secret for 50 years...";
+        } else {
+          hook = "99% log nahi jante ki is sachayi ko 50 saalon tak duniya se chhipa kar kyu rakha gaya tha!";
+        }
       }
       if (hook) {
         area.value = hook + " " + current;
@@ -2255,13 +2327,21 @@
       let current = area.value.trim();
       let outro = '';
       if (type === 'debate') {
-        outro = studioLanguage === 'en'
-          ? "What is the real truth according to you? Comment YES or NO below right now!"
-          : "Aapke hisaab se iska ashirwad ya sach kya hai? Comment me YES ya NO likhkar turant batao!";
+        if (studioLanguage === 'hi') {
+          outro = "आपके हिसाब से इसका असली सच क्या है? कमेंट में 'हाँ' या 'ना' लिखकर तुरंत बताएं!";
+        } else if (studioLanguage === 'en') {
+          outro = "What is the real truth according to you? Comment YES or NO below right now!";
+        } else {
+          outro = "Aapke hisaab se iska ashirwad ya sach kya hai? Comment me YES ya NO likhkar turant batao!";
+        }
       } else if (type === 'subscribe') {
-        outro = studioLanguage === 'en'
-          ? "If you want to discover more shocking real incidents, LIKE this video and SUBSCRIBE right now!"
-          : "Aisi hi aankhein khol dene wali sachhi ghatnao ke liye video ko LIKE karein aur channel ko abhi SUBSCRIBE karein!";
+        if (studioLanguage === 'hi') {
+          outro = "ऐसी ही आँखें खोल देने वाली सच्ची घटनाओं के लिए वीडियो को LIKE करें और चैनल को अभी SUBSCRIBE करें!";
+        } else if (studioLanguage === 'en') {
+          outro = "If you want to discover more shocking real incidents, LIKE this video and SUBSCRIBE right now!";
+        } else {
+          outro = "Aisi hi aankhein khol dene wali sachhi ghatnao ke liye video ko LIKE karein aur channel ko abhi SUBSCRIBE karein!";
+        }
       }
       if (outro) {
         area.value = current + " " + outro;

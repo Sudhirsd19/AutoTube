@@ -18,7 +18,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 # Setup cron entry inside container
-RUN echo "30 2 * * * cd /app && python run.py autopilot --count 7 --niche mixed --lang mixed --upload --schedule >> /app/output/cron.log 2>&1" > /etc/cron.d/autotube-cron \
+RUN echo "30 2 * * * cd /app && python run.py autopilot --count 2 --niche space --lang en --upload --schedule >> /app/output/cron.log 2>&1" > /etc/cron.d/autotube-cron \
     && chmod 0644 /etc/cron.d/autotube-cron \
     && crontab /etc/cron.d/autotube-cron
 

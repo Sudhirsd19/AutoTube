@@ -38,9 +38,9 @@ HTTP_HEADERS = {
 }
 
 CANDIDATE_GEMINI_MODELS = [
-    "gemini-3.5-flash-lite",
     "gemini-3.1-flash-lite",
-    "gemini-3.8-flash",
+    "gemini-2.5-flash",
+    "gemini-2.0-flash",
     "gemini-3.5-flash",
 ]
 
@@ -850,8 +850,9 @@ Candidate Clips:
 
 DIRECTORIAL RULES:
 1. If the narration is about space, black holes, or cosmic phenomena, you MUST pick an authentic astronomical clip (black hole, galactic vortex, planets, space).
-2. NEVER pick clips of smartphones, human faces, people typing, modern rooms, or circuit boards for a space documentary!
-3. Even if the narration mentions subscribing, liking, or commenting, keep the visuals strictly anchored in epic cosmic footage!
+2. If the narration is about ancient temples, monuments, Indian history, or architecture, NEVER pick clips of insects/animals, European/Greek statues, sea ice, or modern buildings! Prioritize authentic ancient stone craftsmanship, temple carvings, or monolithic structures.
+3. NEVER pick clips of smartphones, human faces, people typing, modern rooms, or circuit boards for historical or space documentaries!
+4. Even if the narration mentions subscribing, liking, or commenting, keep the visuals strictly anchored in the core subject matter!
 
 Evaluate which candidate clip genuinely depicts the intended concept (NOT generic unrelated footage).
 Output STRICT JSON with:

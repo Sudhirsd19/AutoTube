@@ -370,16 +370,24 @@ class ShortsBuilder:
             subscribe_badge=subscribe_badge if subscribe_badge.exists() else None,
             duration=duration,
         )
-        try:
-            raw_video_path.unlink()
-        except Exception:
-            pass
-
-        if burn_success and output_path.exists():
+        if burn_success and output_path.exists() and output_path.stat().st_size > 1000:
+            try:
+                if raw_video_path.exists():
+                    raw_video_path.unlink()
+            except Exception:
+                pass
             print_success(f"Final Viral YouTube Short generated: {output_path.name}")
             return output_path
         else:
-            print_error("Subtitle/overlay burning failed, using raw video as output.")
-            if raw_video_path.exists():
-                raw_video_path.rename(output_path)
-            return output_path
+            print_warning("Subtitle/overlay burning failed, falling back to raw video as output.")
+            if raw_video_path.exists() and raw_video_path.stat().st_size > 1000:
+                try:
+                    import shutil
+                    if output_path.exists():
+                        output_path.unlink()
+                    shutil.move(str(raw_video_path), str(output_path))
+                    print_info(f"Using raw video without subtitles: {output_path.name}")
+                    return output_path
+                except Exception as mv_err:
+                    print_error(f"Failed to recover raw video as output: {mv_err}")
+            return None

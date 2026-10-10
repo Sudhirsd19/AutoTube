@@ -20,9 +20,9 @@ GEMINI_HTTP_TIMEOUT_MS = int(os.getenv("AUTOTUBE_GEMINI_HTTP_TIMEOUT_MS", "60000
 class VisualQualityGate:
     """Final frame-level QA. Uses Gemini when GEMINI_API_KEY is present."""
 
-    MODELS = ("gemini-3.8-flash", "gemini-3.7-flash", "gemini-3.5-flash", "gemini-3.1-flash-lite")
+    MODELS = ("gemini-3.1-flash-lite", "gemini-3.5-flash", "gemini-2.0-flash", "gemini-3.8-flash")
 
-    def __init__(self, min_confidence: int = 50, min_coverage: int = 40) -> None:
+    def __init__(self, min_confidence: int = 75, min_coverage: int = 70) -> None:
         self.min_confidence = min_confidence
         self.min_coverage = min_coverage
         self.strict = os.getenv("AUTOTUBE_FRAME_QA_STRICT", "0").lower() in {"1", "true", "yes"}
@@ -83,11 +83,13 @@ MUST AVOID: {json.dumps(plan.get("avoid", []), ensure_ascii=False)}
 
 Judge ONLY the supplied video frames.
 Guidelines:
-- Be generous with atmospheric, cosmic, metaphorical, and landscape matches (e.g., deep space, stars, nebulas, cosmic void, abstract vortex, acoustic waves match space/silence/mystery scenes).
-- REJECT ONLY if there is a severe, blatant category mismatch (e.g., human faces/talking heads, modern office desks, mobile phones, cars, cartoons, daylight beaches when narration is about space, cosmic mysteries, or ancient history).
+- Visuals MUST genuinely depict or directly support the scene narration and TARGET SUBJECT.
+- Check MUST SHOW and MUST AVOID elements strictly. If MUST SHOW elements are completely absent or MUST AVOID items are present, add them to 'violations'.
+- DO NOT accept unrelated stock footage (e.g., modern cities/offices/talking faces when narration discusses space, biology, physics, or ancient temples).
+- Set accepted to true ONLY when visuals have strong semantic bearing on the spoken words.
 Return JSON only:
 {{"confidence":0-100,"coverage":0-100,"accepted":true/false,"reason":"one sentence","violations":[]}}
-Accept when confidence >= {self.min_confidence}, coverage >= {self.min_coverage}, and there are no blatant category violations.
+Accept when confidence >= {self.min_confidence}, coverage >= {self.min_coverage}, and there are no violations.
 """
 
         try:
@@ -116,10 +118,12 @@ Accept when confidence >= {self.min_confidence}, coverage >= {self.min_coverage}
                     confidence = int(data.get("confidence", 0))
                     coverage = int(data.get("coverage", 0))
                     violations = data.get("violations") or []
-                    # Accept if Gemini flagged accepted OR if thresholds are met without violations
+                    # Strictly require meeting thresholds and absence of violations
                     accepted = (
-                        (bool(data.get("accepted", False)) and not violations)
-                        or (confidence >= self.min_confidence and coverage >= self.min_coverage and not violations)
+                        bool(data.get("accepted", False))
+                        and confidence >= self.min_confidence
+                        and coverage >= self.min_coverage
+                        and not violations
                     )
                     return {
                         "accepted": accepted,

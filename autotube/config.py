@@ -21,6 +21,7 @@ class ProjectConfig(BaseModel):
 
 
 class PathsConfig(BaseModel):
+    project_root: Path = Field(default_factory=lambda: PROJECT_ROOT)
     output_dir: Path = Field(default_factory=lambda: PROJECT_ROOT / "output")
     assets_dir: Path = Field(default_factory=lambda: PROJECT_ROOT / "assets")
     temp_dir: Path = Field(default_factory=lambda: PROJECT_ROOT / "output" / "temp")

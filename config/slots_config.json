@@ -1,9 +1,63 @@
 {
-  "active_preset": "custom",
-  "daily_target": 5,
+  "active_preset": "elite_2",
+  "daily_target": 2,
   "autopilot_daemon": false,
   "review_before_upload": false,
   "presets": {
+    "growth_4": [
+      {
+        "id": "slot_1",
+        "hour": 12,
+        "minute": 0,
+        "tz": "EDT",
+        "niche": "Space & Cosmic Mysteries",
+        "language": "English",
+        "voice": "en_deep_cinematic_male",
+        "format": "short",
+        "status": "ready",
+        "label": "12:00 PM EDT (US Lunch) - Cosmic Space & Universe Paradox (English Short)",
+        "bgm": "space"
+      },
+      {
+        "id": "slot_2",
+        "hour": 13,
+        "minute": 30,
+        "tz": "IST",
+        "niche": "Bharat Ka Prachin Vigyan & Mandir Rahasya",
+        "language": "Hindi",
+        "voice": "hi_deep_cinematic_male",
+        "format": "short",
+        "status": "ready",
+        "label": "01:30 PM IST (India Lunch) - Bharat Ka Prachin Vigyan & Mandir (Hindi Short)",
+        "bgm": "history"
+      },
+      {
+        "id": "slot_3",
+        "hour": 18,
+        "minute": 30,
+        "tz": "EDT",
+        "niche": "Quantum Science & Black Holes",
+        "language": "English",
+        "voice": "en_deep_cinematic_male",
+        "format": "short",
+        "status": "ready",
+        "label": "06:30 PM EDT (US Prime Time) - Quantum & Black Hole Mysteries (English Short)",
+        "bgm": "space"
+      },
+      {
+        "id": "slot_4",
+        "hour": 21,
+        "minute": 30,
+        "tz": "IST",
+        "niche": "Ancient Bharat Lost History & Cursed Secrets",
+        "language": "Hindi",
+        "voice": "hi_cinematic_male",
+        "format": "short",
+        "status": "ready",
+        "label": "09:30 PM IST (India Prime Time) - Rahasyamay Itihas & Khopiya Sach (Hindi Short)",
+        "bgm": "history"
+      }
+    ],
     "master_12": [
       {
         "id": "slot_1",
@@ -462,68 +516,62 @@
         "label": "09:30 PM IST - Unsolved History & Dark Cursed Mysteries (Hindi Short)",
         "bgm": "auto"
       }
+    ],
+    "elite_2": [
+      {
+        "id": "slot_1",
+        "hour": 12,
+        "minute": 0,
+        "tz": "EDT",
+        "niche": "Trending Space Discoveries & Deep Universe",
+        "language": "English",
+        "voice": "en_deep_cinematic_male",
+        "format": "short",
+        "status": "ready",
+        "label": "12:00 PM EDT (US Lunch / 09:30 PM IST) - Trending Space Discoveries (English Short)",
+        "bgm": "space"
+      },
+      {
+        "id": "slot_2",
+        "hour": 18,
+        "minute": 30,
+        "tz": "EDT",
+        "niche": "Quantum Science & Cosmic Dread Paradoxes",
+        "language": "English",
+        "voice": "en_deep_cinematic_male",
+        "format": "short",
+        "status": "ready",
+        "label": "06:30 PM EDT (US Prime Time / 04:00 AM IST) - Mind-Bending Paradoxes (English Short)",
+        "bgm": "space"
+      }
     ]
   },
   "slots": [
     {
       "id": "slot_1",
-      "hour": 8,
-      "minute": 30,
-      "tz": "IST",
-      "niche": "Dark Psychology",
-      "language": "Hindi",
-      "voice": "auto",
+      "hour": 12,
+      "minute": 0,
+      "tz": "EDT",
+      "niche": "Trending Space Discoveries & Deep Universe",
+      "language": "English",
+      "voice": "en_deep_cinematic_male",
       "format": "short",
       "status": "ready",
-      "bgm": "auto"
+      "label": "12:00 PM EDT (US Lunch / 09:30 PM IST) - Trending Space Discoveries (English Short)",
+      "bgm": "space"
     },
     {
       "id": "slot_2",
-      "hour": 12,
-      "minute": 45,
-      "tz": "IST",
-      "niche": "Bharat Ka Vigyan",
-      "language": "Hindi",
-      "voice": "auto",
-      "format": "short",
-      "status": "ready",
-      "bgm": "history"
-    },
-    {
-      "id": "slot_3",
-      "hour": 16,
+      "hour": 18,
       "minute": 30,
-      "tz": "IST",
-      "niche": "Space Anomalies",
+      "tz": "EDT",
+      "niche": "Quantum Science & Cosmic Dread Paradoxes",
       "language": "English",
-      "voice": "auto",
+      "voice": "en_deep_cinematic_male",
       "format": "short",
       "status": "ready",
-      "bgm": "mystery"
-    },
-    {
-      "id": "slot_4",
-      "hour": 19,
-      "minute": 15,
-      "tz": "IST",
-      "niche": "Animal Secrets",
-      "language": "Hindi",
-      "voice": "auto",
-      "format": "short",
-      "status": "ready",
-      "bgm": "auto"
-    },
-    {
-      "id": "slot_5",
-      "hour": 21,
-      "minute": 30,
-      "tz": "IST",
-      "niche": "Ancient Bharat History",
-      "language": "Hindi",
-      "voice": "auto",
-      "format": "landscape_long",
-      "status": "ready",
-      "bgm": "history"
+      "label": "06:30 PM EDT (US Prime Time / 04:00 AM IST) - Mind-Bending Paradoxes (English Short)",
+      "bgm": "space"
     }
   ],
   "upload_privacy": "private",

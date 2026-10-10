@@ -374,7 +374,7 @@ class AutoPilot:
 
                 item_fmt = item.get("format", "short")
                 is_landscape = (item_fmt == "landscape_long")
-                target_dur = 180 if is_landscape else 65
+                target_dur = 180 if is_landscape else 50
                 orientation = "landscape" if is_landscape else "portrait"
                 video_subfolder = "longform" if is_landscape else "shorts"
                 v_w = 1920 if is_landscape else 1080
@@ -515,20 +515,27 @@ class AutoPilot:
         return uploaded_urls
 
     def _cleanup_temp(self, max_age_hours: int = 2):
-        """Remove temp files older than max_age_hours to prevent disk bloat."""
-        temp_dir = self.cfg.paths.temp_dir
-        if not temp_dir.exists():
-            return
+        """Remove temp files older than max_age_hours across all temp directories to prevent disk bloat."""
+        from autotube.config import PROJECT_ROOT
+        target_dirs = [
+            self.cfg.paths.temp_dir,
+            PROJECT_ROOT / "temp" / "director",
+            PROJECT_ROOT / "temp",
+        ]
         cutoff = time.time() - (max_age_hours * 3600)
         removed = 0
         freed_mb = 0.0
-        for f in temp_dir.iterdir():
-            if f.is_file() and f.stat().st_mtime < cutoff:
-                try:
-                    freed_mb += f.stat().st_size / (1024 * 1024)
-                    f.unlink()
-                    removed += 1
-                except Exception:
-                    pass
+
+        for t_dir in target_dirs:
+            if not t_dir.exists():
+                continue
+            for f in t_dir.rglob("*"):
+                if f.is_file() and f.stat().st_mtime < cutoff:
+                    try:
+                        freed_mb += f.stat().st_size / (1024 * 1024)
+                        f.unlink()
+                        removed += 1
+                    except Exception:
+                        pass
         if removed > 0:
             print_info(f"Cleaned up {removed} stale temp files ({freed_mb:.1f} MB freed).")

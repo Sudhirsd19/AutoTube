@@ -60,13 +60,22 @@ def log_event(msg: str):
 
 @app.on_event("startup")
 async def on_startup():
-    """Auto-start the 24/7 background AI Video Harvester."""
+    """Auto-start background services (Harvester + Scheduled Autopilot Daemon)."""
     try:
         from autotube.media.ai_video_harvester import harvester_instance
         harvester_instance.start_background_harvester()
         log_event("🚀 24/7 AI Video Harvester activated automatically on server startup!")
     except Exception as e:
         log_event(f"Failed to auto-start harvester: {e}")
+
+    try:
+        from autotube.scheduler.daemon import AutopilotDaemon
+        global autopilot_daemon_instance
+        autopilot_daemon_instance = AutopilotDaemon()
+        autopilot_daemon_instance.start()
+        log_event("⏰ Scheduled Autopilot Daemon watcher activated on server startup!")
+    except Exception as e:
+        log_event(f"Failed to auto-start autopilot daemon: {e}")
 
 
 # -------------------------------------------------------------
@@ -571,31 +580,33 @@ def run_autopilot_task(slot_id: Optional[str] = None):
 
     config = _load_slots_config()
     slots = config.get("slots", [])
-    count = 1 if slot_id else (len(slots) if slots else 7)
+    count = 1 if slot_id else (len(slots) if slots else int(config.get("daily_target", 5)))
     auto_upload = config.get("auto_upload", True)
     privacy = config.get("upload_privacy", "private")
 
-    GENERATION_STATUS["is_running"] = True
     task_desc = f"Autopilot Slot ({slot_id})" if slot_id else f"Autopilot Batch ({count} Slots)"
+    GENERATION_STATUS["is_running"] = True
     GENERATION_STATUS["current_task"] = task_desc
     log_event(f"Starting {task_desc} generation...")
 
-    python_bin = sys.executable
-    cmd = [python_bin, "run.py", "autopilot", "--count", str(count), "--niche", "mixed", "--lang", "mixed"]
-    if auto_upload:
-        cmd.append("--upload")
-    else:
-        cmd.append("--no-upload")
-
-    if privacy == "public":
-        cmd.append("--no-schedule")
-    else:
-        cmd.append("--schedule")
-
-    if slot_id:
-        cmd.extend(["--slot-id", slot_id])
-
     try:
+        python_bin = sys.executable
+        active_niche = "space" if any("space" in str(s.get("niche", "")).lower() for s in slots) else "mixed"
+        active_lang = "en" if (slots and all(s.get("language", "").lower() in ("english", "en") for s in slots)) else "mixed"
+        cmd = [python_bin, "run.py", "autopilot", "--count", str(count), "--niche", active_niche, "--lang", active_lang]
+        if auto_upload:
+            cmd.append("--upload")
+        else:
+            cmd.append("--no-upload")
+
+        if privacy == "public":
+            cmd.append("--no-schedule")
+        else:
+            cmd.append("--schedule")
+
+        if slot_id:
+            cmd.extend(["--slot-id", slot_id])
+
         proc = subprocess.Popen(
             cmd,
             stdout=subprocess.PIPE,
@@ -858,6 +869,7 @@ def _get_storage_status_dict() -> Dict[str, Any]:
     stock_size = (
         _get_dir_size_bytes(PROJECT_ROOT / "assets" / "stock_cache")
         + _get_dir_size_bytes(PROJECT_ROOT / "assets" / "pexels_videos")
+        + _get_dir_size_bytes(PROJECT_ROOT / "assets" / "ai_movie_clips")
     )
     total_cleanable = videos_size + temp_size + stock_size
 
@@ -930,6 +942,7 @@ async def purge_system_storage(req: StoragePurgeRequest):
         for s_dir in [
             PROJECT_ROOT / "assets" / "stock_cache",
             PROJECT_ROOT / "assets" / "pexels_videos",
+            PROJECT_ROOT / "assets" / "ai_movie_clips",
         ]:
             if s_dir.exists():
                 for f in list(s_dir.rglob("*")):
