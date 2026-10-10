@@ -326,4 +326,28 @@ def test_runtime_utility_imports_present():
     assert hasattr(wa, "print_warning"), "web.app must import print_warning"
 
 
+def test_condense_script_for_shorts_under_limit():
+    """Verify condense_script_for_shorts reduces an over-long script to <= 115 words."""
+    from autotube.media.director_engine import DirectorEngine
+    director = DirectorEngine()
+
+    long_script = (
+        "क्या महाभारत केवल एक काल्पनिक कथा है, या भारत के इतिहास का वह कड़वा सच जिसे आधुनिक विज्ञान ने भी मान लिया है? "
+        "समुद्र के भीतर द्वारका के अवशेषों का मिलना कोई इत्तेफाक नहीं है। पुरातत्वविदों को समुद्र तल में डूबी हुई जो स्वर्ण नगरी मिली है, "
+        "उसकी संरचनाएं महाभारत के ग्रंथों से हूबहू मेल खाती हैं। इतना ही नहीं, कुरुक्षेत्र की युद्धभूमि की मिट्टी में आज भी लोहे के उच्च स्तर के "
+        "कण पाए जाते हैं, जो उस भीषण नरसंहार और प्राचीन हथियारों के उपयोग की पुष्टि करते हैं। वैज्ञानिकों ने सैटेलाइट इमेजरी के जरिए सरस्वती नदी "
+        "के लुप्त मार्ग का पता लगाकर यह साबित कर दिया है कि महाभारत की घटनाएं केवल किंवदंतियां नहीं, बल्कि एक ऐतिहासिक यथार्थ थीं। क्या आपको लगता है "
+        "कि आधुनिक विज्ञान पौराणिक ग्रंथों की गहराई को समझने में अभी भी नाकाम है? अपनी राय कमेंट में जरूर लिखें। ऐसे ही और अनसुलझे रहस्यों के लिए "
+        "वीडियो को लाइक और चैनल को अभी सब्सक्राइब करें!"
+    )
+    assert len(long_script.split()) > 140
+
+    condensed = director.condense_script_for_shorts(long_script, language="hi")
+    word_count = len(condensed.split())
+    assert word_count <= 118, f"Condensed word count {word_count} must be <= 118"
+    assert "महाभारत" in condensed
+    assert "सब्सक्राइब" in condensed or "लाइक" in condensed or "कमेंट" in condensed
+
+
+
 

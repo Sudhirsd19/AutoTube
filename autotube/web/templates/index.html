@@ -527,9 +527,12 @@
           <div class="lg:col-span-2 space-y-3">
             <div class="flex items-center justify-between text-xs text-slate-400">
               <label class="font-semibold text-slate-300">Script / Kahani Narration:</label>
-              <div class="space-x-3">
+              <div class="flex items-center gap-2">
                 <span>Words: <b id="script-word-count" class="text-brand-cyan">0</b></span>
                 <span>Est. Duration: <b id="script-est-duration" class="text-emerald-400">0s</b></span>
+                <button type="button" id="btn-auto-fit-shorts" onclick="autoFitScriptForShorts()" class="hidden px-2 py-0.5 rounded bg-amber-500 hover:bg-amber-400 text-slate-950 text-[10px] font-extrabold uppercase shadow transition animate-pulse">
+                  ⚡ Auto-Fit 45s Short (&lt;60s)
+                </button>
               </div>
             </div>
             <textarea id="director-script-input" rows="6" oninput="updateScriptStats()" placeholder="Yaha apni kahani, script ya 1-line idea likho (jaise: 'Kailasa temple mystery' ya 'Bhagavad Gita mysterious prophecy') aur upar diye gaye '✨ Write Story' ya '⚡ Enhance Hook' par click karo..." class="w-full glass bg-slate-900/90 p-3.5 rounded-xl border border-slate-700 text-xs text-white focus:outline-none focus:border-brand-cyan font-sans leading-relaxed"></textarea>
@@ -2659,25 +2662,67 @@
       const estSec = Math.round(words / 2.5);
       const wordCountEl = document.getElementById('script-word-count');
       const estDurEl = document.getElementById('script-est-duration');
+      const autoFitBtn = document.getElementById('btn-auto-fit-shorts');
       wordCountEl.textContent = words;
       estDurEl.textContent = estSec + 's';
 
       if (studioVideoFormat === 'short') {
-        if (words > 135 || estSec > 58) {
+        if (words > 120 || estSec > 50) {
           wordCountEl.className = 'text-red-400 font-bold';
           estDurEl.className = 'text-red-400 font-bold';
-          estDurEl.textContent = estSec + 's (⚠️ Exceeds 60s Shorts Limit!)';
-        } else if (words < 90 && words > 0) {
+          estDurEl.textContent = estSec + 's (⚠️ Exceeds 50s Shorts Limit!)';
+          if (autoFitBtn) autoFitBtn.classList.remove('hidden');
+        } else if (words < 80 && words > 0) {
           wordCountEl.className = 'text-yellow-400 font-bold';
           estDurEl.className = 'text-yellow-400 font-bold';
           estDurEl.textContent = estSec + 's (Short)';
+          if (autoFitBtn) autoFitBtn.classList.add('hidden');
         } else {
           wordCountEl.className = 'text-brand-cyan';
           estDurEl.className = 'text-emerald-400';
+          if (autoFitBtn) autoFitBtn.classList.add('hidden');
         }
       } else {
         wordCountEl.className = 'text-brand-cyan';
         estDurEl.className = 'text-emerald-400';
+        if (autoFitBtn) autoFitBtn.classList.add('hidden');
+      }
+    }
+
+    async function autoFitScriptForShorts() {
+      const scriptInput = document.getElementById('director-script-input');
+      const rawText = scriptInput.value.trim();
+      if (!rawText) return;
+
+      const btn = document.getElementById('btn-auto-fit-shorts');
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Auto-Fitting...';
+      }
+
+      try {
+        const res = await fetch('/api/director/condense_script', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({
+            script_text: rawText,
+            language: studioLanguage
+          })
+        });
+        const data = await res.json();
+        if (data.success && data.condensed_script) {
+          scriptInput.value = data.condensed_script;
+          studioScenePlan = null;
+          updateScriptStats();
+          showToast(`⚡ Script auto-condensed to ${data.word_count} words (~${data.est_seconds}s)! Perfectly fits YouTube Shorts.`);
+        }
+      } catch (e) {
+        showToast('Condense error: ' + e.message, true);
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = '⚡ Auto-Fit 45s Short (&lt;60s)';
+        }
       }
     }
 

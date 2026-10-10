@@ -96,6 +96,81 @@ class DirectorEngine:
             "subtitle_styles": subtitle_styles,
         }
 
+    def condense_script_for_shorts(
+        self,
+        script_text: str,
+        language: str = "hi",
+    ) -> str:
+        """Condense narration into a high-retention 100-115 word script strictly under 50s (<60s Shorts limit)."""
+        words = script_text.strip().split()
+        if len(words) <= 115:
+            return script_text
+
+        gemini_key = os.getenv("GEMINI_API_KEY", "") or getattr(self.cfg, "gemini_api_key", "")
+        lang_lower = (language or "hi").lower()
+        is_hindi = lang_lower in ("hi", "hindi")
+        is_hinglish = lang_lower in ("hinglish", "hi-en")
+
+        if gemini_key:
+            try:
+                from google import genai
+                client = genai.Client(api_key=gemini_key)
+                lang_rule = "pure Devanagari Hindi (हिंदी देवनागरी लिपि)" if is_hindi else ("conversational Hinglish" if is_hinglish else "punchy English")
+
+                prompt = f"""You are a master viral YouTube Shorts script editor.
+Condense and tighten this script so it strictly fits within a 45-second YouTube Short (<50s strict limit).
+
+Original Script ({len(words)} words):
+"{script_text}"
+
+CRITICAL RULES:
+1. Target Word Count: STRICTLY 100 to 110 words total (ABSOLUTE CEILING: 115 words).
+2. Language: Write 100% in {lang_rule}.
+3. Structure:
+   - Punchy 3s Opening Hook (15-20 words)
+   - Core Thrilling Facts / Evidence Body (65-75 words, 3 sharp sentences)
+   - Provocative Question & Subscribe CTA (15-20 words)
+4. Cut out all filler words, repeated phrases, and secondary explanations.
+5. Return ONLY the tightened narration text as a single plain paragraph. No JSON, no titles, no intro labels, no markdown.
+"""
+                models_to_try = ["gemini-3.1-flash-lite", "gemini-3.5-flash-lite", "gemini-3.5-flash"]
+                for model_name in models_to_try:
+                    try:
+                        resp = client.models.generate_content(
+                            model=model_name,
+                            contents=prompt,
+                        )
+                        if resp and resp.text:
+                            clean_text = resp.text.strip()
+                            clean_text = re.sub(r"^```[a-z]*\n?", "", clean_text)
+                            clean_text = re.sub(r"\n?```$", "", clean_text).strip()
+                            clean_words = clean_text.split()
+                            if 75 <= len(clean_words) <= 120:
+                                print_success(f"Script condensed to {len(clean_words)} words (~{len(clean_words)/2.6:.0f}s) via {model_name}!")
+                                return clean_text
+                    except Exception:
+                        continue
+            except Exception as e:
+                print_warning(f"AI script condensation error: {e}")
+
+        # Smart rule-based sentence compression fallback
+        sentences = [s.strip() for s in re.split(r"(?<=[.!?।॥])\s+|\n+", script_text) if s.strip()]
+        if len(sentences) <= 3:
+            return " ".join(words[:115])
+
+        hook = sentences[0]
+        cta = sentences[-1]
+        mid = sentences[1:-1]
+        selected_mid = []
+        cur_count = len(hook.split()) + len(cta.split())
+        for s in mid:
+            s_words = len(s.split())
+            if cur_count + s_words <= 112:
+                selected_mid.append(s)
+                cur_count += s_words
+
+        return f"{hook} {' '.join(selected_mid)} {cta}".strip()
+
     def enhance_script_with_ai(
         self,
         raw_input: str,
@@ -110,7 +185,7 @@ class DirectorEngine:
         is_long = (video_format == "landscape_long")
         gemini_key = os.getenv("GEMINI_API_KEY", "") or getattr(self.cfg, "gemini_api_key", "")
 
-        target_words = "350 to 500 words (3.0 to 4.5 minutes documentary length)" if is_long else "110 to 130 words (strictly 45 to 50 seconds, YouTube Shorts hard limit under 58s)"
+        target_words = "350 to 500 words (3.0 to 4.5 minutes documentary length)" if is_long else "100 to 115 words (strictly 42 to 48 seconds, YouTube Shorts limit under 50s)"
         format_desc = "16:9 Landscape Documentary Video" if is_long else "9:16 Vertical YouTube Short"
 
         if gemini_key:
@@ -177,11 +252,12 @@ class DirectorEngine:
 - For 16:9 Long Video, the script narration should be 350 to 500 words (3.0 to 4.5 minutes spoken audio).
 - Deliver deep investigative depth, rich historical context, and comprehensive storytelling."""
                 else:
-                    duration_mandate = """CRITICAL YOUTUBE SHORTS DURATION MANDATE (STRICTLY UNDER 60 SECONDS):
-- For YouTube Shorts, the script narration MUST BE STRICTLY UNDER 60 SECONDS (Target: 45 to 50 seconds spoken audio).
-- YouTube Shorts feed HARD CUTOFF is 60.0 seconds! Any video >60s is disqualified from the Shorts feed!
-- At standard natural speaking pace (~140 words/minute), the script MUST BE EXACTLY 110 TO 130 WORDS (hard ceiling 135 words).
-- High tension, zero fluff, fast cinematic pacing. Every single second must hook the viewer."""
+                    duration_mandate = """CRITICAL YOUTUBE SHORTS DURATION MANDATE (STRICTLY UNDER 50 SECONDS, HARD LIMIT <60s):
+- For YouTube Shorts, the script narration MUST BE STRICTLY UNDER 50 SECONDS (Target: 42 to 48 seconds spoken audio).
+- YouTube Shorts feed HARD CUTOFF is 60.0 seconds! Any video >60s is rejected.
+- At standard natural speaking pace (~2.4 words/second), the script MUST BE STRICTLY 100 TO 115 WORDS TOTAL (ABSOLUTE CEILING: 120 words).
+- Word Budget: Hook = 15-20 words, Body = 65-75 words (3 punchy sentences), Outro + Subscribe CTA = 15-20 words.
+- DO NOT WRITE MORE THAN 115 WORDS! Brevity and viral suspense are paramount."""
 
                 prompt = f"""You are a top-tier viral YouTube Short & Documentary scriptwriter who crafts scripts that retain 80%+ audience retention and drive massive subscriber conversion.
 
@@ -256,6 +332,12 @@ Output STRICT JSON with these keys:
                     raise RuntimeError("All Gemini models failed")
 
                 narration = data.get("full_narration", raw_input)
+                if not is_long and len(narration.split()) > 118:
+                    print_info(f"Generated narration has {len(narration.split())} words. Auto-condensing for 48s Shorts limit...")
+                    condensed = self.condense_script_for_shorts(narration, language=language)
+                    if condensed:
+                        narration = condensed
+
                 word_count = len(narration.split())
                 est_seconds = round(word_count / 2.6, 1)
 
@@ -271,7 +353,7 @@ Output STRICT JSON with these keys:
                     "word_count": word_count,
                     "est_seconds": est_seconds,
                     "is_long": is_long,
-                    "scenes": self._split_script_into_scenes(narration, 35 if is_long else 25),
+                    "scenes": self._split_script_into_scenes(narration, 35 if is_long else 6),
                 }
             except Exception as e:
                 print_warning(f"AI script enhancer error: {e}. Using heuristic fallback...")
@@ -628,8 +710,15 @@ Output STRICT JSON with these keys:
         final_video_path = output_dir / f"{slug}_{int(time.time())}.mp4"
 
         # Build a stable scene contract before any TTS or visual acquisition.
-        max_scene_count = 35 if is_long else 25
         active_script = script_text.strip()
+        if not is_long and len(active_script.split()) > 120:
+            print_info(f"Input script has {len(active_script.split())} words. Auto-condensing for 48s Shorts limit...")
+            condensed = self.condense_script_for_shorts(active_script, language=language)
+            if condensed:
+                active_script = condensed
+                scenes = None  # Re-partition scenes for condensed text
+
+        max_scene_count = 35 if is_long else 6
         scene_specs = self._prepare_scene_specs(
             script_text=active_script,
             title=title,
@@ -980,19 +1069,58 @@ Output STRICT JSON with these keys:
                     try:
                         is_hist = any(k in sentence.lower() or k in title.lower() for k in ("mahabharat", "महाभारत", "ramayan", "रामायण", "kurukshetra", "कुरुक्षेत्र", "temple", "mandir", "मंदिर", "itihas", "इतिहास", "prachin", "प्राचीन", "purana", "पुराण", "dwarka", "द्वारका", "archaeol"))
                         is_space = any(k in sentence.lower() or k in title.lower() for k in ("space", "antariksh", "अंतरिक्ष", "black hole", "galaxy", "universe", "planet", "stars", "cosmos"))
-                        genre_fallback = "ancient stone temple ruins dramatic" if is_hist else ("deep space stars cosmos" if is_space else "cinematic dramatic atmosphere")
 
-                        safe_query = deduped_queries[0] if deduped_queries else genre_fallback
-                        safe_v = pexels.get_scene_video(search_query=safe_query, orientation=orientation, scene_index=idx)
-                        if not safe_v:
-                            safe_v = pexels.get_scene_video(search_query=genre_fallback, orientation=orientation, scene_index=idx)
-                        if safe_v and safe_v.exists() and safe_v.stat().st_size > 5000:
+                        if is_hist:
+                            fallback_pool = [
+                                "ancient stone temple ruins dramatic",
+                                "mysterious hindu temple architecture",
+                                "ancient historical ruins aerial",
+                                "underwater ocean ruins deep water",
+                                "epic battlefield landscape dramatic mist",
+                                "ancient artifacts excavation archaeology",
+                                "sacred river ghats ancient india",
+                            ]
+                        elif is_space:
+                            fallback_pool = [
+                                "deep space stars cosmos nebula",
+                                "black hole event horizon cosmos",
+                                "spinning planet universe galaxy",
+                                "telescope observatory starry night",
+                                "cosmic dust interstellar space",
+                                "glowing galaxy stars rotation",
+                            ]
+                        else:
+                            fallback_pool = [
+                                "cinematic dramatic atmosphere fog",
+                                "mysterious dark misty forest",
+                                "dramatic ocean waves slow motion",
+                                "dark moody clouds time lapse",
+                                "cinematic mountain valley dramatic",
+                            ]
+
+                        already_used_files = {p.name for p in scene_assets_by_scene.values() if p}
+                        safe_candidates = [deduped_queries[0]] if deduped_queries else []
+                        for offset in range(len(fallback_pool)):
+                            safe_candidates.append(fallback_pool[(idx + offset) % len(fallback_pool)])
+
+                        for q_cand in safe_candidates:
+                            safe_v = pexels.get_scene_video(search_query=q_cand, orientation=orientation, scene_index=idx)
+                            if not safe_v or not safe_v.exists() or safe_v.stat().st_size <= 5000:
+                                continue
+                            if safe_v.name in already_used_files:
+                                continue
+
                             qa = multi_agg.visual_quality_gate.verify(safe_v, sentence, scene_plan)
                             if qa.get("accepted"):
                                 acquired_video = safe_v
                                 print_success(f"   ✅ [Fail-Safe Video] Scene {idx+1} acquired QA-verified motion footage: {safe_v.name}")
+                                break
+                            elif not qa.get("violations"):
+                                acquired_video = safe_v
+                                print_info(f"   🎬 [Thematic Fallback] Scene {idx+1} covered with atmospheric genre footage: {safe_v.name}")
+                                break
                             else:
-                                print_warning(f"   ⚠️ Fail-safe video rejected by QA: {qa.get('reason', 'visual mismatch')}")
+                                print_warning(f"   ⚠️ Fail-safe candidate rejected by QA: {qa.get('reason', 'visual mismatch')}")
                     except Exception as s_err:
                         print_warning(f"   ⚠️ Fail-safe video search failed for Scene {idx+1}: {s_err}")
 

@@ -157,6 +157,11 @@ class ScriptEnhanceRequest(BaseModel):
     video_format: Optional[str] = "short"
 
 
+class ScriptCondenseRequest(BaseModel):
+    script_text: str
+    language: Optional[str] = "hi"
+
+
 class VoiceAuditionRequest(BaseModel):
     voice_id: str
     sample_text: Optional[str] = None
@@ -1371,6 +1376,22 @@ async def enhance_script(req: ScriptEnhanceRequest):
     return res
 
 
+@app.post("/api/director/condense_script")
+async def condense_script_endpoint(req: ScriptCondenseRequest):
+    """Condense script to strictly fit under 50s Shorts limit (<60s)."""
+    from autotube.media.director_engine import DirectorEngine
+    director = DirectorEngine()
+    condensed = director.condense_script_for_shorts(req.script_text, language=req.language or "hi")
+    words = len(condensed.split())
+    est_sec = round(words / 2.6, 1)
+    return {
+        "success": True,
+        "condensed_script": condensed,
+        "word_count": words,
+        "est_seconds": est_sec,
+    }
+
+
 @app.post("/api/director/test_voice")
 async def test_voice_audition(req: VoiceAuditionRequest):
     """Generate a quick 3-second voice preview."""
@@ -1423,6 +1444,15 @@ def run_director_render_task(req_data: dict):
     try:
         from autotube.media.director_engine import DirectorEngine
         director = DirectorEngine()
+        if v_fmt == "short":
+            raw_words = req_data["script_text"].strip().split()
+            if len(raw_words) > 120:
+                log_event(f"Studio: Script has {len(raw_words)} words (~{len(raw_words)/2.6:.0f}s). Auto-tightening to fit <50s Shorts limit...")
+                condensed = director.condense_script_for_shorts(req_data["script_text"], language=req_data.get("language", "hi"))
+                if condensed and len(condensed.split()) <= 120:
+                    req_data["script_text"] = condensed
+                    req_data["scenes"] = None
+
         result = director.render_custom_video(
             script_text=req_data["script_text"],
             title=req_data["title"],
