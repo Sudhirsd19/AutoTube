@@ -295,7 +295,8 @@ def acquire_scene_visuals_waterfall(
         ]
 
     # Final strict checks also cover the secondary StockFetcher fallback.
-    expected_count = len(scenes[:max_scenes]) if scenes else len(getattr(script, "visual_keywords", []) or [getattr(script, "topic", "scene")])[:max_scenes]
+    fallback_queries = getattr(script, "visual_keywords", []) or [getattr(script, "topic", "scene")]
+    expected_count = len(scenes[:max_scenes]) if scenes else len(fallback_queries[:max_scenes])
     if len(scene_assets) != expected_count:
         _remove_assets([a for a in scene_assets if a])
         raise RuntimeError(
