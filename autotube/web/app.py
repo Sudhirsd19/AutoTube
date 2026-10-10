@@ -365,16 +365,106 @@ async def get_oauth_url(channel: str = "english"):
         secrets_file = cfg.youtube.client_secrets_file
         if not secrets_file.exists():
             raise HTTPException(status_code=404, detail="client_secrets.json not found in config/")
+        
+        target_ch = (channel or "english").lower().strip()
         flow = InstalledAppFlow.from_client_secrets_file(str(secrets_file), YOUTUBE_SCOPES)
         flow.redirect_uri = "urn:ietf:wg:oauth:2.0:oob"
         auth_url, _ = flow.authorization_url(prompt="consent", access_type="offline")
-        return {"success": True, "auth_url": auth_url, "url": auth_url, "channel": channel}
+
+        # Save verifier and redirect_uri so exchange_code can redeem this exact request
+        if getattr(flow, "code_verifier", None):
+            verifier_file = PROJECT_ROOT / "config" / f"oauth_verifier_{target_ch}.txt"
+            verifier_file.write_text(flow.code_verifier, encoding="utf-8")
+
+        redirect_file = PROJECT_ROOT / "config" / f"oauth_redirect_{target_ch}.txt"
+        redirect_file.write_text(flow.redirect_uri, encoding="utf-8")
+
+        return {"success": True, "auth_url": auth_url, "url": auth_url, "channel": target_ch}
     except Exception as e:
         auth_file = PROJECT_ROOT / "config" / "auth_url.txt"
         if auth_file.exists():
             val = auth_file.read_text(encoding="utf-8").strip()
             return {"success": True, "auth_url": val, "url": val, "channel": channel}
         raise HTTPException(status_code=500, detail=str(e))
+
+
+class ExchangeCodeRequest(BaseModel):
+    code: str
+    channel: str = "english"
+
+
+@app.post("/api/auth/exchange_code")
+async def exchange_auth_code(req: ExchangeCodeRequest):
+    """Exchange Google OAuth authorization code for credentials tokens and save."""
+    try:
+        import urllib.parse
+        from google_auth_oauthlib.flow import InstalledAppFlow
+        from autotube.uploader.auth import YOUTUBE_SCOPES
+
+        raw_input = req.code.strip()
+        code = raw_input
+        # Support if user pasted the full redirected URL
+        if "code=" in raw_input:
+            parsed = urllib.parse.urlparse(raw_input)
+            params = urllib.parse.parse_qs(parsed.query)
+            if "code" in params:
+                code = params["code"][0]
+        elif "approvalCode=" in raw_input:
+            parsed = urllib.parse.urlparse(raw_input)
+            params = urllib.parse.parse_qs(parsed.query)
+            if "approvalCode" in params:
+                code = params["approvalCode"][0]
+
+        # Unquote URL encoding if needed (e.g. 4%2F...)
+        code = urllib.parse.unquote(code).strip()
+
+        target_ch = (req.channel or "english").lower().strip()
+        cfg = get_config()
+        secrets_file = cfg.youtube.client_secrets_file
+        flow = InstalledAppFlow.from_client_secrets_file(str(secrets_file), YOUTUBE_SCOPES)
+
+        redirect_file = PROJECT_ROOT / "config" / f"oauth_redirect_{target_ch}.txt"
+        if redirect_file.exists():
+            flow.redirect_uri = redirect_file.read_text(encoding="utf-8").strip()
+        else:
+            flow.redirect_uri = "urn:ietf:wg:oauth:2.0:oob"
+
+        verifier_file = PROJECT_ROOT / "config" / f"oauth_verifier_{target_ch}.txt"
+        if verifier_file.exists():
+            saved_verifier = verifier_file.read_text(encoding="utf-8").strip()
+            if saved_verifier:
+                flow.code_verifier = saved_verifier
+        else:
+            flow.autogenerate_code_verifier = False
+            flow.code_verifier = None
+
+        flow.fetch_token(code=code)
+        creds = flow.credentials
+
+        token_file = PROJECT_ROOT / "config" / f"token_{target_ch}.json"
+        token_file.parent.mkdir(parents=True, exist_ok=True)
+        with open(token_file, "w", encoding="utf-8") as f:
+            f.write(creds.to_json())
+
+        if target_ch == "english":
+            try:
+                with open(PROJECT_ROOT / "config" / "token.json", "w", encoding="utf-8") as f:
+                    f.write(creds.to_json())
+            except Exception:
+                pass
+
+        try:
+            if verifier_file.exists():
+                verifier_file.unlink()
+            if redirect_file.exists():
+                redirect_file.unlink()
+        except Exception:
+            pass
+
+        log_event(f"Successfully authenticated '{target_ch}' channel via Google OAuth code.")
+        return {"success": True, "message": f"Successfully authenticated {target_ch.title()} Channel!"}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Failed to exchange authorization code: {e}")
 
 
 class SaveTokenRequest(BaseModel):

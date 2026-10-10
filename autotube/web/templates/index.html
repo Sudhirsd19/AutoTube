@@ -1025,6 +1025,9 @@
             <button onclick="openOAuthUrl('english')" class="w-full py-1.5 px-3 rounded-lg bg-cyan-900 hover:bg-cyan-800 text-cyan-200 text-xs font-bold transition flex items-center justify-center gap-1.5">
               <i class="fa-brands fa-google"></i> Connect / Refresh (OAuth)
             </button>
+            <button onclick="promptEnterAuthCode('english')" class="w-full py-1.5 px-3 rounded-lg bg-amber-900/80 hover:bg-amber-800 text-amber-200 text-xs font-semibold transition flex items-center justify-center gap-1.5">
+              <i class="fa-solid fa-key"></i> Enter Auth Code
+            </button>
             <button onclick="promptPasteChannelToken('english')" class="w-full py-1.5 px-3 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold transition flex items-center justify-center gap-1.5">
               <i class="fa-solid fa-paste"></i> Paste Token JSON
             </button>
@@ -1046,6 +1049,9 @@
           <div class="space-y-2 pt-2 border-t border-slate-800">
             <button onclick="openOAuthUrl('hindi')" class="w-full py-1.5 px-3 rounded-lg bg-amber-900 hover:bg-amber-800 text-amber-200 text-xs font-bold transition flex items-center justify-center gap-1.5">
               <i class="fa-brands fa-google"></i> Connect / Refresh (OAuth)
+            </button>
+            <button onclick="promptEnterAuthCode('hindi')" class="w-full py-1.5 px-3 rounded-lg bg-amber-900/80 hover:bg-amber-800 text-amber-200 text-xs font-semibold transition flex items-center justify-center gap-1.5">
+              <i class="fa-solid fa-key"></i> Enter Auth Code
             </button>
             <button onclick="promptPasteChannelToken('hindi')" class="w-full py-1.5 px-3 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold transition flex items-center justify-center gap-1.5">
               <i class="fa-solid fa-paste"></i> Paste Token JSON
@@ -1217,6 +1223,9 @@
                 <button onclick="openOAuthUrl('${channel}')" class="px-4 py-2 rounded-xl bg-cyan-700 hover:bg-cyan-600 text-xs font-bold text-white transition">
                   <i class="fa-brands fa-google mr-1"></i> Google Sign-In
                 </button>
+                <button onclick="promptEnterAuthCode('${channel}')" class="px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-500 text-xs font-bold text-white transition flex items-center gap-1.5 shadow">
+                  <i class="fa-solid fa-key"></i> Enter Auth Code
+                </button>
                 <button onclick="promptPasteChannelToken('${channel}')" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-600 text-xs text-slate-200 transition">
                   <i class="fa-solid fa-paste mr-1"></i> Paste Token JSON
                 </button>
@@ -1326,6 +1335,32 @@
         }
       } catch (err) {
         showToast('Error fetching OAuth URL: ' + err.message, true);
+      }
+    }
+
+    async function promptEnterAuthCode(channel = currentYouTubeChannel) {
+      const code = prompt(`Enter Google OAuth Authorization Code for [${channel.toUpperCase()}] channel:\n(You can paste either the code, or the full redirected URL)`);
+      if (!code || !code.trim()) return;
+      showToast(`Exchanging authorization code for ${channel.toUpperCase()}...`);
+      try {
+        const res = await fetch('/api/auth/exchange_code', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ code: code.trim(), channel: channel }),
+        });
+        const data = await res.json();
+        if (res.ok && data.success) {
+          showToast(`✅ ${data.message || 'Channel authenticated successfully!'}`);
+          loadStatus();
+          if (channel === currentYouTubeChannel) {
+            setTimeout(() => loadVideos(channel), 800);
+          }
+          openTokenModal();
+        } else {
+          showToast(data.detail || 'Failed to exchange authorization code.', true);
+        }
+      } catch (e) {
+        showToast('Error exchanging code: ' + e.message, true);
       }
     }
 
