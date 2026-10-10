@@ -9,10 +9,11 @@ import time
 from pathlib import Path
 from typing import Any, Dict, Optional
 
+from autotube.config import PROJECT_ROOT
 from autotube.utils.console import print_info, print_warning, print_success, print_error
 
-SLOTS_CONFIG_FILE = Path("config/slots_config.json")
-EXECUTION_TRACKER_FILE = Path("config/slot_execution_tracker.json")
+SLOTS_CONFIG_FILE = PROJECT_ROOT / "config" / "slots_config.json"
+EXECUTION_TRACKER_FILE = PROJECT_ROOT / "config" / "slot_execution_tracker.json"
 MAX_ATTEMPTS_PER_SLOT = 3
 RETRY_DELAY_SECONDS = 10 * 60
 STALE_RUNNING_SECONDS = 3 * 60 * 60
