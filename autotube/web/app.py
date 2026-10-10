@@ -368,11 +368,12 @@ async def get_oauth_url(channel: str = "english"):
         flow = InstalledAppFlow.from_client_secrets_file(str(secrets_file), YOUTUBE_SCOPES)
         flow.redirect_uri = "urn:ietf:wg:oauth:2.0:oob"
         auth_url, _ = flow.authorization_url(prompt="consent", access_type="offline")
-        return {"success": True, "auth_url": auth_url, "channel": channel}
+        return {"success": True, "auth_url": auth_url, "url": auth_url, "channel": channel}
     except Exception as e:
         auth_file = PROJECT_ROOT / "config" / "auth_url.txt"
         if auth_file.exists():
-            return {"success": True, "auth_url": auth_file.read_text(encoding="utf-8").strip(), "channel": channel}
+            val = auth_file.read_text(encoding="utf-8").strip()
+            return {"success": True, "auth_url": val, "url": val, "channel": channel}
         raise HTTPException(status_code=500, detail=str(e))
 
 

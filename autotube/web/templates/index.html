@@ -1317,8 +1317,9 @@
       try {
         const res = await fetch(`/api/auth/url?channel=${encodeURIComponent(channel)}`);
         const data = await res.json();
-        if (data.url) {
-          window.open(data.url, '_blank');
+        const consentUrl = data.auth_url || data.url;
+        if (consentUrl) {
+          window.open(consentUrl, '_blank');
           showToast(`Opening Google OAuth consent page for ${channel}...`);
         } else {
           showToast('Could not generate OAuth consent URL. Check client_secret.json', true);
