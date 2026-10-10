@@ -14,6 +14,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 import os
 import json
+import re
 import shutil
 
 from fastapi import FastAPI, BackgroundTasks, HTTPException, Request, UploadFile, File
@@ -831,6 +832,7 @@ def run_autopilot_task(slot_id: Optional[str] = None):
 
     try:
         python_bin = sys.executable
+        completion_summary = None
         if slot_id:
             this_slot = next((s for s in slots if s.get("id") == slot_id), None)
             active_niche = this_slot.get("niche", "mystery") if this_slot else "mixed"
@@ -863,14 +865,44 @@ def run_autopilot_task(slot_id: Optional[str] = None):
             bufsize=1,
             cwd=str(PROJECT_ROOT),
         )
-        for line in proc.stdout:
+        for line in proc.stdout or []:
             clean = line.strip()
             if clean:
                 log_event(clean)
+                # Rich/TTY escape codes should not hide the final result from the
+                # persistent scheduler's retry decision.
+                normalized = re.sub(r"\x1b\[[0-9;]*m", "", clean)
+                if "Daily Batch Complete!" in normalized:
+                    completion_summary = normalized
         proc.wait()
         log_event(f"Autopilot task completed with return code {proc.returncode}!")
+        if proc.returncode != 0 or not completion_summary:
+            return False
+
+        match = re.search(
+            r"Generated\s+(\d+)\s+videos?\.\s*Uploaded\s+(\d+)\.\s*Failed\s+(\d+)\.",
+            completion_summary,
+            flags=re.IGNORECASE,
+        )
+        if not match:
+            log_event("Autopilot result could not be verified from the completion summary; marking as failed for retry.")
+            return False
+
+        generated_count, uploaded_count, failed_count = (int(value) for value in match.groups())
+        completed_successfully = (
+            generated_count > 0
+            and failed_count == 0
+            and (not auto_upload or uploaded_count >= generated_count)
+        )
+        if not completed_successfully:
+            log_event(
+                f"Autopilot batch verification failed: generated={generated_count}, "
+                f"uploaded={uploaded_count}, failed={failed_count}, auto_upload={auto_upload}."
+            )
+        return completed_successfully
     except Exception as e:
         log_event(f"Autopilot error: {e}")
+        return False
     finally:
         GENERATION_STATUS["is_running"] = False
         GENERATION_STATUS["current_task"] = "Idle"
@@ -881,12 +913,26 @@ async def get_autopilot_slots():
     return _load_slots_config()
 
 
+def _resolve_saved_preset(slots: List[Dict[str, Any]], requested_preset: Optional[str], presets: Dict[str, Any]) -> str:
+    """Keep a named preset active only when its original slot definition is unchanged."""
+    requested = (requested_preset or "custom").strip()
+    if requested == "custom":
+        return "custom"
+    saved_slots = presets.get(requested)
+    if not isinstance(saved_slots, list) or slots != saved_slots:
+        return "custom"
+    return requested
+
+
 @app.post("/api/autopilot/slots/save")
 async def save_autopilot_slots(req: SaveSlotsRequest):
     data = _load_slots_config()
     data["slots"] = req.slots
-    if req.active_preset:
-        data["active_preset"] = req.active_preset
+    data["active_preset"] = _resolve_saved_preset(
+        req.slots,
+        req.active_preset,
+        data.get("presets", {}),
+    )
     if req.daily_target is not None:
         data["daily_target"] = req.daily_target
     else:
