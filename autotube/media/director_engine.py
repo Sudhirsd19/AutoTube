@@ -771,7 +771,10 @@ Output STRICT JSON with these keys:
         vg = VisualGenerator()
         nvidia = NvidiaVideoGenerator()
         multi_agg = MultiStockAggregator()
-        pexels = multi_agg.pexels
+        pexels = getattr(multi_agg, "pexels_fetcher", getattr(multi_agg, "pexels", None))
+        if not pexels:
+            from autotube.media.pexels_video import PexelsVideoFetcher
+            pexels = PexelsVideoFetcher()
         # Studio motion scenes require actual frame-level semantic validation.
         multi_agg.visual_quality_gate.strict = True
 

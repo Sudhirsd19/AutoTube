@@ -300,3 +300,16 @@ def test_autopilot_cleanup_skips_during_active_generation():
     finally:
         GENERATION_STATUS["is_running"] = False
 
+
+def test_multistock_aggregator_has_pexels_attributes():
+    """Verify MultiStockAggregator exposes pexels and pexels_fetcher properly."""
+    from autotube.media.multi_stock_aggregator import MultiStockAggregator
+    from autotube.media.pexels_video import PexelsVideoFetcher
+
+    agg = MultiStockAggregator()
+    assert hasattr(agg, "pexels")
+    assert hasattr(agg, "pexels_fetcher")
+    assert isinstance(agg.pexels, PexelsVideoFetcher)
+    assert isinstance(agg.pexels_fetcher, PexelsVideoFetcher)
+
+

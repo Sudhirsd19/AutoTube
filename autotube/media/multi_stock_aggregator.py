@@ -67,6 +67,14 @@ class MultiStockAggregator:
         self.persistent_used_hashes: Set[str] = self._load_used_hashes()
         self._gemini_client = None
 
+    @property
+    def pexels(self) -> PexelsVideoFetcher:
+        return getattr(self, "pexels_fetcher", None) or PexelsVideoFetcher()
+
+    @pexels.setter
+    def pexels(self, val: Any):
+        self.pexels_fetcher = val
+
     def _load_used_ids(self) -> Set[str]:
         try:
             if USED_STOCK_HISTORY.exists():
