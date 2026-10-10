@@ -20,7 +20,7 @@ GEMINI_HTTP_TIMEOUT_MS = int(os.getenv("AUTOTUBE_GEMINI_HTTP_TIMEOUT_MS", "60000
 class VisualQualityGate:
     """Final frame-level QA. Uses Gemini when GEMINI_API_KEY is present."""
 
-    MODELS = ("gemini-3.1-flash-lite", "gemini-3.5-flash", "gemini-2.0-flash", "gemini-3.8-flash")
+    MODELS = ("gemini-3.8-flash", "gemini-3.5-flash", "gemini-3.5-flash-lite", "gemini-3.1-flash-lite")
 
     def __init__(self, min_confidence: int = 75, min_coverage: int = 70) -> None:
         self.min_confidence = min_confidence
