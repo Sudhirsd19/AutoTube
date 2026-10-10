@@ -36,3 +36,6 @@ config/edge_flow_profile/
 temp/
 scratch/
 
+
+# Runtime scheduler state
+config/slot_execution_tracker.json

@@ -2134,6 +2134,12 @@
         });
 
         if (result.success) {
+          // The backend may change a modified named preset to "custom".
+          // Refresh the authoritative config so the UI cannot display a stale preset label.
+          if (result.data) {
+            currentSlotsConfig = result.data;
+            renderSlotsMatrix();
+          }
           markSlotsSaved((currentSlotsConfig.slots || []).length);
           if (!silent) {
             showToast(`✅ Settings Saved! Bot will generate strictly using ${currentSlotsConfig.slots.length} configured slots.`);
