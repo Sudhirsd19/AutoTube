@@ -370,6 +370,7 @@ class ShortsBuilder:
             subscribe_badge=subscribe_badge if subscribe_badge.exists() else None,
             duration=duration,
         )
+        res_video = None
         if burn_success and output_path.exists() and output_path.stat().st_size > 1000:
             try:
                 if raw_video_path.exists():
@@ -377,7 +378,7 @@ class ShortsBuilder:
             except Exception:
                 pass
             print_success(f"Final Viral YouTube Short generated: {output_path.name}")
-            return output_path
+            res_video = output_path
         else:
             print_warning("Subtitle/overlay burning failed, falling back to raw video as output.")
             if raw_video_path.exists() and raw_video_path.stat().st_size > 1000:
@@ -387,7 +388,22 @@ class ShortsBuilder:
                         output_path.unlink()
                     shutil.move(str(raw_video_path), str(output_path))
                     print_info(f"Using raw video without subtitles: {output_path.name}")
-                    return output_path
+                    res_video = output_path
                 except Exception as mv_err:
                     print_error(f"Failed to recover raw video as output: {mv_err}")
-            return None
+
+        if res_video and res_video.exists():
+            final_dur = get_media_duration(res_video)
+            is_vertical = (v_height > v_width)
+            if is_vertical and final_dur >= 59.5:
+                try:
+                    res_video.unlink()
+                except Exception:
+                    pass
+                raise RuntimeError(
+                    f"Fail-Closed Duration Gate: Rendered Short duration is {final_dur:.2f}s, "
+                    "which violates the strict 60.0s YouTube Shorts limit! Video blocked and deleted."
+                )
+            return res_video
+
+        return None

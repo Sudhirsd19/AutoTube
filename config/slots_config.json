@@ -1,7 +1,7 @@
 {
   "active_preset": "elite_2",
   "daily_target": 2,
-  "autopilot_daemon": false,
+  "autopilot_daemon": true,
   "review_before_upload": false,
   "presets": {
     "growth_4": [

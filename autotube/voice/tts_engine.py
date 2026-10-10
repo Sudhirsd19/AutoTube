@@ -824,8 +824,12 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
             return tts_res
 
         speed_factor = tts_res.duration_seconds / target_seconds
-        # Cap speedup factor to 1.35x to preserve natural timbre
-        speed_factor = min(max(speed_factor, 1.05), 1.35)
+        speed_factor = max(speed_factor, 1.05)
+        if speed_factor > 1.8:
+            raise RuntimeError(
+                f"Audio duration ({tts_res.duration_seconds:.1f}s) is too long for YouTube Shorts "
+                f"(requires excessive {speed_factor:.2f}x speedup). Script must be under 135 words to qualify for Shorts."
+            )
 
         print_warning(
             f"⚡ Audio duration ({tts_res.duration_seconds:.1f}s) exceeds Shorts safety threshold ({max_seconds:.1f}s). "
@@ -840,10 +844,18 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
             desc="Clamping audio duration for YouTube Shorts compliance",
         )
         if not success or not clamped_audio.exists():
-            print_warning("Audio duration clamping failed; using original audio.")
-            return tts_res
+            raise RuntimeError(
+                f"Audio duration clamping failed: cannot bring {tts_res.duration_seconds:.1f}s audio under "
+                f"the strict Shorts limit ({max_seconds:.1f}s)."
+            )
 
         new_duration = get_media_duration(clamped_audio)
+        if new_duration > max_seconds:
+            raise RuntimeError(
+                f"Clamped audio duration ({new_duration:.1f}s) exceeds strict Shorts limit ({max_seconds:.1f}s). "
+                "Render blocked."
+            )
+
         actual_ratio = tts_res.duration_seconds / max(new_duration, 0.1)
 
         # Scale word timestamps

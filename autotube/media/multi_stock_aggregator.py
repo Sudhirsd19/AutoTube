@@ -972,14 +972,20 @@ Output STRICT JSON with:
         orientation: str = "portrait",
         archival_pool: Optional[List[Path]] = None,
         allow_archival_fallback: bool = False,
-        allow_ai_fallback: bool = True,
         scene_plan: Optional[Dict[str, Any]] = None,
+        allow_ai_fallback: bool = False,
     ) -> Optional[Path]:
         """Acquire the best motion visual, returning None when motion footage is unavailable.
 
         Callers can then continue to a dedicated motion-video fallback chain instead of
         this method raising before those fallbacks get a chance to run.
         """
+        # In portrait mode (Shorts), strictly enforce motion-only rules and strict QA
+        if orientation == "portrait":
+            allow_ai_fallback = False
+            if getattr(self, "visual_quality_gate", None):
+                self.visual_quality_gate.strict = True
+
         target_w = 1080 if orientation == "portrait" else 1920
         target_h = 1920 if orientation == "portrait" else 1080
         slug = sanitize_filename(title[:30])

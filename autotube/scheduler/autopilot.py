@@ -436,6 +436,20 @@ class AutoPilot:
                     max_scenes=len(script.scenes) if (script.scenes and len(script.scenes) > 0) else 8,
                 )
 
+                # Strict Scene Deduplication Gate for AutoPilot Shorts
+                if not is_landscape:
+                    for i, a in enumerate(scene_assets):
+                        if not a or not a.exists() or a.suffix.lower() not in {".mp4", ".mov", ".webm", ".mkv"}:
+                            raise RuntimeError(
+                                f"AutoPilot Fail-Closed: Scene {i+1} received invalid or static asset: {a}. "
+                                "Shorts require 100% verified motion video footage for every scene."
+                            )
+                    if len(set(scene_assets)) != len(scene_assets):
+                        raise RuntimeError(
+                            f"AutoPilot Fail-Closed: Duplicate video clips detected across scenes: {[a.name for a in scene_assets]}. "
+                            "Scene repetition is strictly disallowed."
+                        )
+
                 # Step D: Render Video & Subtitles with Exact Speech-to-Scene Alignment!
                 output_video_path = self.cfg.paths.output_dir / video_subfolder / f"{slug}.mp4"
 
@@ -466,6 +480,20 @@ class AutoPilot:
                     width=v_w,
                     height=v_h,
                 )
+
+                # Universal Fail-Closed Shorts Duration Gate
+                if not is_landscape and final_video and final_video.exists():
+                    from autotube.utils.ffmpeg_helper import get_media_duration
+                    final_dur = get_media_duration(final_video)
+                    if final_dur >= 59.5:
+                        try:
+                            final_video.unlink()
+                        except Exception:
+                            pass
+                        raise RuntimeError(
+                            f"Fail-Closed Duration Gate: AutoPilot Short duration is {final_dur:.2f}s, "
+                            "violating the YouTube Shorts 60.0s feed limit! Video blocked and deleted."
+                        )
 
                 # Step E: Upload & Schedule on YouTube
                 if upload and final_video and final_video.exists():
@@ -527,13 +555,24 @@ class AutoPilot:
 
     def _cleanup_temp(self, max_age_hours: int = 2):
         """Remove temp files older than max_age_hours across all temp directories to prevent disk bloat."""
+        # Active job guard: do not purge temp files while a video generation task is in progress
+        try:
+            from autotube.web.app import GENERATION_STATUS
+            if GENERATION_STATUS.get("is_running"):
+                print_info("Skipping temp cleanup: active video generation job in progress.")
+                return
+        except Exception:
+            pass
+
         from autotube.config import PROJECT_ROOT
         target_dirs = [
             self.cfg.paths.temp_dir,
             PROJECT_ROOT / "temp" / "director",
             PROJECT_ROOT / "temp",
         ]
-        cutoff = time.time() - (max_age_hours * 3600)
+        now = time.time()
+        cutoff = now - (max_age_hours * 3600)
+        recent_threshold = now - 1800  # 30 minutes
         removed = 0
         freed_mb = 0.0
 
@@ -541,11 +580,14 @@ class AutoPilot:
             if not t_dir.exists():
                 continue
             for f in t_dir.rglob("*"):
-                if f.is_file() and f.stat().st_mtime < cutoff:
+                if f.is_file():
                     try:
-                        freed_mb += f.stat().st_size / (1024 * 1024)
-                        f.unlink()
-                        removed += 1
+                        st = f.stat()
+                        # Only delete files modified before cutoff AND not accessed in the last 30 minutes
+                        if st.st_mtime < cutoff and getattr(st, "st_atime", cutoff) < recent_threshold:
+                            freed_mb += st.st_size / (1024 * 1024)
+                            f.unlink()
+                            removed += 1
                     except Exception:
                         pass
         if removed > 0:

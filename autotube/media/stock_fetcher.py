@@ -674,9 +674,15 @@ class StockFetcher:
             )
 
             # If this exact file was already used in a previous scene, try alternate keywords
-            if asset in used_paths and keywords:
-                print_warning(f"Scene {idx+1} got duplicate visual, trying alternate keyword...")
-                for alt_kw in keywords:
+            if asset in used_paths:
+                print_warning(f"Scene {idx+1} got duplicate visual ({asset.name}), trying alternate keywords...")
+                alt_candidates = list(keywords or []) + [
+                    f"{subject} space",
+                    f"{subject} cosmic",
+                    f"{subject} cinematic",
+                    f"{subject} motion 8k",
+                ]
+                for alt_kw in alt_candidates:
                     alt_asset = self.fetch_best_visual_for_scene(
                         subject=alt_kw,
                         keywords=[subject],
@@ -686,9 +692,15 @@ class StockFetcher:
                         orientation=orientation,
                         require_video=require_video,
                     )
-                    if alt_asset not in used_paths:
+                    if alt_asset and alt_asset not in used_paths:
                         asset = alt_asset
                         break
+
+            if asset in used_paths and require_video:
+                raise RuntimeError(
+                    f"Visual Pipeline Fail-Closed: Scene {idx+1} received duplicate footage '{asset.name}'. "
+                    "Every scene must have a distinct, non-repeated video asset."
+                )
 
             used_paths.add(asset)
             assets.append(asset)

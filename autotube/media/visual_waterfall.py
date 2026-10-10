@@ -112,12 +112,16 @@ def acquire_scene_visuals_waterfall(
             print_info("🔄 Moving directly to Real Motion Stock & AI Engine...")
 
     # -------------------------------------------------------------
-    # TIER 2: Multi-Source AI Best Match Stock & Visuals (Mixkit + Coverr + Pexels + Pixabay + AI)
+    # TIER 2: Multi-Source AI Best Match Stock & Visuals (Mixkit + Coverr + Pexels + Pixabay)
     # -------------------------------------------------------------
-    print_info("🎬 [Primary Engine] Acquiring Multi-Source AI Best Match Visual Assets (Mixkit, Coverr, Pexels, AI)...")
+    print_info("🎬 [Primary Engine] Acquiring Multi-Source AI Best Match Visual Assets (Mixkit, Coverr, Pexels, Pixabay)...")
+    is_portrait = (orientation == "portrait")
     try:
         from autotube.media.multi_stock_aggregator import MultiStockAggregator
         multi_agg = MultiStockAggregator()
+        if is_portrait and getattr(multi_agg, "visual_quality_gate", None):
+            multi_agg.visual_quality_gate.strict = True
+
         scene_assets = []
         topic = getattr(script, "topic", "scene")
 
@@ -130,6 +134,7 @@ def acquire_scene_visuals_waterfall(
                     title=topic,
                     scene_index=idx,
                     orientation=orientation,
+                    allow_ai_fallback=False,
                 )
                 scene_assets.append(asset)
         else:
@@ -140,22 +145,30 @@ def acquire_scene_visuals_waterfall(
                     title=topic,
                     scene_index=idx,
                     orientation=orientation,
+                    allow_ai_fallback=False,
                 )
                 scene_assets.append(asset)
 
         expected_count = len(target_scenes) if target_scenes else len(queries[:max_scenes])
-        valid_assets = [a for a in scene_assets if a is not None and a.exists()]
-        if len(valid_assets) == expected_count:
-            print_success(f"🎬 Acquired all {len(valid_assets)} synchronized Multi-Source AI scene visual assets!")
+        valid_assets = [
+            a for a in scene_assets
+            if a is not None and a.exists() and a.stat().st_size > 5000 and (
+                not is_portrait or a.suffix.lower() in {".mp4", ".mov", ".webm", ".mkv"}
+            )
+        ]
+        has_duplicates = len(set(valid_assets)) != len(valid_assets)
+        if len(valid_assets) == expected_count and not has_duplicates:
+            print_success(f"🎬 Acquired all {len(valid_assets)} synchronized Multi-Source AI scene visual assets (100% unique motion footage)!")
             return valid_assets
         else:
-            print_warning(f"⚠️ MultiStockAggregator acquired partial assets ({len(valid_assets)}/{expected_count}). Falling back to secondary fetcher...")
+            reason = "duplicate footage detected" if has_duplicates else f"partial motion assets ({len(valid_assets)}/{expected_count})"
+            print_warning(f"⚠️ MultiStockAggregator: {reason}. Falling back to secondary motion fetcher...")
     except Exception as multi_err:
         print_warning(f"MultiStockAggregator fallback notice: {multi_err}")
 
-    # Fallback to StockFetcher if needed (Motion footage required for portrait Shorts)
+    # Fallback to StockFetcher (Motion footage required for portrait Shorts)
     stock_fetcher = StockFetcher()
-    is_motion_preferred = (orientation == "portrait")
+    is_motion_preferred = is_portrait
     if scenes:
         scene_assets = stock_fetcher.fetch_scene_visual_assets(
             scenes=scenes[:max_scenes],
@@ -176,5 +189,19 @@ def acquire_scene_visuals_waterfall(
             for q in queries[:max_scenes]
         ]
 
-    print_success(f"🎬 Acquired {len(scene_assets)} synchronized scene visual assets!")
+    # Final Strict Motion & Deduplication Gate
+    if is_motion_preferred:
+        for idx, a in enumerate(scene_assets):
+            if not a or not a.exists() or a.suffix.lower() not in {".mp4", ".mov", ".webm", ".mkv"}:
+                raise RuntimeError(
+                    f"Visual Pipeline Fail-Closed: Scene {idx+1} received invalid or static asset: {a}. "
+                    "Shorts requires 100% verified motion video footage for every scene."
+                )
+        if len(set(scene_assets)) != len(scene_assets):
+            raise RuntimeError(
+                f"Visual Pipeline Fail-Closed: Duplicate video clips detected across scenes: {[a.name for a in scene_assets]}. "
+                "Scene footage repetition is strictly disallowed."
+            )
+
+    print_success(f"🎬 Acquired {len(scene_assets)} synchronized, verified motion scene visual assets!")
     return scene_assets

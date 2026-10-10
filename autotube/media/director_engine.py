@@ -939,8 +939,12 @@ Output STRICT JSON with these keys:
                         if not safe_v:
                             safe_v = pexels.get_scene_video(search_query="deep space stars cosmos", orientation=orientation, scene_index=idx)
                         if safe_v and safe_v.exists() and safe_v.stat().st_size > 5000:
-                            acquired_video = safe_v
-                            print_success(f"   ✅ [Fail-Safe Video] Scene {idx+1} covered with motion footage: {safe_v.name}")
+                            qa = multi_agg.visual_quality_gate.verify(safe_v, sentence, scene_plan)
+                            if qa.get("accepted"):
+                                acquired_video = safe_v
+                                print_success(f"   ✅ [Fail-Safe Video] Scene {idx+1} acquired QA-verified motion footage: {safe_v.name}")
+                            else:
+                                print_warning(f"   ⚠️ Fail-safe video rejected by QA: {qa.get('reason', 'visual mismatch')}")
                     except Exception as s_err:
                         print_warning(f"   ⚠️ Fail-safe video search failed for Scene {idx+1}: {s_err}")
 
@@ -1000,6 +1004,29 @@ Output STRICT JSON with these keys:
         if len(scene_videos) != len(scene_specs):
             raise RuntimeError("Internal scene mapping error: scene count and visual asset count differ.")
 
+        # Strict Scene Deduplication Gate: verify distinct paths AND distinct content hashes
+        scene_paths_seen = set()
+        scene_hashes_seen = set()
+        import hashlib
+        for i, s_path in enumerate(scene_videos):
+            if s_path in scene_paths_seen:
+                raise RuntimeError(
+                    f"Render blocked: Scene {i+1} duplicates visual file '{s_path.name}'. "
+                    "Every scene must have a distinct, non-repeated video clip."
+                )
+            scene_paths_seen.add(s_path)
+            try:
+                with open(s_path, "rb") as fh:
+                    f_hash = hashlib.sha256(fh.read(1024 * 1024)).hexdigest()
+                if f_hash in scene_hashes_seen:
+                    raise RuntimeError(
+                        f"Render blocked: Scene {i+1} has identical video content hash to another scene. "
+                        "Duplicate footage across scenes is strictly prohibited."
+                    )
+                scene_hashes_seen.add(f_hash)
+            except Exception:
+                pass
+
         if progress_callback:
             progress_callback(75, f"Compositing video timeline ({target_width}x{target_height}, {len(scene_videos)} validated scenes)...")
 
@@ -1058,6 +1085,18 @@ Output STRICT JSON with these keys:
                 subscribe_badge=sub_badge,
                 duration=total_duration,
             )
+
+        if not is_long and final_video_path.exists():
+            final_media_dur = get_media_duration(final_video_path)
+            if final_media_dur >= 59.5:
+                try:
+                    final_video_path.unlink()
+                except Exception:
+                    pass
+                raise RuntimeError(
+                    f"Fail-Closed Duration Gate: Rendered Short duration is {final_media_dur:.2f}s, "
+                    "which violates the strict 60.0s YouTube Shorts limit! Video blocked and deleted."
+                )
 
         if progress_callback: progress_callback(100, f"✅ {format_label} rendered successfully!")
 
