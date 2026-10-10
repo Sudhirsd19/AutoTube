@@ -77,3 +77,75 @@ def test_saved_named_preset_becomes_custom_if_slots_were_edited():
     assert _resolve_saved_preset(original, "growth_1", presets) == "growth_1"
     assert _resolve_saved_preset(edited, "growth_1", presets) == "custom"
     assert _resolve_saved_preset(edited, "custom", presets) == "custom"
+
+
+
+def test_landscape_fallback_can_accept_frame_qa_approved_still_image(monkeypatch, tmp_path):
+    image = tmp_path / "landscape_scene.jpg"
+    image.write_bytes(b"x" * 6000)
+    monkeypatch.setattr(
+        VisualQualityGate,
+        "verify",
+        lambda self, asset_path, narration, scene_plan=None: {
+            "accepted": True,
+            "reason": "test image approved",
+        },
+    )
+    scenes = [
+        {
+            "narration": "An ancient temple stands on a hill.",
+            "visual_subject": "ancient temple",
+        }
+    ]
+
+    assert _verify_scene_batch(
+        [image],
+        scenes,
+        "History documentary",
+        "StockFetcher fallback",
+        require_video=False,
+    ) is True
+    assert image.exists()
+
+
+def test_visual_quality_gate_checks_still_image_without_extracting_video_frames(
+    monkeypatch, tmp_path
+):
+    image = tmp_path / "scene.jpg"
+    image.write_bytes(b"x" * 6000)
+    gate = VisualQualityGate()
+    gate.strict = True
+
+    class FakeModels:
+        def generate_content(self, model, contents, config):
+            assert len(contents) == 2
+            return type(
+                "Response",
+                (),
+                {
+                    "text": (
+                        '{"confidence": 99, "coverage": 100, "accepted": true, '
+                        '"reason": "The still image matches the temple scene.", "violations": []}'
+                    )
+                },
+            )()
+
+    class FakeClient:
+        models = FakeModels()
+
+    monkeypatch.setattr(gate, "_get_client", lambda: FakeClient())
+    monkeypatch.setattr(
+        gate,
+        "_extract_frames",
+        lambda path: (_ for _ in ()).throw(AssertionError("still images must bypass video extraction")),
+    )
+
+    result = gate.verify(
+        image,
+        "An ancient temple stands on a hill.",
+        {"subject": "ancient temple", "must_show": ["ancient temple"]},
+    )
+
+    assert result["accepted"] is True
+    assert result["frame_count"] == 1
+    assert image.exists()
