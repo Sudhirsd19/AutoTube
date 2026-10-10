@@ -13,10 +13,11 @@ from autotube.utils.console import print_error, print_info, print_success, print
 
 
 class YouTubeUploader:
-    """Uploads videos and sets thumbnails and metadata on YouTube."""
+    """Uploads videos and sets thumbnails and metadata on YouTube with multi-channel support."""
 
-    def __init__(self, auth: Optional[YouTubeAuth] = None):
-        self.auth = auth or YouTubeAuth()
+    def __init__(self, auth: Optional[YouTubeAuth] = None, channel: str = "english"):
+        self.channel = (channel or "english").lower().strip()
+        self.auth = auth or YouTubeAuth(channel=self.channel)
         self.cfg = get_config()
         self.last_error: Optional[str] = None
 
@@ -32,15 +33,18 @@ class YouTubeUploader:
         thumbnail_path: Optional[Path] = None,
         pinned_comment: Optional[str] = None,
         chapters: Optional[List[tuple]] = None,
+        channel: Optional[str] = None,
     ) -> Optional[str]:
         """Upload video file to YouTube with metadata, optional thumbnail and auto engagement comment."""
         if not video_path.exists():
             print_error(f"Video file not found: {video_path}")
             return None
 
-        creds = self.auth.get_credentials()
+        active_channel = (channel or self.channel or "english").lower().strip()
+        active_auth = YouTubeAuth(channel=active_channel) if channel else self.auth
+        creds = active_auth.get_credentials()
         if not creds:
-            print_error("Cannot upload: YouTube authentication credentials missing.")
+            print_error(f"Cannot upload: YouTube authentication credentials missing for channel '{active_channel}'.")
             return None
 
         privacy = privacy_status or self.cfg.youtube.default_privacy
@@ -48,17 +52,31 @@ class YouTubeUploader:
 
         is_short = "#Shorts" in title or (tags and "#Shorts" in tags)
         if is_short:
-            base_viral_tags = [
-                "Shorts",
-                "YouTube Shorts",
-                "Viral",
-                "Trending",
-                "Space",
-                "Science Facts",
-                "Mind Blowing",
-                "Mysteries",
-                "Universe",
-            ]
+            if active_channel == "hindi":
+                base_viral_tags = [
+                    "Shorts",
+                    "YouTube Shorts",
+                    "Viral",
+                    "Trending",
+                    "Hindi Facts",
+                    "Rahasya",
+                    "Bharat",
+                    "Itihas",
+                    "Vigyan",
+                    "Amazing Facts Hindi",
+                ]
+            else:
+                base_viral_tags = [
+                    "Shorts",
+                    "YouTube Shorts",
+                    "Viral",
+                    "Trending",
+                    "Space",
+                    "Science Facts",
+                    "Mind Blowing",
+                    "Mysteries",
+                    "Universe",
+                ]
         else:
             base_viral_tags = [
                 "Documentary",

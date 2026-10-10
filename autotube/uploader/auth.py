@@ -5,7 +5,7 @@ import sys
 import webbrowser
 import wsgiref.simple_server
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Dict, Any
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import (
@@ -31,18 +31,32 @@ YOUTUBE_SCOPES = [
 
 
 class YouTubeAuth:
-    """Manages YouTube OAuth 2.0 Credentials."""
+    """Manages YouTube OAuth 2.0 Credentials with multi-channel support."""
 
     def __init__(
         self,
+        channel: str = "english",
         client_secrets_file: Optional[Path] = None,
         token_file: Optional[Path] = None,
     ):
         cfg = get_config()
+        self.channel = (channel or "english").lower().strip()
         self.client_secrets_file = (
             client_secrets_file or cfg.youtube.client_secrets_file
         )
-        self.token_file = token_file or cfg.youtube.token_file
+        self.token_file = token_file or self.resolve_token_file(self.channel)
+
+    @classmethod
+    def resolve_token_file(cls, channel: str) -> Path:
+        """Resolve the appropriate token file for a channel with legacy fallback."""
+        ch = (channel or "english").lower().strip()
+        ch_token = PROJECT_ROOT / "config" / f"token_{ch}.json"
+        if ch_token.exists():
+            return ch_token
+        legacy_token = PROJECT_ROOT / "config" / "token.json"
+        if ch == "english" and legacy_token.exists():
+            return legacy_token
+        return ch_token
 
     def get_credentials(self, interactive: bool = True) -> Optional[Credentials]:
         """Obtain valid user credentials from storage or run OAuth flow."""
@@ -53,7 +67,7 @@ class YouTubeAuth:
                     str(self.token_file), YOUTUBE_SCOPES
                 )
             except Exception as e:
-                print_warning(f"Existing token could not be loaded: {e}")
+                print_warning(f"Existing token for '{self.channel}' could not be loaded: {e}")
 
         # If credentials exist and are valid, return them immediately
         if creds and creds.valid:
@@ -62,15 +76,21 @@ class YouTubeAuth:
         # If expired, attempt refresh using refresh_token
         if creds and creds.expired and creds.refresh_token:
             try:
-                print_info("Refreshing expired YouTube OAuth token...")
+                print_info(f"Refreshing expired YouTube OAuth token for '{self.channel}' channel...")
                 creds.refresh(Request())
                 self.token_file.parent.mkdir(parents=True, exist_ok=True)
                 with open(self.token_file, "w", encoding="utf-8") as token:
                     token.write(creds.to_json())
+                if self.channel == "english":
+                    try:
+                        with open(PROJECT_ROOT / "config" / "token.json", "w", encoding="utf-8") as token:
+                            token.write(creds.to_json())
+                    except Exception:
+                        pass
                 print_success(f"YouTube credentials refreshed and saved to {self.token_file}")
                 return creds
             except Exception as e:
-                print_warning(f"Token refresh failed: {e}. Re-authenticating...")
+                print_warning(f"Token refresh for '{self.channel}' failed: {e}. Re-authenticating...")
                 creds = None
 
         # If non-interactive mode (e.g. background web request), do NOT block on local server
@@ -151,6 +171,44 @@ class YouTubeAuth:
                 self.token_file.parent.mkdir(parents=True, exist_ok=True)
                 with open(self.token_file, "w", encoding="utf-8") as token:
                     token.write(creds.to_json())
+                if self.channel == "english":
+                    try:
+                        with open(PROJECT_ROOT / "config" / "token.json", "w", encoding="utf-8") as token:
+                            token.write(creds.to_json())
+                    except Exception:
+                        pass
                 print_success(f"YouTube credentials saved to {self.token_file}")
 
         return creds
+
+    def get_channel_info(self) -> Optional[Dict[str, Any]]:
+        """Fetch title, customUrl, thumbnail, and stats for this channel."""
+        creds = self.get_credentials(interactive=False)
+        if not creds:
+            return None
+        try:
+            from googleapiclient.discovery import build
+            yt = build("youtube", "v3", credentials=creds)
+            resp = yt.channels().list(part="snippet,contentDetails,statistics", mine=True).execute()
+            items = resp.get("items", [])
+            if items:
+                item = items[0]
+                snippet = item.get("snippet", {})
+                stats = item.get("statistics", {})
+                return {
+                    "channel": self.channel,
+                    "channel_id": item.get("id"),
+                    "title": snippet.get("title", ""),
+                    "custom_url": snippet.get("customUrl", ""),
+                    "thumbnail": snippet.get("thumbnails", {}).get("default", {}).get("url", ""),
+                    "subscriber_count": stats.get("subscriberCount", "0"),
+                    "video_count": stats.get("videoCount", "0"),
+                    "view_count": stats.get("viewCount", "0"),
+                }
+        except Exception as e:
+            print_warning(f"Could not fetch channel info for {self.channel}: {e}")
+        return None
+
+
+resolve_token_file = YouTubeAuth.resolve_token_file
+

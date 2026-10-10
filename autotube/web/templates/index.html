@@ -51,8 +51,17 @@
             <span id="system-badge" class="px-2 py-0.5 text-xs font-semibold rounded-full bg-emerald-950 text-emerald-400 border border-emerald-500/30 flex items-center gap-1.5">
               <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> Online
             </span>
+          <div class="flex flex-wrap items-center gap-2">
+            <p class="text-xs text-slate-400" id="channel-name-sub">Multi-Channel Hub</p>
+            <div class="flex items-center gap-1.5 text-[10px] font-mono">
+              <span id="hdr-pill-en" class="px-1.5 py-0.5 rounded bg-slate-900 border border-slate-800 text-slate-300 flex items-center gap-1" title="English Channel">
+                <span>🇬🇧 EN</span><span id="hdr-en-dot" class="w-1.5 h-1.5 rounded-full bg-slate-500"></span>
+              </span>
+              <span id="hdr-pill-hi" class="px-1.5 py-0.5 rounded bg-slate-900 border border-slate-800 text-slate-300 flex items-center gap-1" title="Hindi Channel">
+                <span>🇮🇳 HI</span><span id="hdr-hi-dot" class="w-1.5 h-1.5 rounded-full bg-slate-500"></span>
+              </span>
+            </div>
           </div>
-          <p class="text-xs text-slate-400" id="channel-name-sub">CosmoChronicle Automation Hub</p>
         </div>
       </div>
 
@@ -133,6 +142,37 @@
         </div>
       </div>
 
+      <!-- CHANNEL SWITCHER & STATS BAR -->
+      <div class="glass-card p-4 rounded-2xl border border-brand-border flex flex-wrap items-center justify-between gap-4">
+        <div class="flex flex-wrap items-center gap-3">
+          <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Select Channel:</span>
+          <div class="flex items-center gap-1.5 bg-slate-950 p-1 rounded-xl border border-slate-800">
+            <button id="btn-ch-english" onclick="switchYouTubeChannel('english')" class="px-4 py-2 rounded-lg text-xs font-bold bg-brand-cyan/20 text-brand-cyan border border-brand-cyan/40 flex items-center gap-2 transition shadow">
+              <span>🇬🇧 English Channel</span>
+              <span id="dot-ch-english" class="w-2 h-2 rounded-full bg-slate-500"></span>
+            </button>
+            <button id="btn-ch-hindi" onclick="switchYouTubeChannel('hindi')" class="px-4 py-2 rounded-lg text-xs font-bold text-slate-400 hover:text-white hover:bg-slate-900 border border-transparent flex items-center gap-2 transition">
+              <span>🇮🇳 Hindi Channel</span>
+              <span id="dot-ch-hindi" class="w-2 h-2 rounded-full bg-slate-500"></span>
+            </button>
+          </div>
+          <!-- Channel Info snippet -->
+          <div id="active-channel-card" class="flex items-center gap-2.5 px-3 py-1.5 rounded-xl bg-slate-900/80 border border-slate-800 text-xs">
+            <img id="active-channel-avatar" class="w-6 h-6 rounded-full hidden" src="" alt="avatar">
+            <div>
+              <span id="active-channel-title" class="font-bold text-white">Loading...</span>
+              <span id="active-channel-meta" class="text-[11px] text-slate-400 ml-2">-- subs • -- vids</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2.5">
+          <button onclick="openTokenModal()" class="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-bold text-slate-200 hover:text-white transition flex items-center gap-2 shadow">
+            <i class="fa-brands fa-google text-red-400"></i> Manage Channels OAuth
+          </button>
+        </div>
+      </div>
+
       <!-- VIDEOS GRID -->
       <div id="videos-loading" class="text-center py-20 text-slate-400">
         <i class="fa-solid fa-circle-notch fa-spin text-3xl text-brand-cyan mb-3"></i>
@@ -154,13 +194,18 @@
               ⚡
             </div>
             <div>
-              <div class="flex items-center gap-2">
+              <div class="flex items-center flex-wrap gap-2">
                 <h3 class="font-black text-xl text-white tracking-wide">YouTube Slot Automation Matrix</h3>
                 <span id="slot-count-badge" class="text-xs font-bold px-2.5 py-0.5 rounded-full bg-red-950/80 text-red-400 border border-red-500/30">
                   5 Slots Active
                 </span>
+                <div class="flex items-center gap-1 bg-slate-950 p-1 rounded-lg border border-slate-800 text-[11px] font-bold">
+                  <button type="button" onclick="filterSlotsByChannel('all')" id="slot-f-all" class="slot-filter-btn px-2 py-0.5 rounded bg-brand-cyan/20 text-brand-cyan border border-brand-cyan/40">All</button>
+                  <button type="button" onclick="filterSlotsByChannel('english')" id="slot-f-english" class="slot-filter-btn px-2 py-0.5 rounded text-slate-400 hover:text-white">🇬🇧 EN</button>
+                  <button type="button" onclick="filterSlotsByChannel('hindi')" id="slot-f-hindi" class="slot-filter-btn px-2 py-0.5 rounded text-slate-400 hover:text-white">🇮🇳 HI</button>
+                </div>
               </div>
-              <p class="text-xs text-slate-400">Har slot ke anusaar Time, Niche, Language, AI Voice aur BGM configure karein. Single slot run karein ya poora batch automate karein.</p>
+              <p class="text-xs text-slate-400">Har slot ke anusaar Time, Niche, Language, Target Channel, AI Voice aur BGM configure karein. Single slot run karein ya poora batch automate karein.</p>
             </div>
           </div>
           
@@ -288,8 +333,9 @@
         <!-- Table Column Titles for Desktop -->
         <div class="hidden lg:grid grid-cols-12 gap-2.5 px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-400 border-b border-slate-800/60">
           <div class="col-span-2"># & Scheduled Time</div>
-          <div class="col-span-3">Topic / Niche</div>
-          <div class="col-span-1">Language</div>
+          <div class="col-span-2">Topic / Niche</div>
+          <div class="col-span-1">Lang</div>
+          <div class="col-span-1">Channel</div>
           <div class="col-span-2">Voice Narrator</div>
           <div class="col-span-2">BGM Music</div>
           <div class="col-span-1">Format</div>
@@ -376,11 +422,17 @@
               </button>
             </div>
             <div id="publish-options" class="space-y-2">
-              <select id="publish-privacy" class="w-full px-3 py-1.5 rounded-lg bg-slate-800 border border-slate-700 text-xs text-white">
-                <option value="public">Public (Live Immediately)</option>
-                <option value="unlisted">Unlisted (Link Only)</option>
-                <option value="private">Private (Hidden)</option>
-              </select>
+              <div class="grid grid-cols-2 gap-2">
+                <select id="publish-channel" class="w-full px-3 py-1.5 rounded-lg bg-slate-800 border border-slate-700 text-xs text-white" title="Target YouTube Channel">
+                  <option value="english">🇬🇧 English Channel</option>
+                  <option value="hindi" selected>🇮🇳 Hindi Channel</option>
+                </select>
+                <select id="publish-privacy" class="w-full px-3 py-1.5 rounded-lg bg-slate-800 border border-slate-700 text-xs text-white" title="YouTube Privacy">
+                  <option value="public">Public (Live Immediately)</option>
+                  <option value="unlisted">Unlisted (Link Only)</option>
+                  <option value="private">Private (Hidden)</option>
+                </select>
+              </div>
             </div>
           </div>
         </div>
@@ -741,7 +793,14 @@
               <textarea id="director-pub-desc" rows="3" class="w-full glass bg-slate-950 px-3 py-2 rounded-lg border border-slate-700 text-xs text-white focus:outline-none focus:border-brand-cyan"></textarea>
             </div>
 
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div>
+                <label class="block text-xs font-semibold text-slate-300 mb-1">Target Channel</label>
+                <select id="director-pub-channel" class="w-full glass bg-slate-950 px-3 py-2 rounded-lg border border-slate-700 text-xs text-white focus:outline-none focus:border-brand-cyan">
+                  <option value="english">🇬🇧 English Channel</option>
+                  <option value="hindi" selected>🇮🇳 Hindi Channel</option>
+                </select>
+              </div>
               <div>
                 <label class="block text-xs font-semibold text-slate-300 mb-1">Tags (Comma-Separated)</label>
                 <input type="text" id="director-pub-tags" value="#Shorts, #Viral, #Mystery, #HindiStories" class="w-full glass bg-slate-950 px-3 py-2 rounded-lg border border-slate-700 text-xs text-white focus:outline-none focus:border-brand-cyan">
@@ -931,11 +990,93 @@
     </div>
   </div>
 
+  <!-- ================================================================= -->
+  <!-- MULTI-CHANNEL OAUTH & TOKEN MANAGER MODAL -->
+  <!-- ================================================================= -->
+  <div id="channel-token-modal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="glass-card max-w-xl w-full p-6 rounded-2xl border border-brand-border space-y-5 shadow-2xl">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <h3 class="font-bold text-lg text-white flex items-center gap-2">
+          <i class="fa-brands fa-youtube text-red-500"></i> YouTube Channels & OAuth Manager
+        </h3>
+        <button onclick="closeTokenModal()" class="text-slate-400 hover:text-white transition">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <p class="text-xs text-slate-300">
+        Manage independent Google OAuth credentials for English and Hindi channels. Both channels run in parallel without token conflicts.
+      </p>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <!-- English Channel Card -->
+        <div class="p-4 rounded-xl bg-slate-900/90 border border-slate-800 flex flex-col justify-between space-y-3">
+          <div>
+            <div class="flex items-center justify-between mb-2">
+              <span class="font-bold text-sm text-cyan-300 flex items-center gap-1.5">
+                🇬🇧 English Channel
+              </span>
+              <span id="modal-en-badge" class="px-2 py-0.5 text-[10px] font-bold rounded-full bg-slate-800 text-slate-400">Checking...</span>
+            </div>
+            <div id="modal-en-info" class="text-xs text-slate-400 mb-2">--</div>
+            <p class="text-[11px] text-slate-500 font-mono">File: config/token_english.json</p>
+          </div>
+          <div class="space-y-2 pt-2 border-t border-slate-800">
+            <button onclick="openOAuthUrl('english')" class="w-full py-1.5 px-3 rounded-lg bg-cyan-900 hover:bg-cyan-800 text-cyan-200 text-xs font-bold transition flex items-center justify-center gap-1.5">
+              <i class="fa-brands fa-google"></i> Connect / Refresh (OAuth)
+            </button>
+            <button onclick="promptPasteChannelToken('english')" class="w-full py-1.5 px-3 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold transition flex items-center justify-center gap-1.5">
+              <i class="fa-solid fa-paste"></i> Paste Token JSON
+            </button>
+          </div>
+        </div>
+
+        <!-- Hindi Channel Card -->
+        <div class="p-4 rounded-xl bg-slate-900/90 border border-slate-800 flex flex-col justify-between space-y-3">
+          <div>
+            <div class="flex items-center justify-between mb-2">
+              <span class="font-bold text-sm text-amber-300 flex items-center gap-1.5">
+                🇮🇳 Hindi Channel
+              </span>
+              <span id="modal-hi-badge" class="px-2 py-0.5 text-[10px] font-bold rounded-full bg-slate-800 text-slate-400">Checking...</span>
+            </div>
+            <div id="modal-hi-info" class="text-xs text-slate-400 mb-2">--</div>
+            <p class="text-[11px] text-slate-500 font-mono">File: config/token_hindi.json</p>
+          </div>
+          <div class="space-y-2 pt-2 border-t border-slate-800">
+            <button onclick="openOAuthUrl('hindi')" class="w-full py-1.5 px-3 rounded-lg bg-amber-900 hover:bg-amber-800 text-amber-200 text-xs font-bold transition flex items-center justify-center gap-1.5">
+              <i class="fa-brands fa-google"></i> Connect / Refresh (OAuth)
+            </button>
+            <button onclick="promptPasteChannelToken('hindi')" class="w-full py-1.5 px-3 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold transition flex items-center justify-center gap-1.5">
+              <i class="fa-solid fa-paste"></i> Paste Token JSON
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="p-3 rounded-xl bg-slate-900/90 border border-slate-800 text-xs text-slate-400 flex items-start gap-2">
+        <i class="fa-solid fa-lightbulb text-amber-400 mt-0.5 shrink-0"></i>
+        <span>
+          Local terminal se browser Google sign-in karne ke liye:<br>
+          <code class="text-cyan-400 font-mono select-all">python run.py auth --channel english</code> ya <code class="text-amber-400 font-mono select-all">python run.py auth --channel hindi</code>
+        </span>
+      </div>
+
+      <div class="flex justify-end pt-2">
+        <button onclick="closeTokenModal()" class="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-300">
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- JAVASCRIPT APP LOGIC -->
   <script>
     let currentFilter = 'all';
     let allVideos = [];
     let selectedRescheduleVideoId = null;
+    let currentYouTubeChannel = 'english';
+    let currentSlotChannelFilter = 'all';
 
     // Toast helper
     function showToast(msg, isError = false) {
@@ -962,7 +1103,7 @@
         activeBtn.classList.remove('text-slate-400');
       }
 
-      if (tabId === 'videos') loadVideos();
+      if (tabId === 'videos') loadVideos(currentYouTubeChannel);
       if (tabId === 'media') loadMediaFiles();
       if (tabId === 'autopilot') loadSlotsMatrix();
       if (tabId === 'aivideo') loadDirectorOptions();
@@ -976,6 +1117,28 @@
         document.getElementById('clock-ist').textContent = data.time_ist.split(' ')[1] + ' ' + data.time_ist.split(' ')[2];
         document.getElementById('clock-edt').textContent = data.time_edt.split(' ')[1] + ' ' + data.time_edt.split(' ')[2];
         document.getElementById('quota-used').textContent = data.today_uploads_count;
+
+        // Multi-channel status dots in header and switcher
+        if (data.channels) {
+          const en = data.channels.english;
+          const hi = data.channels.hindi;
+          const hdrEnDot = document.getElementById('hdr-en-dot');
+          const hdrHiDot = document.getElementById('hdr-hi-dot');
+          const dotChEn = document.getElementById('dot-ch-english');
+          const dotChHi = document.getElementById('dot-ch-hindi');
+
+          const getDotClass = (st, isHeader = true) => {
+            const size = isHeader ? 'w-1.5 h-1.5' : 'w-2 h-2';
+            if (st && st.authenticated) return `${size} rounded-full bg-emerald-400`;
+            if (st && st.token_exists) return `${size} rounded-full bg-amber-400`;
+            return `${size} rounded-full bg-rose-500`;
+          };
+
+          if (hdrEnDot) hdrEnDot.className = getDotClass(en, true);
+          if (dotChEn) dotChEn.className = getDotClass(en, false);
+          if (hdrHiDot) hdrHiDot.className = getDotClass(hi, true);
+          if (dotChHi) dotChHi.className = getDotClass(hi, false);
+        }
 
         // Server Disk Storage Widget
         if (data.disk_free_gb !== undefined) {
@@ -1006,34 +1169,58 @@
       }
     }
 
+    // Channel Switcher
+    function switchYouTubeChannel(ch) {
+      currentYouTubeChannel = ch;
+      const btnEn = document.getElementById('btn-ch-english');
+      const btnHi = document.getElementById('btn-ch-hindi');
+
+      if (btnEn && btnHi) {
+        if (ch === 'english') {
+          btnEn.className = 'px-4 py-2 rounded-lg text-xs font-bold bg-brand-cyan/20 text-brand-cyan border border-brand-cyan/40 flex items-center gap-2 transition shadow';
+          btnHi.className = 'px-4 py-2 rounded-lg text-xs font-bold text-slate-400 hover:text-white hover:bg-slate-900 border border-transparent flex items-center gap-2 transition';
+        } else {
+          btnHi.className = 'px-4 py-2 rounded-lg text-xs font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40 flex items-center gap-2 transition shadow';
+          btnEn.className = 'px-4 py-2 rounded-lg text-xs font-bold text-slate-400 hover:text-white hover:bg-slate-900 border border-transparent flex items-center gap-2 transition';
+        }
+      }
+      loadVideos(ch);
+    }
+
     // Videos Tab
-    async function loadVideos() {
+    async function loadVideos(channel = currentYouTubeChannel) {
       const loader = document.getElementById('videos-loading');
       const grid = document.getElementById('videos-grid');
       loader.classList.remove('hidden');
       grid.innerHTML = '';
 
       try {
-        const res = await fetch('/api/videos');
+        const res = await fetch(`/api/videos?channel=${encodeURIComponent(channel)}`);
         const data = await res.json();
 
         if (data.auth_required) {
+          const chName = channel.toUpperCase();
           loader.innerHTML = `
             <div class="glass-card p-8 rounded-2xl border border-amber-500/30 bg-amber-950/20 text-center max-w-lg mx-auto my-8">
               <i class="fa-brands fa-youtube text-5xl text-red-500 mb-4"></i>
-              <h3 class="text-lg font-bold text-white mb-2">YouTube Account Login Required</h3>
+              <h3 class="text-lg font-bold text-white mb-2">YouTube [${chName}] Account Login Required</h3>
               <p class="text-xs text-slate-300 mb-5 leading-relaxed">
-                Google OAuth security policy ke anusaar token expire ho chuka hai.<br>
+                Google OAuth security policy ke anusaar [${chName}] channel ka token expire ho chuka hai ya missing hai.<br>
                 Live YouTube videos aur schedule dekhne ke liye token refresh karein.
               </p>
               <div class="bg-slate-900/80 p-3 rounded-xl border border-slate-700/60 text-left text-xs mb-4">
                 <div class="text-slate-400 font-semibold mb-1">1-Click Fast Fix (Local Terminal):</div>
-                <code class="text-cyan-400 font-mono select-all">python run.py auth</code>
+                <code class="text-cyan-400 font-mono select-all">python run.py auth --channel ${channel}</code>
                 <div class="text-[11px] text-slate-400 mt-1">Browser me Google sign-in karte hi token automatically Oracle VM par sync ho jayega.</div>
               </div>
-              <button onclick="promptPasteToken()" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-600 text-xs text-slate-200 transition">
-                <i class="fa-solid fa-paste mr-1"></i> Paste Token JSON Manually
-              </button>
+              <div class="flex items-center justify-center gap-3">
+                <button onclick="openOAuthUrl('${channel}')" class="px-4 py-2 rounded-xl bg-cyan-700 hover:bg-cyan-600 text-xs font-bold text-white transition">
+                  <i class="fa-brands fa-google mr-1"></i> Google Sign-In
+                </button>
+                <button onclick="promptPasteChannelToken('${channel}')" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-600 text-xs text-slate-200 transition">
+                  <i class="fa-solid fa-paste mr-1"></i> Paste Token JSON
+                </button>
+              </div>
             </div>`;
           return;
         }
@@ -1041,8 +1228,22 @@
         allVideos = data.videos || [];
         loader.classList.add('hidden');
 
+        // Update active channel info card
+        const cardTitle = document.getElementById('active-channel-title');
+        const cardMeta = document.getElementById('active-channel-meta');
+        const cardAvatar = document.getElementById('active-channel-avatar');
         if (data.channel && data.channel.title) {
-          document.getElementById('channel-name-sub').textContent = `${data.channel.title} (${data.channel.custom_url})`;
+          if (cardTitle) cardTitle.textContent = `${data.channel.title} (${data.channel.custom_url || ''})`;
+          if (cardMeta) cardMeta.textContent = `${Number(data.channel.subscriber_count || 0).toLocaleString()} subs • ${Number(data.channel.video_count || 0).toLocaleString()} vids`;
+          if (cardAvatar && data.channel.avatar) {
+            cardAvatar.src = data.channel.avatar;
+            cardAvatar.classList.remove('hidden');
+          }
+          const hdrSub = document.getElementById('channel-name-sub');
+          if (hdrSub) hdrSub.textContent = `${data.channel.title} [${channel.toUpperCase()}]`;
+        } else {
+          if (cardTitle) cardTitle.textContent = `${channel.toUpperCase()} Channel`;
+          if (cardMeta) cardMeta.textContent = 'Connected';
         }
 
         renderVideoCards();
@@ -1051,25 +1252,84 @@
       }
     }
 
-    async function promptPasteToken() {
-      const raw = prompt("Paste your token.json content here:");
+    function openTokenModal() {
+      const modal = document.getElementById('channel-token-modal');
+      if (!modal) return;
+      modal.classList.remove('hidden');
+
+      fetch('/api/auth/status').then(r => r.json()).then(data => {
+        ['english', 'hindi'].forEach(ch => {
+          const st = data[ch] || {};
+          const badge = document.getElementById(`modal-${ch === 'english' ? 'en' : 'hi'}-badge`);
+          const info = document.getElementById(`modal-${ch === 'english' ? 'en' : 'hi'}-info`);
+          if (badge) {
+            if (st.authenticated) {
+              badge.textContent = 'CONNECTED';
+              badge.className = 'px-2 py-0.5 text-[10px] font-bold rounded-full bg-emerald-950 text-emerald-400 border border-emerald-500/30';
+            } else if (st.token_exists) {
+              badge.textContent = 'TOKEN PRESENT (UNVERIFIED)';
+              badge.className = 'px-2 py-0.5 text-[10px] font-bold rounded-full bg-amber-950 text-amber-400 border border-amber-500/30';
+            } else {
+              badge.textContent = 'NOT CONNECTED';
+              badge.className = 'px-2 py-0.5 text-[10px] font-bold rounded-full bg-rose-950 text-rose-400 border border-rose-500/30';
+            }
+          }
+          if (info && st.channel_info) {
+            info.textContent = `${st.channel_info.title} (${Number(st.channel_info.subscriber_count || 0).toLocaleString()} subs)`;
+          } else if (info) {
+            info.textContent = st.token_exists ? 'Credentials saved' : 'No token found yet';
+          }
+        });
+      }).catch(console.error);
+    }
+
+    function closeTokenModal() {
+      const modal = document.getElementById('channel-token-modal');
+      if (modal) modal.classList.add('hidden');
+    }
+
+    async function promptPasteChannelToken(channel = currentYouTubeChannel) {
+      const raw = prompt(`Paste token.json content for [${channel.toUpperCase()}] channel:`);
       if (!raw) return;
       try {
         const res = await fetch('/api/auth/save_token', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ token_json: raw }),
+          body: JSON.stringify({ token_json: raw, channel: channel }),
         });
         const data = await res.json();
         if (data.success) {
-          showToast("Token updated successfully! Reloading videos...");
-          setTimeout(loadVideos, 1000);
+          showToast(`✅ Token for ${channel.toUpperCase()} channel updated successfully!`);
+          loadStatus();
+          if (channel === currentYouTubeChannel) {
+            setTimeout(() => loadVideos(channel), 800);
+          }
+          openTokenModal();
         } else {
-          showToast(data.detail || "Error saving token", true);
+          showToast(data.detail || 'Error saving token', true);
         }
       } catch (e) {
-        showToast("Error updating token: " + e.message, true);
+        showToast('Error updating token: ' + e.message, true);
       }
+    }
+
+    async function openOAuthUrl(channel) {
+      try {
+        const res = await fetch(`/api/auth/url?channel=${encodeURIComponent(channel)}`);
+        const data = await res.json();
+        if (data.url) {
+          window.open(data.url, '_blank');
+          showToast(`Opening Google OAuth consent page for ${channel}...`);
+        } else {
+          showToast('Could not generate OAuth consent URL. Check client_secret.json', true);
+        }
+      } catch (err) {
+        showToast('Error fetching OAuth URL: ' + err.message, true);
+      }
+    }
+
+    function promptPasteToken() {
+      promptPasteChannelToken(currentYouTubeChannel);
     }
 
     function renderVideoCards() {
@@ -1156,17 +1416,17 @@
     }
 
     async function handleMakePublic(videoId) {
-      if (!confirm(`Are you sure you want to publish video ${videoId} immediately to YouTube as PUBLIC?`)) return;
+      if (!confirm(`Are you sure you want to publish video ${videoId} immediately to [${currentYouTubeChannel.toUpperCase()}] YouTube channel as PUBLIC?`)) return;
       try {
         const res = await fetch('/api/videos/make_public', {
           method: 'POST',
           headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({ video_id: videoId })
+          body: JSON.stringify({ video_id: videoId, channel: currentYouTubeChannel })
         });
         const data = await res.json();
         if (data.success) {
-          showToast(`Video ${videoId} is now PUBLIC!`);
-          loadVideos();
+          showToast(`Video ${videoId} is now PUBLIC on ${currentYouTubeChannel} channel!`);
+          loadVideos(currentYouTubeChannel);
         } else {
           showToast(data.detail || 'Failed to publish video', true);
         }
@@ -1202,14 +1462,15 @@
           headers: {'Content-Type': 'application/json'},
           body: JSON.stringify({
             video_id: selectedRescheduleVideoId,
-            publish_at: val
+            publish_at: val,
+            channel: currentYouTubeChannel
           })
         });
         const data = await res.json();
         if (data.success) {
-          showToast(`Successfully rescheduled video!`);
+          showToast(`Successfully rescheduled video on ${currentYouTubeChannel} channel!`);
           closeRescheduleModal();
-          loadVideos();
+          loadVideos(currentYouTubeChannel);
         } else {
           showToast(data.detail || 'Failed to reschedule', true);
         }
@@ -1266,6 +1527,9 @@
 
         const langSelect = document.getElementById(`slot-lang-${slot.id}`);
         if (langSelect) slot.language = langSelect.value;
+
+        const chanSelect = document.getElementById(`slot-channel-${slot.id}`);
+        if (chanSelect) slot.channel = chanSelect.value;
 
         const voiceSelect = document.getElementById(`slot-voice-${slot.id}`);
         if (voiceSelect) slot.voice = voiceSelect.value;
@@ -1329,16 +1593,31 @@
       markSlotsUnsaved();
     }
 
+    function filterSlotsByChannel(ch) {
+      currentSlotChannelFilter = ch;
+      ['all', 'english', 'hindi'].forEach(c => {
+        const btn = document.getElementById(`slot-f-${c}`);
+        if (btn) {
+          if (c === ch) {
+            btn.className = 'slot-filter-btn px-2 py-0.5 rounded bg-brand-cyan/20 text-brand-cyan border border-brand-cyan/40';
+          } else {
+            btn.className = 'slot-filter-btn px-2 py-0.5 rounded text-slate-400 hover:text-white';
+          }
+        }
+      });
+      renderSlotsMatrix();
+    }
+
     function renderSlotsMatrix(highlightId = null) {
       const container = document.getElementById('slots-matrix-list');
       const badge = document.getElementById('slot-count-badge');
       if (!container) return;
 
-      const slots = currentSlotsConfig.slots || [];
-      const shortCount = slots.filter(s => s.format !== 'landscape_long').length;
-      const longCount = slots.filter(s => s.format === 'landscape_long').length;
+      const allSlots = currentSlotsConfig.slots || [];
+      const shortCount = allSlots.filter(s => s.format !== 'landscape_long').length;
+      const longCount = allSlots.filter(s => s.format === 'landscape_long').length;
       if (badge) {
-        badge.textContent = `${slots.length} Slots (${shortCount} Shorts • ${longCount} Long Videos)`;
+        badge.textContent = `${allSlots.length} Slots (${shortCount} Shorts • ${longCount} Long Videos)`;
       }
 
       // Update preset buttons styling
@@ -1353,10 +1632,14 @@
         }
       });
 
+      const slots = currentSlotChannelFilter === 'all'
+        ? allSlots
+        : allSlots.filter(s => (s.channel || (s.language === 'Hindi' ? 'hindi' : 'english')).toLowerCase() === currentSlotChannelFilter);
+
       if (slots.length === 0) {
         container.innerHTML = `
           <div class="text-center py-8 text-slate-500 text-xs">
-            No slots configured. Click "+ Add New Slot" or pick a preset above to begin.
+            ${currentSlotChannelFilter !== 'all' ? `No slots configured for ${currentSlotChannelFilter.toUpperCase()} channel.` : 'No slots configured. Click "+ Add New Slot" or pick a preset above to begin.'}
           </div>
         `;
         return;
@@ -1370,6 +1653,7 @@
         const defaultVoice = isHindi ? 'hi_deep_cinematic_male' : 'en_deep_cinematic_male';
         const slotVoice = (slot.voice || defaultVoice).toLowerCase();
         const slotBgm = (slot.bgm || 'auto').toLowerCase();
+        const slotChannel = (slot.channel || (isHindi ? 'hindi' : 'english')).toLowerCase();
 
         const rowBg = isLong 
           ? 'bg-amber-950/25 hover:bg-amber-950/35 border border-amber-500/40 rounded-xl p-3 flex flex-wrap lg:grid lg:grid-cols-12 gap-2.5 items-center text-xs transition shadow-sm'
@@ -1394,8 +1678,8 @@
               </div>
             </div>
 
-            <!-- Topic / Niche (Col 3) -->
-            <div class="lg:col-span-3 flex items-center min-w-0">
+            <!-- Topic / Niche (Col 2) -->
+            <div class="lg:col-span-2 flex items-center min-w-0">
               <input id="slot-niche-${slot.id}" type="text" value="${slot.niche || 'Trending Mystery'}" 
                 oninput="updateSlotField('${slot.id}', 'niche', this.value); markSlotsUnsaved();"
                 onchange="updateSlotField('${slot.id}', 'niche', this.value); markSlotsUnsaved();"
@@ -1409,6 +1693,15 @@
                 class="w-full bg-slate-950 border border-slate-800 text-slate-200 text-xs px-2 py-1.5 rounded-lg focus:outline-none focus:border-brand-cyan cursor-pointer">
                 <option value="Hindi" ${isHindi ? 'selected' : ''}>🇮🇳 Hindi</option>
                 <option value="English" ${!isHindi ? 'selected' : ''}>🇺🇸 English</option>
+              </select>
+            </div>
+
+            <!-- Target Channel (Col 1) -->
+            <div class="lg:col-span-1">
+              <select id="slot-channel-${slot.id}" onchange="updateSlotField('${slot.id}', 'channel', this.value); markSlotsUnsaved();" 
+                class="w-full bg-slate-950 border border-slate-800 text-slate-200 text-xs px-2 py-1.5 rounded-lg focus:outline-none focus:border-brand-cyan cursor-pointer" title="Target YouTube Channel">
+                <option value="english" ${slotChannel === 'english' ? 'selected' : ''}>🇬🇧 EN</option>
+                <option value="hindi" ${slotChannel === 'hindi' ? 'selected' : ''}>🇮🇳 HI</option>
               </select>
             </div>
 
@@ -1624,6 +1917,12 @@
       if (slot) {
         slot.language = langValue;
         const isHindi = langValue.toLowerCase() === 'hindi' || langValue === 'hi';
+        slot.channel = isHindi ? 'hindi' : 'english';
+        const chSelect = document.getElementById(`slot-channel-${id}`);
+        if (chSelect) {
+          chSelect.value = slot.channel;
+        }
+
         const hindiVoices = ['madhur', 'swara', 'akashvani', 'hi_deep_cinematic_male', 'hi_calm_male', 'hi_cinematic_male', 'hi_authoritative_male', 'hi_young_male', 'hi_deep_female', 'hi_calm_female', 'hi_cinematic_female'];
         const englishVoices = ['adam', 'christopher', 'guy', 'aria', 'andrew', 'en_deep_cinematic_male', 'en_deep_british_male', 'en_calm_british_male', 'en_cinematic_narrator', 'en_deep_warm_male', 'en_authoritative_male', 'en_calm_female', 'en_cinematic_female'];
         if (slot.voice && slot.voice !== 'auto') {
@@ -1696,6 +1995,7 @@
         tz: 'IST',
         niche: 'Mysterious Ancient Secrets & Science',
         language: 'Hindi',
+        channel: 'hindi',
         voice: 'hi_deep_cinematic_male',
         bgm: 'auto',
         format: 'short',
@@ -1941,8 +2241,9 @@
       }
 
       const privacy = document.getElementById('publish-privacy').value;
+      const channel = document.getElementById('publish-channel') ? document.getElementById('publish-channel').value : 'english';
 
-      if (!confirm(`Publish "${currentMediaFilename}" to YouTube as ${privacy.toUpperCase()}?`)) return;
+      if (!confirm(`Publish "${currentMediaFilename}" to YouTube [${channel.toUpperCase()} Channel] as ${privacy.toUpperCase()}?`)) return;
 
       const btn = document.getElementById('btn-publish');
       btn.disabled = true;
@@ -1952,7 +2253,7 @@
         const res = await fetch('/api/media/publish', {
           method: 'POST',
           headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({ filename: currentMediaFilename, privacy: privacy })
+          body: JSON.stringify({ filename: currentMediaFilename, privacy: privacy, channel: channel })
         });
         const data = await res.json();
 
@@ -2704,11 +3005,12 @@
       const desc = document.getElementById('director-pub-desc').value.trim();
       const tagsRaw = document.getElementById('director-pub-tags').value.trim();
       const privacy = document.getElementById('director-pub-privacy').value;
+      const channel = document.getElementById('director-pub-channel') ? document.getElementById('director-pub-channel').value : 'english';
       const pinned = document.getElementById('director-pub-pinned').value.trim();
       const btn = document.getElementById('btn-director-publish');
       const feedback = document.getElementById('director-pub-feedback');
 
-      if (!confirm(`"${title}" ko YouTube par upload karein (${privacy.toUpperCase()})?`)) return;
+      if (!confirm(`"${title}" ko YouTube [${channel.toUpperCase()} Channel] par upload karein (${privacy.toUpperCase()})?`)) return;
 
       const tags = tagsRaw.split(',').map(t => t.trim()).filter(Boolean);
 
@@ -2716,7 +3018,7 @@
       btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Uploading to YouTube...';
       feedback.classList.remove('hidden');
       feedback.className = 'text-xs text-brand-cyan py-2 rounded-lg bg-black/40';
-      feedback.textContent = 'Video YouTube par upload ho raha hai... Please wait...';
+      feedback.textContent = `Video [${channel.toUpperCase()}] YouTube channel par upload ho raha hai... Please wait...`;
 
       try {
         const res = await fetch('/api/director/publish', {
@@ -2728,15 +3030,16 @@
             description: desc || null,
             tags: tags.length ? tags : null,
             privacy: privacy,
+            channel: channel,
             pinned_comment: pinned || null
           })
         });
         const data = await res.json();
         if (data.success) {
           feedback.className = 'text-xs text-emerald-400 py-2 rounded-lg bg-emerald-950/40 border border-emerald-500/30 font-bold';
-          feedback.innerHTML = `🎉 Video YouTube par successfully upload ho gaya! <a href="${data.url}" target="_blank" class="underline text-brand-cyan ml-1">Video Dekhein ↗</a>`;
+          feedback.innerHTML = `🎉 Video [${channel.toUpperCase()}] channel par successfully upload ho gaya! <a href="${data.url}" target="_blank" class="underline text-brand-cyan ml-1">Video Dekhein ↗</a>`;
           showToast('✅ Upload to YouTube successful!');
-          loadVideos();
+          loadVideos(channel);
         } else {
           feedback.className = 'text-xs text-rose-400 py-2 rounded-lg bg-rose-950/40 border border-rose-500/30 font-bold';
           feedback.textContent = 'Upload failed: ' + (data.detail || 'Error occurred');

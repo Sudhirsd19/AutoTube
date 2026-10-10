@@ -430,10 +430,11 @@ def upload(
     privacy: str = typer.Option("private", "--privacy", help="Privacy status (private, unlisted, public)"),
     thumbnail: Optional[Path] = typer.Option(None, "--thumbnail", help="Path to custom thumbnail image"),
     schedule: Optional[str] = typer.Option(None, "--schedule", help="Publish time in ISO 8601 (e.g. 2026-10-01T15:00:00Z)"),
+    channel: str = typer.Option("english", "--channel", "-c", help="Target YouTube channel: 'english' or 'hindi'"),
 ):
     """Directly upload any video to YouTube using YouTube Data API v3."""
     print_banner()
-    uploader = YouTubeUploader()
+    uploader = YouTubeUploader(channel=channel)
     tag_list = [t.strip() for t in tags.split(",") if t.strip()]
 
     uploader.upload_video(
@@ -444,6 +445,7 @@ def upload(
         privacy_status=privacy,
         publish_at=schedule,
         thumbnail_path=thumbnail,
+        channel=channel,
     )
 
 
@@ -939,33 +941,37 @@ def flow_login():
 
 @app.command()
 def auth(
+    channel: str = typer.Option("english", "--channel", "-c", help="Target channel: 'english' or 'hindi'"),
     sync_remote: bool = typer.Option(True, "--sync-remote", help="Automatically sync generated token to Oracle Cloud VM"),
 ):
     """Authorize or refresh YouTube OAuth credentials (opens browser login)."""
     print_banner()
-    print_info("Starting YouTube OAuth Authentication Flow...")
-    auth_mgr = YouTubeAuth()
+    print_info(f"Starting YouTube OAuth Authentication Flow for [{channel.upper()}] channel...")
+    auth_mgr = YouTubeAuth(channel=channel)
     creds = auth_mgr.get_credentials(interactive=True)
     if creds and creds.valid:
-        print_success("YouTube Authentication SUCCESSFUL! Token saved locally.")
+        print_success(f"YouTube Authentication SUCCESSFUL for [{channel.upper()}] channel! Token saved locally.")
         if sync_remote:
             try:
                 import subprocess
                 token_path = auth_mgr.token_file
                 ssh_key = Path.home() / ".ssh" / "id_rsa_oracle"
                 if ssh_key.exists() and token_path.exists():
-                    print_info("Syncing updated token to Oracle Cloud VM (140.245.10.14)...")
+                    print_info(f"Syncing updated {token_path.name} to Oracle Cloud VM (140.245.10.14)...")
                     key_str = str(ssh_key).replace("\\", "/")
                     tok_str = str(token_path).replace("\\", "/")
-                    cmd = f'scp -i "{key_str}" -o StrictHostKeyChecking=no "{tok_str}" opc@140.245.10.14:/home/opc/AutoTube/config/token.json'
+                    cmd = f'scp -i "{key_str}" -o StrictHostKeyChecking=no "{tok_str}" opc@140.245.10.14:/home/opc/AutoTube/config/{token_path.name}'
                     subprocess.run(cmd, shell=True, check=True)
-                    print_success("Token successfully synced to Oracle Cloud VM!")
+                    if channel.lower() == "english":
+                        cmd_legacy = f'scp -i "{key_str}" -o StrictHostKeyChecking=no "{tok_str}" opc@140.245.10.14:/home/opc/AutoTube/config/token.json'
+                        subprocess.run(cmd_legacy, shell=True, check=True)
+                    print_success(f"{token_path.name} successfully synced to Oracle Cloud VM!")
                     subprocess.run(f'ssh -i "{key_str}" -o StrictHostKeyChecking=no opc@140.245.10.14 "sudo systemctl restart autotube-dashboard.service"', shell=True)
                     print_success("Remote dashboard restarted with fresh YouTube credentials!")
             except Exception as e:
                 print_warning(f"Could not auto-sync token to Oracle VM: {e}")
     else:
-        print_error("YouTube Authentication failed or cancelled.")
+        print_error(f"YouTube Authentication failed or cancelled for [{channel.upper()}].")
 
 
 if __name__ == "__main__":

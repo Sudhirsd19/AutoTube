@@ -17,6 +17,7 @@ output/temp/
 # Credentials & secrets
 .env
 config/token.json
+config/token_*.json
 config/client_secrets.json
 config/auth_url.txt
 config/chrome_flow_profile/

@@ -285,6 +285,7 @@ class AutoPilot:
                     "id": slot_data.get("id", f"slot_{idx+1}"),
                     "topic": topic_title,
                     "niche": slot_data.get("niche", "mystery"),
+                    "channel": slot_data.get("channel") or ("hindi" if str(item_lang).lower().startswith("hi") else "english"),
                     "hour": slot_data.get("hour", 8),
                     "minute": slot_data.get("minute", 0),
                     "tz": item_tz,
@@ -310,6 +311,7 @@ class AutoPilot:
                     "id": slot_data.get("id", f"slot_{idx+1}"),
                     "topic": topic_title,
                     "niche": self.niche,
+                    "channel": slot_data.get("channel") or ("hindi" if str(item_lang).lower().startswith("hi") else "english"),
                     "hour": slot_data.get("hour", 8),
                     "minute": slot_data.get("minute", 0),
                     "tz": item_tz,
@@ -333,11 +335,13 @@ class AutoPilot:
             item_voice = item["voice"]
             item_niche = item["niche"]
             item_bgm = item.get("bgm", "auto")
+            item_channel = item.get("channel") or ("hindi" if str(item_lang).lower().startswith("hi") else "english")
             item_tz_key = item.get("tz", "us" if item_lang == "en" else "ist")
 
             print_panel(
                 f"[bold white]Processing Video {idx+1}/{count}:[/bold white] [bold yellow]{topic}[/bold yellow]\n"
                 f"[bold cyan]Category & Slot:[/bold cyan] {slot_label}\n"
+                f"[bold blue]Target Channel:[/bold blue] {'🇬🇧 English Shorts' if item_channel == 'english' else '🇮🇳 Hindi Shorts'}\n"
                 f"[bold magenta]Language & Voice:[/bold magenta] {'English (' + item_voice + ')' if item_lang == 'en' else 'Hindi (' + item_voice + ')'}\n"
                 f"[bold green]BGM Music Track:[/bold green] {item_bgm.upper()}",
                 border_style="magenta",
@@ -511,12 +515,17 @@ class AutoPilot:
                             else:
                                 curr_sec += 5.5
 
+                    sub_cta = (
+                        "रोमांचक और रहस्यमयी जानकारियों के लिए चैनल को लाइक और सब्सक्राइब करें!"
+                        if item_channel == "hindi"
+                        else "Subscribe to the channel for daily mind-bending space & science facts!"
+                    )
                     video_url = self.uploader.upload_video(
                         video_path=final_video,
                         title=v_title,
                         description=(
                             f"{script.narration}\n\n"
-                            f"Subscribe to the channel for daily mind-bending space & science facts!\n\n"
+                            f"{sub_cta}\n\n"
                             f"{' '.join(script.tags)}"
                         ),
                         tags=script.tags,
@@ -524,6 +533,7 @@ class AutoPilot:
                         publish_at=publish_time_iso,
                         pinned_comment=getattr(script, "pinned_comment", None),
                         chapters=chapters if is_landscape else None,
+                        channel=item_channel,
                     )
                     if video_url:
                         uploaded_urls.append(video_url)

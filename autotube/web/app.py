@@ -84,10 +84,12 @@ async def on_startup():
 class RescheduleRequest(BaseModel):
     video_id: str
     publish_at: str  # ISO 8601 UTC or local format
+    channel: Optional[str] = "english"
 
 
 class PublishNowRequest(BaseModel):
     video_id: str
+    channel: Optional[str] = "english"
 
 
 class AlienGenerateRequest(BaseModel):
@@ -132,6 +134,7 @@ class PublishLocalVideoRequest(BaseModel):
     description: Optional[str] = None
     tags: Optional[List[str]] = None
     privacy: str = "public"
+    channel: Optional[str] = "english"
 
 
 class HarvestJobRequest(BaseModel):
@@ -183,6 +186,7 @@ class DirectorPublishRequest(BaseModel):
     tags: Optional[List[str]] = None
     privacy: str = "public"
     pinned_comment: Optional[str] = None
+    channel: Optional[str] = "english"
 
 
 # State cache for last completed Director render
@@ -210,16 +214,51 @@ def _save_publish_tracker(data: Dict[str, Any]):
 
 
 # -------------------------------------------------------------
-# HELPER: GET YOUTUBE SERVICE
+# HELPER: GET YOUTUBE SERVICE & MULTI-CHANNEL CONFIG
 # -------------------------------------------------------------
-def get_youtube_service():
+CHANNELS_CONFIG_FILE = PROJECT_ROOT / "config" / "channels_config.json"
+
+
+def _load_channels_config() -> Dict[str, Any]:
+    default_cfg = {
+        "default_channel": "english",
+        "channels": {
+            "english": {
+                "id": "english",
+                "name": "English Shorts Channel",
+                "language": "English",
+                "token_file": "config/token_english.json",
+                "default_privacy": "private",
+                "default_category": "28",
+            },
+            "hindi": {
+                "id": "hindi",
+                "name": "Hindi Shorts Channel",
+                "language": "Hindi",
+                "token_file": "config/token_hindi.json",
+                "default_privacy": "private",
+                "default_category": "28",
+            },
+        },
+    }
+    if CHANNELS_CONFIG_FILE.exists():
+        try:
+            with open(CHANNELS_CONFIG_FILE, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception:
+            pass
+    return default_cfg
+
+
+def get_youtube_service(channel: str = "english"):
     try:
-        creds = YouTubeAuth().get_credentials(interactive=False)
+        target_ch = (channel or "english").lower().strip()
+        creds = YouTubeAuth(channel=target_ch).get_credentials(interactive=False)
         if not creds or not creds.valid:
             return None
         return build("youtube", "v3", credentials=creds)
     except Exception as e:
-        print_warning(f"Failed to initialize YouTube service: {e}")
+        print_warning(f"Failed to initialize YouTube service for channel '{channel}': {e}")
         return None
 
 
@@ -247,8 +286,12 @@ async def get_status():
         except Exception:
             pass
 
-    # Check if YouTube is connected
-    yt_service = get_youtube_service()
+    # Check YouTube connections for all channels
+    yt_en = get_youtube_service("english")
+    yt_hi = get_youtube_service("hindi")
+    ch_cfg = _load_channels_config().get("channels", {})
+    en_info = YouTubeAuth(channel="english").get_channel_info() if yt_en else None
+    hi_info = YouTubeAuth(channel="hindi").get_channel_info() if yt_hi else None
 
     # System disk usage
     try:
@@ -269,39 +312,92 @@ async def get_status():
         "daily_upload_limit": 10,
         "is_generating": GENERATION_STATUS["is_running"],
         "current_task": GENERATION_STATUS["current_task"],
-        "youtube_connected": bool(yt_service is not None),
+        "youtube_connected": bool(yt_en is not None or yt_hi is not None),
+        "channels": {
+            "english": {
+                "id": "english",
+                "name": ch_cfg.get("english", {}).get("name", "English Shorts Channel"),
+                "connected": bool(yt_en is not None),
+                "info": en_info,
+            },
+            "hindi": {
+                "id": "hindi",
+                "name": ch_cfg.get("hindi", {}).get("name", "Hindi Shorts Channel"),
+                "connected": bool(yt_hi is not None),
+                "info": hi_info,
+            },
+        },
         "disk_free_gb": free_gb,
         "disk_used_pct": used_pct,
     }
 
 
 @app.get("/api/auth/status")
-async def get_auth_status():
-    token_file = PROJECT_ROOT / "config" / "token.json"
-    auth_mgr = YouTubeAuth()
-    creds = auth_mgr.get_credentials(interactive=False)
-    has_token = token_file.exists()
-    is_valid = bool(creds and creds.valid)
-    return {
-        "has_token_file": has_token,
-        "is_authenticated": is_valid,
-        "token_expired": bool(creds and creds.expired) if creds else (True if has_token else False),
-    }
+async def get_auth_status(channel: Optional[str] = None):
+    ch_cfg = _load_channels_config().get("channels", {})
+    res = {}
+    for ch_key in ("english", "hindi"):
+        auth_mgr = YouTubeAuth(channel=ch_key)
+        creds = auth_mgr.get_credentials(interactive=False)
+        has_token = auth_mgr.token_file.exists()
+        is_valid = bool(creds and creds.valid)
+        ch_info = auth_mgr.get_channel_info() if is_valid else None
+        res[ch_key] = {
+            "channel": ch_key,
+            "name": ch_cfg.get(ch_key, {}).get("name", f"{ch_key.title()} Shorts Channel"),
+            "has_token_file": has_token,
+            "is_authenticated": is_valid,
+            "token_expired": bool(creds and creds.expired) if creds else (True if has_token else False),
+            "channel_info": ch_info,
+        }
+    if channel and channel.lower().strip() in res:
+        return res[channel.lower().strip()]
+    return res
+
+
+@app.get("/api/auth/url")
+async def get_oauth_url(channel: str = "english"):
+    """Generate and return Google OAuth authorization URL for the requested channel."""
+    try:
+        from google_auth_oauthlib.flow import InstalledAppFlow
+        from autotube.uploader.auth import YOUTUBE_SCOPES
+        cfg = get_config()
+        secrets_file = cfg.youtube.client_secrets_file
+        if not secrets_file.exists():
+            raise HTTPException(status_code=404, detail="client_secrets.json not found in config/")
+        flow = InstalledAppFlow.from_client_secrets_file(str(secrets_file), YOUTUBE_SCOPES)
+        flow.redirect_uri = "urn:ietf:wg:oauth:2.0:oob"
+        auth_url, _ = flow.authorization_url(prompt="consent", access_type="offline")
+        return {"success": True, "auth_url": auth_url, "channel": channel}
+    except Exception as e:
+        auth_file = PROJECT_ROOT / "config" / "auth_url.txt"
+        if auth_file.exists():
+            return {"success": True, "auth_url": auth_file.read_text(encoding="utf-8").strip(), "channel": channel}
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 class SaveTokenRequest(BaseModel):
     token_json: str
+    channel: str = "english"
 
 
 @app.post("/api/auth/save_token")
 async def save_token_payload(req: SaveTokenRequest):
     try:
         data = json.loads(req.token_json)
-        token_file = PROJECT_ROOT / "config" / "token.json"
+        target_ch = (req.channel or "english").lower().strip()
+        token_file = PROJECT_ROOT / "config" / f"token_{target_ch}.json"
+        token_file.parent.mkdir(parents=True, exist_ok=True)
         with open(token_file, "w", encoding="utf-8") as f:
             json.dump(data, f, indent=2)
-        log_event("YouTube token.json updated via Web Dashboard.")
-        return {"success": True, "message": "Token saved successfully!"}
+        if target_ch == "english":
+            try:
+                with open(PROJECT_ROOT / "config" / "token.json", "w", encoding="utf-8") as f:
+                    json.dump(data, f, indent=2)
+            except Exception:
+                pass
+        log_event(f"YouTube token_{target_ch}.json updated via Web Dashboard.")
+        return {"success": True, "message": f"Token for {target_ch.title()} Channel saved successfully!"}
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Invalid token JSON: {e}")
 
@@ -310,27 +406,47 @@ async def save_token_payload(req: SaveTokenRequest):
 # API ROUTES: YOUTUBE VIDEO & SCHEDULE MANAGER
 # -------------------------------------------------------------
 @app.get("/api/videos")
-async def list_videos():
+async def list_videos(channel: str = "english"):
     try:
-        yt = get_youtube_service()
+        target_ch = (channel or "english").lower().strip()
+        yt = get_youtube_service(target_ch)
+        ch_cfg = _load_channels_config().get("channels", {})
+        available_channels = [
+            {"id": "english", "name": ch_cfg.get("english", {}).get("name", "English Shorts")},
+            {"id": "hindi", "name": ch_cfg.get("hindi", {}).get("name", "Hindi Shorts")},
+        ]
         if not yt:
             return {
                 "videos": [],
                 "channel": None,
+                "current_channel": target_ch,
+                "available_channels": available_channels,
                 "auth_required": True,
-                "error": "YouTube OAuth token has expired or is not configured. Please re-authenticate.",
+                "error": f"YouTube OAuth token for {target_ch.title()} Channel has expired or is not configured. Please authenticate.",
             }
 
         # 1. Get uploads playlist ID of the authenticated channel
-        channels_res = yt.channels().list(part="contentDetails,snippet", mine=True).execute()
+        channels_res = yt.channels().list(part="contentDetails,snippet,statistics", mine=True).execute()
         if not channels_res.get("items"):
-            return {"videos": [], "channel": None, "auth_required": False}
+            return {
+                "videos": [],
+                "channel": None,
+                "current_channel": target_ch,
+                "available_channels": available_channels,
+                "auth_required": False,
+            }
 
         ch_item = channels_res["items"][0]
+        stats = ch_item.get("statistics", {})
         channel_info = {
+            "id": ch_item.get("id"),
+            "channel_key": target_ch,
             "title": ch_item["snippet"]["title"],
             "custom_url": ch_item["snippet"].get("customUrl", ""),
             "thumbnail": ch_item["snippet"]["thumbnails"].get("default", {}).get("url", ""),
+            "subscribers": stats.get("subscriberCount", "0"),
+            "total_views": stats.get("viewCount", "0"),
+            "total_videos": stats.get("videoCount", "0"),
         }
         uploads_playlist_id = ch_item["contentDetails"]["relatedPlaylists"]["uploads"]
 
@@ -343,7 +459,12 @@ async def list_videos():
 
         video_ids = [item["contentDetails"]["videoId"] for item in playlist_res.get("items", [])]
         if not video_ids:
-            return {"videos": [], "channel": channel_info}
+            return {
+                "videos": [],
+                "channel": channel_info,
+                "current_channel": target_ch,
+                "available_channels": available_channels,
+            }
 
         # 3. Fetch detailed video status, duration, publishAt, and metrics
         videos_res = yt.videos().list(
@@ -403,7 +524,12 @@ async def list_videos():
                 "url": f"https://youtu.be/{vid_id}",
             })
 
-        return {"videos": video_list, "channel": channel_info}
+        return {
+            "videos": video_list,
+            "channel": channel_info,
+            "current_channel": target_ch,
+            "available_channels": available_channels,
+        }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -412,7 +538,10 @@ async def list_videos():
 async def reschedule_video(req: RescheduleRequest):
     """Update scheduled release date/time using YouTube Data API."""
     try:
-        yt = get_youtube_service()
+        target_ch = (req.channel or "english").lower().strip()
+        yt = get_youtube_service(target_ch)
+        if not yt:
+            raise HTTPException(status_code=400, detail=f"YouTube service not connected for {target_ch.title()} channel")
 
         # Parse requested publish date & time
         req_time = req.publish_at.strip()
@@ -437,7 +566,7 @@ async def reschedule_video(req: RescheduleRequest):
             },
         ).execute()
 
-        log_event(f"Successfully rescheduled video {req.video_id} to {req_time}")
+        log_event(f"Successfully rescheduled video {req.video_id} to {req_time} on {target_ch.title()} channel")
         return {"success": True, "message": f"Video {req.video_id} rescheduled to {req_time}"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -447,7 +576,10 @@ async def reschedule_video(req: RescheduleRequest):
 async def make_video_public(req: PublishNowRequest):
     """Instantly make any private or scheduled video PUBLIC on YouTube."""
     try:
-        yt = get_youtube_service()
+        target_ch = (req.channel or "english").lower().strip()
+        yt = get_youtube_service(target_ch)
+        if not yt:
+            raise HTTPException(status_code=400, detail=f"YouTube service not connected for {target_ch.title()} channel")
         yt.videos().update(
             part="status",
             body={
@@ -1234,7 +1366,8 @@ async def publish_director_video(req: DirectorPublishRequest):
     if not video_path.exists():
         raise HTTPException(status_code=404, detail="Rendered video file not found")
 
-    uploader = YouTubeUploader()
+    target_ch = (req.channel or "english").lower().strip()
+    uploader = YouTubeUploader(channel=target_ch)
     desc = (req.description or req.title) + "\n\n" + (" ".join(req.tags or ["#Shorts", "#Viral"]))
 
     video_url = uploader.upload_video(
@@ -1244,6 +1377,7 @@ async def publish_director_video(req: DirectorPublishRequest):
         tags=req.tags or ["Shorts", "Viral"],
         privacy_status=req.privacy or "public",
         pinned_comment=req.pinned_comment,
+        channel=target_ch,
     )
 
     if not video_url:
@@ -1493,8 +1627,8 @@ async def publish_local_video(req: PublishLocalVideoRequest, bg_tasks: Backgroun
     LAST_PUBLISH_RESULT["error"] = None
     LAST_PUBLISH_RESULT["url"] = None
 
-    bg_tasks.add_task(run_publish_task, req.filename, video_path, req.title, req.description, req.tags, req.privacy)
-    return {"success": True, "message": f"Publishing '{req.filename}' to YouTube in background..."}
+    bg_tasks.add_task(run_publish_task, req.filename, video_path, req.title, req.description, req.tags, req.privacy, req.channel or "english")
+    return {"success": True, "message": f"Publishing '{req.filename}' to YouTube ({(req.channel or 'english').title()} Channel) in background..."}
 
 
 def run_publish_task(
@@ -1504,17 +1638,19 @@ def run_publish_task(
     description: Optional[str],
     tags: Optional[List[str]],
     privacy: str,
+    channel: str = "english",
 ):
     """Background task to upload a local video to YouTube."""
     global LAST_PUBLISH_RESULT
+    target_ch = (channel or "english").lower().strip()
     GENERATION_STATUS["is_running"] = True
-    GENERATION_STATUS["current_task"] = f"Publishing: {filename}"
-    log_event(f"Starting YouTube upload for {filename}...")
+    GENERATION_STATUS["current_task"] = f"Publishing ({target_ch.title()} Channel): {filename}"
+    log_event(f"Starting YouTube upload for {filename} to {target_ch.title()} channel...")
 
     try:
         from autotube.uploader.youtube_upload import YouTubeUploader
 
-        uploader = YouTubeUploader()
+        uploader = YouTubeUploader(channel=target_ch)
 
         # Auto-generate title from filename if not provided
         if not title:
@@ -1551,6 +1687,7 @@ def run_publish_task(
             description=description,
             tags=tags,
             privacy_status=privacy,
+            channel=target_ch,
         )
 
         if video_url:

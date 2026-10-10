@@ -1,0 +1,21 @@
+{
+  "default_channel": "english",
+  "channels": {
+    "english": {
+      "id": "english",
+      "name": "English Shorts Channel",
+      "language": "English",
+      "token_file": "config/token_english.json",
+      "default_privacy": "private",
+      "default_category": "28"
+    },
+    "hindi": {
+      "id": "hindi",
+      "name": "Hindi Shorts Channel",
+      "language": "Hindi",
+      "token_file": "config/token_hindi.json",
+      "default_privacy": "private",
+      "default_category": "28"
+    }
+  }
+}
