@@ -153,14 +153,15 @@ def acquire_scene_visuals_waterfall(
     except Exception as multi_err:
         print_warning(f"MultiStockAggregator fallback notice: {multi_err}")
 
-    # Fallback to StockFetcher if needed
+    # Fallback to StockFetcher if needed (Motion footage required for portrait Shorts)
     stock_fetcher = StockFetcher()
+    is_motion_preferred = (orientation == "portrait")
     if scenes:
         scene_assets = stock_fetcher.fetch_scene_visual_assets(
             scenes=scenes[:max_scenes],
             output_dir=output_dir,
             orientation=orientation,
-            require_video=False,
+            require_video=is_motion_preferred,
         )
     else:
         queries = getattr(script, "visual_keywords", []) or [getattr(script, "topic", "scene")]
@@ -170,7 +171,7 @@ def acquire_scene_visuals_waterfall(
                 narration=getattr(script, "narration", None),
                 output_dir=output_dir,
                 orientation=orientation,
-                require_video=False,
+                require_video=is_motion_preferred,
             )
             for q in queries[:max_scenes]
         ]

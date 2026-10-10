@@ -458,7 +458,7 @@
               <i class="fa-solid fa-feather-pointed text-brand-cyan"></i> Story / Script Studio
             </h3>
             <span id="script-format-hint" class="text-xs text-brand-cyan bg-cyan-950/60 px-2.5 py-0.5 rounded-full border border-cyan-500/30">
-              Target for Shorts: 155-190 words (~60-75s)
+              Target for Shorts: 110-130 words (~45-50s, <60s Strict)
             </span>
           </div>
           <div class="flex items-center gap-2">
@@ -2247,7 +2247,7 @@
       if (fmt === 'short') {
         if (btnShort) btnShort.className = 'px-3.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 bg-brand-cyan text-black shadow-md';
         if (btnLong) btnLong.className = 'px-3.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 text-slate-400 hover:text-white';
-        if (hint) hint.textContent = 'Target for Shorts: 155-190 words (~60-75s)';
+        if (hint) hint.textContent = 'Target for Shorts: 110-130 words (~45-50s, <60s Strict)';
         if (genBtn) genBtn.innerHTML = '<i class="fa-solid fa-play"></i> 🎬 Generate 9:16 Short Video Now';
       } else {
         if (btnShort) btnShort.className = 'px-3.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 text-slate-400 hover:text-white';
@@ -2284,9 +2284,29 @@
     function updateScriptStats() {
       const text = document.getElementById('director-script-input').value.trim();
       const words = text ? text.split(/\s+/).filter(Boolean).length : 0;
-      const estSec = Math.round(words / 2.6);
-      document.getElementById('script-word-count').textContent = words;
-      document.getElementById('script-est-duration').textContent = estSec + 's';
+      const estSec = Math.round(words / 2.5);
+      const wordCountEl = document.getElementById('script-word-count');
+      const estDurEl = document.getElementById('script-est-duration');
+      wordCountEl.textContent = words;
+      estDurEl.textContent = estSec + 's';
+
+      if (studioVideoFormat === 'short') {
+        if (words > 135 || estSec > 58) {
+          wordCountEl.className = 'text-red-400 font-bold';
+          estDurEl.className = 'text-red-400 font-bold';
+          estDurEl.textContent = estSec + 's (⚠️ Exceeds 60s Shorts Limit!)';
+        } else if (words < 90 && words > 0) {
+          wordCountEl.className = 'text-yellow-400 font-bold';
+          estDurEl.className = 'text-yellow-400 font-bold';
+          estDurEl.textContent = estSec + 's (Short)';
+        } else {
+          wordCountEl.className = 'text-brand-cyan';
+          estDurEl.className = 'text-emerald-400';
+        }
+      } else {
+        wordCountEl.className = 'text-brand-cyan';
+        estDurEl.className = 'text-emerald-400';
+      }
     }
 
     const studioScriptInput = document.getElementById('director-script-input');

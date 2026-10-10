@@ -179,19 +179,17 @@ class ScriptGenerator:
         sys_prompt = HINDI_SHORTS_SYSTEM_PROMPT if is_hindi else SHORTS_SYSTEM_PROMPT
         lang_note = "in authentic Devanagari Hindi script (शुद्ध हिंदी देवनागरी लिपि में बोले जाने वाले वाक्य, NO Roman Hinglish) with English visual search keywords" if is_hindi else "in English"
 
-        if target_duration < 60:
-            target_duration = 60
-
         if target_duration >= 90:
             min_words = int(target_duration * 1.9)
             max_words = int(target_duration * 2.3)
             scene_guide = "8 to 14 sequential documentary scenes in 'scenes'"
             dur_label = f"{target_duration} seconds (Full In-Depth Documentary)"
         else:
-            min_words = 155
-            max_words = 190
-            scene_guide = "6 to 10 sequential scenes in 'scenes'"
-            dur_label = f"{target_duration} seconds (MANDATORY: Minimum 1 full minute, 60 to 75 seconds)"
+            target_duration = min(target_duration, 50)
+            min_words = 110
+            max_words = 130
+            scene_guide = "5 to 8 sequential scenes in 'scenes'"
+            dur_label = f"{target_duration} seconds (CRITICAL: YouTube Shorts STRICTLY UNDER 60 SECONDS, Target: 45 to 50 seconds spoken audio)"
 
         prompt = f"""Generate a high-retention viral YouTube video script about: '{topic}' {lang_note}.
 Target duration: {dur_label}.
@@ -204,7 +202,7 @@ MANDATORY STRUCTURAL REQUIREMENTS:
    - 'visual_subject': The exact physical subject on screen in 1-3 simple English words (e.g. 'black hole space', 'earth from space', 'pyramid egypt', 'deep ocean storm', 'glowing brain'). MUST directly match the spoken words!
    - 'visual_description': Vivid description in English of the visual scene.
    - 'search_keywords': 2-3 clean, simple English search words (e.g. ['black hole', 'space galaxy']).
-3. TOTAL SPOKEN WORDS across all scenes MUST be between {min_words} and {max_words} words.
+3. TOTAL SPOKEN WORDS across all scenes MUST be strictly between {min_words} and {max_words} words (hard ceiling 135 words). NEVER exceed 135 words as YouTube Shorts feed disqualifies any video over 60 seconds!
 4. Set the top-level 'narration' field to the combined text of all scene narrations.
 5. High-converting climax cliffhanger CTA in the final scene.
 6. Seamless infinite loop: ending sentence flows back into opening hook.

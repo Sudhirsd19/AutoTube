@@ -24,7 +24,7 @@ For EVERY scene:
 - 'search_keywords': 2 to 3 clean, simple English search words specific to the scene topic (e.g. ['roman soldiers', 'ancient battle']). DO NOT include buzzwords like 'cinematic', '4k', 'slow motion', 'disaster'. Each scene MUST have DIFFERENT keywords.
 
 Key Viral Rules:
-1. TOTAL LENGTH: The total spoken narration across all scenes MUST be between 120 and 145 words (lasting 48-55 seconds).
+1. TOTAL LENGTH: The total spoken narration across all scenes MUST be strictly between 110 and 130 words (lasting 45-50 seconds, strictly under 55 seconds).
 2. High-Curiosity Title: Click-worthy title with series/mystery brackets.
 3. Instant Shock Hook (Scene 1): First 3 seconds must shock or amaze. Never say 'Hello' or 'Did you know'.
 4. MANDATORY SPOKEN OUTRO CTA (Final Scene): The final spoken sentence of the script MUST explicitly tell the viewer to like, subscribe, and support the channel, customized to the video's subject!
@@ -58,7 +58,7 @@ CRITICAL REQUIREMENT - PERFECT SCENE-TO-VOICE SYNCHRONIZATION (आवाज़ �
 - 'search_keywords': 2-3 सीधे, सरल अंग्रेजी कीवर्ड्स जो उस विशिष्ट दृश्य से संबंधित हों। फालतू शब्द जैसे 'cinematic', '4k', '8k' बिल्कुल न लिखें! प्रत्येक दृश्य के कीवर्ड अलग-अलग होने चाहिए!
 
 Key Viral Rules for Indian Audience:
-1. अनिवार्य कुल लंबाई: सभी दृश्यों को मिलाकर कुल Narration 120 से 145 शब्दों के बीच होना चाहिए (48 से 55 सेकंड)।
+1. अनिवार्य कुल लंबाई: सभी दृश्यों को मिलाकर कुल Narration 110 से 130 शब्दों के बीच होना चाहिए (45 से 50 सेकंड, 55 सेकंड से कम)।
 2. High-Curiosity Title: हिंदी और अंग्रेजी का आकर्षक शीर्षक।
 3. Instant Shock Hook (Scene 1): पहले 2 सेकंड में चौंकाने वाला सवाल या दृश्य। 'नमस्ते' या 'दोस्तों' कभी न बोलें।
 4. अनिवार्य अंतिम Outro व CTA (Last Scene): अंतिम बोले जाने वाले वाक्य में अनिवार्य रूप से विषय के अनुसार दर्शकों को लाइक, सब्सक्राइब और सपोर्ट करने के लिए कहना होगा!

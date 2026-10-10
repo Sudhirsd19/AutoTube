@@ -898,6 +898,12 @@ async def get_system_storage():
 
 @app.post("/api/system/storage/purge")
 async def purge_system_storage(req: StoragePurgeRequest):
+    if GENERATION_STATUS.get("is_running"):
+        raise HTTPException(
+            status_code=400,
+            detail="Cannot purge storage while video generation is currently in progress!"
+        )
+
     freed_bytes = 0
     deleted_files = 0
 

@@ -109,7 +109,7 @@ class DirectorEngine:
         is_long = (video_format == "landscape_long")
         gemini_key = os.getenv("GEMINI_API_KEY", "") or getattr(self.cfg, "gemini_api_key", "")
 
-        target_words = "350 to 500 words (3.0 to 4.5 minutes documentary length)" if is_long else "160 to 195 words (minimum 60 to 75 seconds, full 1 minute viral Short length)"
+        target_words = "350 to 500 words (3.0 to 4.5 minutes documentary length)" if is_long else "110 to 130 words (strictly 45 to 50 seconds, YouTube Shorts hard limit under 58s)"
         format_desc = "16:9 Landscape Documentary Video" if is_long else "9:16 Vertical YouTube Short"
 
         if gemini_key:
@@ -124,7 +124,7 @@ class DirectorEngine:
 - Pure Hindi Devanagari text is strictly mandatory. Universal acronyms/numbers (DNA, NASA, 1935) may appear if needed, but the entire spoken narrative, verbs, vocabulary and sentence structure MUST be 100% Devanagari Hindi."""
 
                     hook_examples = """- Examples of 3-second opening hook styles (in Devanagari Hindi):
-     * "अगर आपको लगता है कि मौत के बाद सब खत्म हो जाता है, तो अगले 60 सेकंड्स आपके होश उड़ा देंगे!"
+     * "अगर आपको लगता है कि मौत के बाद सब खत्म हो जाता है, तो अगले 45 सेकंड्स आपके होश उड़ा देंगे!"
      * "1935 में एक 4 साल की बच्ची ने एक ऐसी रोंगटे खड़े करने वाली सच्चाई बयां की जिसने पूरे देश को हिला दिया..."
      * "99% लोग नहीं जानते कि इस रहस्य को 50 सालों तक दुनिया से छुपा कर क्यों रखा गया था!"
 """
@@ -142,7 +142,7 @@ class DirectorEngine:
 - Use English/Roman letters throughout (e.g. "Agar aapko lagta hai ki...", "Kya aap jante hain...")."""
 
                     hook_examples = """- Examples of 3-second opening hook styles (in Roman Hinglish):
-     * "Agar aapko lagta hai ki maut ke baad sab khatam ho jata hai, toh agle 60 seconds aapke hosh uda denge!"
+     * "Agar aapko lagta hai ki maut ke baad sab khatam ho jata hai, toh agle 45 seconds aapke hosh uda denge!"
      * "1935 me ek 4 saal ki bachhi ne ek aisi sachayi bayaan ki jisne khud Mahatma Gandhi ko hairan kar diya..."
      * "99% log nahi jante ki is ghatna ko sarkar ne 50 saalon tak top-secret kyu rakha tha!"
 """
@@ -159,7 +159,7 @@ class DirectorEngine:
 - Write the narration in high-energy, suspenseful English with viral pacing and dramatic hooks."""
 
                     hook_examples = """- Examples of 3-second opening hook styles (in English):
-     * "If you think you know what happens after death, the next 60 seconds will completely shatter your reality!"
+     * "If you think you know what happens after death, the next 45 seconds will completely shatter your reality!"
      * "In 1935, a four-year-old girl revealed classified details that baffled top scientists..."
      * "99% of people have no idea why the government kept this incident top-secret for over 50 years!"
 """
@@ -170,6 +170,17 @@ class DirectorEngine:
 
                     default_pinned = "What do you think really happened? Comment below 👇"
                     default_titles = [f"{topic or 'Mystery'} Revealed {'#Shorts' if not is_long else ''}"]
+
+                if is_long:
+                    duration_mandate = """CRITICAL DOCUMENTARY DURATION MANDATE:
+- For 16:9 Long Video, the script narration should be 350 to 500 words (3.0 to 4.5 minutes spoken audio).
+- Deliver deep investigative depth, rich historical context, and comprehensive storytelling."""
+                else:
+                    duration_mandate = """CRITICAL YOUTUBE SHORTS DURATION MANDATE (STRICTLY UNDER 60 SECONDS):
+- For YouTube Shorts, the script narration MUST BE STRICTLY UNDER 60 SECONDS (Target: 45 to 50 seconds spoken audio).
+- YouTube Shorts feed HARD CUTOFF is 60.0 seconds! Any video >60s is disqualified from the Shorts feed!
+- At standard natural speaking pace (~140 words/minute), the script MUST BE EXACTLY 110 TO 130 WORDS (hard ceiling 135 words).
+- High tension, zero fluff, fast cinematic pacing. Every single second must hook the viewer."""
 
                 prompt = f"""You are a top-tier viral YouTube Short & Documentary scriptwriter who crafts scripts that retain 80%+ audience retention and drive massive subscriber conversion.
 
@@ -186,10 +197,7 @@ IMPORTANT CREATIVE INSTRUCTION:
 - If the user provided a 1-line concept, topic, or command (e.g. "Punarjanam pe ek short video banao real incident pe with proof", "Bermuda triangle mystery", etc.), you MUST research/generate a FULL, COMPLETE, deeply thrilling, factual story from scratch based on authentic real-world incidents, records, or historical evidence (e.g. for rebirth, use documented cases like Shanti Devi / Mahatma Gandhi 1935 investigation, Taranjit Singh, etc.).
 - NEVER just echo or repeat the user's prompt as the narration text! Deliver the actual gripping narrative from the first word to the last!
 
-CRITICAL 1-MINUTE MINIMUM DURATION MANDATE:
-- For YouTube Shorts, the script narration MUST BE MINIMUM 1 FULL MINUTE (60 to 75 seconds spoken audio).
-- At standard natural speaking pace (130-150 words/minute), this requires AT LEAST 160 TO 195 WORDS.
-- DO NOT rush or make it brief (never under 150 words). Provide detailed, chilling storytelling with deep suspense and compelling scientific or historical depth!
+{duration_mandate}
 
 STRICT RETENTION & SUBSCRIBER GROWTH BLUEPRINT:
 1. THE 3-SECOND SCROLL-STOPPER OPENING HOOK (CRUCIAL):
@@ -664,6 +672,17 @@ Output STRICT JSON with these keys:
         )
         total_duration = tts_res.duration_seconds
 
+        # Universal Shorts Duration Clamp: Guarantee final video strictly complies with <60s YouTube Shorts feed cutoff
+        if not is_long:
+            tts_res = tts.clamp_duration(
+                tts_res=tts_res,
+                max_seconds=56.0,
+                target_seconds=50.0,
+                width=target_width,
+                height=target_height,
+            )
+            total_duration = tts_res.duration_seconds
+
         if progress_callback: progress_callback(30, "Resolving and mixing Background Music (BGM)...")
 
         # 2. Select & Mix BGM (Guaranteed file check to avoid directory errors)
@@ -912,8 +931,21 @@ Output STRICT JSON with these keys:
                             f"{qa.get('reason', 'visual mismatch')}"
                         )
 
-                if not acquired_video:
-                    # Fail-Safe 1: Bespoke 8K AI Scene Visual
+                if not acquired_video and visual_mode in ("multi_cinematic", "multi_best", "auto", "hybrid", "stock"):
+                    # Safe cinematic stock motion video fallback
+                    try:
+                        safe_query = deduped_queries[0] if deduped_queries else "deep space stars cosmos"
+                        safe_v = pexels.get_scene_video(search_query=safe_query, orientation=orientation, scene_index=idx)
+                        if not safe_v:
+                            safe_v = pexels.get_scene_video(search_query="deep space stars cosmos", orientation=orientation, scene_index=idx)
+                        if safe_v and safe_v.exists() and safe_v.stat().st_size > 5000:
+                            acquired_video = safe_v
+                            print_success(f"   ✅ [Fail-Safe Video] Scene {idx+1} covered with motion footage: {safe_v.name}")
+                    except Exception as s_err:
+                        print_warning(f"   ⚠️ Fail-safe video search failed for Scene {idx+1}: {s_err}")
+
+                if not acquired_video and visual_mode == "ai_only":
+                    # Bespoke AI Image only in explicit ai_only mode
                     try:
                         ai_prompt = self._extract_ai_scene_prompt(sentence, title, idx)
                         ai_target = TEMP_DIR / f"ai_failsafe_{idx}_{slug}.jpg"
@@ -932,32 +964,19 @@ Output STRICT JSON with these keys:
                         print_warning(f"   ⚠️ Fail-safe AI generation failed for Scene {idx+1}: {ai_err}")
 
                 if not acquired_video:
-                    # Fail-Safe 2: High-resolution scene photo from Pexels
-                    try:
-                        photo_query = deduped_queries[0] if deduped_queries else "deep space galaxy"
-                        photo = pexels.get_scene_photo(search_query=photo_query, orientation=orientation, scene_index=idx)
-                        if photo and photo.exists() and photo.stat().st_size > 5000:
-                            acquired_video = photo
-                            print_success(f"   ✅ [Fail-Safe Photo] Scene {idx+1} covered with photo: {photo.name}")
-                    except Exception as p_err:
-                        print_warning(f"   ⚠️ Fail-safe photo failed for Scene {idx+1}: {p_err}")
-
-                if not acquired_video:
-                    # Fail-Safe 3: Safe cinematic cosmic stock video
-                    try:
-                        safe_v = pexels.get_scene_video(search_query="deep space stars cosmos", orientation=orientation, scene_index=idx)
-                        if safe_v and safe_v.exists() and safe_v.stat().st_size > 5000:
-                            acquired_video = safe_v
-                            print_success(f"   ✅ [Fail-Safe Video] Scene {idx+1} covered with cosmic footage: {safe_v.name}")
-                    except Exception:
-                        pass
-
-                if not acquired_video:
                     raise RuntimeError(f"Could not acquire any visual asset for scene {idx+1}.")
 
                 acquired_path = Path(acquired_video)
                 if not acquired_path.exists() or acquired_path.stat().st_size < 5000:
                     raise RuntimeError(f"Visual asset for scene {idx+1} is missing or too small.")
+
+                # In motion video modes, strictly disallow static image files
+                if visual_mode in ("multi_cinematic", "multi_best", "auto", "hybrid", "stock"):
+                    if acquired_path.suffix.lower() not in {".mp4", ".mov", ".webm", ".mkv"}:
+                        raise RuntimeError(
+                            f"Render blocked: Scene {idx+1} acquired static image ({acquired_path.suffix}) "
+                            f"in motion-only mode '{visual_mode}'."
+                        )
 
                 scene_assets_by_scene[idx] = acquired_path
             except Exception as exc:

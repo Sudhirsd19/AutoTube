@@ -407,6 +407,17 @@ class AutoPilot:
                     output_audio_path=audio_path,
                     voice=item_voice,
                 )
+
+                # Strict duration clamp for Shorts (<60s hard feed limit)
+                if not is_landscape:
+                    tts_res = self.tts.clamp_duration(
+                        tts_res=tts_res,
+                        max_seconds=56.0,
+                        target_seconds=50.0,
+                        width=v_w,
+                        height=v_h,
+                    )
+
                 from autotube.voice.tts_engine import compute_scene_durations
                 scene_durations = compute_scene_durations(
                     scenes=script.scenes,

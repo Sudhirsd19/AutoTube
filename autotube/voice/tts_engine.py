@@ -11,7 +11,7 @@ import urllib.request
 import edge_tts
 from pydantic import BaseModel
 from autotube.utils.console import print_info, print_success, print_warning
-from autotube.utils.ffmpeg_helper import get_media_duration
+from autotube.utils.ffmpeg_helper import get_media_duration, run_ffmpeg
 from autotube.voice.voices import get_voice_id, get_voice_profile
 from autotube.voice.voice_director import choose_subject_voice
 
@@ -807,6 +807,80 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 
         with open(ass_path, "w", encoding="utf-8") as f:
             f.write(header + "\n".join(events))
+
+    def clamp_duration(
+        self,
+        tts_res: TTSResult,
+        max_seconds: float = 56.0,
+        target_seconds: float = 50.0,
+        width: int = 1080,
+        height: int = 1920,
+    ) -> TTSResult:
+        """Enforce strict duration ceiling for YouTube Shorts (<60s).
+        If audio duration exceeds max_seconds, speeds up audio via ffmpeg atempo filter,
+        scales all TimedWord and scene timestamps, and re-exports synchronized subtitles.
+        """
+        if tts_res.duration_seconds <= max_seconds:
+            return tts_res
+
+        speed_factor = tts_res.duration_seconds / target_seconds
+        # Cap speedup factor to 1.35x to preserve natural timbre
+        speed_factor = min(max(speed_factor, 1.05), 1.35)
+
+        print_warning(
+            f"⚡ Audio duration ({tts_res.duration_seconds:.1f}s) exceeds Shorts safety threshold ({max_seconds:.1f}s). "
+            f"Clamping to target {target_seconds:.1f}s using {speed_factor:.2f}x speedup..."
+        )
+
+        in_audio = tts_res.audio_path
+        clamped_audio = in_audio.parent / f"{in_audio.stem}_clamped{in_audio.suffix}"
+
+        success = run_ffmpeg(
+            ["-i", str(in_audio), "-filter:a", f"atempo={speed_factor:.4f}", "-vn", str(clamped_audio)],
+            desc="Clamping audio duration for YouTube Shorts compliance",
+        )
+        if not success or not clamped_audio.exists():
+            print_warning("Audio duration clamping failed; using original audio.")
+            return tts_res
+
+        new_duration = get_media_duration(clamped_audio)
+        actual_ratio = tts_res.duration_seconds / max(new_duration, 0.1)
+
+        # Scale word timestamps
+        scaled_words = []
+        for w in tts_res.words:
+            scaled_words.append(
+                TimedWord(
+                    word=w.word,
+                    start=round(w.start / actual_ratio, 3),
+                    end=round(w.end / actual_ratio, 3),
+                    duration=round(w.duration / actual_ratio, 3),
+                )
+            )
+
+        # Scale scene durations
+        scaled_scenes = None
+        if tts_res.scene_durations:
+            scaled_scenes = [round(d / actual_ratio, 3) for d in tts_res.scene_durations]
+
+        # Re-export subtitles
+        srt_path = tts_res.subtitles_srt_path or clamped_audio.with_suffix(".srt")
+        ass_path = tts_res.subtitles_ass_path or clamped_audio.with_suffix(".ass")
+        self._export_srt(scaled_words, srt_path)
+        self._export_karaoke_ass(scaled_words, ass_path, width=width, height=height)
+
+        print_success(
+            f"✅ Audio clamped successfully: {tts_res.duration_seconds:.1f}s -> {new_duration:.1f}s (Shorts feed compliant <60s)"
+        )
+
+        return TTSResult(
+            audio_path=clamped_audio,
+            subtitles_srt_path=srt_path,
+            subtitles_ass_path=ass_path,
+            words=scaled_words,
+            duration_seconds=new_duration,
+            scene_durations=scaled_scenes,
+        )
 
     def synthesize_dialogue(
         self,

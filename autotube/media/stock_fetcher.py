@@ -565,8 +565,27 @@ class StockFetcher:
             if vid and vid.exists():
                 return vid
 
-        # 2. Perfect Lyrics Matching: Generate a Photorealistic AI Visual via Pollinations AI (100% Free & Unlimited!)
-        # This guarantees the visual DIRECTLY illustrates the exact spoken line without random mystery lights!
+        # 2. Context-Aware Motion Video Fallbacks (Strictly matched to subject domain!)
+        context_lower = context_text.lower()
+        if any(k in context_lower for k in ("temple", "mandir", "kailasa", "ellora", "stone", "prachin", "ruins", "monument", "ancient", "bharat", "vedic")):
+            motion_fallbacks = ["ancient indian temple architecture", "ancient stone temple carvings", "hindu temple drone aerial", "ancient archaeological ruins"]
+        elif any(k in context_lower for k in ("animal", "creature", "bird", "falcon", "cheetah", "predator", "wildlife", "beast", "shrimp", "crocodile")):
+            motion_fallbacks = ["wild animal in nature", "peregrine falcon flying sky", "wild cheetah sprinting", "wild predator close up"]
+        elif any(k in context_lower for k in ("history", "army", "soldier", "war", "tomb", "emperor", "king", "cavalry")):
+            motion_fallbacks = ["ancient medieval army marching", "ancient king golden tomb", "dark ancient archaeological excavation"]
+        else:
+            motion_fallbacks = UNIVERSAL_MOTION_FALLBACKS
+
+        for q in motion_fallbacks:
+            vid = self.search_and_download_video(q, output_dir=out_dir, orientation=orientation, require_relevance=True)
+            if vid and vid.exists():
+                return vid
+
+        if require_video:
+            # Video is strictly required for this pipeline; do not silently degrade to static image
+            raise RuntimeError(f"Could not acquire motion video footage for subject: '{subject}'")
+
+        # 3. Perfect Lyrics Matching: Generate a Photorealistic AI Visual via Pollinations AI (Only when require_video is False)
         try:
             from autotube.media.ai_visuals import VisualGenerator
             vis_gen = VisualGenerator()
@@ -618,22 +637,6 @@ class StockFetcher:
                 return img
         except Exception as e:
             print_warning(f"AI visual generation fallback failed: {e}")
-
-        # 3. Context-Aware Motion Video Fallbacks (Strictly matched to subject domain!)
-        context_lower = context_text.lower()
-        if any(k in context_lower for k in ("temple", "mandir", "kailasa", "ellora", "stone", "prachin", "ruins", "monument", "ancient", "bharat", "vedic")):
-            motion_fallbacks = ["ancient indian temple architecture", "ancient stone temple carvings", "hindu temple drone aerial", "ancient archaeological ruins"]
-        elif any(k in context_lower for k in ("animal", "creature", "bird", "falcon", "cheetah", "predator", "wildlife", "beast", "shrimp", "crocodile")):
-            motion_fallbacks = ["wild animal in nature", "peregrine falcon flying sky", "wild cheetah sprinting", "wild predator close up"]
-        elif any(k in context_lower for k in ("history", "army", "soldier", "war", "tomb", "emperor", "king", "cavalry")):
-            motion_fallbacks = ["ancient medieval army marching", "ancient king golden tomb", "dark ancient archaeological excavation"]
-        else:
-            motion_fallbacks = UNIVERSAL_MOTION_FALLBACKS
-
-        for q in motion_fallbacks:
-            vid = self.search_and_download_video(q, output_dir=out_dir, orientation=orientation, require_relevance=True)
-            if vid and vid.exists():
-                return vid
 
         # 4. Fallback gradient canvas (absolute last resort)
         slug = sanitize_filename(subject or "scene")
