@@ -4,7 +4,7 @@ import textwrap
 from pathlib import Path
 from typing import Optional, Tuple
 from PIL import Image, ImageDraw, ImageEnhance, ImageFilter, ImageFont
-from autotube.utils.console import print_info, print_success
+from autotube.utils.console import print_info, print_success, print_warning
 
 
 class ThumbnailGenerator:

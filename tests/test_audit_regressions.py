@@ -313,3 +313,17 @@ def test_multistock_aggregator_has_pexels_attributes():
     assert isinstance(agg.pexels_fetcher, PexelsVideoFetcher)
 
 
+def test_runtime_utility_imports_present():
+    """Verify get_media_duration and print_warning are properly imported in modules."""
+    import autotube.media.director_engine as de
+    import autotube.video.shorts_builder as sb
+    import autotube.video.thumbnail as th
+    import autotube.web.app as wa
+
+    assert hasattr(de, "get_media_duration"), "director_engine must import get_media_duration"
+    assert hasattr(sb, "print_warning"), "shorts_builder must import print_warning"
+    assert hasattr(th, "print_warning"), "thumbnail must import print_warning"
+    assert hasattr(wa, "print_warning"), "web.app must import print_warning"
+
+
+

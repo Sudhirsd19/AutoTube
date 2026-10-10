@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import List, Optional
 from autotube.config import get_config
 from autotube.media.background_music import BackgroundMusicManager
-from autotube.utils.console import print_error, print_info, print_success
+from autotube.utils.console import print_error, print_info, print_success, print_warning
 from autotube.utils.ffmpeg_helper import get_media_duration, run_ffmpeg
 from autotube.video.subtitle_burner import burn_subtitles
 

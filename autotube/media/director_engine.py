@@ -18,6 +18,7 @@ from autotube.media.visual_quality_gate import VisualQualityGate
 from autotube.video.shorts_builder import ShortsBuilder
 from autotube.video.subtitle_burner import burn_subtitles
 from autotube.uploader.youtube_upload import YouTubeUploader
+from autotube.utils.ffmpeg_helper import get_media_duration
 
 
 DIRECTOR_OUTPUT_DIR = PROJECT_ROOT / "output" / "shorts"

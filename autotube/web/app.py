@@ -27,6 +27,7 @@ from autotube.uploader.auth import YouTubeAuth
 from autotube.scripting.alien_tracker import AlienSeriesTracker, ALIEN_SERIES_CHAPTERS
 from autotube.media.cloud_video_gen import CloudVideoGenerator, CANONICAL_VIDEOS_DIR
 from autotube.utils.file_utils import sanitize_filename
+from autotube.utils.console import print_info, print_success, print_warning, print_error
 
 app = FastAPI(title="AutoTube Command Center", version="2.0.0")
 
