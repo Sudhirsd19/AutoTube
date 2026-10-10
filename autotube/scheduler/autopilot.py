@@ -270,7 +270,7 @@ class AutoPilot:
             print_info(f"Discovering {count} fresh trending topics across configured slots...")
             for idx in range(count):
                 slot_data = active_slots[idx % len(active_slots)]
-                item_lang = slot_data.get("language") or slot_data.get("lang") if is_mixed_lang else self.language
+                item_lang = (slot_data.get("language") or slot_data.get("lang")) if is_mixed_lang else self.language
                 item_voice = self.voice or get_viral_voice_for_slot(slot_data.get("voice"), item_lang)
                 item_tz = slot_data.get("tz", "us" if str(item_lang).lower() == "en" else "ist")
                 item_format = slot_data.get("format", "short")
@@ -302,7 +302,7 @@ class AutoPilot:
             )
             for idx, topic_title in enumerate(raw_topics):
                 slot_data = active_slots[idx % len(active_slots)]
-                item_lang = slot_data.get("language") or slot_data.get("lang") if is_mixed_lang else self.language
+                item_lang = (slot_data.get("language") or slot_data.get("lang")) if is_mixed_lang else self.language
                 item_voice = self.voice or get_viral_voice_for_slot(slot_data.get("voice"), item_lang)
                 item_tz = slot_data.get("tz", "us" if str(item_lang).lower() == "en" else "ist")
                 item_format = slot_data.get("format", "short")

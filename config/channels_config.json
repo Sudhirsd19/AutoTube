@@ -3,7 +3,8 @@
   "channels": {
     "english": {
       "id": "english",
-      "name": "English Shorts Channel",
+      "name": "CosmoChronicle",
+      "handle": "@cosmochro",
       "language": "English",
       "token_file": "config/token_english.json",
       "default_privacy": "private",
@@ -11,7 +12,8 @@
     },
     "hindi": {
       "id": "hindi",
-      "name": "Hindi Shorts Channel",
+      "name": "Dulumoni Borah DB",
+      "handle": "@bgyanmantra",
       "language": "Hindi",
       "token_file": "config/token_hindi.json",
       "default_privacy": "private",

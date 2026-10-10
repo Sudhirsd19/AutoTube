@@ -120,36 +120,63 @@ class YouTubeUploader:
                 chapter_lines.append(f"{m:02d}:{s:02d} - {ch_name}")
             chapters_block = "\n".join(chapter_lines) + "\n"
 
-        # Ensure 1-click subscription link and engagement CTA in description
-        channel_handle = "@cosmochro"
-        sub_link = f"https://www.youtube.com/{channel_handle}?sub_confirmation=1"
-        sub_cta_block = (
-            "\n\n"
-            + chapters_block
-            + funnel_desc
-            + "🔔 SUBSCRIBE for Daily Cosmic Mysteries & Mind-Blowing Facts:\n"
-            f"👉 {sub_link}\n\n"
-            "💬 Which revelation shocked you the most? Drop your comment below!\n"
-            "⚡ Share this video with a friend who loves science & mysteries!\n\n"
-            f"{'#Shorts ' if is_short else ''}#AlienInterview #Documentary #SpaceMysteries #Trending #Viral"
-        )
-        if "sub_confirmation=1" not in description:
-            full_description = (description.rstrip() + sub_cta_block)[:5000]
-        else:
-            full_description = description[:5000]
+        # Resolve channel handle from config or channel identity
+        ch_cfg_file = Path("config/channels_config.json")
+        channel_handle = "@bgyanmantra" if active_channel == "hindi" else "@cosmochro"
+        if ch_cfg_file.exists():
+            try:
+                ch_raw = json.loads(ch_cfg_file.read_text(encoding="utf-8"))
+                ch_entry = ch_raw.get("channels", {}).get(active_channel, {})
+                if ch_entry.get("handle"):
+                    channel_handle = ch_entry["handle"]
+            except Exception:
+                pass
 
-        # Optimize pinned comment with high-engagement question + funnel link + 1-click auto-subscribe link
-        if pinned_comment:
-            if "sub_confirmation=1" not in pinned_comment:
-                effective_pinned_comment = f"{pinned_comment.strip()}{funnel_pin}\n\n👉 Subscribe to {channel_handle} for more:\n{sub_link}"
-            else:
-                effective_pinned_comment = f"{pinned_comment.strip()}{funnel_pin}"
-        else:
-            effective_pinned_comment = (
-                "🔥 What do you think is the real truth? Type 1 or Type 2 below! 👇\n"
-                f"{funnel_pin}\n"
-                f"👉 Subscribe to {channel_handle} for more deep mysteries:\n{sub_link}"
+        sub_link = f"https://www.youtube.com/{channel_handle}?sub_confirmation=1"
+        if active_channel == "hindi":
+            sub_cta_block = (
+                "\n\n"
+                + chapters_block
+                + funnel_desc
+                + "🔔 रोज़ाना रहस्य, विज्ञान और प्राचीन भारत के अद्भुत तथ्यों के लिए सब्सक्राइब करें:\n"
+                f"👉 {sub_link}\n\n"
+                "💬 इस रहस्य के बारे में आपकी क्या राय है? कमेंट में ज़रूर बताएं!\n"
+                "⚡ अपने दोस्तों के साथ भी शेयर करें!\n\n"
+                f"{'#Shorts ' if is_short else ''}#HindiFacts #Rahasya #Bharat #Vigyan #Itihas #Shorts #Viral"
             )
+            if pinned_comment:
+                if "sub_confirmation=1" not in pinned_comment:
+                    effective_pinned_comment = f"{pinned_comment.strip()}{funnel_pin}\n\n👉 {channel_handle} को अभी सब्सक्राइब करें:\n{sub_link}"
+                else:
+                    effective_pinned_comment = f"{pinned_comment.strip()}{funnel_pin}"
+            else:
+                effective_pinned_comment = (
+                    "🔥 आपको क्या लगता है सच क्या है? नीचे 1 या 2 कमेंट करें! 👇\n"
+                    f"{funnel_pin}\n"
+                    f"👉 रोज़ाना रहस्य और अद्भुत तथ्यों के लिए सब्सक्राइब करें {channel_handle}:\n{sub_link}"
+                )
+        else:
+            sub_cta_block = (
+                "\n\n"
+                + chapters_block
+                + funnel_desc
+                + "🔔 SUBSCRIBE for Daily Cosmic Mysteries & Mind-Blowing Facts:\n"
+                f"👉 {sub_link}\n\n"
+                "💬 Which revelation shocked you the most? Drop your comment below!\n"
+                "⚡ Share this video with a friend who loves science & mysteries!\n\n"
+                f"{'#Shorts ' if is_short else ''}#AlienInterview #Documentary #SpaceMysteries #Trending #Viral"
+            )
+            if pinned_comment:
+                if "sub_confirmation=1" not in pinned_comment:
+                    effective_pinned_comment = f"{pinned_comment.strip()}{funnel_pin}\n\n👉 Subscribe to {channel_handle} for more:\n{sub_link}"
+                else:
+                    effective_pinned_comment = f"{pinned_comment.strip()}{funnel_pin}"
+            else:
+                effective_pinned_comment = (
+                    "🔥 What do you think is the real truth? Type 1 or Type 2 below! 👇\n"
+                    f"{funnel_pin}\n"
+                    f"👉 Subscribe to {channel_handle} for more deep mysteries:\n{sub_link}"
+                )
 
         # If scheduling release, privacy status must be 'private'
         if publish_at:
@@ -213,7 +240,7 @@ class YouTubeUploader:
 
             # Auto-post engagement comment
             if effective_pinned_comment:
-                self.post_comment(video_id=video_id, comment_text=effective_pinned_comment)
+                self.post_comment(video_id=video_id, comment_text=effective_pinned_comment, channel=active_channel)
 
             # Record latest longform video for future Shorts funnel cross-promotion
             if not is_short and video_id:
@@ -254,9 +281,11 @@ class YouTubeUploader:
             print_error(f"Upload failed: {e}")
             return None
 
-    def post_comment(self, video_id: str, comment_text: str) -> bool:
+    def post_comment(self, video_id: str, comment_text: str, channel: Optional[str] = None) -> bool:
         """Post a top-level creator comment to maximize user engagement and comments signal."""
-        creds = self.auth.get_credentials()
+        target_ch = (channel or self.channel or "english").lower().strip()
+        auth_mgr = YouTubeAuth(channel=target_ch) if channel else self.auth
+        creds = auth_mgr.get_credentials()
         if not creds:
             return False
 

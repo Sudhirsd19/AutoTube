@@ -139,3 +139,76 @@ def test_web_pydantic_models_accept_channel():
 
     req_tok = SaveTokenRequest(token_json="{}", channel="hindi")
     assert req_tok.channel == "hindi"
+
+
+def test_uploader_localized_cta_and_channel_handle(tmp_path):
+    """Verify that YouTubeUploader uses correct handle and localized text for English vs Hindi channels."""
+    dummy_video = tmp_path / "test_short.mp4"
+    dummy_video.write_bytes(b"x" * 10000)
+
+    uploader = YouTubeUploader(channel="english")
+
+    mock_service = MagicMock()
+    mock_insert = MagicMock()
+    mock_insert.next_chunk.return_value = (None, {"id": "test_video_123"})
+    mock_service.videos().insert.return_value = mock_insert
+
+    # Test Hindi upload localization
+    with patch("autotube.uploader.youtube_upload.build", return_value=mock_service), \
+         patch.object(YouTubeAuth, "get_credentials", return_value=MagicMock()):
+
+        uploader.upload_video(
+            video_path=dummy_video,
+            title="रहस्यमयी मंदिर #Shorts",
+            description="मंदिर का रहस्य",
+            channel="hindi"
+        )
+
+        args, kwargs = mock_service.videos().insert.call_args
+        body = kwargs.get("body", {})
+        desc = body.get("snippet", {}).get("description", "")
+        # Hindi handle @bgyanmantra and Hindi subscribe CTA must be present
+        assert "@bgyanmantra" in desc
+        assert "सब्सक्राइब करें" in desc
+        assert "@cosmochro" not in desc
+
+        # Test English upload localization
+        uploader.upload_video(
+            video_path=dummy_video,
+            title="Black Hole Paradox #Shorts",
+            description="Cosmic mystery",
+            channel="english"
+        )
+        args, kwargs = mock_service.videos().insert.call_args
+        body = kwargs.get("body", {})
+        desc = body.get("snippet", {}).get("description", "")
+        assert "@cosmochro" in desc
+        assert "SUBSCRIBE" in desc
+
+
+def test_status_endpoint_returns_consistent_auth_flags():
+    """Verify that /api/status channels dictionary provides all boolean aliases for frontend compatibility."""
+    from autotube.web.app import get_status
+    import asyncio
+
+    with patch("autotube.web.app.get_youtube_service", return_value=MagicMock()), \
+         patch.object(YouTubeAuth, "get_channel_info", return_value={"title": "Test Channel", "subscriber_count": "100", "video_count": "10"}):
+
+        res = asyncio.run(get_status())
+        assert "channels" in res
+        en = res["channels"]["english"]
+        hi = res["channels"]["hindi"]
+
+        # Ensure both UI property conventions exist and are truthy
+        assert en["connected"] is True
+        assert en["authenticated"] is True
+        assert en["is_authenticated"] is True
+        assert "token_exists" in en
+        assert "has_token_file" in en
+
+        assert hi["connected"] is True
+        assert hi["authenticated"] is True
+        assert hi["is_authenticated"] is True
+        assert "token_exists" in hi
+        assert "has_token_file" in hi
+

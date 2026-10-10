@@ -318,12 +318,20 @@ async def get_status():
                 "id": "english",
                 "name": ch_cfg.get("english", {}).get("name", "English Shorts Channel"),
                 "connected": bool(yt_en is not None),
+                "authenticated": bool(yt_en is not None),
+                "is_authenticated": bool(yt_en is not None),
+                "token_exists": YouTubeAuth(channel="english").token_file.exists(),
+                "has_token_file": YouTubeAuth(channel="english").token_file.exists(),
                 "info": en_info,
             },
             "hindi": {
                 "id": "hindi",
                 "name": ch_cfg.get("hindi", {}).get("name", "Hindi Shorts Channel"),
                 "connected": bool(yt_hi is not None),
+                "authenticated": bool(yt_hi is not None),
+                "is_authenticated": bool(yt_hi is not None),
+                "token_exists": YouTubeAuth(channel="hindi").token_file.exists(),
+                "has_token_file": YouTubeAuth(channel="hindi").token_file.exists(),
                 "info": hi_info,
             },
         },
@@ -346,7 +354,10 @@ async def get_auth_status(channel: Optional[str] = None):
             "channel": ch_key,
             "name": ch_cfg.get(ch_key, {}).get("name", f"{ch_key.title()} Shorts Channel"),
             "has_token_file": has_token,
+            "token_exists": has_token,
             "is_authenticated": is_valid,
+            "authenticated": is_valid,
+            "connected": is_valid,
             "token_expired": bool(creds and creds.expired) if creds else (True if has_token else False),
             "channel_info": ch_info,
         }
@@ -529,15 +540,20 @@ async def list_videos(channel: str = "english"):
 
         ch_item = channels_res["items"][0]
         stats = ch_item.get("statistics", {})
+        thumb_url = ch_item["snippet"]["thumbnails"].get("default", {}).get("url", "")
         channel_info = {
             "id": ch_item.get("id"),
             "channel_key": target_ch,
             "title": ch_item["snippet"]["title"],
             "custom_url": ch_item["snippet"].get("customUrl", ""),
-            "thumbnail": ch_item["snippet"]["thumbnails"].get("default", {}).get("url", ""),
+            "thumbnail": thumb_url,
+            "avatar": thumb_url,
             "subscribers": stats.get("subscriberCount", "0"),
+            "subscriber_count": stats.get("subscriberCount", "0"),
             "total_views": stats.get("viewCount", "0"),
+            "view_count": stats.get("viewCount", "0"),
             "total_videos": stats.get("videoCount", "0"),
+            "video_count": stats.get("videoCount", "0"),
         }
         uploads_playlist_id = ch_item["contentDetails"]["relatedPlaylists"]["uploads"]
 
@@ -814,8 +830,16 @@ def run_autopilot_task(slot_id: Optional[str] = None):
 
     try:
         python_bin = sys.executable
-        active_niche = "space" if any("space" in str(s.get("niche", "")).lower() for s in slots) else "mixed"
-        active_lang = "en" if (slots and all(s.get("language", "").lower() in ("english", "en") for s in slots)) else "mixed"
+        if slot_id:
+            this_slot = next((s for s in slots if s.get("id") == slot_id), None)
+            active_niche = this_slot.get("niche", "mystery") if this_slot else "mixed"
+            raw_lang = this_slot.get("language") or this_slot.get("lang") if this_slot else "mixed"
+            active_lang = "hi" if str(raw_lang).lower().startswith("hi") else ("en" if str(raw_lang).lower().startswith("en") else "mixed")
+        else:
+            # Batch mode: Always mixed so each slot in the configured matrix uses its own unique niche and language
+            active_niche = "mixed"
+            active_lang = "mixed"
+
         cmd = [python_bin, "run.py", "autopilot", "--count", str(count), "--niche", active_niche, "--lang", active_lang]
         if auto_upload:
             cmd.append("--upload")

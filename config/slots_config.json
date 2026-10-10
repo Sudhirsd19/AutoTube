@@ -73,7 +73,8 @@
         "voice": "auto",
         "format": "short",
         "status": "ready",
-        "bgm": "auto"
+        "bgm": "auto",
+        "channel": "hindi"
       },
       {
         "id": "slot_2",
@@ -85,7 +86,8 @@
         "voice": "auto",
         "format": "short",
         "status": "ready",
-        "bgm": "auto"
+        "bgm": "auto",
+        "channel": "english"
       },
       {
         "id": "slot_3",
@@ -97,7 +99,8 @@
         "voice": "auto",
         "format": "short",
         "status": "ready",
-        "bgm": "auto"
+        "bgm": "auto",
+        "channel": "hindi"
       },
       {
         "id": "slot_4",
@@ -109,7 +112,8 @@
         "voice": "auto",
         "format": "short",
         "status": "ready",
-        "bgm": "auto"
+        "bgm": "auto",
+        "channel": "english"
       },
       {
         "id": "slot_5",
@@ -121,7 +125,8 @@
         "voice": "auto",
         "format": "short",
         "status": "ready",
-        "bgm": "auto"
+        "bgm": "auto",
+        "channel": "hindi"
       },
       {
         "id": "slot_6",
@@ -133,7 +138,8 @@
         "voice": "auto",
         "format": "short",
         "status": "ready",
-        "bgm": "auto"
+        "bgm": "auto",
+        "channel": "english"
       },
       {
         "id": "slot_7",
@@ -145,7 +151,8 @@
         "voice": "auto",
         "format": "landscape_long",
         "status": "ready",
-        "bgm": "auto"
+        "bgm": "auto",
+        "channel": "hindi"
       },
       {
         "id": "slot_8",
@@ -157,7 +164,8 @@
         "voice": "auto",
         "format": "short",
         "status": "ready",
-        "bgm": "auto"
+        "bgm": "auto",
+        "channel": "hindi"
       },
       {
         "id": "slot_9",
@@ -169,7 +177,8 @@
         "voice": "auto",
         "format": "short",
         "status": "ready",
-        "bgm": "auto"
+        "bgm": "auto",
+        "channel": "english"
       },
       {
         "id": "slot_10",
@@ -181,7 +190,8 @@
         "voice": "auto",
         "format": "short",
         "status": "ready",
-        "bgm": "auto"
+        "bgm": "auto",
+        "channel": "english"
       },
       {
         "id": "slot_11",
@@ -193,7 +203,8 @@
         "voice": "auto",
         "format": "landscape_long",
         "status": "ready",
-        "bgm": "auto"
+        "bgm": "auto",
+        "channel": "english"
       },
       {
         "id": "slot_12",
@@ -205,7 +216,8 @@
         "voice": "auto",
         "format": "short",
         "status": "ready",
-        "bgm": "auto"
+        "bgm": "auto",
+        "channel": "english"
       }
     ],
     "shorts_10": [
@@ -219,7 +231,8 @@
         "voice": "auto",
         "format": "short",
         "status": "ready",
-        "bgm": "auto"
+        "bgm": "auto",
+        "channel": "hindi"
       },
       {
         "id": "slot_2",
@@ -231,7 +244,8 @@
         "voice": "auto",
         "format": "short",
         "status": "ready",
-        "bgm": "auto"
+        "bgm": "auto",
+        "channel": "english"
       },
       {
         "id": "slot_3",
@@ -243,7 +257,8 @@
         "voice": "auto",
         "format": "short",
         "status": "ready",
-        "bgm": "auto"
+        "bgm": "auto",
+        "channel": "hindi"
       },
       {
         "id": "slot_4",
@@ -255,7 +270,8 @@
         "voice": "auto",
         "format": "short",
         "status": "ready",
-        "bgm": "auto"
+        "bgm": "auto",
+        "channel": "english"
       },
       {
         "id": "slot_5",
@@ -267,7 +283,8 @@
         "voice": "auto",
         "format": "short",
         "status": "ready",
-        "bgm": "auto"
+        "bgm": "auto",
+        "channel": "hindi"
       },
       {
         "id": "slot_6",
@@ -279,7 +296,8 @@
         "voice": "auto",
         "format": "short",
         "status": "ready",
-        "bgm": "auto"
+        "bgm": "auto",
+        "channel": "english"
       },
       {
         "id": "slot_7",
@@ -291,7 +309,8 @@
         "voice": "auto",
         "format": "short",
         "status": "ready",
-        "bgm": "auto"
+        "bgm": "auto",
+        "channel": "hindi"
       },
       {
         "id": "slot_8",
@@ -303,7 +322,8 @@
         "voice": "auto",
         "format": "short",
         "status": "ready",
-        "bgm": "auto"
+        "bgm": "auto",
+        "channel": "english"
       },
       {
         "id": "slot_9",
@@ -315,7 +335,8 @@
         "voice": "auto",
         "format": "short",
         "status": "ready",
-        "bgm": "auto"
+        "bgm": "auto",
+        "channel": "english"
       },
       {
         "id": "slot_10",
@@ -327,7 +348,8 @@
         "voice": "auto",
         "format": "short",
         "status": "ready",
-        "bgm": "auto"
+        "bgm": "auto",
+        "channel": "english"
       }
     ],
     "balanced_7": [
@@ -341,7 +363,8 @@
         "voice": "auto",
         "format": "short",
         "status": "ready",
-        "bgm": "auto"
+        "bgm": "auto",
+        "channel": "hindi"
       },
       {
         "id": "slot_2",
@@ -353,7 +376,8 @@
         "voice": "auto",
         "format": "short",
         "status": "ready",
-        "bgm": "auto"
+        "bgm": "auto",
+        "channel": "hindi"
       },
       {
         "id": "slot_3",
@@ -365,7 +389,8 @@
         "voice": "auto",
         "format": "short",
         "status": "ready",
-        "bgm": "auto"
+        "bgm": "auto",
+        "channel": "english"
       },
       {
         "id": "slot_4",
@@ -377,7 +402,8 @@
         "voice": "auto",
         "format": "short",
         "status": "ready",
-        "bgm": "auto"
+        "bgm": "auto",
+        "channel": "hindi"
       },
       {
         "id": "slot_5",
@@ -389,7 +415,8 @@
         "voice": "auto",
         "format": "landscape_long",
         "status": "ready",
-        "bgm": "auto"
+        "bgm": "auto",
+        "channel": "hindi"
       },
       {
         "id": "slot_6",
@@ -401,7 +428,8 @@
         "voice": "auto",
         "format": "short",
         "status": "ready",
-        "bgm": "auto"
+        "bgm": "auto",
+        "channel": "english"
       },
       {
         "id": "slot_7",
@@ -413,7 +441,8 @@
         "voice": "auto",
         "format": "short",
         "status": "ready",
-        "bgm": "auto"
+        "bgm": "auto",
+        "channel": "english"
       }
     ],
     "starter_3": [
@@ -427,7 +456,8 @@
         "voice": "auto",
         "format": "short",
         "status": "ready",
-        "bgm": "auto"
+        "bgm": "auto",
+        "channel": "hindi"
       },
       {
         "id": "slot_2",
@@ -439,7 +469,8 @@
         "voice": "auto",
         "format": "short",
         "status": "ready",
-        "bgm": "auto"
+        "bgm": "auto",
+        "channel": "english"
       },
       {
         "id": "slot_3",
@@ -451,7 +482,8 @@
         "voice": "auto",
         "format": "short",
         "status": "ready",
-        "bgm": "auto"
+        "bgm": "auto",
+        "channel": "hindi"
       }
     ],
     "viral_5": [
@@ -466,7 +498,8 @@
         "format": "short",
         "status": "ready",
         "label": "08:30 AM IST - Dark Psychology & Mind Hacks (Hindi Short)",
-        "bgm": "auto"
+        "bgm": "auto",
+        "channel": "hindi"
       },
       {
         "id": "slot_2",
@@ -479,7 +512,8 @@
         "format": "short",
         "status": "ready",
         "label": "12:45 PM IST - Bharat Ka Prachin Vigyan & Mandir Rahasya (Hindi Short)",
-        "bgm": "auto"
+        "bgm": "auto",
+        "channel": "hindi"
       },
       {
         "id": "slot_3",
@@ -492,7 +526,8 @@
         "format": "short",
         "status": "ready",
         "label": "04:30 PM IST - Cosmic Horror & Deep Space Paradoxes (Hindi Short)",
-        "bgm": "auto"
+        "bgm": "auto",
+        "channel": "hindi"
       },
       {
         "id": "slot_4",
@@ -505,7 +540,8 @@
         "format": "short",
         "status": "ready",
         "label": "07:15 PM IST - Animal Secrets & Insane Superpowers (Hindi Short)",
-        "bgm": "auto"
+        "bgm": "auto",
+        "channel": "hindi"
       },
       {
         "id": "slot_5",
@@ -518,7 +554,8 @@
         "format": "short",
         "status": "ready",
         "label": "09:30 PM IST - Unsolved History & Dark Cursed Mysteries (Hindi Short)",
-        "bgm": "auto"
+        "bgm": "auto",
+        "channel": "hindi"
       }
     ],
     "elite_2": [

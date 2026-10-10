@@ -1135,8 +1135,8 @@
 
           const getDotClass = (st, isHeader = true) => {
             const size = isHeader ? 'w-1.5 h-1.5' : 'w-2 h-2';
-            if (st && st.authenticated) return `${size} rounded-full bg-emerald-400`;
-            if (st && st.token_exists) return `${size} rounded-full bg-amber-400`;
+            if (st && (st.authenticated || st.is_authenticated || st.connected)) return `${size} rounded-full bg-emerald-400`;
+            if (st && (st.token_exists || st.has_token_file)) return `${size} rounded-full bg-amber-400`;
             return `${size} rounded-full bg-rose-500`;
           };
 
@@ -1243,9 +1243,12 @@
         const cardAvatar = document.getElementById('active-channel-avatar');
         if (data.channel && data.channel.title) {
           if (cardTitle) cardTitle.textContent = `${data.channel.title} (${data.channel.custom_url || ''})`;
-          if (cardMeta) cardMeta.textContent = `${Number(data.channel.subscriber_count || 0).toLocaleString()} subs • ${Number(data.channel.video_count || 0).toLocaleString()} vids`;
-          if (cardAvatar && data.channel.avatar) {
-            cardAvatar.src = data.channel.avatar;
+          const subs = data.channel.subscriber_count !== undefined ? data.channel.subscriber_count : (data.channel.subscribers || 0);
+          const vids = data.channel.video_count !== undefined ? data.channel.video_count : (data.channel.total_videos || 0);
+          if (cardMeta) cardMeta.textContent = `${Number(subs).toLocaleString()} subs • ${Number(vids).toLocaleString()} vids`;
+          const avatarUrl = data.channel.avatar || data.channel.thumbnail;
+          if (cardAvatar && avatarUrl) {
+            cardAvatar.src = avatarUrl;
             cardAvatar.classList.remove('hidden');
           }
           const hdrSub = document.getElementById('channel-name-sub');
@@ -1271,11 +1274,14 @@
           const st = data[ch] || {};
           const badge = document.getElementById(`modal-${ch === 'english' ? 'en' : 'hi'}-badge`);
           const info = document.getElementById(`modal-${ch === 'english' ? 'en' : 'hi'}-info`);
+          const isAuth = Boolean(st.authenticated || st.is_authenticated || st.connected);
+          const hasToken = Boolean(st.token_exists || st.has_token_file);
+
           if (badge) {
-            if (st.authenticated) {
+            if (isAuth) {
               badge.textContent = 'CONNECTED';
               badge.className = 'px-2 py-0.5 text-[10px] font-bold rounded-full bg-emerald-950 text-emerald-400 border border-emerald-500/30';
-            } else if (st.token_exists) {
+            } else if (hasToken) {
               badge.textContent = 'TOKEN PRESENT (UNVERIFIED)';
               badge.className = 'px-2 py-0.5 text-[10px] font-bold rounded-full bg-amber-950 text-amber-400 border border-amber-500/30';
             } else {
@@ -1284,9 +1290,10 @@
             }
           }
           if (info && st.channel_info) {
-            info.textContent = `${st.channel_info.title} (${Number(st.channel_info.subscriber_count || 0).toLocaleString()} subs)`;
+            const chSubs = st.channel_info.subscriber_count !== undefined ? st.channel_info.subscriber_count : (st.channel_info.subscribers || 0);
+            info.textContent = `${st.channel_info.title} (${Number(chSubs).toLocaleString()} subs)`;
           } else if (info) {
-            info.textContent = st.token_exists ? 'Credentials saved' : 'No token found yet';
+            info.textContent = hasToken ? 'Credentials saved' : 'No token found yet';
           }
         });
       }).catch(console.error);
@@ -1734,7 +1741,7 @@
 
             <!-- Target Channel (Col 1) -->
             <div class="lg:col-span-1">
-              <select id="slot-channel-${slot.id}" onchange="updateSlotField('${slot.id}', 'channel', this.value); markSlotsUnsaved();" 
+              <select id="slot-channel-${slot.id}" onchange="handleSlotChannelChange('${slot.id}', this.value)" 
                 class="w-full bg-slate-950 border border-slate-800 text-slate-200 text-xs px-2 py-1.5 rounded-lg focus:outline-none focus:border-brand-cyan cursor-pointer" title="Target YouTube Channel">
                 <option value="english" ${slotChannel === 'english' ? 'selected' : ''}>🇬🇧 EN</option>
                 <option value="hindi" ${slotChannel === 'hindi' ? 'selected' : ''}>🇮🇳 HI</option>
@@ -1969,6 +1976,25 @@
         const vSelect = document.getElementById(`slot-voice-${id}`);
         if (vSelect) {
           vSelect.value = slot.voice;
+        }
+        markSlotsUnsaved();
+      }
+    }
+
+    function handleSlotChannelChange(id, channelValue) {
+      const slot = (currentSlotsConfig.slots || []).find(s => s.id === id);
+      if (slot) {
+        slot.channel = channelValue;
+        const isHindi = channelValue === 'hindi';
+        slot.language = isHindi ? 'Hindi' : 'English';
+        const langSelect = document.getElementById(`slot-lang-${id}`);
+        if (langSelect) langSelect.value = slot.language;
+
+        const defaultVoice = isHindi ? 'hi_deep_cinematic_male' : 'en_deep_cinematic_male';
+        if (slot.voice && slot.voice !== 'auto') {
+          slot.voice = defaultVoice;
+          const vSelect = document.getElementById(`slot-voice-${id}`);
+          if (vSelect) vSelect.value = defaultVoice;
         }
         markSlotsUnsaved();
       }
@@ -2605,12 +2631,21 @@
         if (b) b.className = 'px-3 py-1.5 rounded-lg text-xs font-bold transition text-slate-400 hover:text-white';
       });
 
+      const pubChSelect = document.getElementById('director-pub-channel');
+      const voiceSelect = document.getElementById('director-select-voice');
+
       if (lang === 'hi' && btnHi) {
         btnHi.className = 'px-3 py-1.5 rounded-lg text-xs font-bold transition bg-purple-600 text-white shadow-md';
+        if (pubChSelect) pubChSelect.value = 'hindi';
+        if (voiceSelect && (voiceSelect.value.startsWith('en_') || voiceSelect.value === 'auto')) voiceSelect.value = 'hi_deep_cinematic_male';
       } else if (lang === 'hinglish' && btnHinglish) {
         btnHinglish.className = 'px-3 py-1.5 rounded-lg text-xs font-bold transition bg-purple-600 text-white shadow-md';
+        if (pubChSelect) pubChSelect.value = 'hindi';
+        if (voiceSelect && (voiceSelect.value.startsWith('en_') || voiceSelect.value === 'auto')) voiceSelect.value = 'hi_deep_cinematic_male';
       } else if (lang === 'en' && btnEn) {
         btnEn.className = 'px-3 py-1.5 rounded-lg text-xs font-bold transition bg-purple-600 text-white shadow-md';
+        if (pubChSelect) pubChSelect.value = 'english';
+        if (voiceSelect && (voiceSelect.value.startsWith('hi_') || voiceSelect.value === 'auto')) voiceSelect.value = 'en_deep_cinematic_male';
       }
     }
 
