@@ -108,7 +108,7 @@ def test_shorts_script_target_durations():
     word_count = len(fallback.narration.split())
     # Fallback should be punchy and well under 60 seconds
     assert word_count <= 140
-    assert fallback.duration_seconds <= 58.0
+    assert fallback.estimated_duration_sec <= 58
 
 
 def test_director_motion_only_rejects_static_image():
