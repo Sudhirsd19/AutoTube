@@ -178,6 +178,11 @@ class YouTubeUploader:
                     f"👉 Subscribe to {channel_handle} for more deep mysteries:\n{sub_link}"
                 )
 
+        if "sub_confirmation=1" not in description:
+            full_description = (description.rstrip() + sub_cta_block)[:5000]
+        else:
+            full_description = description[:5000]
+
         # If scheduling release, privacy status must be 'private'
         if publish_at:
             privacy = "private"
