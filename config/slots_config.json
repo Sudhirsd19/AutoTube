@@ -1,6 +1,6 @@
 {
-  "active_preset": "elite_2",
-  "daily_target": 2,
+  "active_preset": "growth_4",
+  "daily_target": 4,
   "autopilot_daemon": true,
   "review_before_upload": false,
   "presets": {
@@ -558,18 +558,18 @@
       "hour": 12,
       "minute": 0,
       "tz": "EDT",
-      "niche": "Trending Space Discoveries & Deep Universe",
+      "niche": "Space & Cosmic Mysteries",
       "language": "English",
       "channel": "english",
       "voice": "en_deep_cinematic_male",
       "format": "short",
       "status": "ready",
-      "label": "12:00 PM EDT (US Lunch / 09:30 PM IST) - Trending Space Discoveries (English Short)",
+      "label": "12:00 PM EDT (US Lunch) - Cosmic Space & Universe Paradox (English Short)",
       "bgm": "space"
     },
     {
       "id": "slot_2",
-      "hour": 20,
+      "hour": 13,
       "minute": 30,
       "tz": "IST",
       "niche": "Bharat Ka Prachin Vigyan & Mandir Rahasya",
@@ -578,7 +578,35 @@
       "voice": "hi_deep_cinematic_male",
       "format": "short",
       "status": "ready",
-      "label": "08:30 PM IST (India Prime Time) - Bharat Ka Prachin Vigyan & Mandir (Hindi Short)",
+      "label": "01:30 PM IST (India Lunch) - Bharat Ka Prachin Vigyan & Mandir (Hindi Short)",
+      "bgm": "history"
+    },
+    {
+      "id": "slot_3",
+      "hour": 18,
+      "minute": 30,
+      "tz": "EDT",
+      "niche": "Quantum Science & Black Holes",
+      "language": "English",
+      "channel": "english",
+      "voice": "en_deep_cinematic_male",
+      "format": "short",
+      "status": "ready",
+      "label": "06:30 PM EDT (US Prime Time) - Quantum & Black Hole Mysteries (English Short)",
+      "bgm": "space"
+    },
+    {
+      "id": "slot_4",
+      "hour": 21,
+      "minute": 30,
+      "tz": "IST",
+      "niche": "Ancient Bharat Lost History & Cursed Secrets",
+      "language": "Hindi",
+      "channel": "hindi",
+      "voice": "hi_cinematic_male",
+      "format": "short",
+      "status": "ready",
+      "label": "09:30 PM IST (India Prime Time) - Rahasyamay Itihas & Khopiya Sach (Hindi Short)",
       "bgm": "history"
     }
   ],
