@@ -44,9 +44,12 @@ def _verify_scene_batch(
     topic: str,
     provider: str,
     script: Any = None,
+    require_video: bool = True,
 ) -> bool:
-    """Fail closed unless every returned clip passes frame QA for its own narration."""
+    """Fail closed unless every returned scene asset passes frame QA for its narration."""
     video_exts = {".mp4", ".mov", ".webm", ".mkv"}
+    image_exts = {".jpg", ".jpeg", ".png", ".webp"}
+    accepted_exts = video_exts if require_video else video_exts | image_exts
     target_scenes = list(scenes or [])
     if not target_scenes and clips:
         narration = str(_scene_value(script, "narration", "") or topic)
@@ -66,9 +69,12 @@ def _verify_scene_batch(
         if (
             not clip.exists()
             or clip.stat().st_size < 5000
-            or clip.suffix.lower() not in video_exts
+            or clip.suffix.lower() not in accepted_exts
         ):
-            print_warning(f"⚠️ {provider} QA blocked invalid motion clip for Scene {index + 1}: {clip}")
+            media_requirement = "motion video" if require_video else "video or still image"
+            print_warning(
+                f"⚠️ {provider} QA blocked invalid {media_requirement} for Scene {index + 1}: {clip}"
+            )
             return False
 
         subject = str(
@@ -323,6 +329,7 @@ def acquire_scene_visuals_waterfall(
         getattr(script, "topic", "scene"),
         "StockFetcher fallback",
         script,
+        require_video=is_motion_preferred,
     ):
         raise RuntimeError(
             "Visual Pipeline Fail-Closed: one or more fallback scenes failed strict narration-to-frame QA. "
