@@ -64,7 +64,14 @@ class VisualQualityGate:
                 "mode": "metadata_only",
             }
 
-        frames = self._extract_frames(path)
+        image_mime_types = {
+            ".jpg": "image/jpeg",
+            ".jpeg": "image/jpeg",
+            ".png": "image/png",
+            ".webp": "image/webp",
+        }
+        is_still_image = path.suffix.lower() in image_mime_types
+        frames = [path] if is_still_image else self._extract_frames(path)
         if not frames:
             return {
                 "accepted": not self.strict,
@@ -81,7 +88,7 @@ TARGET SUBJECT: {plan.get("subject", "")}
 MUST SHOW: {json.dumps(plan.get("must_show", []), ensure_ascii=False)}
 MUST AVOID: {json.dumps(plan.get("avoid", []), ensure_ascii=False)}
 
-Judge ONLY the supplied video frames.
+Judge ONLY the supplied video frames or the supplied still image.
 Guidelines:
 - Visuals MUST genuinely depict or directly support the scene narration and TARGET SUBJECT.
 - Check MUST SHOW and MUST AVOID elements reasonably:
@@ -99,7 +106,14 @@ Accept when confidence >= {self.min_confidence}, coverage >= {self.min_coverage}
             from google.genai import types
 
             contents: List[Any] = [
-                types.Part.from_bytes(data=p.read_bytes(), mime_type="image/jpeg")
+                types.Part.from_bytes(
+                    data=p.read_bytes(),
+                    mime_type=(
+                        image_mime_types.get(path.suffix.lower(), "image/jpeg")
+                        if is_still_image
+                        else "image/jpeg"
+                    ),
+                )
                 for p in frames
             ]
             contents.append(prompt)
@@ -142,16 +156,18 @@ Accept when confidence >= {self.min_confidence}, coverage >= {self.min_coverage}
                     print(f"[FrameQA] Gemini model {model} failed: {type(exc).__name__}: {exc}")
                     continue
         finally:
-            for p in frames:
-                try:
-                    p.unlink(missing_ok=True)
-                except Exception:
-                    pass
-            if frames:
-                try:
-                    shutil.rmtree(frames[0].parent, ignore_errors=True)
-                except Exception:
-                    pass
+            # A still image is an input asset and must never be removed by QA cleanup.
+            if not is_still_image:
+                for p in frames:
+                    try:
+                        p.unlink(missing_ok=True)
+                    except Exception:
+                        pass
+                if frames:
+                    try:
+                        shutil.rmtree(frames[0].parent, ignore_errors=True)
+                    except Exception:
+                        pass
 
         return {
             "accepted": not self.strict,
