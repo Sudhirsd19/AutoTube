@@ -264,11 +264,18 @@ class MultiStockAggregator:
             fallback_must_show = ["deep space", "distant stars", "cosmic environment"]
             fallback_avoid += ["earth daytime", "city", "people", "beach", "clouds", "phone", "office"]
             fallback_queries = ["deep space galaxy", "deep space stars", "outer space cosmos"]
-        elif any(k in s_lower or k in t_lower for k in ("temple", "mandir", "ancient", "prachin", "underground", "chamber", "kailasa")):
-            fallback_subject = "ancient temple mystery"
-            fallback_must_show = ["ancient stone temple", "underground chamber", "carvings"]
-            fallback_avoid += ["modern city", "cars", "office", "neon"]
-            fallback_queries = ["ancient stone temple ruins", "mysterious underground chamber", "ancient archaeological site"]
+        is_ancient_history = any(k in s_lower or k in t_lower for k in (
+            "temple", "mandir", "मंदिर", "ancient", "prachin", "प्राचीन", "underground", "chamber",
+            "kailasa", "कैलाश", "mahabharat", "महाभारत", "ramayan", "रामायण", "kurukshetra", "कुरुक्षेत्र",
+            "dwarka", "द्वारका", "itihas", "इतिहास", "avshesh", "अवशेष", "shilalekh", "शिलालेख",
+            "archaeol", "excavat", "khudai", "खुदाई", "pandav", "पांडव", "kaurav", "कौरव", "yuddh", "युद्ध"
+        ))
+
+        if is_ancient_history:
+            fallback_subject = "ancient Indian archaeological & historical mystery"
+            fallback_must_show = ["ancient stone temple ruins", "archaeological excavation site", "ancient carvings"]
+            fallback_avoid += ["modern city", "cars", "office", "neon", "deep space", "spacecraft", "galaxy"]
+            fallback_queries = ["ancient stone temple ruins", "ancient archaeological site", "ancient ruins dramatic", "ancient battlefield warriors"]
         elif any(k in s_lower or k in t_lower for k in ("brain", "dimag", "mind", "psychology", "soch", "memory")):
             fallback_subject = "human brain and subconscious"
             fallback_must_show = ["glowing neural network", "brain synapses firing", "abstract thought flow"]
@@ -293,36 +300,40 @@ class MultiStockAggregator:
         if not client:
             return fallback_plan
 
+        genre_rules = ""
+        if is_space_or_black_hole:
+            genre_rules = """- The story is about space, astronomy, black holes, or cosmic phenomena. The visuals MUST REMAIN 100% IN OUTER SPACE throughout the ENTIRE video.
+- NEVER switch to human faces, smartphones, people typing, social media icons, or office desks, EVEN IF the narration mentions subscribing, liking, commenting, or asking a question! For outro/CTA lines, keep visuals anchored in epic cosmic vortexes or rotating deep space galaxies."""
+        elif is_ancient_history:
+            genre_rules = """- The story is about ANCIENT HISTORY, ARCHAEOLOGY, or SACRED MYTHOLOGY on Earth (Mahabharat, Ramayan, ancient temples, ruins, lost cities).
+- Visuals MUST depict EARTHLY ancient stone temples, archaeological ruins, excavation sites, ancient battlefield artifacts, or ancient sacred scrolls.
+- NEVER include outer space, nebulas, galaxies, black holes, modern offices, smartphones, or modern city streets."""
+        else:
+            genre_rules = """- Keep visuals strictly grounded in the real-world subject matter of the narration.
+- NEVER include modern office desks, smartphones, or generic talking heads."""
+
         prompt = f"""You are an elite Hollywood visual effects director and documentary scene planner.
 Story Title: "{title}"
 Current Scene #{idx+1} Narration: "{scene_text}"
 
 Perform deep narrative scene understanding to find stock video B-roll that represents the ACTUAL CONCEPT spoken (not just generic filler).
 Think step-by-step:
-1. What is the core physical SUBJECT or phenomenon being discussed? (e.g. if talking about black holes, singularity, space destruction, the subject is "black hole cosmic singularity").
-2. What specific DYNAMIC ACTION or visual movement should be shown? (e.g. "black hole warping spacetime, cosmic vortex").
-3. What 3-4 concrete visual elements MUST BE VISIBLE on screen? (e.g. ["black hole", "accretion disk", "deep space"]).
-4. What visual elements MUST BE STRICTLY AVOIDED/REJECTED? (e.g. ["clouds in blue sky", "ocean waves beach", "person typing phone", "modern office", "cartoon", "helmet", "face mask"]).
+1. What is the core physical SUBJECT or phenomenon being discussed? (e.g. if talking about black holes, singularity, space destruction, the subject is "black hole cosmic singularity"; if talking about Mahabharat or ancient war, "ancient battlefield warriors dramatic"; if talking about temple secrets, "ancient stone temple ruins").
+2. What specific DYNAMIC ACTION or visual movement should be shown?
+3. What 3-4 concrete visual elements MUST BE VISIBLE on screen?
+4. What visual elements MUST BE STRICTLY AVOIDED/REJECTED? (e.g. ["clouds in blue sky", "person typing phone", "modern office", "cartoon", "helmet", "face mask"]).
 5. CRITICAL SEARCH RULE: Provide 3 to 4 CONCISE, HIGH-CONVERTING 1-to-3 word English search queries that stock video libraries (Pexels, Mixkit, Coverr) ACTUALLY categorize footage under.
-   EXAMPLES OF GREAT QUERIES:
-   - "black hole"
-   - "black hole space"
-   - "planet earth space"
-   - "cosmic vortex"
-   - "galaxy rotation"
-   - "deep space stars"
-   NEVER generate multi-word complex literary descriptions like "ocean water lifting into sky space anomaly" or "earth tidal force black hole animation". Keep each query strictly to 1-3 simple, clean words!
+   NEVER generate multi-word complex literary descriptions. Keep each query strictly to 1-3 simple, clean words!
 
 DIRECTORIAL CONTINUITY RULES:
-- If this story is about space, astronomy, black holes, or cosmic phenomena, the visuals MUST REMAIN 100% IN OUTER SPACE throughout the ENTIRE video.
-- NEVER switch to human faces, smartphones, people typing, social media icons, or office desks, EVEN IF the narration mentions subscribing, liking, commenting, or asking a question! For outro/CTA lines, keep visuals anchored in epic cosmic vortexes or rotating black holes.
+{genre_rules}
 
 Return STRICT JSON with keys:
-- "subject": string (e.g. "black hole event horizon")
-- "action": string (e.g. "approaching singularity, spacetime distortion")
-- "environment": string (e.g. "deep outer space void")
-- "visual_type": string (e.g. "cinematic astronomy simulation")
-- "must_show": array of 3-4 strings (e.g. ["black hole", "accretion disk", "deep space"])
+- "subject": string (e.g. "ancient temple ruins" or "black hole event horizon")
+- "action": string (e.g. "slow pan across ancient stone carvings")
+- "environment": string (e.g. "ancient archaeological site")
+- "visual_type": string (e.g. "cinematic documentary")
+- "must_show": array of 3-4 strings
 - "avoid": array of 6-8 strings to reject (e.g. ["clouds", "daylight sky", "beach", "phone", "office", "cartoon"])
 - "search_queries": array of 3-4 concise 1-3 word queries (e.g. ["black hole", "black hole space", "planet earth space", "cosmic vortex"])
 """

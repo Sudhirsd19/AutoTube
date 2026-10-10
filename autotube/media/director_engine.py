@@ -346,11 +346,16 @@ Output STRICT JSON with these keys:
             (("earth", "dharati", "धरती", "पृथ्वी", "planet", "ग्रह", "neela grah"), "planet earth space"),
             (("ocean", "samundar", "समुद्र", "सागर", "sea", "underwater", "trench"), "dark deep ocean abyss"),
             (("brain", "dimag", "दिमाग", "मस्तिष्क", "mind", "psychology", "soch", "सोच"), "human brain neural networks glowing"),
-            (("temple", "mandir", "मंदिर", "ancient", "prachin", "प्राचीन", "stone", "पत्थर", "गुफा", "गुफाएं", "caves"), "ancient stone temple ruins dramatic"),
+            (("mahabharat", "महाभारत", "kurukshetra", "कुरुक्षेत्र", "pandav", "पांडव", "kaurav", "कौरव", "yuddh", "युद्ध", "battlefield", "warrior", "sena", "सेना", "hathiyar", "teer", "talwar"), "ancient battlefield warriors dramatic"),
+            (("dwarka", "द्वारका", "submerged", "underwater city", "doobi", "डूबी", "samudra", "समुद्र तट"), "underwater ancient ruins submerged city"),
+            (("ramayan", "रामायण", "ram", "राम", "shri ram", "hanuman", "हनुमान", "ayodhya", "अयोध्या", "setu", "सेतु"), "ancient stone temple ruins dramatic"),
+            (("temple", "mandir", "मंदिर", "ancient", "prachin", "प्राचीन", "stone", "पत्थर", "गुफा", "गुफाएं", "caves", "kailasa", "कैलाश", "ellora"), "ancient stone temple ruins dramatic"),
+            (("archaeol", "excavat", "khudai", "खुदाई", "avshesh", "अवशेष", "shilalekh", "शिलालेख", "carbon dating", "pramaan", "प्रमाण", "saboot", "सबूत", "proof", "evidence"), "ancient archaeological excavation artifacts"),
+            (("scripture", "granth", "ग्रंथ", "pothi", "पोथी", "geeta", "गीता", "shloka", "श्लोक", "manuscript"), "ancient sacred manuscript scroll"),
             (("gandhi", "mahatma", "गांधी", "महात्मा"), "Mahatma Gandhi archival portrait vintage"),
             (("shanti devi", "शांति देवी", "punarjanam", "पुनर्जन्म", "rebirth", "child", "bachhi", "बच्ची"), "vintage 1930s young girl thinking portrait"),
             (("crowd", "bheed", "भीड़", "station", "train", "ट्रेन", "रेल"), "vintage crowd busy street 1930s"),
-            (("police", "committee", "investigation", "jaanch", "जांच", "report", "proof", "सबूत"), "vintage detective crime investigation papers"),
+            (("police", "police station", "fir", "detective", "khooni", "crime scene", "murder case", "khoon", "हत्या"), "vintage detective crime investigation papers"),
             (("alien", "ufo", "roswell", "एलियन"), "flying saucer ufo crash site vintage"),
             (("mars", "मंगल", "लाल ग्रह"), "mars planet red surface space"),
         ]
@@ -375,12 +380,46 @@ Output STRICT JSON with these keys:
             if any(k in t_lower for k in triggers):
                 return query
 
-        # Fallback: find English words or topic
-        eng_words = [w for w in re.findall(r"[a-zA-Z]{4,}", sentence) if w.lower() not in ("nahi", "hoga", "raha", "baat", "karein", "aur", "mein", "saal", "kuch", "apna")]
+        # Fallback: check for valid English words
+        eng_words = [w for w in re.findall(r"[a-zA-Z]{4,}", sentence) if w.lower() not in ("nahi", "hoga", "raha", "baat", "karein", "aur", "mein", "saal", "kuch", "apna", "shamil", "lekin")]
         if eng_words:
             return f"{' '.join(eng_words[:2])} cinematic"
-        clean_top = re.sub(r"[#\-_/:|😱🤯👁️]", " ", topic).strip()
-        return f"{clean_top[:25]} cinematic"
+
+        # Intelligent topic-genre fallbacks when text is purely Devanagari Hindi
+        is_ancient_history = any(k in t_lower or k in s_lower for k in ("mahabharat", "महाभारत", "ramayan", "रामायण", "kurukshetra", "कुरुक्षेत्र", "temple", "mandir", "मंदिर", "itihas", "इतिहास", "prachin", "प्राचीन", "purana", "पुराण", "dwarka", "द्वारका", "kailasa", "कैलाश", "stone", "ruins", "archaeol"))
+        is_space_genre = any(k in t_lower or k in s_lower for k in ("space", "antariksh", "अंतरिक्ष", "black hole", "galaxy", "universe", "planet", "stars", "cosmos", "solar system", "brahmand", "ब्रह्मांड"))
+        is_ocean_genre = any(k in t_lower or k in s_lower for k in ("ocean", "samundar", "समुद्र", "sea", "trench", "underwater", "abyss"))
+        is_mind_genre = any(k in t_lower or k in s_lower for k in ("brain", "dimag", "दिमाग", "psychology", "mind", "soch"))
+
+        if is_ancient_history:
+            genre_fallbacks = [
+                "ancient stone temple ruins dramatic",
+                "ancient archaeological excavation ruins",
+                "ancient ruins golden hour dramatic",
+                "ancient battlefield warriors dramatic",
+                "ancient sacred manuscript scroll",
+            ]
+            return genre_fallbacks[scene_idx % len(genre_fallbacks)]
+        if is_space_genre:
+            genre_fallbacks = [
+                "deep space galaxy cosmos",
+                "planet earth from space",
+                "cosmic stars void cinematic",
+                "deep space nebula glowing",
+            ]
+            return genre_fallbacks[scene_idx % len(genre_fallbacks)]
+        if is_ocean_genre:
+            return "dark deep ocean underwater abyss"
+        if is_mind_genre:
+            return "human brain neural networks glowing"
+
+        # General cinematic mystery fallback
+        general_fallbacks = [
+            "cinematic dramatic mystery atmosphere",
+            "dark moody cinematic suspense",
+            "mysterious atmospheric cinematic",
+        ]
+        return general_fallbacks[scene_idx % len(general_fallbacks)]
 
     def _extract_ai_scene_prompt(self, sentence: str, topic: str, scene_idx: int) -> str:
         """Generate high-aesthetic cinematic visual prompt matching the exact topic genre."""
@@ -732,6 +771,7 @@ Output STRICT JSON with these keys:
         vg = VisualGenerator()
         nvidia = NvidiaVideoGenerator()
         multi_agg = MultiStockAggregator()
+        pexels = multi_agg.pexels
         # Studio motion scenes require actual frame-level semantic validation.
         multi_agg.visual_quality_gate.strict = True
 
@@ -932,12 +972,16 @@ Output STRICT JSON with these keys:
                         )
 
                 if not acquired_video and visual_mode in ("multi_cinematic", "multi_best", "auto", "hybrid", "stock"):
-                    # Safe cinematic stock motion video fallback
+                    # Safe cinematic stock motion video fallback matching story genre
                     try:
-                        safe_query = deduped_queries[0] if deduped_queries else "deep space stars cosmos"
+                        is_hist = any(k in sentence.lower() or k in title.lower() for k in ("mahabharat", "महाभारत", "ramayan", "रामायण", "kurukshetra", "कुरुक्षेत्र", "temple", "mandir", "मंदिर", "itihas", "इतिहास", "prachin", "प्राचीन", "purana", "पुराण", "dwarka", "द्वारका", "archaeol"))
+                        is_space = any(k in sentence.lower() or k in title.lower() for k in ("space", "antariksh", "अंतरिक्ष", "black hole", "galaxy", "universe", "planet", "stars", "cosmos"))
+                        genre_fallback = "ancient stone temple ruins dramatic" if is_hist else ("deep space stars cosmos" if is_space else "cinematic dramatic atmosphere")
+
+                        safe_query = deduped_queries[0] if deduped_queries else genre_fallback
                         safe_v = pexels.get_scene_video(search_query=safe_query, orientation=orientation, scene_index=idx)
                         if not safe_v:
-                            safe_v = pexels.get_scene_video(search_query="deep space stars cosmos", orientation=orientation, scene_index=idx)
+                            safe_v = pexels.get_scene_video(search_query=genre_fallback, orientation=orientation, scene_index=idx)
                         if safe_v and safe_v.exists() and safe_v.stat().st_size > 5000:
                             qa = multi_agg.visual_quality_gate.verify(safe_v, sentence, scene_plan)
                             if qa.get("accepted"):
