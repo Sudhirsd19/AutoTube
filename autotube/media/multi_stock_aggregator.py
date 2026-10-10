@@ -38,10 +38,10 @@ HTTP_HEADERS = {
 }
 
 CANDIDATE_GEMINI_MODELS = [
-    "gemini-3.8-flash",
-    "gemini-3.5-flash",
     "gemini-3.5-flash-lite",
     "gemini-3.1-flash-lite",
+    "gemini-3.5-flash",
+    "gemini-3.8-flash",
 ]
 
 # Blacklisted stock IDs (e.g. 95% pitch-black empty void or defective footage)
@@ -901,6 +901,9 @@ Output STRICT JSON with:
                                 winner["ai_reason"] = eval_data.get("reason", "")
                                 winner["ai_confidence"] = int(eval_data.get("confidence_score", winner["score"]))
                                 winner["ai_coverage"] = int(eval_data.get("visual_coverage_percent", winner.get("visual_coverage_pct", 50)))
+                                if winner["ai_confidence"] < 35 and winner["ai_coverage"] < 20:
+                                    print_warning(f"   ⚠️ AI ranker rejected all candidates (best candidate '{winner['title'][:35]}' had confidence {winner['ai_confidence']}%, coverage {winner['ai_coverage']}%).")
+                                    return None
                                 print_info(f"   🎯 [Semantic Ranker Pick] Candidate #{best_idx+1} from {winner['source']}: '{winner['title']}' (Confidence: {winner['ai_confidence']}%, Coverage: {winner['ai_coverage']}%)")
                                 return winner
                     except Exception:
@@ -910,6 +913,9 @@ Output STRICT JSON with:
 
         # Fallback to top scored candidate
         winner = top_candidates[0]
+        if float(winner.get("score", 0)) <= 0:
+            print_warning(f"   ⚠️ Top scored candidate has non-positive score ({winner.get('score')}); rejecting.")
+            return None
         print_info(f"   🎯 [Heuristic Pick] from {winner['source']}: '{winner['title']}' (Score: {winner['score']}, Coverage: {winner.get('visual_coverage_pct', 0)}%)")
         return winner
 
@@ -1065,8 +1071,26 @@ Output STRICT JSON with:
             if not cand_id or self._is_used(cand_id):
                 continue
 
-            metadata_coverage = int(cand.get("visual_coverage_pct", 0))
+            # Topic sanity check: reject contradictory footage before downloading
+            cand_title = (cand.get("title") or "").lower()
+            cand_tags = " ".join(cand.get("tags", [])).lower()
+            combined_desc = f"{cand_title} {cand_tags}"
+
+            is_space_scene = any(k in scene_text.lower() or k in subj_name.lower() for k in ("space", "antariksh", "galaxy", "universe", "planet", "stars", "cosmos", "black hole", "singularity", "horizon", "lensing"))
+            if is_space_scene and any(bad in combined_desc for bad in ("forest", "autumn", "leaves", "trees", "flowers", "kitchen", "office", "bedroom", "shopping", "traffic", "car ", "dog", "cat")):
+                print_warning(f"   ⚠️ Skipping contradictory clip '{cand.get('title', '')[:40]}' for space scene.")
+                continue
+
             ai_conf = cand.get("ai_confidence")
+            metadata_coverage = int(cand.get("visual_coverage_pct", 0))
+
+            if ai_conf is not None and ai_conf < 30 and metadata_coverage < 20:
+                print_warning(f"   ⚠️ Skipping low-relevance clip '{cand.get('title', '')[:40]}' (Confidence: {ai_conf}%, Coverage: {metadata_coverage}%).")
+                continue
+            if float(cand.get("score", 0)) < 0 and metadata_coverage < 20:
+                print_warning(f"   ⚠️ Skipping negative-score clip '{cand.get('title', '')[:40]}' (Score: {cand.get('score')}).")
+                continue
+
             if metadata_coverage < 50:
                 print_info(
                     f"   🔎 Metadata coverage {metadata_coverage}% for '{cand.get('title', '')[:45]}'; "
