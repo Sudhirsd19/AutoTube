@@ -12,6 +12,104 @@ from typing import Any, List, Optional
 from autotube.config import get_config
 from autotube.media.stock_fetcher import StockFetcher
 from autotube.media.veo_generator import VeoQuotaExceededError, VeoVideoGenerator
+
+from autotube.media.visual_quality_gate import VisualQualityGate
+
+
+def _scene_value(scene: Any, key: str, default: Any = None) -> Any:
+    if isinstance(scene, dict):
+        return scene.get(key, default)
+    return getattr(scene, key, default)
+
+
+def _as_text_list(value: Any) -> List[str]:
+    if isinstance(value, str):
+        return [value.strip()] if value.strip() else []
+    if isinstance(value, (list, tuple, set)):
+        return [str(item).strip() for item in value if str(item).strip()]
+    return []
+
+
+def _remove_assets(paths: List[Path]) -> None:
+    for raw_path in paths:
+        try:
+            Path(raw_path).unlink(missing_ok=True)
+        except Exception:
+            pass
+
+
+def _verify_scene_batch(
+    clips: List[Path],
+    scenes: List[Any],
+    topic: str,
+    provider: str,
+    script: Any = None,
+) -> bool:
+    """Fail closed unless every returned clip passes frame QA for its own narration."""
+    video_exts = {".mp4", ".mov", ".webm", ".mkv"}
+    target_scenes = list(scenes or [])
+    if not target_scenes and clips:
+        narration = str(_scene_value(script, "narration", "") or topic)
+        target_scenes = [{"narration": narration, "visual_subject": topic} for _ in clips]
+
+    if len(clips) != len(target_scenes):
+        print_warning(
+            f"⚠️ {provider} QA blocked: got {len(clips)} clips for "
+            f"{len(target_scenes)} scene(s)."
+        )
+        return False
+
+    gate = VisualQualityGate()
+    gate.strict = True
+    for index, (raw_clip, scene) in enumerate(zip(clips, target_scenes)):
+        clip = Path(raw_clip)
+        if (
+            not clip.exists()
+            or clip.stat().st_size < 5000
+            or clip.suffix.lower() not in video_exts
+        ):
+            print_warning(f"⚠️ {provider} QA blocked invalid motion clip for Scene {index + 1}: {clip}")
+            return False
+
+        subject = str(
+            _scene_value(scene, "visual_subject", "")
+            or _scene_value(scene, "subject", "")
+            or topic
+        ).strip()
+        narration = str(
+            _scene_value(scene, "narration", "")
+            or _scene_value(scene, "text", "")
+            or subject
+            or topic
+        ).strip()
+        visual_description = str(
+            _scene_value(scene, "visual_description", "")
+            or _scene_value(scene, "description", "")
+            or ""
+        ).strip()
+        must_show = _as_text_list(_scene_value(scene, "must_show", []))
+        if subject and subject not in must_show:
+            must_show.insert(0, subject)
+        if visual_description and visual_description not in must_show:
+            must_show.append(visual_description)
+
+        plan = {
+            "subject": subject,
+            "action": str(_scene_value(scene, "visual_action", "") or _scene_value(scene, "action", "") or ""),
+            "environment": str(_scene_value(scene, "visual_environment", "") or _scene_value(scene, "environment", "") or ""),
+            "must_show": must_show,
+            "avoid": _as_text_list(_scene_value(scene, "avoid", _scene_value(scene, "visual_avoid", []))),
+        }
+        result = gate.verify(clip, narration, plan)
+        if not result.get("accepted"):
+            print_warning(
+                f"⚠️ {provider} QA rejected Scene {index + 1}: "
+                f"{result.get('reason', 'frame QA did not approve this clip')}."
+            )
+            return False
+
+    print_success(f"✅ {provider} strict frame QA passed for all {len(clips)} scene(s).")
+    return True
 from autotube.utils.console import (
     print_error,
     print_info,
@@ -71,10 +169,13 @@ def acquire_scene_visuals_waterfall(
                     break
             expected_count = len(scenes[:max_scenes]) if scenes else len(queries)
             if flow_scenes and len(flow_scenes) == expected_count:
-                print_success(f"🎬 [Tier 1 Succeeded] Generated all {len(flow_scenes)}/{expected_count} scenes via Google Flow!")
-                return flow_scenes
+                if _verify_scene_batch(flow_scenes, scenes[:max_scenes], getattr(script, "topic", "scene"), "Google Flow", script):
+                    print_success(f"🎬 [Tier 1 Succeeded] Generated and QA-approved all {len(flow_scenes)}/{expected_count} scenes via Google Flow!")
+                    return flow_scenes
+                print_warning("⚠️ Google Flow clips failed strict frame QA; trying the next visual provider.")
             elif flow_scenes:
                 print_warning(f"⚠️ Google Flow generated partial scenes ({len(flow_scenes)}/{expected_count}). Falling over to complete tier.")
+            _remove_assets(flow_scenes)
     except Exception as fe:
         print_warning(f"Google Flow Bridge notice: {fe}")
 
@@ -102,10 +203,13 @@ def acquire_scene_visuals_waterfall(
                 max_scenes=max_scenes,
             )
             if veo_scenes and len(veo_scenes) == expected_count:
-                print_success(f"🎬 [Tier 2 Succeeded] Generated all {len(veo_scenes)}/{expected_count} scenes with Gemini Veo!")
-                return veo_scenes
+                if _verify_scene_batch(veo_scenes, scenes[:max_scenes], getattr(script, "topic", "scene"), "Gemini Veo", script):
+                    print_success(f"🎬 [Tier 2 Succeeded] Generated and QA-approved all {len(veo_scenes)}/{expected_count} scenes with Gemini Veo!")
+                    return veo_scenes
+                print_warning("⚠️ Gemini Veo clips failed strict frame QA; trying the stock-video providers.")
             elif veo_scenes:
                 print_warning(f"⚠️ Gemini Veo generated partial scenes ({len(veo_scenes)}/{expected_count}). Falling over to complete tier.")
+            _remove_assets(veo_scenes)
         except (VeoQuotaExceededError, Exception) as gemini_err:
             err_msg = getattr(gemini_err, "message", str(gemini_err))
             print_warning(f"⚠️ Gemini (Veo) skipped or quota exceeded: {err_msg}")
@@ -119,7 +223,8 @@ def acquire_scene_visuals_waterfall(
     try:
         from autotube.media.multi_stock_aggregator import MultiStockAggregator
         multi_agg = MultiStockAggregator()
-        if is_portrait and getattr(multi_agg, "visual_quality_gate", None):
+        if getattr(multi_agg, "visual_quality_gate", None):
+            # QA must be fail-closed for both Shorts and landscape output.
             multi_agg.visual_quality_gate.strict = True
 
         scene_assets = []
@@ -189,7 +294,15 @@ def acquire_scene_visuals_waterfall(
             for q in queries[:max_scenes]
         ]
 
-    # Final Strict Motion & Deduplication Gate
+    # Final strict checks also cover the secondary StockFetcher fallback.
+    expected_count = len(scenes[:max_scenes]) if scenes else len(getattr(script, "visual_keywords", []) or [getattr(script, "topic", "scene")])[:max_scenes]
+    if len(scene_assets) != expected_count:
+        _remove_assets([a for a in scene_assets if a])
+        raise RuntimeError(
+            f"Visual Pipeline Fail-Closed: received {len(scene_assets)} fallback asset(s) "
+            f"for {expected_count} expected scene(s)."
+        )
+
     if is_motion_preferred:
         for idx, a in enumerate(scene_assets):
             if not a or not a.exists() or a.suffix.lower() not in {".mp4", ".mov", ".webm", ".mkv"}:
@@ -203,5 +316,17 @@ def acquire_scene_visuals_waterfall(
                 "Scene footage repetition is strictly disallowed."
             )
 
-    print_success(f"🎬 Acquired {len(scene_assets)} synchronized, verified motion scene visual assets!")
+    if not _verify_scene_batch(
+        [Path(a) for a in scene_assets],
+        scenes[:max_scenes],
+        getattr(script, "topic", "scene"),
+        "StockFetcher fallback",
+        script,
+    ):
+        raise RuntimeError(
+            "Visual Pipeline Fail-Closed: one or more fallback scenes failed strict narration-to-frame QA. "
+            "Unsafe visual assets will not be rendered or uploaded."
+        )
+
+    print_success(f"🎬 Acquired {len(scene_assets)} synchronized, frame-QA-approved visual assets!")
     return scene_assets
