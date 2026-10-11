@@ -651,7 +651,7 @@ Output STRICT JSON with these keys:
         normalized_script = self._normalize_scene_text(script_text)
         candidates: List[Dict[str, Any]] = []
 
-        if isinstance(provided_scenes, list):
+        if isinstance(provided_scenes, list) and provided_scenes:
             for idx, raw in enumerate(provided_scenes):
                 if not isinstance(raw, dict):
                     continue
@@ -674,9 +674,9 @@ Output STRICT JSON with these keys:
                     }
                 )
 
-            candidate_script = self._normalize_scene_text(" ".join(s["narration"] for s in candidates))
-            if candidates and candidate_script == normalized_script:
-                return candidates[:max_scenes]
+            # When user provides explicit storyboard scenes (with custom uploaded images/prompts), ALWAYS honor them!
+            if candidates:
+                return candidates[:max(len(candidates), max_scenes)]
 
         split_scenes = self._split_script_into_scenes(script_text, max_scenes)
         for idx, scene in enumerate(split_scenes):
@@ -982,14 +982,16 @@ Return ONLY a JSON list of scene objects matching this structure:
 
         # Build a stable scene contract before any TTS or visual acquisition.
         active_script = script_text.strip()
-        if not is_long and len(active_script.split()) > 120:
+        has_user_scenes = bool(scenes and isinstance(scenes, list) and len(scenes) > 0)
+
+        # Only auto-condense if user did NOT provide explicit storyboard scenes
+        if not has_user_scenes and not is_long and len(active_script.split()) > 120:
             print_info(f"Input script has {len(active_script.split())} words. Auto-condensing for 48s Shorts limit...")
             condensed = self.condense_script_for_shorts(active_script, language=language)
             if condensed:
                 active_script = condensed
-                scenes = None  # Re-partition scenes for condensed text
 
-        max_scene_count = 35 if is_long else 6
+        max_scene_count = 35 if is_long else (max(len(scenes), 8) if has_user_scenes else 6)
         scene_specs = self._prepare_scene_specs(
             script_text=active_script,
             title=title,
@@ -997,8 +999,12 @@ Return ONLY a JSON list of scene objects matching this structure:
             max_scenes=max_scene_count,
         )
 
-        # Safeguard: Auto-Inject Ending Debate & Subscribe Outro ONLY if completely absent.
-        if auto_viral_hook and not is_long:
+        # If user explicitly provided scenes, keep active_script in perfect sync with the scene narrations
+        if has_user_scenes:
+            active_script = " ".join(str(s["narration"]).strip() for s in scene_specs if str(s.get("narration", "")).strip())
+
+        # Safeguard: Auto-Inject Ending Debate & Subscribe Outro ONLY if completely absent and user did not specify scenes
+        if auto_viral_hook and not is_long and not has_user_scenes:
             lower_s = active_script.lower()
             has_cta = any(k in lower_s for k in (
                 "subscribe", "सब्सक्राइब", "like", "लाइक", "comment", "कमेंट", "follow", "फॉलो", "share", "शेयर"
@@ -1012,16 +1018,9 @@ Return ONLY a JSON list of scene objects matching this structure:
                 active_script = f"{active_script} {cta_addon}".strip()
                 if scene_specs:
                     scene_specs[-1]["narration"] = f"{scene_specs[-1]['narration']} {cta_addon}".strip()
-                else:
-                    scene_specs = self._prepare_scene_specs(
-                        script_text=active_script,
-                        title=title,
-                        provided_scenes=None,
-                        max_scenes=max_scene_count,
-                    )
                 print_info("Auto Viral Booster: Injected 1 clean Subscribe & Like CTA.")
 
-        if self._normalize_scene_text(" ".join(s["narration"] for s in scene_specs)) != self._normalize_scene_text(active_script):
+        if not has_user_scenes and self._normalize_scene_text(" ".join(s["narration"] for s in scene_specs)) != self._normalize_scene_text(active_script):
             scene_specs = self._prepare_scene_specs(
                 script_text=active_script,
                 title=title,
@@ -1029,7 +1028,7 @@ Return ONLY a JSON list of scene objects matching this structure:
                 max_scenes=max_scene_count,
             )
 
-        if len(scene_specs) > max_scene_count:
+        if not has_user_scenes and len(scene_specs) > max_scene_count:
             merged = " ".join(s["narration"] for s in scene_specs[max_scene_count - 1 :]).strip()
             scene_specs = scene_specs[: max_scene_count - 1] + [{
                 **scene_specs[max_scene_count - 1],

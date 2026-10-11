@@ -47,19 +47,15 @@ def test_breakdown_vedic_script_fallback():
 
 
 def test_prepare_scene_specs_preserves_custom_images():
-    """Verify that user-uploaded custom_image_path is preserved in scene specs."""
+    """Verify that user-uploaded custom_image_path is preserved across 7+ scenes without truncation."""
     director = DirectorEngine()
     provided = [
         {
-            "narration": "कुरुक्षेत्र में अर्जुन के हाथ कांप रहे थे।",
-            "custom_image_path": "/tmp/custom_arjuna_4k.png",
-            "visual_prompt": "Cinematic 8k shot of Arjuna",
-        },
-        {
-            "narration": "तब भगवान कृष्ण ने कहा— पार्थ।",
-            "custom_image_path": "/tmp/custom_krishna_4k.png",
-            "visual_prompt": "Cinematic 8k shot of Krishna",
+            "narration": f"कुरुक्षेत्र का दृश्य {i+1}।",
+            "custom_image_path": f"/tmp/custom_scene_{i+1}_4k.png",
+            "visual_prompt": f"Cinematic 8k shot of scene {i+1}",
         }
+        for i in range(7)
     ]
     specs = director._prepare_scene_specs(
         script_text="कुरुक्षेत्र में अर्जुन। तब कृष्ण।",
@@ -67,10 +63,18 @@ def test_prepare_scene_specs_preserves_custom_images():
         provided_scenes=provided,
         max_scenes=6,
     )
-    assert len(specs) == 2
-    assert specs[0]["custom_image_path"] == "/tmp/custom_arjuna_4k.png"
-    assert specs[0]["visual_prompt"] == "Cinematic 8k shot of Arjuna"
-    assert specs[1]["custom_image_path"] == "/tmp/custom_krishna_4k.png"
+    assert len(specs) == 7
+    for i in range(7):
+        assert specs[i]["custom_image_path"] == f"/tmp/custom_scene_{i+1}_4k.png"
+        assert specs[i]["visual_prompt"] == f"Cinematic 8k shot of scene {i+1}"
+
+
+def test_api_director_status(client):
+    """Test GET /api/director/status endpoint returns valid status."""
+    resp = client.get("/api/director/status")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert "is_running" in data
 
 
 def test_api_vedic_breakdown(client):

@@ -1499,6 +1499,7 @@ async def stream_director_bgm_file(filename: str):
 def run_director_render_task(req_data: dict):
     """Background task worker for rendering custom Director video."""
     global LAST_DIRECTOR_RESULT
+    LAST_DIRECTOR_RESULT = {}
     GENERATION_STATUS["is_running"] = True
     v_fmt = req_data.get("video_format", "short")
     fmt_tag = "16:9 Long Video" if v_fmt == "landscape_long" else "9:16 Short"
@@ -1512,7 +1513,7 @@ def run_director_render_task(req_data: dict):
     try:
         from autotube.media.director_engine import DirectorEngine
         director = DirectorEngine()
-        if v_fmt == "short":
+        if v_fmt == "short" and not req_data.get("scenes"):
             raw_words = req_data["script_text"].strip().split()
             if len(raw_words) > 120:
                 log_event(f"Studio: Script has {len(raw_words)} words (~{len(raw_words)/2.6:.0f}s). Auto-tightening to fit <50s Shorts limit...")
@@ -1559,6 +1560,12 @@ async def trigger_director_render(req: DirectorRenderRequest, bg_tasks: Backgrou
     req_dict = req.dict()
     bg_tasks.add_task(run_director_render_task, req_dict)
     return {"success": True, "message": f"Started AI Director render for '{req.title}'!"}
+
+
+@app.get("/api/director/status")
+async def get_director_status():
+    """Retrieve realtime generation status for AI Director / Vedic studio."""
+    return GENERATION_STATUS
 
 
 @app.get("/api/director/last_result")

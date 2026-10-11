@@ -4324,11 +4324,11 @@
       const scriptInput = document.getElementById('vedic-script-input');
       const scriptContent = scriptInput ? scriptInput.value.trim() : '';
 
-      if (pubTitle && (!pubTitle.value || pubTitle.value.trim() === '')) {
+      if (pubTitle) {
         pubTitle.value = rawTitle || 'कुरुक्षेत्र में श्री कृष्ण की सीख: कर्म ही तुम्हारी पहचान है #Shorts';
       }
 
-      if (pubDesc && (!pubDesc.value || pubDesc.value.trim() === '')) {
+      if (pubDesc) {
         pubDesc.value = `${pubTitle ? pubTitle.value : rawTitle}\n\n${scriptContent}\n\n#BhagavadGita #LordKrishna #Karma #Mahabharata #Shorts #HindiMotivation #Geeta #SanatanDharma #Viral`;
       }
 
