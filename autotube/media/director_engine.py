@@ -980,6 +980,20 @@ Return ONLY a JSON list of scene objects matching this structure:
         output_dir.mkdir(parents=True, exist_ok=True)
         final_video_path = output_dir / f"{slug}_{int(time.time())}.mp4"
 
+        # Pre-flight disk space safeguard: require at least 500 MB free space
+        try:
+            _, _, free_bytes = shutil.disk_usage(PROJECT_ROOT)
+            free_mb = free_bytes / (1024 * 1024)
+            if free_mb < 500:
+                raise RuntimeError(
+                    f"Insufficient disk space: Only {free_mb:.1f} MB available. "
+                    "At least 500 MB free disk space is required to safely render video."
+                )
+        except RuntimeError:
+            raise
+        except Exception:
+            pass
+
         # Build a stable scene contract before any TTS or visual acquisition.
         active_script = script_text.strip()
         has_user_scenes = bool(scenes and isinstance(scenes, list) and len(scenes) > 0)
@@ -1646,6 +1660,12 @@ Return ONLY a JSON list of scene objects matching this structure:
                 subscribe_badge=sub_badge,
                 duration=total_duration,
             )
+
+        if final_video_path.exists() and unsubtitled_video.exists() and final_video_path != unsubtitled_video:
+            try:
+                unsubtitled_video.unlink()
+            except Exception:
+                pass
 
         if not is_long and final_video_path.exists():
             final_media_dur = get_media_duration(final_video_path)
