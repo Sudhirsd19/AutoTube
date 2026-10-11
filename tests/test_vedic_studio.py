@@ -113,3 +113,43 @@ def test_api_stream_spiritual_bgm(client):
     resp = client.get("/api/director/stream_bgm/spiritual")
     assert resp.status_code == 200
     assert resp.headers["content-type"] == "audio/mpeg"
+
+
+def test_optimize_vedic_script_ramcharitmanas():
+    """Verify raw Ramcharitmanas chaupai input is optimized into a viral ~45s Hindi script."""
+    director = DirectorEngine()
+    raw = (
+        '**"परहित सरिस धर्म नहिं भाई, पर पीड़ा सम नहिं अधमाई"**\n'
+        '(Ramcharitmanas, Uttar Kand, Tulsidas)\n\n'
+        '**Matlab:** Doosron ka bhala karne jaisa koi dharm nahi, aur doosron ko dukh dene jaisa koi paap nahi.'
+    )
+    res = director.optimize_vedic_script(raw)
+    assert res["success"] is True
+    opt_script = res["optimized_script"]
+    assert "परहित सरिस धर्म" in opt_script
+    assert "तुलसीदास" in opt_script
+    # Must not contain raw asterisks
+    assert "**" not in opt_script
+    # Must have between 80 and 130 words for YouTube Shorts duration
+    words = len(opt_script.split())
+    assert 80 <= words <= 135
+
+    # Test that breakdown of this optimized script produces accurate Tulsidas/compassion prompts
+    scenes = director.breakdown_vedic_script(opt_script)
+    assert len(scenes) >= 4
+    # Check that Tulsidas or charity/compassion prompt is generated
+    prompts_text = " ".join(s["visual_prompt"] for s in scenes).lower()
+    assert "tulsidas" in prompts_text or "compassion" in prompts_text or "temple" in prompts_text
+
+
+def test_api_vedic_optimize(client):
+    """Test POST /api/vedic/optimize_script endpoint."""
+    raw = '**"कर्मण्येवाधिकारस्ते मा फलेषु कदाचन"** (Bhagavad Gita)'
+    resp = client.post("/api/vedic/optimize_script", json={"raw_script": raw})
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["success"] is True
+    assert "optimized_script" in data
+    assert len(data["optimized_script"]) > 50
+    assert data["word_count"] > 30
+

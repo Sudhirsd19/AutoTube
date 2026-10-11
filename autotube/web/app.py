@@ -203,6 +203,11 @@ class VedicBreakdownRequest(BaseModel):
     title: Optional[str] = "Bhagavad Gita Motivation"
 
 
+class VedicOptimizeRequest(BaseModel):
+    raw_script: str
+    topic: Optional[str] = "Sanatan Wisdom"
+
+
 # State cache for last completed Director render
 LAST_DIRECTOR_RESULT: Dict[str, Any] = {}
 
@@ -1608,6 +1613,15 @@ async def publish_director_video(req: DirectorPublishRequest):
 # -------------------------------------------------------------
 # API ROUTES: VEDIC & GRANTH STORYBOARD STUDIO
 # -------------------------------------------------------------
+@app.post("/api/vedic/optimize_script")
+async def optimize_vedic_script_endpoint(req: VedicOptimizeRequest):
+    """Optimize raw Vedic / Granth script into a viral 45-50s Devanagari Shorts script."""
+    from autotube.media.director_engine import DirectorEngine
+    director = DirectorEngine()
+    res = director.optimize_vedic_script(req.raw_script)
+    return res
+
+
 @app.post("/api/vedic/breakdown")
 async def breakdown_vedic_script_endpoint(req: VedicBreakdownRequest):
     """Breakdown Hindi Vedic / Granth script into storyboard scenes with 8K English AI prompts."""

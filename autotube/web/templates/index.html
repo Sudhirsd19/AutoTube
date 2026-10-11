@@ -874,6 +874,9 @@
             </h3>
           </div>
           <div class="flex items-center gap-2">
+            <button type="button" onclick="optimizeVedicScript()" id="btn-optimize-vedic-script" class="px-3.5 py-1.5 rounded-lg bg-gradient-to-r from-purple-600 via-indigo-600 to-purple-700 hover:from-purple-500 hover:to-indigo-500 text-white text-xs font-bold transition flex items-center gap-1.5 shadow-md">
+              <i class="fa-solid fa-wand-magic-sparkles"></i> ✨ Optimize &amp; Expand Script (AI)
+            </button>
             <button type="button" onclick="copyAllVedicPrompts()" id="btn-copy-all-prompts" class="px-3.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-amber-300 border border-amber-500/30 text-xs font-bold transition flex items-center gap-1.5 shadow">
               <i class="fa-solid fa-copy"></i> 📋 Copy All 8K Prompts (Batch)
             </button>
@@ -3680,6 +3683,55 @@
       const estEl = document.getElementById('vedic-est-duration');
       if (wcEl) wcEl.textContent = words;
       if (estEl) estEl.textContent = estSec + 's';
+    }
+
+    async function optimizeVedicScript() {
+      const input = document.getElementById('vedic-script-input');
+      const btn = document.getElementById('btn-optimize-vedic-script');
+      if (!input) return;
+      const rawText = input.value.trim();
+      if (!rawText) {
+        showToast('कृपया पहले कोई श्लोक, चौपाई या विचार पेस्ट करें!', true);
+        return;
+      }
+
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Optimizing with AI...';
+      }
+
+      showToast('✨ AI स्क्रिप्ट को 45-50s के लिए ऑप्टिमाइज़ कर रहा है...');
+
+      try {
+        const res = await fetch('/api/vedic/optimize_script', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ raw_script: rawText })
+        });
+        const data = await res.json();
+        if (data.success && data.optimized_script) {
+          input.value = data.optimized_script;
+          const titleInput = document.getElementById('vedic-video-title');
+          if (titleInput && data.title) {
+            titleInput.value = data.title;
+          }
+          updateVedicScriptStats();
+          showToast(`✨ स्क्रिप्ट ऑप्टिमाइज़ हो गई (${data.word_count || ''} शब्द)! अब सीन्स और 8K प्रॉम्प्ट्स बन रहे हैं...`);
+
+          // Automatically regenerate storyboard scenes & 8K AI prompts tailored to the optimized script!
+          await breakdownVedicScript();
+        } else {
+          showToast('Script optimization failed: ' + (data.error || 'Unknown error'), true);
+        }
+      } catch (err) {
+        console.error('Vedic optimize error:', err);
+        showToast('Error optimizing script: ' + err.message, true);
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> ✨ Optimize &amp; Expand Script (AI)';
+        }
+      }
     }
 
     async function breakdownVedicScript() {

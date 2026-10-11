@@ -718,6 +718,134 @@ Output STRICT JSON with these keys:
             return None
         return plan
 
+    def optimize_vedic_script(self, raw_input: str) -> Dict[str, Any]:
+        """Transform raw shloka, chaupai, quote or concept into a high-retention 45-50s Devanagari Shorts script."""
+        text = (raw_input or "").strip()
+        cleaned_raw = re.sub(r"\*{1,3}", "", text).strip()
+        if not cleaned_raw:
+            return {"success": False, "error": "Empty script input"}
+
+        # 1. Try Gemini AI generation
+        gemini_key = os.getenv("GEMINI_API_KEY", "") or getattr(self.cfg, "gemini_api_key", "")
+        if gemini_key:
+            try:
+                from google import genai
+                client = genai.Client(api_key=gemini_key)
+                prompt = f"""You are a master Hindu scriptures and Sanatan Dharma storyteller (specializing in Bhagavad Gita, Ramcharitmanas, Upanishads, Chanakya Neeti, and Vedic wisdom).
+Transform the following raw input, shloka, chaupai, or thought into a deeply moving, highly viral, 45-50 second YouTube Shorts narration script (105-120 words total).
+
+STRICT MANDATORY GUIDELINES:
+1. PURE DEVANAGARI HINDI (हिंदी देवनागरी लिपि):
+   - Output must be 100% in authentic, spoken, respectful Devanagari Hindi.
+   - Absolutely NO English/Hinglish characters for Hindi words.
+2. 4-ACT RETENTION STRUCTURE:
+   - ACT 1 (Hook, 15-20 words): A gripping psychological or spiritual question that hooks viewers instantly in the first 3 seconds.
+   - ACT 2 (Sacred Verse, 30-35 words): Recite the verse/chaupai with its sacred context and author (e.g. Goswami Tulsidas, Bhagwan Krishna, Ved Vyasa).
+   - ACT 3 (Deep Lesson & Karma, 35-40 words): Practical, hard-hitting emotional wisdom on why this matters to the viewer today.
+   - ACT 4 (CTA & Outro, 15-20 words): Thought-provoking closing question + comment trigger + subscribe CTA.
+3. DURATION BUDGET:
+   - Between 105 and 120 words strictly (optimal for 45-50s Shorts limit).
+4. CLEAN CONTINUOUS TEXT:
+   - No asterisks (**), no bracketed stage directions [Scene 1], no bullet points. Pure continuous narration.
+
+RAW INPUT:
+\"\"\"{cleaned_raw}\"\"\"
+
+Output STRICT JSON:
+{{
+  "optimized_script": "Full continuous spoken Hindi Devanagari narration script...",
+  "title": "Inspiring viral YouTube video title with emojis and #Shorts",
+  "word_count": 115,
+  "est_seconds": 46.0
+}}"""
+                for m in ["gemini-2.0-flash", "gemini-1.5-flash"]:
+                    try:
+                        response = client.models.generate_content(
+                            model=m,
+                            contents=prompt,
+                            config={"response_mime_type": "application/json"},
+                        )
+                        if response.text:
+                            import json
+                            parsed = json.loads(response.text)
+                            opt_text = str(parsed.get("optimized_script") or "").strip()
+                            if opt_text and len(opt_text.split()) >= 40:
+                                opt_words = len(opt_text.split())
+                                return {
+                                    "success": True,
+                                    "optimized_script": opt_text,
+                                    "title": parsed.get("title") or "पवित्र सनातन सीख #Shorts",
+                                    "word_count": opt_words,
+                                    "est_seconds": round(opt_words / 2.6, 1),
+                                }
+                    except Exception:
+                        continue
+            except Exception as e:
+                print_warning(f"Gemini vedic script optimization notice: {e}")
+
+        # 2. Intelligent Domain-Aware Heuristic Expander
+        lower_raw = cleaned_raw.lower()
+
+        # Case A: Ramcharitmanas / Tulsidas / "परहित सरिस धर्म"
+        if any(k in lower_raw for k in ("परहित", "सरिस धर्म", "रामचरितमानस", "tulsidas", "ramcharitmanas", "तुलसीदास", "पर पीड़ा", "अधमाई")):
+            opt_script = (
+                "क्या आप जानते हैं कि इस संसार का सबसे बड़ा धर्म और सबसे भयानक पाप क्या है? "
+                "गोस्वामी तुलसीदास जी ने रामचरितमानस में लिखा है— परहित सरिस धर्म नहिं भाई, पर पीड़ा सम नहिं अधमाई। "
+                "यानी इस दुनिया में दूसरों की भलाई करने से बड़ा कोई धर्म नहीं है, और किसी निर्दोष को दुःख पहुँचाने से बड़ा कोई पाप नहीं। "
+                "जब आप स्वार्थ छोड़कर किसी गिरते हुए इंसान का हाथ थामते हैं, तो परमात्मा स्वयं आपका भाग्य संवारते हैं। "
+                "कमाया हुआ धन यहीं छूट जाएगा, लेकिन आपके द्वारा बांटी गई खुशियां हमेशा आपके साथ रहेंगी। "
+                "क्या आप आज किसी एक जरूरतमंद की मदद करने के लिए तैयार हैं? "
+                "अगर हां, तो कमेंट में 'जय श्री राम' लिखें और इस पवित्र सीख के लिए अभी सब्सक्राइब करें!"
+            )
+            title = "रामचरितमानस की सबसे बड़ी सीख: सबसे बड़ा धर्म और पाप क्या है? #Shorts"
+
+        # Case B: Bhagavad Gita / Karma / Krishna / Arjuna
+        elif any(k in lower_raw for k in ("कर्म", "अधिकार", "फल", "पार्थ", "कृष्ण", "अर्जुन", "gita", "गीता", "karma")):
+            opt_script = (
+                "क्या आप भी भविष्य की चिंता में अपना आज बर्बाद कर रहे हैं? "
+                "कुरुक्षेत्र के मैदान में अर्जुन के हाथ कांप रहे थे, क्योंकि उन्हें अपनी हार का डर था। "
+                "तब भगवान कृष्ण ने कहा— पार्थ, तुम्हारा अधिकार केवल कर्म पर है, फल पर नहीं। "
+                "जब आप परिणाम का तनाव छोड़ते हैं, तो डर खत्म होता है और असली फोकस शुरू होता है। "
+                "खुद को कभी कमजोर न समझें, बल्कि अपनी निष्ठा से अपना भाग्य खुद लिखें। "
+                "हार केवल एक घटना है, आपकी पहचान नहीं। "
+                "क्या आप आज अपना शत-प्रतिशत कर्म करने के लिए तैयार हैं? "
+                "अगर हां, तो कमेंट में 'जय श्री कृष्ण' लिखें और अभी सब्सक्राइब करें!"
+            )
+            title = "कुरुक्षेत्र में श्री कृष्ण की सीख: कर्म ही तुम्हारी पहचान है #Shorts"
+
+        # Case C: Chanakya / Neeti / Strategy
+        elif any(k in lower_raw for k in ("चाणक्य", "chanakya", "नीति", "शत्रु", "मित्र")):
+            opt_script = (
+                "आचार्य चाणक्य ने कहा था कि एक समझदार इंसान कभी अपनी कमजोरी दूसरों को नहीं बताता। "
+                "जब आप हर किसी पर अंधा भरोसा करते हैं, तो धोखा मिलना तय है। "
+                "चाणक्य नीति सिखाती है कि सीधे पेड़ सबसे पहले काटे जाते हैं, इसलिए इतने सीधे भी न बनें कि दुनिया आपका फायदा उठाए। "
+                "अपनी योजनाएं गुप्त रखें और अपने कर्मों से जवाब दें। "
+                "क्या आप जीवन में सफल होना चाहते हैं? "
+                "कमेंट में अपनी राय लिखें और ऐसी ही जीवन बदलने वाली नीतियों के लिए अभी सब्सक्राइब करें!"
+            )
+            title = "चाणक्य नीति: ये 3 गलतियां कभी मत करना #Shorts"
+
+        # Case D: General Scripture / Devotional Wisdom
+        else:
+            opt_script = (
+                f"क्या आप जानते हैं कि हमारे प्राचीन शास्त्रों में जीवन का सबसे गहरा रहस्य क्या छुपा है? "
+                f"शास्त्रों में कहा गया है कि {cleaned_raw}। "
+                f"यानी जब आप सत्य और धर्म के मार्ग पर चलते हैं, तो पूरी प्रकृति आपका साथ देने लगती है। "
+                f"संसार की चिंता छोड़िए और अपने कर्म को ही अपनी पूजा बनाइए, क्योंकि सच्चा सुख केवल अंतर्मन की शांति में है। "
+                f"क्या आप इस दिव्य सीख को अपने जीवन में उतारने के लिए तैयार हैं? "
+                f"अगर हां, तो कमेंट में 'हर हर महादेव' या 'जय श्री कृष्ण' लिखें और अभी सब्सक्राइब करें!"
+            )
+            title = "प्राचीन शास्त्रों की सबसे अनमोल सीख #Shorts"
+
+        words = len(opt_script.split())
+        return {
+            "success": True,
+            "optimized_script": opt_script,
+            "title": title,
+            "word_count": words,
+            "est_seconds": round(words / 2.6, 1),
+        }
+
     def breakdown_vedic_script(self, script_text: str) -> List[Dict[str, Any]]:
         """Split a Hindi spiritual or Vedic script into 5-7 storyboard scenes with 8K English AI prompts."""
         raw_text = (script_text or "").strip()
@@ -730,12 +858,12 @@ Output STRICT JSON with these keys:
             try:
                 from google import genai
                 client = genai.Client(api_key=gemini_key)
-                prompt = f"""You are a master Vedic and Hindu epic film director (Mahabharata, Gita, Ramayana).
+                prompt = f"""You are a master Vedic and Hindu epic film director (Mahabharata, Gita, Ramayana, Ramcharitmanas).
 Break down the following Hindi narration script into 5 to 7 sequential video scenes.
 For each scene, output:
 1. 'scene_number': integer 1, 2, ...
 2. 'narration': exact spoken sentence in authentic Hindi Devanagari.
-3. 'visual_prompt': an ultra-detailed 8K photorealistic English prompt designed for Midjourney / Leonardo AI / Flux. Describe authentic Indian aesthetics, royal armor or silk, dramatic lighting, sacred Vedic atmosphere, no cartoon, no anime, 9:16 vertical aspect ratio.
+3. 'visual_prompt': an ultra-detailed 8K photorealistic English prompt designed for Midjourney / Leonardo AI / Flux. Describe authentic Indian aesthetics, royal armor or saffron silk robes, dramatic golden cinematic lighting, sacred Vedic atmosphere, no cartoon, no anime, 9:16 vertical aspect ratio.
 4. 'visual_subject': 2-3 simple English words.
 
 SCRIPT:
@@ -772,9 +900,21 @@ Return ONLY a JSON list of scene objects matching this structure:
             if any(k in s_low for k in ("कृष्ण", "पार्थ", "माधव", "केशव", "krishna", "parth")):
                 v_prompt = "Cinematic 8k photorealistic shot of Lord Krishna in divine royal yellow pitambara silk and peacock feather crown, standing majestically on an ancient golden chariot in Kurukshetra at dramatic sunset, radiant golden divine aura around his head, serene compassionate smile, speaking sacred wisdom to Arjuna, sacred epic Vedic cinema, masterpiece, 9:16 vertical"
                 v_subj = "Lord Krishna speaking to Parth on chariot"
-            elif any(k in s_low for k in ("चिंता", "भविष्य", "बर्बाद", "तनाव", "worried", "anxious")):
-                v_prompt = "Cinematic 8k photorealistic close-up of a modern thoughtful Indian young man sitting alone at dusk, looking anxiously through a rain-streaked window, deep contemplation, dramatic volumetric lighting, realistic skin texture, moody cinematic masterpiece, 9:16 vertical"
-                v_subj = "man worried about future"
+            elif any(k in s_low for k in ("तुलसीदास", "रामचरितमानस", "tulsidas", "ramcharitmanas", "chaupai", "चौपाई")):
+                v_prompt = "Cinematic 8k photorealistic shot of saint poet Goswami Tulsidas in sacred saffron robes writing Ramcharitmanas with peacock quill on holy palm leaves by the holy Ganga ghats of Varanasi, glowing sacred oil lamps, celestial golden aura, holy scripture manuscript, masterpiece, 9:16 vertical"
+                v_subj = "Goswami Tulsidas writing Ramcharitmanas"
+            elif any(k in s_low for k in ("राम", "श्री राम", "रघुपति", "lord ram", "rama", "ayodhya")) and not any(k in s_low for k in ("सब्सक्राइब", "कमेंट")):
+                v_prompt = "Cinematic 8k photorealistic divine portrait of Lord Rama in royal golden silk robes holding the sacred Kodanda bow, calm compassionate countenance, radiant golden divine halo, majestic Ayodhya palace pillars in background, sacred epic art, 9:16 vertical"
+                v_subj = "Lord Rama with Kodanda bow"
+            elif any(k in s_low for k in ("परहित", "भलाई", "मदद", "पुण्य", "हाथ थामते", "स्वार्थ", "खुशियां", "compassion", "charity", "helping")):
+                v_prompt = "Cinematic 8k photorealistic heart-touching shot of compassionate Indian hands gently helping a weary fallen traveler rise, bathed in warm golden dawn sunlight, glowing particles of divine grace and empathy, cinematic emotional masterpiece, 9:16 vertical"
+                v_subj = "compassionate helping hands golden sunlight"
+            elif any(k in s_low for k in ("पीड़ा", "अधमाई", "पाप", "दुःख", "दुख", "pain", "sin", "sorrow")):
+                v_prompt = "Cinematic 8k photorealistic dramatic atmospheric visual of dark storm clouds dispersing as brilliant divine golden rays break through the shadows, symbolic victory of dharma and compassion over sorrow, dramatic volumetric lighting, 9:16 vertical"
+                v_subj = "dharma dispersing dark storm clouds"
+            elif any(k in s_low for k in ("चिंता", "भविष्य", "बर्बाद", "तनाव", "worried", "anxious", "संसार का सबसे बड़ा", "पुण्य और")):
+                v_prompt = "Cinematic 8k photorealistic close-up of a thoughtful Indian seeker sitting peacefully in meditation at twilight, soft glowing oil lamp, deep contemplation, dramatic volumetric lighting, realistic skin texture, moody cinematic masterpiece, 9:16 vertical"
+                v_subj = "contemplation of dharma at twilight"
             elif any(k in s_low for k in ("कांप", "अर्जुन", "arjuna", "trembl")) or ("हार का" in s_low or "डर था" in s_low or "हारना" in s_low):
                 v_prompt = "Cinematic 8k photorealistic shot of warrior prince Arjuna in ornate ancient Indian golden armor and royal crown, standing overwhelmed on the dusty battlefield of Kurukshetra, sacred Gandiva bow trembling in his hands, dark dramatic storm clouds and burning embers in background, hyperrealistic, 9:16 vertical"
                 v_subj = "Arjuna trembling in fear Kurukshetra"
@@ -784,9 +924,9 @@ Return ONLY a JSON list of scene objects matching this structure:
             elif any(k in s_low for k in ("भाग्य", "मेहनत", "गिरने", "कर्म", "अधिकार", "destiny", "rise", "warrior")):
                 v_prompt = "Cinematic 8k photorealistic shot of a determined ancient warrior rising up powerfully from the battlefield with iron willpower, glorious golden dawn horizon in background, dust and glowing golden particles in air, inspirational victory atmosphere, 8k, 9:16 vertical"
                 v_subj = "warrior rising with iron will"
-            elif any(k in s_low for k in ("सब्सक्राइब", "जय श्री कृष्ण", "पहचान", "शंख", "conch")):
-                v_prompt = "Cinematic 8k photorealistic wide shot of Lord Krishna on the golden chariot blowing the sacred Panchajanya divine white conch, cosmic golden sky with celestial radiant energy, epic triumphant Mahabharata climax, hyperrealistic sacred art, masterpiece, 9:16 vertical"
-                v_subj = "Lord Krishna blowing Panchajanya conch"
+            elif any(k in s_low for k in ("सब्सक्राइब", "जय श्री राम", "जय श्री कृष्ण", "पहचान", "शंख", "conch")):
+                v_prompt = "Cinematic 8k photorealistic magnificent wide shot of a grand ancient Hindu temple sanctum bathed in celestial golden evening light, glowing diya lamps and sacred saffron flags, triumphant divine devotion, 8k, 9:16 vertical"
+                v_subj = "magnificent Vedic temple sanctum divine light"
             else:
                 v_prompt = f"Cinematic 8k photorealistic sacred Indian epic art, {self._extract_ai_scene_prompt(sentence, 'Bhagavad Gita', idx)}, golden radiant aura, sacred cinematic lighting, 9:16 vertical"
                 v_subj = "sacred Vedic scene"
