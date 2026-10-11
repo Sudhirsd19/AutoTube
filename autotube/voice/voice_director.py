@@ -2,7 +2,6 @@
 
 import re
 
-
 # Sacred-text and spiritual-motivation topics use a calmer, devotional narrator.
 # These markers deliberately avoid the generic word "motivation", which is not
 # sufficient evidence that a video is about a scripture.
