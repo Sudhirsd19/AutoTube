@@ -1144,12 +1144,15 @@ Return ONLY a JSON list of scene objects matching this structure:
         if is_space_or_sci:
             real_incident_mode = False
 
+        # Vedic & Granth Studio has dedicated unconstrained duration mode (no 60s Shorts ceiling)
+        is_vedic_granth_mode = visual_mode in ("vedic_granth_ai", "vedic_storyboard", "vedic_ai")
+
         output_dir = PROJECT_ROOT / "output" / ("longform" if is_long else "shorts")
         output_dir.mkdir(parents=True, exist_ok=True)
         final_video_path = output_dir / f"{slug}_{int(time.time())}.mp4"
 
         # Pre-flight dynamic disk space safeguard
-        est_scenes = len(scenes) if (scenes and isinstance(scenes, list)) else (35 if is_long else 8)
+        est_scenes = len(scenes) if (scenes and isinstance(scenes, list)) else (35 if (is_long or is_vedic_granth_mode) else 8)
         req_mb = 1500 if is_long else max(800, 300 + (est_scenes * 60))
         try:
             _, _, free_bytes = shutil.disk_usage(PROJECT_ROOT)
@@ -1168,14 +1171,14 @@ Return ONLY a JSON list of scene objects matching this structure:
         active_script = script_text.strip()
         has_user_scenes = bool(scenes and isinstance(scenes, list) and len(scenes) > 0)
 
-        # Only auto-condense if user did NOT provide explicit storyboard scenes
-        if not has_user_scenes and not is_long and len(active_script.split()) > 120:
+        # Only auto-condense if user did NOT provide explicit storyboard scenes and NOT in Vedic mode
+        if not has_user_scenes and not is_long and not is_vedic_granth_mode and len(active_script.split()) > 120:
             print_info(f"Input script has {len(active_script.split())} words. Auto-condensing for 48s Shorts limit...")
             condensed = self.condense_script_for_shorts(active_script, language=language)
             if condensed:
                 active_script = condensed
 
-        max_scene_count = 35 if is_long else (max(len(scenes), 8) if has_user_scenes else 6)
+        max_scene_count = 50 if (is_long or is_vedic_granth_mode) else (max(len(scenes), 8) if has_user_scenes else 6)
         scene_specs = self._prepare_scene_specs(
             script_text=active_script,
             title=title,
@@ -1188,7 +1191,7 @@ Return ONLY a JSON list of scene objects matching this structure:
             active_script = " ".join(str(s["narration"]).strip() for s in scene_specs if str(s.get("narration", "")).strip())
 
         # Safeguard: Auto-Inject Ending Debate & Subscribe Outro ONLY if completely absent and user did not specify scenes
-        if auto_viral_hook and not is_long and not has_user_scenes:
+        if auto_viral_hook and not is_long and not is_vedic_granth_mode and not has_user_scenes:
             lower_s = active_script.lower()
             has_cta = any(k in lower_s for k in (
                 "subscribe", "सब्सक्राइब", "like", "लाइक", "comment", "कमेंट", "follow", "फॉलो", "share", "शेयर"
@@ -1256,7 +1259,8 @@ Return ONLY a JSON list of scene objects matching this structure:
         total_duration = tts_res.duration_seconds
 
         # Universal Shorts Duration Clamp: Guarantee final video strictly complies with <60s YouTube Shorts feed cutoff
-        if not is_long:
+        # (Disabled for Vedic & Granth Studio to allow full, unconstrained sacred storytelling)
+        if not is_long and not is_vedic_granth_mode:
             tts_res = tts.clamp_duration(
                 tts_res=tts_res,
                 max_seconds=58.5,
@@ -1265,6 +1269,8 @@ Return ONLY a JSON list of scene objects matching this structure:
                 height=target_height,
             )
             total_duration = tts_res.duration_seconds
+        elif is_vedic_granth_mode:
+            print_info(f"🕉️ [Vedic Studio Duration Guard] Unconstrained duration active: Preserving full speech duration ({total_duration:.1f}s, {len(scene_specs)} scenes).")
 
         if progress_callback: progress_callback(30, "Resolving and mixing Background Music (BGM)...")
 
@@ -1853,6 +1859,7 @@ Return ONLY a JSON list of scene objects matching this structure:
                 subtitles_file=None,
                 width=target_width,
                 height=target_height,
+                enforce_shorts_duration_limit=not (is_long or is_vedic_granth_mode),
             )
             if not build_result or not unsubtitled_video.exists():
                 raise RuntimeError("Video compositor rejected or failed the scene mapping; render blocked.")
@@ -1863,19 +1870,21 @@ Return ONLY a JSON list of scene objects matching this structure:
             if subtitle_style_id == "none":
                 shutil.copy(unsubtitled_video, final_video_path)
             else:
-                if is_long:
-                    style_map = {
-                        "hormozi": "FontName=Arial Black,FontSize=22,PrimaryColour=&H0000FFFF,OutlineColour=&H00000000,BorderStyle=1,Outline=2.5,Shadow=1.5,Alignment=2,MarginV=55",
-                        "cinematic": "FontName=Arial,FontSize=20,PrimaryColour=&H00FFFFFF,OutlineColour=&H00000000,BorderStyle=1,Outline=2,Shadow=1,Alignment=2,MarginV=50",
-                    }
-                else:
+                if target_height > target_width:
+                    # 9:16 Vertical format (Shorts & Vertical Vedic Stories)
                     style_map = {
                         "hormozi": "FontName=Arial Black,FontSize=28,PrimaryColour=&H0000FFFF,OutlineColour=&H00000000,BorderStyle=1,Outline=3,Shadow=2,Alignment=2,MarginV=250",
                         "cinematic": "FontName=Arial,FontSize=24,PrimaryColour=&H00FFFFFF,OutlineColour=&H00000000,BorderStyle=1,Outline=2,Shadow=1,Alignment=2,MarginV=240",
                     }
+                else:
+                    # 16:9 Landscape format
+                    style_map = {
+                        "hormozi": "FontName=Arial Black,FontSize=22,PrimaryColour=&H0000FFFF,OutlineColour=&H00000000,BorderStyle=1,Outline=2.5,Shadow=1.5,Alignment=2,MarginV=55",
+                        "cinematic": "FontName=Arial,FontSize=20,PrimaryColour=&H00FFFFFF,OutlineColour=&H00000000,BorderStyle=1,Outline=2,Shadow=1,Alignment=2,MarginV=50",
+                    }
                 chosen_style = style_map.get(subtitle_style_id, style_map["hormozi"])
 
-                hook_badge = (PROJECT_ROOT / "assets" / "hook_badge.png") if (auto_viral_hook and not is_long) else None
+                hook_badge = (PROJECT_ROOT / "assets" / "hook_badge.png") if (auto_viral_hook and not is_long and not is_vedic_granth_mode) else None
                 if enable_classified_badge and (PROJECT_ROOT / "assets" / "classified_badge.png").exists():
                     hook_badge = PROJECT_ROOT / "assets" / "classified_badge.png"
                 sub_badge = (PROJECT_ROOT / "assets" / "like_subscribe_bell_banner.png") if auto_viral_hook else None
@@ -1890,7 +1899,7 @@ Return ONLY a JSON list of scene objects matching this structure:
                     duration=total_duration,
                 )
 
-            if not is_long and final_video_path.exists():
+            if not is_long and not is_vedic_granth_mode and final_video_path.exists():
                 final_media_dur = get_media_duration(final_video_path)
                 if final_media_dur >= 59.5:
                     try:

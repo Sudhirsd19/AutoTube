@@ -340,4 +340,70 @@ def test_custom_story_mode_preserves_stock_video_logic(tmp_path):
         assert mock_gen_ai.call_count == 0
 
 
+def test_vedic_studio_unconstrained_duration_allowed(tmp_path):
+    """Verify Vedic & Granth Studio allows videos longer than 60s without clamp_duration or duration gate deletion."""
+    director = DirectorEngine()
+    # 12 scenes totaling 96.0s (well over the 60s Shorts ceiling)
+    scenes = [{"narration": f"दृश्य {i+1}: धर्म और कर्म का दिव्य संदेश।", "duration": 8.0} for i in range(12)]
+    script = " ".join(s["narration"] for s in scenes)
+    title = "श्रीमद्भगवद्गीता का अमर ज्ञान"
+
+    clip_counter = 0
+    def mock_render_clip(*args, **kwargs):
+        nonlocal clip_counter
+        clip_counter += 1
+        clip = tmp_path / f"mock_vedic_clip_{clip_counter}.mp4"
+        clip.write_bytes(f"unique clip content {clip_counter}".encode() * 500)
+        return clip
+
+    with patch("autotube.media.director_engine.TTSEngine.synthesize") as mock_tts, \
+         patch("autotube.media.director_engine.TTSEngine.clamp_duration") as mock_clamp, \
+         patch("autotube.media.director_engine.ShortsBuilder.build_short") as mock_build, \
+         patch("autotube.media.director_engine.burn_subtitles") as mock_burn, \
+         patch("autotube.media.director_engine.get_media_duration", return_value=96.0), \
+         patch("autotube.media.ai_visuals.VisualGenerator.generate_image", return_value=None), \
+         patch("autotube.media.ai_visuals.VisualGenerator.create_sacred_vedic_fallback", return_value=tmp_path / "sacred.jpg"), \
+         patch("autotube.media.vedic_cinematics.render_vedic_cinematic_clip", side_effect=mock_render_clip):
+
+        fake_tts_res = MagicMock()
+        fake_tts_res.audio_path = tmp_path / "voice.mp3"
+        fake_tts_res.audio_path.write_bytes(b"dummy audio" * 500)
+        fake_tts_res.subtitles_ass_path = tmp_path / "subs.ass"
+        fake_tts_res.subtitles_srt_path = None
+        fake_tts_res.duration_seconds = 96.0
+        fake_tts_res.scene_durations = [8.0] * 12
+        mock_tts.return_value = fake_tts_res
+
+        def fake_build_short(*args, **kwargs):
+            out_p = kwargs.get("output_path")
+            if out_p:
+                Path(out_p).write_bytes(b"dummy unsubbed video" * 1000)
+            return True
+        mock_build.side_effect = fake_build_short
+
+        def fake_burn(*args, **kwargs):
+            out_p = kwargs.get("output_video")
+            if out_p:
+                Path(out_p).write_bytes(b"dummy final video" * 1000)
+            return True
+        mock_burn.side_effect = fake_burn
+
+        res = director.render_custom_video(
+            script_text=script,
+            title=title,
+            visual_mode="vedic_granth_ai",
+            scenes=scenes,
+        )
+
+        assert res["success"] is True
+        assert res["duration"] == 96.0
+        assert res["scene_count"] == 12
+        # Verify clamp_duration was NEVER called for Vedic & Granth mode
+        assert mock_clamp.call_count == 0
+        # Verify build_short received enforce_shorts_duration_limit=False
+        _, kwargs = mock_build.call_args
+        assert kwargs.get("enforce_shorts_duration_limit") is False
+
+
+
 

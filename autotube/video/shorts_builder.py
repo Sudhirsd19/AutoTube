@@ -32,6 +32,7 @@ class ShortsBuilder:
         music_path: Optional[Path] = None,
         width: Optional[int] = None,
         height: Optional[int] = None,
+        enforce_shorts_duration_limit: bool = True,
     ) -> Optional[Path]:
         """Compose audio, background visuals, and animated subtitles into a final Short or Landscape Video."""
         v_width = width or self.width
@@ -395,7 +396,7 @@ class ShortsBuilder:
         if res_video and res_video.exists():
             final_dur = get_media_duration(res_video)
             is_vertical = (v_height > v_width)
-            if is_vertical and final_dur >= 59.5:
+            if enforce_shorts_duration_limit and is_vertical and final_dur >= 59.5:
                 try:
                     res_video.unlink()
                 except Exception:

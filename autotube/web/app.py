@@ -1502,7 +1502,11 @@ def run_director_render_task(req_data: dict):
     LAST_DIRECTOR_RESULT = {}
     GENERATION_STATUS["is_running"] = True
     v_fmt = req_data.get("video_format", "short")
-    fmt_tag = "16:9 Long Video" if v_fmt == "landscape_long" else "9:16 Short"
+    is_vedic = req_data.get("visual_mode") in ("vedic_granth_ai", "vedic_storyboard", "vedic_ai")
+    if is_vedic:
+        fmt_tag = "Vedic Sacred Video"
+    else:
+        fmt_tag = "16:9 Long Video" if v_fmt == "landscape_long" else "9:16 Short"
     GENERATION_STATUS["current_task"] = f"AI Studio ({fmt_tag}): {req_data.get('title', 'Custom Video')[:22]}"
     log_event(f"🎬 Starting AI Video Studio Render ({fmt_tag}): '{req_data.get('title')}'...")
 
@@ -1513,7 +1517,7 @@ def run_director_render_task(req_data: dict):
     try:
         from autotube.media.director_engine import DirectorEngine
         director = DirectorEngine()
-        if v_fmt == "short" and not req_data.get("scenes"):
+        if v_fmt == "short" and not req_data.get("scenes") and not is_vedic:
             raw_words = req_data["script_text"].strip().split()
             if len(raw_words) > 120:
                 log_event(f"Studio: Script has {len(raw_words)} words (~{len(raw_words)/2.6:.0f}s). Auto-tightening to fit <50s Shorts limit...")
