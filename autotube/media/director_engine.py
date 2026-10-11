@@ -1204,7 +1204,9 @@ Return ONLY a JSON list of scene objects matching this structure:
                         else:
                             print_warning(f"Ken Burns conversion failed for custom image in scene {idx+1}, falling back to AI visuals.")
 
-                if not acquired_video and is_gita_granth_topic:
+                if acquired_video:
+                    pass
+                elif is_gita_granth_topic:
                     if progress_callback:
                         progress_callback(55 + int((idx / max(1, len(scene_specs))) * 18), f"🎨 Scene {idx+1}/{len(scene_specs)}: Generating 4K/8K divine AI photorealistic visual...")
 
@@ -1277,7 +1279,7 @@ Return ONLY a JSON list of scene objects matching this structure:
                             raise RuntimeError(f"Motion video conversion failed for Gita/Granth scene {idx+1}.")
                     else:
                         raise RuntimeError(f"AI visual generation failed for Gita/Granth scene {idx+1}.")
-                elif not acquired_video and visual_mode in ("multi_cinematic", "multi_best", "auto"):
+                elif visual_mode in ("multi_cinematic", "multi_best", "auto"):
                     historical = any(
                         k in sentence.lower()
                         for k in (
