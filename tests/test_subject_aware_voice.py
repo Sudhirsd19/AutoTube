@@ -88,3 +88,12 @@ def test_generic_motivation_does_not_force_spiritual_voice():
         "Build a consistent routine and make progress every day.",
         "en",
     ) == "en_authoritative_male"
+
+
+
+def test_word_inside_digital_does_not_trigger_spiritual_voice():
+    assert choose_subject_voice(
+        "The Digital Future of Education",
+        "Digital systems are changing the way people learn.",
+        "en",
+    ) != "en_deep_warm_male"
