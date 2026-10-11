@@ -674,24 +674,15 @@ Output STRICT JSON with these keys:
                     }
                 )
 
-            # When user provides explicit storyboard scenes (with custom uploaded images/prompts), ALWAYS honor them!
-            if candidates:
+            candidate_script = self._normalize_scene_text(" ".join(s["narration"] for s in candidates))
+            has_custom_images = any(bool(s.get("custom_image_path")) for s in candidates)
+
+            # Preserve structured scene plan if narration matches the script, OR if explicit custom image uploads are attached
+            if candidates and (candidate_script == normalized_script or has_custom_images):
                 return candidates[:max(len(candidates), max_scenes)]
 
         split_scenes = self._split_script_into_scenes(script_text, max_scenes)
         for idx, scene in enumerate(split_scenes):
-            if candidates and idx < len(candidates):
-                c = candidates[idx]
-                scene["visual_subject"] = c.get("visual_subject", "")
-                scene["visual_description"] = c.get("visual_description", "")
-                scene["search_keywords"] = c.get("search_keywords", [])
-                scene["visual_action"] = c.get("visual_action", "")
-                scene["visual_environment"] = c.get("visual_environment", "")
-                scene["must_show"] = c.get("must_show", [])
-                scene["avoid"] = c.get("avoid", [])
-                scene["custom_image_path"] = c.get("custom_image_path", "")
-                scene["visual_prompt"] = c.get("visual_prompt", "")
-
             if not scene.get("visual_subject"):
                 q = self._extract_visual_search_query(scene["narration"], title, idx)
                 scene["visual_subject"] = q
@@ -980,19 +971,21 @@ Return ONLY a JSON list of scene objects matching this structure:
         output_dir.mkdir(parents=True, exist_ok=True)
         final_video_path = output_dir / f"{slug}_{int(time.time())}.mp4"
 
-        # Pre-flight disk space safeguard: require at least 500 MB free space
+        # Pre-flight dynamic disk space safeguard
+        est_scenes = len(scenes) if (scenes and isinstance(scenes, list)) else (35 if is_long else 8)
+        req_mb = 1500 if is_long else max(800, 300 + (est_scenes * 60))
         try:
             _, _, free_bytes = shutil.disk_usage(PROJECT_ROOT)
             free_mb = free_bytes / (1024 * 1024)
-            if free_mb < 500:
+            if free_mb < req_mb:
                 raise RuntimeError(
                     f"Insufficient disk space: Only {free_mb:.1f} MB available. "
-                    "At least 500 MB free disk space is required to safely render video."
+                    f"At least {req_mb} MB free disk space is required to safely render this {est_scenes}-scene video."
                 )
         except RuntimeError:
             raise
-        except Exception:
-            pass
+        except Exception as e:
+            print_warning(f"Disk space check could not determine free space: {e}")
 
         # Build a stable scene contract before any TTS or visual acquisition.
         active_script = script_text.strip()
@@ -1616,68 +1609,69 @@ Return ONLY a JSON list of scene objects matching this structure:
         if any(d <= 0 for d in scene_durations):
             raise RuntimeError("TTS produced a non-positive scene duration; render blocked.")
 
-        build_result = ShortsBuilder().build_short(
-            audio_path=mixed_audio if mixed_audio.exists() else tts_res.audio_path,
-            output_path=unsubtitled_video,
-            scene_videos=scene_videos,
-            scene_durations=scene_durations,
-            subtitles_file=None,
-            width=target_width,
-            height=target_height,
-        )
-        if not build_result or not unsubtitled_video.exists():
-            raise RuntimeError("Video compositor rejected or failed the scene mapping; render blocked.")
-
-        if progress_callback: progress_callback(88, "Applying styled subtitles and audio polish...")
-
-        # 5. Burn Custom Subtitles
-        if subtitle_style_id == "none":
-            shutil.copy(unsubtitled_video, final_video_path)
-        else:
-            if is_long:
-                style_map = {
-                    "hormozi": "FontName=Arial Black,FontSize=22,PrimaryColour=&H0000FFFF,OutlineColour=&H00000000,BorderStyle=1,Outline=2.5,Shadow=1.5,Alignment=2,MarginV=55",
-                    "cinematic": "FontName=Arial,FontSize=20,PrimaryColour=&H00FFFFFF,OutlineColour=&H00000000,BorderStyle=1,Outline=2,Shadow=1,Alignment=2,MarginV=50",
-                }
-            else:
-                style_map = {
-                    "hormozi": "FontName=Arial Black,FontSize=28,PrimaryColour=&H0000FFFF,OutlineColour=&H00000000,BorderStyle=1,Outline=3,Shadow=2,Alignment=2,MarginV=250",
-                    "cinematic": "FontName=Arial,FontSize=24,PrimaryColour=&H00FFFFFF,OutlineColour=&H00000000,BorderStyle=1,Outline=2,Shadow=1,Alignment=2,MarginV=240",
-                }
-            chosen_style = style_map.get(subtitle_style_id, style_map["hormozi"])
-
-            hook_badge = (PROJECT_ROOT / "assets" / "hook_badge.png") if (auto_viral_hook and not is_long) else None
-            if enable_classified_badge and (PROJECT_ROOT / "assets" / "classified_badge.png").exists():
-                hook_badge = PROJECT_ROOT / "assets" / "classified_badge.png"
-            sub_badge = (PROJECT_ROOT / "assets" / "like_subscribe_bell_banner.png") if auto_viral_hook else None
-
-            burn_subtitles(
-                input_video=unsubtitled_video,
-                subtitles_file=tts_res.subtitles_ass_path or tts_res.subtitles_srt_path,
-                output_video=final_video_path,
-                force_style=chosen_style,
-                hook_badge=hook_badge,
-                subscribe_badge=sub_badge,
-                duration=total_duration,
+        try:
+            build_result = ShortsBuilder().build_short(
+                audio_path=mixed_audio if mixed_audio.exists() else tts_res.audio_path,
+                output_path=unsubtitled_video,
+                scene_videos=scene_videos,
+                scene_durations=scene_durations,
+                subtitles_file=None,
+                width=target_width,
+                height=target_height,
             )
+            if not build_result or not unsubtitled_video.exists():
+                raise RuntimeError("Video compositor rejected or failed the scene mapping; render blocked.")
 
-        if final_video_path.exists() and unsubtitled_video.exists() and final_video_path != unsubtitled_video:
-            try:
-                unsubtitled_video.unlink()
-            except Exception:
-                pass
+            if progress_callback: progress_callback(88, "Applying styled subtitles and audio polish...")
 
-        if not is_long and final_video_path.exists():
-            final_media_dur = get_media_duration(final_video_path)
-            if final_media_dur >= 59.5:
+            # 5. Burn Custom Subtitles
+            if subtitle_style_id == "none":
+                shutil.copy(unsubtitled_video, final_video_path)
+            else:
+                if is_long:
+                    style_map = {
+                        "hormozi": "FontName=Arial Black,FontSize=22,PrimaryColour=&H0000FFFF,OutlineColour=&H00000000,BorderStyle=1,Outline=2.5,Shadow=1.5,Alignment=2,MarginV=55",
+                        "cinematic": "FontName=Arial,FontSize=20,PrimaryColour=&H00FFFFFF,OutlineColour=&H00000000,BorderStyle=1,Outline=2,Shadow=1,Alignment=2,MarginV=50",
+                    }
+                else:
+                    style_map = {
+                        "hormozi": "FontName=Arial Black,FontSize=28,PrimaryColour=&H0000FFFF,OutlineColour=&H00000000,BorderStyle=1,Outline=3,Shadow=2,Alignment=2,MarginV=250",
+                        "cinematic": "FontName=Arial,FontSize=24,PrimaryColour=&H00FFFFFF,OutlineColour=&H00000000,BorderStyle=1,Outline=2,Shadow=1,Alignment=2,MarginV=240",
+                    }
+                chosen_style = style_map.get(subtitle_style_id, style_map["hormozi"])
+
+                hook_badge = (PROJECT_ROOT / "assets" / "hook_badge.png") if (auto_viral_hook and not is_long) else None
+                if enable_classified_badge and (PROJECT_ROOT / "assets" / "classified_badge.png").exists():
+                    hook_badge = PROJECT_ROOT / "assets" / "classified_badge.png"
+                sub_badge = (PROJECT_ROOT / "assets" / "like_subscribe_bell_banner.png") if auto_viral_hook else None
+
+                burn_subtitles(
+                    input_video=unsubtitled_video,
+                    subtitles_file=tts_res.subtitles_ass_path or tts_res.subtitles_srt_path,
+                    output_video=final_video_path,
+                    force_style=chosen_style,
+                    hook_badge=hook_badge,
+                    subscribe_badge=sub_badge,
+                    duration=total_duration,
+                )
+
+            if not is_long and final_video_path.exists():
+                final_media_dur = get_media_duration(final_video_path)
+                if final_media_dur >= 59.5:
+                    try:
+                        final_video_path.unlink()
+                    except Exception:
+                        pass
+                    raise RuntimeError(
+                        f"Fail-Closed Duration Gate: Rendered Short duration is {final_media_dur:.2f}s, "
+                        "which violates the strict 60.0s YouTube Shorts limit! Video blocked and deleted."
+                    )
+        finally:
+            if unsubtitled_video.exists() and final_video_path != unsubtitled_video:
                 try:
-                    final_video_path.unlink()
+                    unsubtitled_video.unlink()
                 except Exception:
                     pass
-                raise RuntimeError(
-                    f"Fail-Closed Duration Gate: Rendered Short duration is {final_media_dur:.2f}s, "
-                    "which violates the strict 60.0s YouTube Shorts limit! Video blocked and deleted."
-                )
 
         if progress_callback: progress_callback(100, f"✅ {format_label} rendered successfully!")
 

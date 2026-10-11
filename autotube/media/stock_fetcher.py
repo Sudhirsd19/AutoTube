@@ -308,7 +308,10 @@ class StockFetcher:
 
             # Filter candidates that haven't been used
             fresh_hits = [h for h in hits if not self._is_media_used(str(h.get("id", "")))]
-            chosen = random.choice(fresh_hits) if fresh_hits else hits[0]
+            if not fresh_hits:
+                print_warning(f"No fresh Pixabay stock video found for '{clean_q}'. Will try fallback.")
+                return None
+            chosen = random.choice(fresh_hits)
 
             vid_id = str(chosen.get("id", ""))
             videos = chosen.get("videos", {})
