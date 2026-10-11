@@ -3890,6 +3890,7 @@
               narration: s.narration || '',
               visual_prompt: s.visual_prompt || '',
               visual_subject: s.visual_subject || '',
+              vedic_mood: s.vedic_mood || 'auto',
               custom_image_path: matchedOld ? matchedOld.path : '',
               stream_url: matchedOld ? matchedOld.url : ''
             };
@@ -3926,12 +3927,20 @@
         card.innerHTML = `
           <div class="space-y-2.5">
             <!-- HEADER -->
-            <div class="flex items-center justify-between border-b border-slate-800/80 pb-2">
+            <div class="flex items-center justify-between border-b border-slate-800/80 pb-2 gap-2">
               <span class="text-xs font-bold text-amber-300 flex items-center gap-1.5">
                 <span class="w-5 h-5 rounded-full bg-amber-500/20 text-amber-300 text-[10px] flex items-center justify-center font-bold border border-amber-500/40">${scene.scene_number}</span>
                 सीन ${scene.scene_number}
               </span>
-              <span class="text-[10px] text-slate-400 font-mono">9:16 Ken Burns</span>
+              <div class="flex items-center gap-1">
+                <select id="vedic-mood-${idx}" onchange="vedicScenesState[${idx}].vedic_mood = this.value" class="bg-slate-950 text-[10px] text-amber-300 font-semibold px-2 py-0.5 rounded border border-amber-500/30 focus:outline-none cursor-pointer">
+                  <option value="auto" ${(!scene.vedic_mood || scene.vedic_mood === 'auto') ? 'selected' : ''}>⚡ Auto (AI Mood FX)</option>
+                  <option value="war_asura" ${scene.vedic_mood === 'war_asura' ? 'selected' : ''}>🔥 War / Asura (Shake + Fiery)</option>
+                  <option value="divine_sacred" ${scene.vedic_mood === 'divine_sacred' ? 'selected' : ''}>✨ Divine (Majestic Float &amp; Aura)</option>
+                  <option value="mystery_cosmic" ${scene.vedic_mood === 'mystery_cosmic' ? 'selected' : ''}>🌌 Cosmic (Deep Drift &amp; Void)</option>
+                  <option value="epic_history" ${scene.vedic_mood === 'epic_history' ? 'selected' : ''}>🏛️ Epic Vedic (Ken Burns)</option>
+                </select>
+              </div>
             </div>
 
             <!-- NARRATION TEXT -->

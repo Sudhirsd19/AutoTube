@@ -1312,20 +1312,37 @@ Return ONLY a JSON list of scene objects matching this structure:
                         print_info(f"   🖼️ [Custom User Image] Scene {idx+1}: Using uploaded 4K image '{custom_img_p.name}' -> Ken Burns motion clip...")
                         if progress_callback:
                             progress_callback(55 + int((idx / max(1, len(scene_specs))) * 18), f"🎬 Scene {idx+1}/{len(scene_specs)}: Animating user custom image...")
-                        motion_clip = _image_to_motion_clip(
-                            image_path=custom_img_p,
-                            output_path=scene_target,
-                            duration=scene_dur,
-                            fps=30,
-                            width=target_width,
-                            height=target_height,
-                            motion_type=idx,
-                        )
+                        if is_vedic_granth_mode:
+                            from autotube.media.vedic_cinematics import render_vedic_cinematic_clip
+                            motion_clip = render_vedic_cinematic_clip(
+                                image_path=custom_img_p,
+                                output_path=scene_target,
+                                duration=scene_dur,
+                                fps=30,
+                                width=target_width,
+                                height=target_height,
+                                scene_idx=idx,
+                                total_scenes=len(scene_specs),
+                                narration=sentence,
+                                visual_prompt=str(scene.get("visual_prompt") or ""),
+                                visual_subject=str(scene.get("visual_subject") or ""),
+                                explicit_mood=str(scene.get("vedic_mood") or "auto"),
+                            )
+                        else:
+                            motion_clip = _image_to_motion_clip(
+                                image_path=custom_img_p,
+                                output_path=scene_target,
+                                duration=scene_dur,
+                                fps=30,
+                                width=target_width,
+                                height=target_height,
+                                motion_type=idx,
+                            )
                         if motion_clip and motion_clip.exists() and motion_clip.stat().st_size > 10000:
                             acquired_video = motion_clip
-                            print_success(f"   🎬 [Custom Image Motion Clip] Scene {idx+1} successfully converted to Ken Burns motion clip ({scene_dur:.1f}s)!")
+                            print_success(f"   🎬 [Custom Image Motion Clip] Scene {idx+1} successfully converted to cinematic motion clip ({scene_dur:.1f}s)!")
                         else:
-                            print_warning(f"Ken Burns conversion failed for custom image in scene {idx+1}, falling back to AI visuals.")
+                            print_warning(f"Motion clip conversion failed for custom image in scene {idx+1}, falling back to AI visuals.")
 
                 if acquired_video:
                     pass
@@ -1386,18 +1403,24 @@ Return ONLY a JSON list of scene objects matching this structure:
                         )
 
                     if ai_img and ai_img.exists() and ai_img.stat().st_size > 5000:
-                        motion_clip = _image_to_motion_clip(
+                        from autotube.media.vedic_cinematics import render_vedic_cinematic_clip
+                        motion_clip = render_vedic_cinematic_clip(
                             image_path=ai_img,
                             output_path=scene_target,
                             duration=scene_dur,
                             fps=30,
                             width=target_width,
                             height=target_height,
-                            motion_type=idx,
+                            scene_idx=idx,
+                            total_scenes=len(scene_specs),
+                            narration=sentence,
+                            visual_prompt=str(scene.get("visual_prompt") or ai_prompt),
+                            visual_subject=str(scene.get("visual_subject") or ""),
+                            explicit_mood=str(scene.get("vedic_mood") or "auto"),
                         )
                         if motion_clip and motion_clip.exists() and motion_clip.stat().st_size > 10000:
                             acquired_video = motion_clip
-                            print_success(f"   🎬 [Gita AI Motion Clip] Scene {idx+1} successfully converted to continuous Ken Burns motion clip ({scene_dur:.1f}s)!")
+                            print_success(f"   🎬 [Gita AI Motion Clip] Scene {idx+1} successfully converted to cinematic motion clip ({scene_dur:.1f}s)!")
                         else:
                             raise RuntimeError(f"Motion video conversion failed for Gita/Granth scene {idx+1}.")
                     else:
