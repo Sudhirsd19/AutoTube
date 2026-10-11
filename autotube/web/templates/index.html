@@ -873,7 +873,13 @@
               <i class="fa-solid fa-scroll text-amber-400"></i> हिंदी कथा / श्लोक स्क्रिप्ट (Hindi Script)
             </h3>
           </div>
-          <div class="flex items-center gap-2">
+          <div class="flex flex-wrap items-center gap-2">
+            <button type="button" onclick="clearVedicStudio()" id="btn-clear-vedic" class="px-3 py-1.5 rounded-lg bg-rose-950/50 hover:bg-rose-900/70 text-rose-300 border border-rose-500/30 text-xs font-bold transition flex items-center gap-1.5 shadow" title="स्क्रिप्ट और सीन्स साफ़ करके नया विषय शुरू करें">
+              <i class="fa-solid fa-trash-can"></i> 🗑️ Clear / New
+            </button>
+            <button type="button" onclick="loadVedicSampleScript()" id="btn-sample-vedic" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-amber-300 border border-slate-700 text-xs font-semibold transition flex items-center gap-1.5 shadow" title="उदाहरण स्क्रिप्ट लोड करें">
+              <i class="fa-solid fa-lightbulb text-amber-400"></i> 💡 Load Example
+            </button>
             <button type="button" onclick="optimizeVedicScript()" id="btn-optimize-vedic-script" class="px-3.5 py-1.5 rounded-lg bg-gradient-to-r from-purple-600 via-indigo-600 to-purple-700 hover:from-purple-500 hover:to-indigo-500 text-white text-xs font-bold transition flex items-center gap-1.5 shadow-md">
               <i class="fa-solid fa-wand-magic-sparkles"></i> ✨ Optimize &amp; Expand Script (AI)
             </button>
@@ -894,7 +900,7 @@
               <span>Est. Duration: <b id="vedic-est-duration" class="text-emerald-400">0s</b></span>
             </div>
           </div>
-          <textarea id="vedic-script-input" rows="5" oninput="updateVedicScriptStats()" class="w-full glass bg-slate-900/90 p-3.5 rounded-xl border border-slate-700 text-xs sm:text-sm text-white focus:outline-none focus:border-amber-400 font-sans leading-relaxed" placeholder="यहाँ कोई भी विषय (जैसे: माँ वैष्णो देवी, हनुमान जी, भगवान शिव, दानवीर कर्ण) या श्लोक/विचार टाइप करें...">क्या आप भी भविष्य की चिंता और असफलता के डर में अपना कीमती आज बर्बाद कर रहे हैं? कुरुक्षेत्र के महासंग्राम में महान धनुर्धर अर्जुन के हाथ कांप रहे थे और उनका गांडीव धनुष छूट रहा था, क्योंकि उन्हें अपनी पराजय का भय सता रहा था। तब योगेश्वर भगवान श्री कृष्ण ने कहा— हे पार्थ, तुम्हारा अधिकार केवल निष्काम कर्म पर है, उसके फलों पर कभी नहीं। जब आप परिणाम की चिंता छोड़ केवल अपनी मेहनत पर ध्यान देते हैं, तो सारा डर खत्म हो जाता है और असली प्रतिभा जागती है। खुद को कभी परिस्थितियों का गुलाम न बनने दें, बल्कि अपनी निष्ठा से अपना नया भाग्य खुद लिखें। हार केवल एक सीख है, आपकी अंतिम पहचान नहीं। क्या आप आज अपना शत-प्रतिशत कर्म करने के लिए तैयार हैं? अगर हां, तो कमेंट में 'जय श्री कृष्ण' लिखें और अभी सब्सक्राइब करें!</textarea>
+          <textarea id="vedic-script-input" rows="5" oninput="updateVedicScriptStats()" class="w-full glass bg-slate-900/90 p-3.5 rounded-xl border border-slate-700 text-xs sm:text-sm text-white focus:outline-none focus:border-amber-400 font-sans leading-relaxed" placeholder="यहाँ कोई भी विषय (जैसे: माँ वैष्णो देवी, हनुमान जी, भगवान शिव, दानवीर कर्ण) या श्लोक/कथा टाइप करें..."></textarea>
         </div>
       </div>
 
@@ -1004,7 +1010,7 @@
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label class="text-xs font-semibold text-slate-300 block mb-1">Video Title (for YouTube &amp; Archive):</label>
-              <input type="text" id="vedic-video-title" value="कुरुक्षेत्र में श्री कृष्ण की सीख: कर्म ही तुम्हारी पहचान है #Shorts" class="w-full glass bg-slate-900/90 px-3 py-2 rounded-xl border border-slate-700 text-xs text-white focus:border-amber-400 focus:outline-none">
+              <input type="text" id="vedic-video-title" value="" placeholder="उदा. माँ वैष्णो देवी की उत्पत्ति और त्रिशूल का रहस्य #Shorts" oninput="localStorage.setItem('autotube_vedic_draft_title', this.value)" class="w-full glass bg-slate-900/90 px-3 py-2 rounded-xl border border-slate-700 text-xs text-white focus:border-amber-400 focus:outline-none">
             </div>
             <div>
               <label class="text-xs font-semibold text-slate-300 block mb-1">Subtitle Style:</label>
@@ -3770,10 +3776,30 @@
     }
 
     async function initVedicStudio() {
-      updateVedicScriptStats();
-      if (vedicScenesState.length === 0) {
-        breakdownVedicScript();
+      // Restore saved user draft from localStorage if present
+      const savedScript = localStorage.getItem('autotube_vedic_draft_script');
+      const savedTitle = localStorage.getItem('autotube_vedic_draft_title');
+      const input = document.getElementById('vedic-script-input');
+      const titleInput = document.getElementById('vedic-video-title');
+      if (input && savedScript !== null && input.value !== savedScript) {
+        input.value = savedScript;
       }
+      if (titleInput && savedTitle !== null && titleInput.value !== savedTitle) {
+        titleInput.value = savedTitle;
+      }
+
+      updateVedicScriptStats();
+
+      // Only auto-breakdown if there are no scenes AND user has an existing script
+      if (vedicScenesState.length === 0) {
+        const currentText = input ? input.value.trim() : '';
+        if (currentText) {
+          breakdownVedicScript();
+        } else {
+          renderVedicStoryboard();
+        }
+      }
+
       // Check if a recently rendered video is available for review/upload
       if (!lastVedicResult) {
         try {
@@ -3799,6 +3825,35 @@
       const estEl = document.getElementById('vedic-est-duration');
       if (wcEl) wcEl.textContent = words;
       if (estEl) estEl.textContent = estSec + 's';
+      // Auto-save draft so user input is never accidentally lost
+      localStorage.setItem('autotube_vedic_draft_script', input.value);
+    }
+
+    function clearVedicStudio() {
+      const input = document.getElementById('vedic-script-input');
+      const titleInput = document.getElementById('vedic-video-title');
+      if (input) input.value = '';
+      if (titleInput) titleInput.value = '';
+      localStorage.removeItem('autotube_vedic_draft_script');
+      localStorage.removeItem('autotube_vedic_draft_title');
+      vedicScenesState = [];
+      updateVedicScriptStats();
+      renderVedicStoryboard();
+      showToast('🗑️ Vedic Studio साफ़ कर दिया गया। अब नया विषय दर्ज करें!');
+    }
+
+    function loadVedicSampleScript() {
+      const sample = "क्या आप भी भविष्य की चिंता और असफलता के डर में अपना कीमती आज बर्बाद कर रहे हैं? कुरुक्षेत्र के महासंग्राम में महान धनुर्धर अर्जुन के हाथ कांप रहे थे और उनका गांडीव धनुष छूट रहा था, क्योंकि उन्हें अपनी पराजय का भय सता रहा था। तब योगेश्वर भगवान श्री कृष्ण ने कहा— हे पार्थ, तुम्हारा अधिकार केवल निष्काम कर्म पर है, उसके फलों पर कभी नहीं। जब आप परिणाम की चिंता छोड़ केवल अपनी मेहनत पर ध्यान देते हैं, तो सारा डर खत्म हो जाता है और असली प्रतिभा जागती है। खुद को कभी परिस्थितियों का गुलाम न बनने दें, बल्कि अपनी निष्ठा से अपना नया भाग्य खुद लिखें। हार केवल एक सीख है, आपकी अंतिम पहचान नहीं। क्या आप आज अपना शत-प्रतिशत कर्म करने के लिए तैयार हैं? अगर हां, तो कमेंट में 'जय श्री कृष्ण' लिखें और अभी सब्सक्राइब करें!";
+      const title = "कुरुक्षेत्र में श्री कृष्ण की सीख: कर्म ही तुम्हारी पहचान है #Shorts";
+      const input = document.getElementById('vedic-script-input');
+      const titleInput = document.getElementById('vedic-video-title');
+      if (input) input.value = sample;
+      if (titleInput) titleInput.value = title;
+      localStorage.setItem('autotube_vedic_draft_script', sample);
+      localStorage.setItem('autotube_vedic_draft_title', title);
+      updateVedicScriptStats();
+      breakdownVedicScript();
+      showToast('💡 उदाहरण स्क्रिप्ट और स्टोरीबोर्ड लोड किया गया!');
     }
 
     async function optimizeVedicScript() {
@@ -3919,6 +3974,24 @@
       if (badge) badge.textContent = `${vedicScenesState.length} Scenes Ready`;
 
       container.innerHTML = '';
+
+      if (vedicScenesState.length === 0) {
+        if (badge) badge.textContent = '0 Scenes Ready';
+        container.innerHTML = `
+          <div class="col-span-full py-10 px-4 text-center border-2 border-dashed border-slate-800 rounded-2xl bg-slate-950/40 space-y-2.5">
+            <div class="w-12 h-12 rounded-full bg-amber-500/10 text-amber-400 mx-auto flex items-center justify-center text-xl border border-amber-500/20">
+              <i class="fa-solid fa-feather-pointed"></i>
+            </div>
+            <div class="text-sm font-bold text-slate-200">स्टोरीबोर्ड खाली है</div>
+            <div class="text-xs text-slate-400 max-w-md mx-auto leading-relaxed">
+              ऊपर कोई विषय (जैसे: <span class="text-amber-300 font-semibold">माँ वैष्णो देवी, हनुमान जी, भगवान शिव</span>) या अपनी स्क्रिप्ट लिखें और 
+              <span class="text-purple-300 font-semibold">✨ Optimize &amp; Expand Script</span> या <span class="text-orange-400 font-semibold">⚡ Break Script into Scenes</span> पर क्लिक करें।
+            </div>
+          </div>
+        `;
+        return;
+      }
+
       vedicScenesState.forEach((scene, idx) => {
         const hasImg = Boolean(scene.custom_image_path && scene.stream_url);
         const card = document.createElement('div');
