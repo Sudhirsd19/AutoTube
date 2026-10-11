@@ -416,8 +416,8 @@ class AutoPilot:
                 if not is_landscape:
                     tts_res = self.tts.clamp_duration(
                         tts_res=tts_res,
-                        max_seconds=56.0,
-                        target_seconds=50.0,
+                        max_seconds=58.5,
+                        target_seconds=56.5,
                         width=v_w,
                         height=v_h,
                     )

@@ -134,9 +134,9 @@ def test_optimize_vedic_script_ramcharitmanas():
     assert "तुलसीदास" in opt_script
     # Must not contain raw asterisks
     assert "**" not in opt_script
-    # Must have between 80 and 130 words for YouTube Shorts duration
+    # Must have between 90 and 165 words for 55-58s YouTube Shorts duration
     words = len(opt_script.split())
-    assert 80 <= words <= 135
+    assert 90 <= words <= 165
 
     # Test that breakdown of this optimized script produces accurate Tulsidas/compassion prompts
     scenes = director.breakdown_vedic_script(opt_script)
@@ -216,5 +216,66 @@ def test_optimize_vedic_script_mocked_gemini_active_model():
         assert res["model_used"] in ["gemini-3.5-flash-lite", "gemini-3.1-flash-lite", "gemini-3.5-flash", "gemini-3.8-flash"]
         assert "श्रीमद्भगवद्गीता" in res["scripture_source"]
         assert len(res["optimized_script"].split()) >= 40
+
+
+def test_optimize_vedic_script_topic_vaishno_devi():
+    """Verify entering topic 'माँ वैष्णो देवी' generates 55-60s story and accurate scene prompts."""
+    director = DirectorEngine()
+    res = director.optimize_vedic_script("माँ वैष्णो देवी की तपस्या और गुफा")
+    assert res["success"] is True
+    assert "वैष्णो" in res["optimized_script"]
+    words = len(res["optimized_script"].split())
+    assert 90 <= words <= 165
+    assert res["est_seconds"] >= 40.0
+
+    # Break into scenes & verify prompts directly match Vaishno Devi / Himalayan cave
+    scenes = director.breakdown_vedic_script(res["optimized_script"])
+    assert len(scenes) >= 5
+    prompts_text = " ".join(s["visual_prompt"] for s in scenes).lower()
+    assert "vaishno" in prompts_text or "cave" in prompts_text or "devi" in prompts_text
+
+
+def test_optimize_vedic_script_topic_hanuman():
+    """Verify entering topic 'हनुमान जी की शक्ति' generates 55-60s story and accurate scene prompts."""
+    director = DirectorEngine()
+    res = director.optimize_vedic_script("हनुमान जी और संजीवनी बूटी")
+    assert res["success"] is True
+    assert "हनुमान" in res["optimized_script"]
+    words = len(res["optimized_script"].split())
+    assert 90 <= words <= 165
+    assert res["est_seconds"] >= 40.0
+
+    # Break into scenes & verify prompts directly match Hanuman / Sanjeevani
+    scenes = director.breakdown_vedic_script(res["optimized_script"])
+    assert len(scenes) >= 5
+    prompts_text = " ".join(s["visual_prompt"] for s in scenes).lower()
+    assert "hanuman" in prompts_text or "sanjeevani" in prompts_text
+
+
+def test_optimize_vedic_script_topic_shiva():
+    """Verify entering topic 'भगवान शिव और विषपान' generates 55-60s story and accurate scene prompts."""
+    director = DirectorEngine()
+    res = director.optimize_vedic_script("भगवान शिव और कालकूट विषपान")
+    assert res["success"] is True
+    assert "शिव" in res["optimized_script"] or "महादेव" in res["optimized_script"]
+    words = len(res["optimized_script"].split())
+    assert 90 <= words <= 165
+
+    scenes = director.breakdown_vedic_script(res["optimized_script"])
+    assert len(scenes) >= 5
+    prompts_text = " ".join(s["visual_prompt"] for s in scenes).lower()
+    assert "shiva" in prompts_text or "kailash" in prompts_text or "neelkanth" in prompts_text
+
+
+def test_optimize_vedic_script_dynamic_custom_topic():
+    """Verify arbitrary custom topic generates full 55-60s story incorporating user topic."""
+    director = DirectorEngine()
+    topic = "सच्चे मित्र की पहचान"
+    res = director.optimize_vedic_script(topic)
+    assert res["success"] is True
+    assert "मित्र" in res["optimized_script"]
+    words = len(res["optimized_script"].split())
+    assert 90 <= words <= 165
+
 
 

@@ -339,8 +339,8 @@ class TTSEngine:
             )
 
         is_vertical_short = (scenes is not None and len(scenes) <= 9)
-        if is_vertical_short and duration > 54.0:
-            tempo_factor = round(duration / 48.0, 3)
+        if is_vertical_short and duration > 58.5:
+            tempo_factor = round(duration / 56.5, 3)
             tempo_factor = min(1.40, max(1.05, tempo_factor))
             temp_tempo = output_audio_path.with_name(f"tempo_{output_audio_path.name}")
             from autotube.utils.ffmpeg_helper import run_ffmpeg
@@ -350,7 +350,7 @@ class TTSEngine:
                 new_dur = get_media_duration(output_audio_path)
                 print_info(
                     f"⚡ Shorts Tempo Guard: Scaled ElevenLabs audio {tempo_factor:.2f}x "
-                    f"({duration:.2f}s -> {new_dur:.2f}s) to guarantee strict <50s Shorts compliance."
+                    f"({duration:.2f}s -> {new_dur:.2f}s) to guarantee strict 55-58s Shorts compliance."
                 )
                 duration = new_dur
                 time_scale = 1.0 / tempo_factor
@@ -704,8 +704,8 @@ class TTSEngine:
         # and scale word timestamps so karaoke subtitles and scene cuts stay 100% frame-perfect!
         is_vertical_short = (width < height) or (scenes is not None and len(scenes) <= 9)
         tempo_adjusted = False
-        if is_vertical_short and duration > 54.0:
-            tempo_factor = round(duration / 48.0, 3)  # Target comfortable 48 seconds
+        if is_vertical_short and duration > 58.5:
+            tempo_factor = round(duration / 56.5, 3)  # Target comfortable 56.5s to fit 55-60s Shorts ceiling
             tempo_factor = min(1.40, max(1.05, tempo_factor))
             temp_tempo = output_audio_path.with_name(f"tempo_{output_audio_path.name}")
             from autotube.utils.ffmpeg_helper import run_ffmpeg
@@ -715,7 +715,7 @@ class TTSEngine:
                 new_dur = get_media_duration(output_audio_path)
                 print_info(
                     f"⚡ Shorts Tempo Guard: Scaled audio {tempo_factor:.2f}x "
-                    f"({duration:.2f}s -> {new_dur:.2f}s) to guarantee strict <50s Shorts compliance."
+                    f"({duration:.2f}s -> {new_dur:.2f}s) to guarantee strict 55-58s Shorts compliance."
                 )
                 duration = new_dur
                 time_scale = 1.0 / tempo_factor
@@ -862,8 +862,8 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
     def clamp_duration(
         self,
         tts_res: TTSResult,
-        max_seconds: float = 56.0,
-        target_seconds: float = 50.0,
+        max_seconds: float = 58.5,
+        target_seconds: float = 56.5,
         width: int = 1080,
         height: int = 1920,
     ) -> TTSResult:

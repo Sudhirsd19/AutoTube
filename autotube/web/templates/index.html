@@ -888,13 +888,13 @@
 
         <div class="space-y-3">
           <div class="flex items-center justify-between text-xs text-slate-400">
-            <label class="font-semibold text-slate-300">Script Narration (Revised Devanagari):</label>
+            <label class="font-semibold text-slate-300">Script Narration (55-60s Shorts Target • 130-145 शब्द):</label>
             <div class="flex items-center gap-3">
               <span>Words: <b id="vedic-word-count" class="text-amber-400">0</b></span>
               <span>Est. Duration: <b id="vedic-est-duration" class="text-emerald-400">0s</b></span>
             </div>
           </div>
-          <textarea id="vedic-script-input" rows="5" oninput="updateVedicScriptStats()" class="w-full glass bg-slate-900/90 p-3.5 rounded-xl border border-slate-700 text-xs sm:text-sm text-white focus:outline-none focus:border-amber-400 font-sans leading-relaxed">क्या आप भी भविष्य की चिंता में अपना आज बर्बाद कर रहे हैं? कुरुक्षेत्र में अर्जुन के हाथ कांप रहे थे, क्योंकि उन्हें अपनी हार का डर था। तब भगवान कृष्ण ने कहा— पार्थ, तुम्हारा अधिकार केवल कर्म पर है, फल पर नहीं। जब आप परिणाम का तनाव छोड़ते हैं, तो डर खत्म होता है और असली फोकस शुरू होता है। खुद को गिरने न दें, बल्कि अपनी मेहनत से अपना भाग्य खुद लिखें। हार केवल एक घटना है, आपकी पहचान नहीं। क्या आप आज अपना शत-प्रतिशत देने के लिए तैयार हैं? अगर हां, तो अभी सब्सक्राइब करें और कमेंट में जय श्री कृष्ण लिखें!</textarea>
+          <textarea id="vedic-script-input" rows="5" oninput="updateVedicScriptStats()" class="w-full glass bg-slate-900/90 p-3.5 rounded-xl border border-slate-700 text-xs sm:text-sm text-white focus:outline-none focus:border-amber-400 font-sans leading-relaxed" placeholder="यहाँ कोई भी विषय (जैसे: माँ वैष्णो देवी, हनुमान जी, भगवान शिव, दानवीर कर्ण) या श्लोक/विचार टाइप करें...">क्या आप भी भविष्य की चिंता और असफलता के डर में अपना कीमती आज बर्बाद कर रहे हैं? कुरुक्षेत्र के महासंग्राम में महान धनुर्धर अर्जुन के हाथ कांप रहे थे और उनका गांडीव धनुष छूट रहा था, क्योंकि उन्हें अपनी पराजय का भय सता रहा था। तब योगेश्वर भगवान श्री कृष्ण ने कहा— हे पार्थ, तुम्हारा अधिकार केवल निष्काम कर्म पर है, उसके फलों पर कभी नहीं। जब आप परिणाम की चिंता छोड़ केवल अपनी मेहनत पर ध्यान देते हैं, तो सारा डर खत्म हो जाता है और असली प्रतिभा जागती है। खुद को कभी परिस्थितियों का गुलाम न बनने दें, बल्कि अपनी निष्ठा से अपना नया भाग्य खुद लिखें। हार केवल एक सीख है, आपकी अंतिम पहचान नहीं। क्या आप आज अपना शत-प्रतिशत कर्म करने के लिए तैयार हैं? अगर हां, तो कमेंट में 'जय श्री कृष्ण' लिखें और अभी सब्सक्राइब करें!</textarea>
         </div>
       </div>
 
@@ -3794,7 +3794,7 @@
       if (!input) return;
       const text = input.value.trim();
       const words = text ? text.split(/\s+/).length : 0;
-      const estSec = Math.round(words / 2.6);
+      const estSec = Math.round(words / 2.35);
       const wcEl = document.getElementById('vedic-word-count');
       const estEl = document.getElementById('vedic-est-duration');
       if (wcEl) wcEl.textContent = words;
@@ -3807,16 +3807,16 @@
       if (!input) return;
       const rawText = input.value.trim();
       if (!rawText) {
-        showToast('कृपया पहले कोई श्लोक, चौपाई या विचार पेस्ट करें!', true);
+        showToast('कृपया पहले कोई विषय, श्लोक, चौपाई या विचार टाइप करें!', true);
         return;
       }
 
       if (btn) {
         btn.disabled = true;
-        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Optimizing with AI...';
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Generating 55-60s Story with AI...';
       }
 
-      showToast('✨ AI स्क्रिप्ट को 45-50s के लिए ऑप्टिमाइज़ कर रहा है...');
+      showToast('✨ AI आपके विषय पर 55-60s की उच्च-रिटेंशन स्क्रिप्ट तैयार कर रहा है...');
 
       try {
         const res = await fetch('/api/vedic/optimize_script', {
