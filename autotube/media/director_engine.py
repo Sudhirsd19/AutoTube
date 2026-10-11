@@ -1288,20 +1288,10 @@ Return ONLY a JSON list of scene objects matching this structure:
         # Studio motion scenes require actual frame-level semantic validation.
         multi_agg.visual_quality_gate.strict = True
 
-        # Check if topic/script represents Gita / Granth / Spiritual content
-        gita_granth_keywords = (
-            "gita", "गीता", "krishna", "कृष्ण", "arjuna", "अर्जुन", "karma", "कर्म",
-            "kurukshetra", "कुरुक्षेत्र", "chanakya", "चाणक्य", "upanishad", "उपनिषद",
-            "granth", "ग्रंथ", "shloka", "श्लोक", "bhagwat", "bhagavad", "vedic",
-            "vedas", "वेद", "ramayan", "रामायण", "mahabharat", "महाभारत", "sanatan",
-            "सनातन", "adhyatmik", "spiritual", "vishnu", "विष्णु", "bhagavan", "भगवान",
-            "dharma", "धर्म", "geeta"
-        )
-        scene_meta_str = " ".join(f"{s.get('visual_subject', '')} {s.get('visual_description', '')}" for s in scene_specs).lower()
-        combined_text = f"{title} {script_text} {' '.join(str(s.get('narration', '')) for s in scene_specs)} {scene_meta_str}".lower()
-        is_gita_granth_topic = any(k in combined_text for k in gita_granth_keywords)
-        if is_gita_granth_topic:
-            print_info("🕉️ [Gita/Granth Engine] Detected scripture/divine content: using direct 4K/8K photorealistic AI visuals + continuous motion clips.")
+        # Check if caller explicitly requested the dedicated Vedic / Granth Studio visual pipeline
+        is_vedic_granth_mode = visual_mode in ("vedic_granth_ai", "vedic_storyboard", "vedic_ai")
+        if is_vedic_granth_mode:
+            print_info("🕉️ [Vedic & Granth Engine] Dedicated Vedic visual pipeline active: using 4K/8K photorealistic AI visuals / custom images + continuous Ken Burns motion clips.")
 
         from autotube.media.visual_waterfall import _image_to_motion_clip
         scene_durations = list(tts_res.scene_durations or [])
@@ -1339,7 +1329,7 @@ Return ONLY a JSON list of scene objects matching this structure:
 
                 if acquired_video:
                     pass
-                elif is_gita_granth_topic:
+                elif is_vedic_granth_mode:
                     if progress_callback:
                         progress_callback(55 + int((idx / max(1, len(scene_specs))) * 18), f"🎨 Scene {idx+1}/{len(scene_specs)}: Generating 4K/8K divine AI photorealistic visual...")
 
