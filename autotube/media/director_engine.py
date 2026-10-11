@@ -439,6 +439,11 @@ Output STRICT JSON with these keys:
             (("shanti devi", "शांति देवी", "punarjanam", "पुनर्जन्म", "rebirth", "child", "bachhi", "बच्ची"), "vintage 1930s young girl thinking portrait"),
             (("crowd", "bheed", "भीड़", "station", "train", "ट्रेन", "रेल"), "vintage crowd busy street 1930s"),
             (("police", "police station", "fir", "detective", "khooni", "crime scene", "murder case", "khoon", "हत्या"), "vintage detective crime investigation papers"),
+            (("vastu", "वास्तु", "shastra", "शास्त्र", "architecture", "वास्तुकला", "energy grid", "ऊर्जा"), "ancient temple sacred geometry architecture"),
+            (("scientist", "वैज्ञानिक", "research", "shodh", "शोध", "jaanch", "जांच", "khulaasa", "खुलासा"), "archaeologists examining ancient artifacts"),
+            (("vibration", "कंपन", "frequency", "dhwani", "ध्वनि", "tarang", "तरंग"), "ancient temple stone carvings acoustics"),
+            (("raja", "राजा", "samrat", "सम्राट", "maharaja", "महाराजा", "empire", "rajya", "राज्य", "chola", "maurya", "gupta"), "ancient indian royal palace throne"),
+            (("monolithic", "single rock", "pahad", "पहाड़", "chattan", "चट्टान", "tarasha", "तराशा"), "ancient monolithic rock cut temple"),
             (("alien", "ufo", "roswell", "एलियन"), "flying saucer ufo crash site vintage"),
             (("mars", "मंगल", "लाल ग्रह"), "mars planet red surface space"),
         ]
@@ -469,26 +474,31 @@ Output STRICT JSON with these keys:
             return f"{' '.join(eng_words[:2])} cinematic"
 
         # Intelligent topic-genre fallbacks when text is purely Devanagari Hindi
-        is_ancient_history = any(k in t_lower or k in s_lower for k in ("mahabharat", "महाभारत", "ramayan", "रामायण", "kurukshetra", "कुरुक्षेत्र", "temple", "mandir", "मंदिर", "itihas", "इतिहास", "prachin", "प्राचीन", "purana", "पुराण", "dwarka", "द्वारका", "kailasa", "कैलाश", "stone", "ruins", "archaeol"))
-        is_space_genre = any(k in t_lower or k in s_lower for k in ("space", "antariksh", "अंतरिक्ष", "black hole", "galaxy", "universe", "planet", "stars", "cosmos", "solar system", "brahmand", "ब्रह्मांड"))
+        is_space_genre = any(k in t_lower or k in s_lower for k in ("space", "antariksh", "अंतरिक्ष", "black hole", "galaxy", "universe", "planet", "stars", "cosmos", "solar system", "brahmand", "ब्रह्मांड", "telescope", "beacon", "singularity"))
+        is_ancient_history = (not is_space_genre) and any(k in t_lower or k in s_lower for k in (
+            "mahabharat", "महाभारत", "ramayan", "रामायण", "kurukshetra", "कुरुक्षेत्र", "temple", "mandir", "मंदिर",
+            "itihas", "इतिहास", "prachin", "प्राचीन", "purana", "पुराण", "dwarka", "द्वारका", "kailasa", "कैलाश",
+            "archaeol", "vastu", "वास्तु", "shastra", "शास्त्र", "ashoka", "अशोक", "harappa", "हड़प्पा", "vedic", "वैदिक", "ved", "वेद", "bharat", "भारत"
+        ))
         is_ocean_genre = any(k in t_lower or k in s_lower for k in ("ocean", "samundar", "समुद्र", "sea", "trench", "underwater", "abyss"))
         is_mind_genre = any(k in t_lower or k in s_lower for k in ("brain", "dimag", "दिमाग", "psychology", "mind", "soch"))
 
-        if is_ancient_history:
-            genre_fallbacks = [
-                "ancient stone temple ruins dramatic",
-                "ancient archaeological excavation ruins",
-                "ancient ruins golden hour dramatic",
-                "ancient battlefield warriors dramatic",
-                "ancient sacred manuscript scroll",
-            ]
-            return genre_fallbacks[scene_idx % len(genre_fallbacks)]
         if is_space_genre:
             genre_fallbacks = [
                 "deep space galaxy cosmos",
                 "planet earth from space",
                 "cosmic stars void cinematic",
                 "deep space nebula glowing",
+            ]
+            return genre_fallbacks[scene_idx % len(genre_fallbacks)]
+        if is_ancient_history:
+            genre_fallbacks = [
+                "ancient stone temple ruins dramatic",
+                "ancient archaeological excavation ruins",
+                "ancient temple stone carvings intricate",
+                "ancient battlefield warriors dramatic",
+                "ancient sacred manuscript scroll",
+                "ancient indian temple golden hour sunset",
             ]
             return genre_fallbacks[scene_idx % len(genre_fallbacks)]
         if is_ocean_genre:
@@ -647,7 +657,24 @@ Output STRICT JSON with these keys:
             if candidates and candidate_script == normalized_script:
                 return candidates[:max_scenes]
 
-        return self._split_script_into_scenes(script_text, max_scenes)
+        split_scenes = self._split_script_into_scenes(script_text, max_scenes)
+        for idx, scene in enumerate(split_scenes):
+            if candidates and idx < len(candidates):
+                c = candidates[idx]
+                scene["visual_subject"] = c.get("visual_subject", "")
+                scene["visual_description"] = c.get("visual_description", "")
+                scene["search_keywords"] = c.get("search_keywords", [])
+                scene["visual_action"] = c.get("visual_action", "")
+                scene["visual_environment"] = c.get("visual_environment", "")
+                scene["must_show"] = c.get("must_show", [])
+                scene["avoid"] = c.get("avoid", [])
+
+            if not scene.get("visual_subject"):
+                q = self._extract_visual_search_query(scene["narration"], title, idx)
+                scene["visual_subject"] = q
+                scene["search_keywords"] = [q]
+
+        return split_scenes
 
     def _scene_plan_from_spec(self, scene: Dict[str, Any]) -> Optional[Dict[str, Any]]:
         """Convert the preserved scene contract into MultiStockAggregator's scene-plan schema."""
@@ -1067,10 +1094,19 @@ Output STRICT JSON with these keys:
                 if not acquired_video and visual_mode in ("multi_cinematic", "multi_best", "auto", "hybrid", "stock"):
                     # Safe cinematic stock motion video fallback matching story genre
                     try:
-                        is_hist = any(k in sentence.lower() or k in title.lower() for k in ("mahabharat", "महाभारत", "ramayan", "रामायण", "kurukshetra", "कुरुक्षेत्र", "temple", "mandir", "मंदिर", "itihas", "इतिहास", "prachin", "प्राचीन", "purana", "पुराण", "dwarka", "द्वारका", "archaeol"))
-                        is_space = any(k in sentence.lower() or k in title.lower() for k in ("space", "antariksh", "अंतरिक्ष", "black hole", "galaxy", "universe", "planet", "stars", "cosmos"))
+                        is_space = any(k in sentence.lower() or k in title.lower() for k in ("space", "antariksh", "अंतरिक्ष", "black hole", "galaxy", "universe", "planet", "stars", "cosmos", "telescope", "beacon", "singularity", "pulsar"))
+                        is_hist = (not is_space) and any(k in sentence.lower() or k in title.lower() for k in ("mahabharat", "महाभारत", "ramayan", "रामायण", "kurukshetra", "कुरुक्षेत्र", "temple", "mandir", "मंदिर", "itihas", "इतिहास", "prachin", "प्राचीन", "purana", "पुराण", "dwarka", "द्वारका", "archaeol"))
 
-                        if is_hist:
+                        if is_space:
+                            fallback_pool = [
+                                "deep space stars cosmos nebula",
+                                "black hole event horizon cosmos",
+                                "spinning planet universe galaxy",
+                                "telescope observatory starry night",
+                                "cosmic dust interstellar space",
+                                "glowing galaxy stars rotation",
+                            ]
+                        elif is_hist:
                             fallback_pool = [
                                 "ancient stone temple ruins dramatic",
                                 "mysterious hindu temple architecture",
@@ -1079,15 +1115,6 @@ Output STRICT JSON with these keys:
                                 "epic battlefield landscape dramatic mist",
                                 "ancient artifacts excavation archaeology",
                                 "sacred river ghats ancient india",
-                            ]
-                        elif is_space:
-                            fallback_pool = [
-                                "deep space stars cosmos nebula",
-                                "black hole event horizon cosmos",
-                                "spinning planet universe galaxy",
-                                "telescope observatory starry night",
-                                "cosmic dust interstellar space",
-                                "glowing galaxy stars rotation",
                             ]
                         else:
                             fallback_pool = [

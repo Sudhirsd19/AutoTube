@@ -567,7 +567,10 @@ class StockFetcher:
 
         # 2. Context-Aware Motion Video Fallbacks (Strictly matched to subject domain!)
         context_lower = context_text.lower()
-        if any(k in context_lower for k in ("temple", "mandir", "kailasa", "ellora", "stone", "prachin", "ruins", "monument", "ancient", "bharat", "vedic")):
+        is_space = any(k in context_lower for k in ("space", "universe", "galaxy", "cosmos", "stars", "planet", "black hole", "singularity", "nebula", "astronaut", "telescope", "orbit", "alien", "pulsar", "beacon"))
+        if is_space:
+            motion_fallbacks = ["space galaxy stars", "deep space galaxy", "earth rotating in space", "cosmic nebula colorful", "black hole space"]
+        elif any(k in context_lower for k in ("temple", "mandir", "kailasa", "ellora", "prachin", "monument", "mahabharat", "ramayan", "dwarka", "vedic")) or (not is_space and any(k in context_lower for k in ("stone", "ruins", "ancient", "bharat"))):
             motion_fallbacks = ["ancient indian temple architecture", "ancient stone temple carvings", "hindu temple drone aerial", "ancient archaeological ruins"]
         elif any(k in context_lower for k in ("animal", "creature", "bird", "falcon", "cheetah", "predator", "wildlife", "beast", "shrimp", "crocodile")):
             motion_fallbacks = ["wild animal in nature", "peregrine falcon flying sky", "wild cheetah sprinting", "wild predator close up"]

@@ -91,10 +91,12 @@ MUST AVOID: {json.dumps(plan.get("avoid", []), ensure_ascii=False)}
 Judge ONLY the supplied video frames or the supplied still image.
 Guidelines:
 - Visuals MUST genuinely depict or directly support the scene narration and TARGET SUBJECT.
+- If narration is in Hindi or non-English, understand the spoken sentence in context with TARGET SUBJECT.
 - Check MUST SHOW and MUST AVOID elements reasonably:
   * For history, mythology, temple, or archaeology topics: footage of ancient stone ruins, temple architecture, archaeological excavations, ancient artifacts, or historical landscapes ARE VALID ACCEPTABLE EVIDENCE for the subject.
+  * DO NOT accept modern gadgets, doorbells, modern yoga studios, modern city streets, or outer space footage for ancient history/temple narration!
   * Do NOT fail footage if one optional secondary element from MUST SHOW is absent, as long as the core TARGET SUBJECT is visually represented.
-- Check MUST AVOID items strictly: if modern offices, smartphones, irrelevant talking faces, or modern cartoons appear, add them to 'violations'.
+- Check MUST AVOID items strictly: if modern offices, smartphones, irrelevant talking faces, doorbells, or modern cartoons appear, add them to 'violations'.
 - DO NOT accept completely unrelated stock footage (e.g., modern cities/offices/talking faces when narration discusses space, biology, physics, or ancient temples).
 - Set accepted to true when visuals have strong semantic bearing on the spoken words.
 Return JSON only:

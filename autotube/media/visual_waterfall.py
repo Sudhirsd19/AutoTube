@@ -226,6 +226,7 @@ def acquire_scene_visuals_waterfall(
     # -------------------------------------------------------------
     print_info("🎬 [Primary Engine] Acquiring Multi-Source AI Best Match Visual Assets (Mixkit, Coverr, Pexels, Pixabay)...")
     is_portrait = (orientation == "portrait")
+    is_motion_preferred = is_portrait
     try:
         from autotube.media.multi_stock_aggregator import MultiStockAggregator
         multi_agg = MultiStockAggregator()
@@ -237,19 +238,40 @@ def acquire_scene_visuals_waterfall(
         topic = getattr(script, "topic", "scene")
 
         target_scenes = scenes[:max_scenes] if scenes else []
+        queries = getattr(script, "visual_keywords", []) or [topic]
         if target_scenes:
             for idx, s in enumerate(target_scenes):
                 sentence = f"{getattr(s, 'narration', '')} {getattr(s, 'visual_subject', '')}".strip()
+                v_subj = str(getattr(s, "visual_subject", "") or getattr(s, "subject", "") or "").strip()
+                v_desc = str(getattr(s, "visual_description", "") or getattr(s, "description", "") or "").strip()
+                v_keys = [str(k).strip() for k in (getattr(s, "search_keywords", []) or getattr(s, "visual_keywords", []) or []) if str(k).strip()]
+                if v_subj and not v_keys:
+                    v_keys = [v_subj]
+                m_show = [str(m).strip() for m in getattr(s, "must_show", []) if str(m).strip()]
+                if v_subj and v_subj not in m_show:
+                    m_show.insert(0, v_subj)
+                if v_desc and v_desc not in m_show:
+                    m_show.append(v_desc)
+
+                s_plan = {
+                    "subject": v_subj,
+                    "action": str(getattr(s, "visual_action", "") or getattr(s, "action", "") or "").strip(),
+                    "environment": str(getattr(s, "visual_environment", "") or getattr(s, "environment", "") or "").strip(),
+                    "must_show": m_show,
+                    "avoid": [str(a).strip() for a in getattr(s, "avoid", []) if str(a).strip()],
+                    "search_queries": v_keys[:4],
+                }
+
                 asset = multi_agg.get_best_scene_asset(
                     scene_text=sentence or topic,
                     title=topic,
                     scene_index=idx,
                     orientation=orientation,
+                    scene_plan=s_plan if (v_subj or v_keys) else None,
                     allow_ai_fallback=False,
                 )
                 scene_assets.append(asset)
         else:
-            queries = getattr(script, "visual_keywords", []) or [topic]
             for idx, q in enumerate(queries[:max_scenes]):
                 asset = multi_agg.get_best_scene_asset(
                     scene_text=q,
@@ -261,44 +283,77 @@ def acquire_scene_visuals_waterfall(
                 scene_assets.append(asset)
 
         expected_count = len(target_scenes) if target_scenes else len(queries[:max_scenes])
-        valid_assets = [
-            a for a in scene_assets
-            if a is not None and a.exists() and a.stat().st_size > 5000 and (
-                not is_portrait or a.suffix.lower() in {".mp4", ".mov", ".webm", ".mkv"}
-            )
-        ]
-        has_duplicates = len(set(valid_assets)) != len(valid_assets)
-        if len(valid_assets) == expected_count and not has_duplicates:
-            print_success(f"🎬 Acquired all {len(valid_assets)} synchronized Multi-Source AI scene visual assets (100% unique motion footage)!")
-            return valid_assets
-        else:
-            reason = "duplicate footage detected" if has_duplicates else f"partial motion assets ({len(valid_assets)}/{expected_count})"
-            print_warning(f"⚠️ MultiStockAggregator: {reason}. Falling back to secondary motion fetcher...")
-    except Exception as multi_err:
-        print_warning(f"MultiStockAggregator fallback notice: {multi_err}")
+        used_paths: Set[Path] = set()
+        slot_assets: List[Optional[Path]] = []
+        for idx in range(expected_count):
+            cand = scene_assets[idx] if idx < len(scene_assets) else None
+            if (
+                cand is not None
+                and cand.exists()
+                and cand.stat().st_size > 5000
+                and (not is_portrait or cand.suffix.lower() in {".mp4", ".mov", ".webm", ".mkv"})
+                and cand not in used_paths
+            ):
+                used_paths.add(cand)
+                slot_assets.append(cand)
+            else:
+                slot_assets.append(None)
 
-    # Fallback to StockFetcher (Motion footage required for portrait Shorts)
-    stock_fetcher = StockFetcher()
-    is_motion_preferred = is_portrait
-    if scenes:
-        scene_assets = stock_fetcher.fetch_scene_visual_assets(
-            scenes=scenes[:max_scenes],
-            output_dir=output_dir,
-            orientation=orientation,
-            require_video=is_motion_preferred,
-        )
-    else:
-        queries = getattr(script, "visual_keywords", []) or [getattr(script, "topic", "scene")]
-        scene_assets = [
-            stock_fetcher.fetch_best_visual_for_scene(
-                subject=q,
-                narration=getattr(script, "narration", None),
+        missing_indices = [i for i, a in enumerate(slot_assets) if a is None]
+        if not missing_indices:
+            print_success(f"🎬 Acquired all {expected_count} synchronized Multi-Source AI scene visual assets (100% unique motion footage)!")
+            return [Path(a) for a in slot_assets]
+
+        print_warning(f"⚠️ MultiStockAggregator secured {expected_count - len(missing_indices)}/{expected_count} scenes. Filling missing {len(missing_indices)} scene(s) via secondary motion fetcher...")
+        stock_fetcher = StockFetcher()
+        for missing_idx in missing_indices:
+            missing_scene = target_scenes[missing_idx] if (target_scenes and missing_idx < len(target_scenes)) else None
+            q = (queries[missing_idx] if (queries and missing_idx < len(queries)) else topic)
+            narr = getattr(missing_scene, "narration", None) if missing_scene else getattr(script, "narration", None)
+            subj = getattr(missing_scene, "visual_subject", q) if missing_scene else q
+
+            fetched = stock_fetcher.fetch_best_visual_for_scene(
+                subject=subj,
+                narration=narr,
                 output_dir=output_dir,
                 orientation=orientation,
                 require_video=is_motion_preferred,
             )
-            for q in queries[:max_scenes]
-        ]
+            if fetched and fetched.exists() and fetched not in used_paths:
+                used_paths.add(fetched)
+                slot_assets[missing_idx] = fetched
+
+        if all(a is not None for a in slot_assets):
+            scene_assets = [Path(a) for a in slot_assets]
+            print_success(f"🎬 All {expected_count} scene visual assets secured across primary + secondary fetchers!")
+        else:
+            scene_assets = [Path(a) for a in slot_assets if a is not None]
+    except Exception as multi_err:
+        print_warning(f"MultiStockAggregator fallback notice: {multi_err}")
+
+    # Fallback to StockFetcher if full set still not secured
+    is_motion_preferred = is_portrait
+    if not scene_assets or len(scene_assets) < expected_count:
+        stock_fetcher = StockFetcher()
+        if scenes:
+            scene_assets = stock_fetcher.fetch_scene_visual_assets(
+                scenes=scenes[:max_scenes],
+                output_dir=output_dir,
+                orientation=orientation,
+                require_video=is_motion_preferred,
+            )
+        else:
+            queries = getattr(script, "visual_keywords", []) or [getattr(script, "topic", "scene")]
+            scene_assets = [
+                stock_fetcher.fetch_best_visual_for_scene(
+                    subject=q,
+                    narration=getattr(script, "narration", None),
+                    output_dir=output_dir,
+                    orientation=orientation,
+                    require_video=is_motion_preferred,
+                )
+                for q in queries[:max_scenes]
+            ]
 
     # Final strict checks also cover the secondary StockFetcher fallback.
     fallback_queries = getattr(script, "visual_keywords", []) or [getattr(script, "topic", "scene")]

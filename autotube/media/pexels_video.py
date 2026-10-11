@@ -33,6 +33,7 @@ class PexelsVideoFetcher:
         per_page: int = 5,
         min_duration: int = 3,
         max_duration: int = 30,
+        page: int = 1,
     ) -> List[Dict]:
         """Search Pexels for videos matching the query.
         
@@ -47,6 +48,7 @@ class PexelsVideoFetcher:
             "query": query,
             "orientation": orientation,
             "per_page": per_page,
+            "page": max(1, int(page)),
             "size": "medium",
         }
 

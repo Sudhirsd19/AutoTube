@@ -1497,7 +1497,6 @@ def run_director_render_task(req_data: dict):
                 condensed = director.condense_script_for_shorts(req_data["script_text"], language=req_data.get("language", "hi"))
                 if condensed and len(condensed.split()) <= 120:
                     req_data["script_text"] = condensed
-                    req_data["scenes"] = None
 
         result = director.render_custom_video(
             script_text=req_data["script_text"],

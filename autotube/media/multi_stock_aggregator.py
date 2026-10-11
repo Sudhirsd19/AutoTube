@@ -272,14 +272,19 @@ class MultiStockAggregator:
             fallback_must_show = ["deep space", "distant stars", "cosmic environment"]
             fallback_avoid += ["earth daytime", "city", "people", "beach", "clouds", "phone", "office"]
             fallback_queries = ["deep space galaxy", "deep space stars", "outer space cosmos"]
-        is_ancient_history = any(k in s_lower or k in t_lower for k in (
-            "temple", "mandir", "मंदिर", "ancient", "prachin", "प्राचीन", "underground", "chamber",
+        is_ancient_history = (not is_space_or_black_hole) and any(k in s_lower or k in t_lower for k in (
+            "temple", "mandir", "मंदिर", "prachin", "प्राचीन",
             "kailasa", "कैलाश", "mahabharat", "महाभारत", "ramayan", "रामायण", "kurukshetra", "कुरुक्षेत्र",
             "dwarka", "द्वारका", "itihas", "इतिहास", "avshesh", "अवशेष", "shilalekh", "शिलालेख",
-            "archaeol", "excavat", "khudai", "खुदाई", "pandav", "पांडव", "kaurav", "कौरव", "yuddh", "युद्ध"
+            "archaeol", "excavat", "khudai", "खुदाई", "pandav", "पांडव", "kaurav", "कौरव", "yuddh", "युद्ध",
+            "vastu", "वास्तु", "shastra", "शास्त्र", "ashoka", "अशोक", "harappa", "हड़प्पा", "mohenjo", "मोहनजोदड़ो",
+            "vedic", "वैदिक", "ved", "वेद", "upanishad", "उपनिषद", "rishi", "ऋषि", "chola", "चोल",
+            "konark", "कोणार्क", "padmanabha", "पद्मनाभ", "bharat", "भारत", "energy grid", "ऊर्जा"
         ))
 
-        if is_ancient_history:
+        if is_space_or_black_hole:
+            pass
+        elif is_ancient_history:
             fallback_subject = "ancient Indian archaeological & historical mystery"
             fallback_must_show = ["ancient stone temple ruins", "archaeological excavation site", "ancient carvings"]
             fallback_avoid += ["modern city", "cars", "office", "neon", "deep space", "spacecraft", "galaxy"]
@@ -323,6 +328,11 @@ class MultiStockAggregator:
         prompt = f"""You are an elite Hollywood visual effects director and documentary scene planner.
 Story Title: "{title}"
 Current Scene #{idx+1} Narration: "{scene_text}"
+
+CRITICAL LANGUAGE & CONTEXT RULES:
+- If narration is in Hindi or Devanagari script, understand the true core spoken concept in English first!
+- Anchor the visual strictly in the REAL-WORLD concrete physical subject, architecture, excavation, or artifact being described.
+- NEVER invent space/cosmic/nebula scenes for historical, temple, archaeology, or Earth-based stories!
 
 Perform deep narrative scene understanding to find stock video B-roll that represents the ACTUAL CONCEPT spoken (not just generic filler).
 Think step-by-step:
@@ -414,6 +424,44 @@ Return STRICT JSON with keys:
                                     clean_qs.append("planet earth space")
                                 if not any("space" in x.lower() or "galaxy" in x.lower() for x in clean_qs):
                                     clean_qs.append("deep space galaxy")
+
+                        elif is_ancient_history:
+                            # 1. Purge modern electronics, outer space, and literal CTA bells
+                            forbidden_in_history = {
+                                "space", "galaxy", "nebula", "black hole", "cosmic", "stars", "universe", "planet",
+                                "bell", "doorbell", "subscribe", "button", "phone", "iphone", "smartphone", "office",
+                                "laptop", "computer", "neon", "halloween", "gadget", "singing bowl", "yoga", "typing"
+                            }
+                            clean_qs = [q for q in clean_qs if not any(fw in q.lower() for fw in forbidden_in_history)]
+
+                            # 2. Add strict avoid tags
+                            force_hist_avoid = [
+                                "outer space", "galaxy", "stars", "nebula", "doorbell", "modern city", "cars",
+                                "office", "laptop", "smartphone", "modern clothes", "cartoon", "neon lighting",
+                                "halloween", "bell", "modern gadgets", "computer screen"
+                            ]
+                            raw_avoid = [str(a).lower().strip() for a in data.get("avoid", [])]
+                            clean_avoid = [a for a in raw_avoid if not any(f in a for f in ("temple", "ruins", "stone", "ancient", "carving"))]
+                            for fa in force_hist_avoid:
+                                if fa not in clean_avoid:
+                                    clean_avoid.append(fa)
+                            data["avoid"] = clean_avoid
+
+                            if is_cta:
+                                data["subject"] = "ancient Indian stone temple majestic sunset finale"
+                                data["must_show"] = ["ancient temple ruins", "stone temple sunset", "ancient monumental architecture"]
+                                clean_qs = ["ancient indian temple", "stone temple sunset", "ancient stone ruins"]
+                            else:
+                                if not clean_qs:
+                                    scene_hist_fallbacks = [
+                                        ["ancient indian temple", "stone temple carvings"],
+                                        ["ancient temple architecture", "ancient stone ruins"],
+                                        ["ancient archaeological excavation", "archaeological site"],
+                                        ["ancient stone carvings", "ancient temple interior"],
+                                        ["ancient sacred manuscript scroll", "ancient temple entrance"],
+                                        ["ancient indian temple sunset", "ancient monumental ruins"],
+                                    ]
+                                    clean_qs = scene_hist_fallbacks[idx % len(scene_hist_fallbacks)]
 
                         if clean_qs:
                             data["search_queries"] = clean_qs[:4]
@@ -582,55 +630,96 @@ Return STRICT JSON with keys:
         seen = set()
 
         try:
-            # 1. Search requested orientation
-            raw_vids = self.pexels_fetcher.search_videos(
-                query=pexels_q,
-                orientation=orientation,
-                per_page=limit * 2,
-            )
-            # 2. If few clips found in portrait, also search all orientations (horizontal space clips crop cleanly to 9:16)
-            if len(raw_vids) < 3 and orientation == "portrait":
-                extra_vids = self.pexels_fetcher.search_videos(
-                    query=pexels_q,
-                    orientation="",
-                    per_page=limit * 2,
-                )
-                raw_vids.extend(extra_vids)
-
-            for v in raw_vids:
-                vid_id = f"pexels_{v['id']}"
-                if vid_id in seen or self._is_used(vid_id) or vid_id in BLACKLISTED_STOCK_IDS:
-                    continue
-                seen.add(vid_id)
-
-                # Extract TRUE title from Pexels URL slug
-                raw_slug = v.get("pexels_url", "") or v.get("url", "")
-                real_title = f"Pexels clip {v['id']}"
-                if raw_slug:
-                    parts = [p for p in raw_slug.rstrip("/").split("/") if p]
-                    if parts:
-                        clean_name = re.sub(r"-\d+$", "", parts[-1])
-                        real_title = clean_name.replace("-", " ")
-
-                q_tags = [w for w in pexels_q.split() if len(w) > 2]
-                tags = list(set(real_title.split() + q_tags + ["pexels"]))
-
-                w = v.get("width", 0)
-                h = v.get("height", 0)
-                is_vert = (h > w)
-                is_vert = (h > w)
-                results.append({
-                    "id": vid_id,
-                    "source": "Pexels",
-                    "title": real_title,
-                    "tags": real_title.split() + ["pexels"],
-                    "duration": v.get("duration", 10),
-                    "download_url": v.get("download_url", ""),
-                    "is_vertical": is_vert,
-                    "aspect_ratio": "9:16" if is_vert else "16:9",
-                })
+            # 1. Search requested orientation across pages until finding fresh, unused clips
+            for page_num in range(1, 4):
                 if len(results) >= limit:
                     break
+                raw_vids = self.pexels_fetcher.search_videos(
+                    query=pexels_q,
+                    orientation=orientation,
+                    per_page=15,
+                    page=page_num,
+                )
+                if not raw_vids:
+                    break
+                for v in raw_vids:
+                    vid_id = f"pexels_{v['id']}"
+                    if vid_id in seen or self._is_used(vid_id) or vid_id in BLACKLISTED_STOCK_IDS:
+                        continue
+                    seen.add(vid_id)
+
+                    raw_slug = v.get("pexels_url", "") or v.get("url", "")
+                    real_title = f"Pexels clip {v['id']}"
+                    if raw_slug:
+                        parts = [p for p in raw_slug.rstrip("/").split("/") if p]
+                        if parts:
+                            clean_name = re.sub(r"-\d+$", "", parts[-1])
+                            real_title = clean_name.replace("-", " ")
+
+                    q_tags = [w for w in pexels_q.split() if len(w) > 2]
+                    tags = list(set(real_title.split() + q_tags + ["pexels"]))
+
+                    w = v.get("width", 0)
+                    h = v.get("height", 0)
+                    is_vert = (h > w)
+                    results.append({
+                        "id": vid_id,
+                        "source": "Pexels",
+                        "title": real_title,
+                        "tags": real_title.split() + ["pexels"],
+                        "duration": v.get("duration", 10),
+                        "download_url": v.get("download_url", ""),
+                        "is_vertical": is_vert,
+                        "aspect_ratio": "9:16" if is_vert else "16:9",
+                    })
+                    if len(results) >= limit:
+                        break
+
+            # 2. If unused clips found in portrait are fewer than limit, search all orientations (horizontal space clips crop cleanly to 9:16)
+            if len(results) < limit and orientation == "portrait":
+                for page_num in range(1, 3):
+                    if len(results) >= limit:
+                        break
+                    extra_vids = self.pexels_fetcher.search_videos(
+                        query=pexels_q,
+                        orientation="",
+                        per_page=15,
+                        page=page_num,
+                    )
+                    if not extra_vids:
+                        break
+                    for v in extra_vids:
+                        vid_id = f"pexels_{v['id']}"
+                        if vid_id in seen or self._is_used(vid_id) or vid_id in BLACKLISTED_STOCK_IDS:
+                            continue
+                        seen.add(vid_id)
+
+                        raw_slug = v.get("pexels_url", "") or v.get("url", "")
+                        real_title = f"Pexels clip {v['id']}"
+                        if raw_slug:
+                            parts = [p for p in raw_slug.rstrip("/").split("/") if p]
+                            if parts:
+                                clean_name = re.sub(r"-\d+$", "", parts[-1])
+                                real_title = clean_name.replace("-", " ")
+
+                        q_tags = [w for w in pexels_q.split() if len(w) > 2]
+                        tags = list(set(real_title.split() + q_tags + ["pexels"]))
+
+                        w = v.get("width", 0)
+                        h = v.get("height", 0)
+                        is_vert = (h > w)
+                        results.append({
+                            "id": vid_id,
+                            "source": "Pexels",
+                            "title": real_title,
+                            "tags": real_title.split() + ["pexels"],
+                            "duration": v.get("duration", 10),
+                            "download_url": v.get("download_url", ""),
+                            "is_vertical": is_vert,
+                            "aspect_ratio": "9:16" if is_vert else "16:9",
+                        })
+                        if len(results) >= limit:
+                            break
         except Exception as e:
             print_warning(f"Pexels search error for '{query}': {e}")
         return results

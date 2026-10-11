@@ -136,8 +136,25 @@ def ensure_subject_outro_cta(script: ShortScript, topic: str, language: str) -> 
         else:
             last_scene.narration = f"{last_text}. {outro_text}"
 
-        last_scene.visual_subject = "youtube subscribe like bell animation"
-        last_scene.search_keywords = ["subscribe button", "youtube subscribe bell"]
+        # Preserve the original thematic visual subject if already present and valid;
+        # otherwise assign a genre-specific grand cinematic finale visual.
+        t_low = topic.lower()
+        if not getattr(last_scene, "visual_subject", "").strip() or any(k in getattr(last_scene, "visual_subject", "").lower() for k in ("subscribe", "bell", "button")):
+            if any(k in t_low for k in ("space", "antariksh", "galaxy", "black hole", "cosmic", "universe", "planet")):
+                last_scene.visual_subject = "deep space galaxy cosmic finale"
+                last_scene.search_keywords = ["deep space galaxy", "outer space cosmos"]
+            elif any(k in t_low for k in ("bharat", "temple", "mandir", "ancient", "prachin", "vedic", "kailasa", "history", "itihas", "vastu")):
+                last_scene.visual_subject = "ancient Indian stone temple sunset grand finale"
+                last_scene.search_keywords = ["ancient indian temple", "stone temple sunset"]
+            elif any(k in t_low for k in ("ocean", "samundar", "sea", "trench", "underwater")):
+                last_scene.visual_subject = "deep ocean underwater abyss finale"
+                last_scene.search_keywords = ["deep ocean trench", "mysterious underwater abyss"]
+            elif any(k in t_low for k in ("brain", "dimag", "psychology", "mind")):
+                last_scene.visual_subject = "human brain neural networks glowing finale"
+                last_scene.search_keywords = ["glowing brain neural network", "human brain neurons"]
+            else:
+                last_scene.visual_subject = "cinematic dramatic atmosphere finale"
+                last_scene.search_keywords = ["cinematic dramatic atmosphere", "dark moody cinematic"]
 
     script.narration = " ".join(s.narration.strip() for s in script.scenes if s.narration.strip())
     script.call_to_action = outro_text
