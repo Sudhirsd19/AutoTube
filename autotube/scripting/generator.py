@@ -2,6 +2,7 @@
 
 import json
 import os
+import re
 from typing import List, Optional
 from google import genai
 from google.genai import types
@@ -20,12 +21,45 @@ CANDIDATE_MODELS = [
 ]
 
 
+SPIRITUAL_TOPIC_MARKERS = (
+    "bhagavad gita", "bhagwat gita", "gita", "geeta", "granth", "scripture",
+    "shloka", "shlok", "upanishad", "chanakya niti", "sanatan", "spiritual",
+    "adhyatmik", "karma yoga", "nishkama karma", "vedic scripture", "krishna",
+    "arjuna", "mahabharat", "ramayan",
+)
+SPIRITUAL_DEVANAGARI_MARKERS = (
+    "गीता", "श्रीमद्भगवद्गीता", "ग्रंथ", "ग्रन्थ", "शास्त्र", "श्लोक",
+    "उपनिषद", "चाणक्य नीति", "सनातन", "आध्यात्म", "आध्यात्मिक",
+    "कर्मयोग", "निष्काम कर्म", "कृष्ण", "अर्जुन", "महाभारत", "रामायण", "वेद",
+)
+
+
+def is_gita_granth_motivation_topic(topic: str) -> bool:
+    """Detect a scripture topic without treating the generic word 'motivation' as scripture."""
+    lowered = (topic or "").strip().lower()
+    return (
+        any(re.search(rf"\\b{re.escape(term)}\\b", lowered) for term in SPIRITUAL_TOPIC_MARKERS)
+        or any(term in lowered for term in SPIRITUAL_DEVANAGARI_MARKERS)
+    )
+
+
+def is_bhagavad_gita_topic(topic: str) -> bool:
+    """True only for titles that explicitly identify the Bhagavad Gita."""
+    lowered = (topic or "").strip().lower()
+    gita_terms = ("bhagavad gita", "bhagwat gita", "gita", "geeta")
+    return (
+        any(re.search(rf"\\b{re.escape(term)}\\b", lowered) for term in gita_terms)
+        or "गीता" in lowered
+    )
+
+
 def get_subject_outro_text(topic: str, language: str = "en") -> str:
     """Return a natural, subject-tailored Outro CTA containing like, subscribe, and support."""
     t_lower = topic.lower()
     is_hindi = language.lower() in ("hi", "hindi")
 
-    if any(k in t_lower for k in ("space", "antariksh", "galaxy", "black hole", "cosmic", "universe", "planet", "astronomy", "nasa")):
+    is_spiritual = is_gita_granth_motivation_topic(topic)
+    if not is_spiritual and any(k in t_lower for k in ("space", "antariksh", "galaxy", "black hole", "cosmic", "universe", "planet", "astronomy", "nasa")):
         if is_hindi:
             return "ऐसे ही अंतरिक्ष और ब्रह्मांड के रहस्यमयी इंफॉर्मेटिव वीडियोज़ के लिए हमें लाइक और सब्सक्राइब करें और सपोर्ट करें।"
         else:
@@ -195,34 +229,123 @@ class ScriptGenerator:
             except Exception as e:
                 print_warning(f"Could not initialize Gemini client: {e}")
 
+    def _generate_spiritual_fallback(
+        self, topic: str, target_duration: int = 45, language: str = "hi"
+    ) -> ShortScript:
+        """Generate structured spiritual scenes when the remote script model is unavailable."""
+        is_hindi = language.lower() in ("hi", "hindi")
+        is_gita = is_bhagavad_gita_topic(topic)
+        if is_hindi:
+            if is_gita:
+                lines = [
+                    "क्या परिणाम की चिंता आपको आज अपना पहला सही कदम उठाने से रोक रही है, जबकि बदलाव की शुरुआत यहीं से होती है?",
+                    "गीता की निष्काम कर्म की सीख कहती है कि अपना कर्तव्य पूरी निष्ठा से निभाइए, लेकिन हर परिणाम को नियंत्रित करने की जिद छोड़ दीजिए।",
+                    "असफलता आपकी पहचान नहीं होती; वह अगली कोशिश में क्या सीखना और बदलना है, यह दिखाती है।",
+                    "दूसरों की यात्रा से अपनी तुलना रोकिए, अपने अभ्यास पर लौटिए और छोटे काम रोज़ धैर्य से पूरे कीजिए।",
+                    "जब मन भटके, अगला सही काम चुनिए, पूरी मेहनत कीजिए और परिणाम से सीखकर आगे बढ़िए।",
+                    "ऐसी गीता-प्रेरित जीवनोपयोगी सीखों के लिए वीडियो को लाइक करें, चैनल सब्सक्राइब करें और अपना समर्थन दें।",
+                ]
+            else:
+                lines = [
+                    "क्या परिणाम की चिंता आपको आज अपना पहला सही कदम उठाने से रोक रही है, जबकि बदलाव की शुरुआत यहीं से होती है?",
+                    "प्राचीन भारतीय ग्रंथ प्रयास, विवेक और जिम्मेदारी पर ध्यान देने की सीख देते हैं; हर परिणाम हमारे नियंत्रण में नहीं होता।",
+                    "असफलता आपकी पहचान नहीं होती; वह अगली कोशिश में क्या सीखना और बदलना है, यह दिखाती है।",
+                    "दूसरों की यात्रा से अपनी तुलना रोकिए, अपने अभ्यास पर लौटिए और छोटे काम रोज़ धैर्य से पूरे कीजिए।",
+                    "जब मन भटके, अगला सही काम चुनिए, पूरी मेहनत कीजिए और परिणाम से सीखकर आगे बढ़िए।",
+                    "ऐसी ग्रंथ-प्रेरित जीवनोपयोगी सीखों के लिए वीडियो को लाइक करें, चैनल सब्सक्राइब करें और अपना समर्थन दें।",
+                ]
+        else:
+            if is_gita:
+                lines = [
+                    "Are you so worried about the outcome that you keep delaying the next right step you could take today?",
+                    "The Bhagavad Gita's teaching of selfless action invites us to give our best effort without pretending every result is under our control.",
+                    "Failure is not your identity; it is feedback showing what you can learn, adjust, and do better next time.",
+                    "Stop comparing your path with everyone else's, and return your attention to practice, patience, and steady effort.",
+                    "When your mind wanders, choose the next right action, complete it carefully, and learn from what follows.",
+                    "For practical wisdom inspired by the Bhagavad Gita, like this video, subscribe to the channel, and support our work.",
+                ]
+            else:
+                lines = [
+                    "Are you so worried about the outcome that you keep delaying the next right step you could take today?",
+                    "Ancient Indian wisdom invites us to focus on effort, discernment, and responsibility without pretending we control every result.",
+                    "Failure is not your identity; it is feedback showing what you can learn, adjust, and do better next time.",
+                    "Stop comparing your path with everyone else's, and return your attention to practice, patience, and steady effort.",
+                    "When your mind wanders, choose the next right action, complete it carefully, and learn from what follows.",
+                    "For practical wisdom inspired by ancient Indian scriptures, like this video, subscribe to the channel, and support our work.",
+                ]
+
+        gita_scenes = [
+            ("lord krishna kurukshetra chariot", "Respectful traditional depiction of Krishna guiding Arjuna on the Kurukshetra chariot at sunrise."),
+            ("arjuna listening to krishna", "Arjuna listens thoughtfully to Krishna, with historically inspired Indian attire and a quiet battlefield atmosphere."),
+            ("ancient palm leaf manuscript", "An ancient Indian manuscript beside a warm oil lamp, realistic handmade texture and decorative non-legible Indic calligraphy."),
+            ("meditating person sunrise", "A person reflecting peacefully at sunrise in a historically grounded Indian ashram courtyard."),
+            ("person walking sunrise path", "A person taking a steady step along a sunlit Indian landscape, natural light and realistic textures."),
+            ("krishna chariot golden dawn", "A dignified Kurukshetra chariot silhouette at golden dawn, a calm spiritual closing scene."),
+        ]
+        granth_scenes = [
+            ("ancient Indian manuscript", "An ancient palm-leaf manuscript with decorative non-legible Indic calligraphy, realistic handmade texture and warm oil-lamp light."),
+            ("wise teacher gurukul", "An Indian teacher speaking to attentive students in a historically inspired gurukul courtyard."),
+            ("meditating person sunrise", "A person reflecting peacefully at sunrise in a quiet Indian ashram setting."),
+            ("scribe writing manuscript", "A traditional Indian scribe writing on a palm-leaf manuscript, close-up of hands and tools."),
+            ("person walking sunrise path", "A person taking a steady step on a peaceful Indian landscape."),
+            ("manuscript temple sunrise", "A sacred manuscript placed respectfully beside an oil lamp at sunrise."),
+        ]
+        visual_scenes = gita_scenes if is_gita else granth_scenes
+        scenes = [
+            ShortScene(
+                scene_number=i + 1,
+                narration=line,
+                visual_subject=visual_scenes[i][0],
+                visual_description=visual_scenes[i][1],
+                search_keywords=[visual_scenes[i][0]],
+            )
+            for i, line in enumerate(lines)
+        ]
+        script = ShortScript(
+            title=f"{topic}: A Practical Wisdom Lesson",
+            topic=topic,
+            hook=lines[0],
+            scenes=scenes,
+            narration=" ".join(lines),
+            call_to_action=lines[-1],
+            visual_keywords=[scene.visual_subject for scene in scenes],
+            tags=["#Shorts", "#GitaMotivation" if is_gita else "#AncientWisdom", "#LifeLessons"],
+            pinned_comment=(
+                "गीता की किस सीख को आप अपनी जिंदगी में अपनाना चाहते हैं? कमेंट में बताएं।"
+                if is_hindi and is_gita
+                else "Which ancient wisdom lesson helps you stay steady when life gets difficult? Share below."
+            ),
+            estimated_duration_sec=min(max(target_duration, 35), 48),
+        )
+        return ensure_subject_outro_cta(script, topic, language)
+
     def generate_short_script(
         self, topic: str, target_duration: int = 50, language: str = "en"
     ) -> ShortScript:
         """Generate a viral YouTube Short script for the given topic in English or Hindi."""
         is_hindi = language.lower() in ("hi", "hindi")
         from autotube.scripting.prompts import (
+            ENGLISH_GITA_MOTIVATION_PROMPT,
             HINDI_GITA_MOTIVATION_PROMPT,
             HINDI_SHORTS_SYSTEM_PROMPT,
             SHORTS_SYSTEM_PROMPT,
         )
 
+        is_gita_spiritual = is_gita_granth_motivation_topic(topic)
         if not self.client:
             print_warning(
-                "No GEMINI_API_KEY found or client unavailable. Using smart built-in template."
+                "No GEMINI_API_KEY found or client unavailable. Using topic-aware built-in template."
             )
+            if is_gita_spiritual and target_duration < 90:
+                return self._generate_spiritual_fallback(topic, target_duration, language)
             return self._generate_fallback_short(topic, target_duration)
 
-        t_low = topic.lower()
-        is_gita_spiritual = any(
-            k in t_low
-            for k in (
-                "gita", "गीता", "krishna", "कृष्ण", "arjuna", "अर्जुन", "karma", "कर्म",
-                "kurukshetra", "कुरुक्षेत्र", "chanakya", "चाणक्य", "upanishad", "उपनिषद",
-                "granth", "ग्रंथ", "shloka", "श्लोक", "motivation", "motivational", "bhagwat", "bhagavad"
-            )
-        )
-        if is_hindi and is_gita_spiritual:
-            sys_prompt = HINDI_GITA_MOTIVATION_PROMPT
+        if is_gita_spiritual and target_duration < 90:
+            sys_prompt = HINDI_GITA_MOTIVATION_PROMPT if is_hindi else ENGLISH_GITA_MOTIVATION_PROMPT
+        elif is_gita_spiritual and target_duration >= 90:
+            # The spiritual Shorts prompt has a hard 50-second limit. Do not reuse
+            # it for documentary-length requests.
+            sys_prompt = LONGFORM_SYSTEM_PROMPT
         elif is_hindi:
             sys_prompt = HINDI_SHORTS_SYSTEM_PROMPT
         else:
@@ -306,6 +429,8 @@ MANDATORY STRUCTURAL REQUIREMENTS:
                 continue
 
         print_error("All Gemini models busy or failed. Falling back to template.")
+        if is_gita_spiritual and target_duration < 90:
+            return self._generate_spiritual_fallback(topic, target_duration, language)
         return self._generate_fallback_short(topic, target_duration)
 
     def generate_cartoon_script(
