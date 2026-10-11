@@ -238,17 +238,17 @@ class ScriptGenerator:
         if is_hindi:
             if is_gita:
                 lines = [
-                    "क्या परिणाम की चिंता आपको आज अपना पहला सही कदम उठाने से रोक रही है, जबकि बदलाव की शुरुआत यहीं से होती है?",
-                    "गीता की निष्काम कर्म की सीख कहती है कि अपना कर्तव्य पूरी निष्ठा से निभाइए, लेकिन हर परिणाम को नियंत्रित करने की जिद छोड़ दीजिए।",
-                    "असफलता आपकी पहचान नहीं होती; वह अगली कोशिश में क्या सीखना और बदलना है, यह दिखाती है।",
-                    "दूसरों की यात्रा से अपनी तुलना रोकिए, अपने अभ्यास पर लौटिए और छोटे काम रोज़ धैर्य से पूरे कीजिए।",
-                    "जब मन भटके, अगला सही काम चुनिए, पूरी मेहनत कीजिए और परिणाम से सीखकर आगे बढ़िए।",
+                    "क्या परिणाम की चिंता आपको आज अपना अगला सही कदम उठाने से रोक रही है?",
+                    "गीता की निष्काम कर्म की सीख कहती है, कर्तव्य पूरी निष्ठा से निभाइए, पर हर परिणाम आपके नियंत्रण में नहीं होता।",
+                    "असफलता आपकी पहचान नहीं होती; वह बताती है कि अगली कोशिश में क्या सीखना और बदलना बाकी है।",
+                    "दूसरों की यात्रा से अपनी तुलना छोड़िए, अपने अभ्यास पर लौटिए और छोटे काम धैर्य से पूरे कीजिए।",
+                    "जब मन भटके, अगला सही काम चुनिए, पूरी मेहनत कीजिए और मिले परिणाम से सीखकर आगे बढ़िए।",
                     "ऐसी गीता-प्रेरित जीवनोपयोगी सीखों के लिए वीडियो को लाइक करें, चैनल सब्सक्राइब करें और अपना समर्थन दें।",
                 ]
             else:
                 lines = [
                     "क्या परिणाम की चिंता आपको आज अपना पहला सही कदम उठाने से रोक रही है, जबकि बदलाव की शुरुआत यहीं से होती है?",
-                    "प्राचीन भारतीय ग्रंथ प्रयास, विवेक और जिम्मेदारी पर ध्यान देने की सीख देते हैं; हर परिणाम हमारे नियंत्रण में नहीं होता।",
+                    "प्राचीन भारतीय ग्रंथ प्रयास, विवेक और जिम्मेदारी पर ध्यान देने की सीख देते हैं; हर परिणाम हमारे नियंत्रण में नहीं।",
                     "असफलता आपकी पहचान नहीं होती; वह अगली कोशिश में क्या सीखना और बदलना है, यह दिखाती है।",
                     "दूसरों की यात्रा से अपनी तुलना रोकिए, अपने अभ्यास पर लौटिए और छोटे काम रोज़ धैर्य से पूरे कीजिए।",
                     "जब मन भटके, अगला सही काम चुनिए, पूरी मेहनत कीजिए और परिणाम से सीखकर आगे बढ़िए।",
@@ -257,12 +257,12 @@ class ScriptGenerator:
         else:
             if is_gita:
                 lines = [
-                    "Are you so worried about the outcome that you keep delaying the next right step you could take today?",
-                    "The Bhagavad Gita's teaching of selfless action invites us to give our best effort without pretending every result is under our control.",
-                    "Failure is not your identity; it is feedback showing what you can learn, adjust, and do better next time.",
-                    "Stop comparing your path with everyone else's, and return your attention to practice, patience, and steady effort.",
-                    "When your mind wanders, choose the next right action, complete it carefully, and learn from what follows.",
-                    "For practical wisdom inspired by the Bhagavad Gita, like this video, subscribe to the channel, and support our work.",
+                    "Are you so worried about results that you keep delaying the next right step you can take today?",
+                    "The Bhagavad Gita's teaching of selfless action asks us to work sincerely without claiming every result is under our control.",
+                    "Failure is not your identity; it shows what you can learn, adjust, and improve next time.",
+                    "Stop comparing your path with others, and return to practice, patience, and steady effort.",
+                    "When your mind wanders, choose the next right action, finish it carefully, and learn from the outcome.",
+                    "For practical Bhagavad Gita wisdom, like this video, subscribe, and support our work.",
                 ]
             else:
                 lines = [
@@ -271,7 +271,7 @@ class ScriptGenerator:
                     "Failure is not your identity; it is feedback showing what you can learn, adjust, and do better next time.",
                     "Stop comparing your path with everyone else's, and return your attention to practice, patience, and steady effort.",
                     "When your mind wanders, choose the next right action, complete it carefully, and learn from what follows.",
-                    "For practical wisdom inspired by ancient Indian scriptures, like this video, subscribe to the channel, and support our work.",
+                    "For practical ancient-scripture wisdom, like this video, subscribe, and support our work.",
                 ]
 
         gita_scenes = [
