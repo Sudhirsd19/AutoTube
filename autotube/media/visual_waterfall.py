@@ -160,6 +160,8 @@ def _image_to_motion_clip(
         x_expr = f"(iw-iw/zoom)*(1.0-{p_factor})"
         y_expr = "ih/2-(ih/zoom/2)"
 
+    from autotube.utils.ffmpeg_helper import get_ffmpeg_path
+    ffmpeg_exe = get_ffmpeg_path()
     scale_res = f"{int(width * 1.15)}:{int(height * 1.15)}"
     vf = (
         f"scale={scale_res}:force_original_aspect_ratio=increase,"
@@ -168,12 +170,12 @@ def _image_to_motion_clip(
         f"setsar=1,format=yuv420p"
     )
     args = [
-        "ffmpeg", "-y", "-loop", "1", "-i", str(image_path), "-t", f"{duration:.2f}",
+        ffmpeg_exe, "-y", "-loop", "1", "-i", str(image_path), "-t", f"{duration:.2f}",
         "-vf", vf, "-r", str(fps), "-c:v", "libx264", "-preset", "ultrafast",
         "-pix_fmt", "yuv420p", "-an", str(output_path)
     ]
     try:
-        res = subprocess.run(args, capture_output=True, text=True, timeout=35)
+        res = subprocess.run(args, capture_output=True, text=True, timeout=45)
         if res.returncode == 0 and output_path.exists() and output_path.stat().st_size > 10000:
             return output_path
     except Exception as exc:
@@ -190,11 +192,101 @@ def acquire_scene_visuals_waterfall(
     **kwargs: Any,
 ) -> List[Path]:
     """Execute high-speed, reliable visual asset acquisition:
-    1. Gemini (Veo) if available and quota allows (instant failover on error)
-    2. Vocal-Aligned Real Motion Stock Video (Pexels HD) + Photorealistic AI (Pollinations)
+    1. For Gita / Granth / Scripture topics: Direct 4K/8K photorealistic AI visuals + continuous Ken Burns motion
+    2. For all other topics: Google Flow -> Gemini Veo -> MultiStockAggregator -> StockFetcher
     """
     output_dir.mkdir(parents=True, exist_ok=True)
     scenes = getattr(script, "scenes", []) or []
+
+    # -------------------------------------------------------------
+    # GITA / GRANTH / SCRIPTURE: Direct 4K/8K AI Photorealistic + Ken Burns Motion
+    # Bypass stock footage scraping for scripture/sacred themes; produce bespoke 8K art
+    # -------------------------------------------------------------
+    topic = str(getattr(script, "topic", "") or "")
+    narration_text = str(getattr(script, "narration", "") or "")
+    scene_narrations = " ".join(str(getattr(s, "narration", "") or getattr(s, "text", "")) for s in scenes)
+    scene_meta = " ".join(f"{getattr(s, 'visual_subject', '')} {getattr(s, 'visual_description', '')}" for s in scenes)
+    full_text = f"{topic} {narration_text} {scene_narrations} {scene_meta}".lower()
+
+    gita_keywords = (
+        "gita", "गीता", "krishna", "कृष्ण", "arjuna", "अर्जुन", "karma", "कर्म",
+        "kurukshetra", "कुरुक्षेत्र", "chanakya", "चाणक्य", "upanishad", "उपनिषद",
+        "granth", "ग्रंथ", "shloka", "श्लोक", "bhagwat", "bhagavad", "vedic",
+        "vedas", "वेद", "ramayan", "रामायण", "mahabharat", "महाभारत", "sanatan",
+        "सनातन", "adhyatmik", "spiritual", "vishnu", "विष्णु", "bhagavan", "भगवान",
+        "dharma", "धर्म", "geeta"
+    )
+    is_gita_topic = any(k in full_text for k in gita_keywords)
+
+    if is_gita_topic:
+        print_info(f"🕉️ [Gita/Granth Pipeline] Detected scripture/divine topic '{topic}'. Generating 4K/8K photorealistic AI visuals + Ken Burns continuous motion...")
+        from autotube.media.ai_visuals import VisualGenerator
+        vg = VisualGenerator()
+        target_w = 1080 if orientation == "portrait" else 1920
+        target_h = 1920 if orientation == "portrait" else 1080
+
+        target_scenes = scenes[:max_scenes] if scenes else []
+        fallback_queries = getattr(script, "visual_keywords", []) or [topic or "Bhagavad Gita divine wisdom"]
+        expected_count = len(target_scenes) if target_scenes else len(fallback_queries[:max_scenes])
+        gita_motion_clips: List[Path] = []
+
+        for idx in range(expected_count):
+            s = target_scenes[idx] if idx < len(target_scenes) else None
+            v_subj = str(getattr(s, "visual_subject", "") or getattr(s, "subject", "") or "").strip()
+            v_desc = str(getattr(s, "visual_description", "") or getattr(s, "description", "") or "").strip()
+
+            if v_desc and len(v_desc) > 15:
+                prompt_parts = []
+                if v_subj and v_subj.lower() not in v_desc.lower():
+                    prompt_parts.append(v_subj)
+                prompt_parts.append(v_desc)
+                core_p = ", ".join(prompt_parts)
+            elif v_subj:
+                core_p = v_subj
+            else:
+                core_p = fallback_queries[idx % len(fallback_queries)]
+
+            ai_prompt = f"8k photorealistic ultra-detailed cinematic divine art, {core_p}, golden divine aura, sacred majestic lighting, 8k resolution, cinematic composition, hyperrealistic sacred epic art"
+            img_path = output_dir / f"{slug}_gita_ai_{idx+1:02d}.jpg"
+            out_clip = output_dir / f"{slug}_gita_motion_{idx+1:02d}.mp4"
+
+            ai_img = vg.generate_image(
+                prompt=ai_prompt,
+                output_path=img_path,
+                width=target_w,
+                height=target_h,
+                style="3d_cinematic",
+            )
+            if not ai_img or not ai_img.exists() or ai_img.stat().st_size <= 5000:
+                fallback_subj = v_subj or "Lord Krishna divine wisdom in Kurukshetra"
+                ai_img = vg.generate_image(
+                    prompt=f"8k photorealistic divine cinematic art, {fallback_subj}, golden aura, epic masterpiece, 8k",
+                    output_path=img_path,
+                    width=target_w,
+                    height=target_h,
+                    style="3d_cinematic",
+                )
+
+            if ai_img and ai_img.exists() and ai_img.stat().st_size > 5000:
+                motion_clip = _image_to_motion_clip(
+                    image_path=ai_img,
+                    output_path=out_clip,
+                    duration=6.0,
+                    fps=30,
+                    width=target_w,
+                    height=target_h,
+                    motion_type=idx,
+                )
+                if motion_clip and motion_clip.exists():
+                    gita_motion_clips.append(motion_clip)
+                    print_success(f"   🎬 [Gita Motion Clip] Scene {idx+1}/{expected_count} ready ({out_clip.name})")
+
+        if len(gita_motion_clips) == expected_count:
+            print_success(f"🕉️ Successfully generated all {expected_count} 4K AI continuous motion scenes for Gita/Granth video!")
+            return gita_motion_clips
+        elif gita_motion_clips:
+            print_warning(f"⚠️ Generated {len(gita_motion_clips)}/{expected_count} Gita AI motion clips.")
+            return gita_motion_clips
 
     # -------------------------------------------------------------
     # TIER 1: Google Flow Bridge (Google AI Pro Studio Engine)

@@ -353,5 +353,80 @@ def test_condense_script_for_shorts_under_limit():
     assert "सब्सक्राइब" in condensed or "लाइक" in condensed or "कमेंट" in condensed
 
 
+def test_gita_granth_visual_waterfall_direct_ai_image_to_motion(tmp_path):
+    """Verify Gita/Granth topics directly generate 4K AI images and convert to motion clips, bypassing stock search."""
+    from autotube.media.visual_waterfall import acquire_scene_visuals_waterfall
+
+    s1 = MagicMock()
+    s1.narration = "भगवान श्रीकृष्ण ने अर्जुन को कुरुक्षेत्र में कर्म का दिव्य उपदेश दिया।"
+    s1.visual_subject = "Lord Krishna in golden chariot Kurukshetra"
+    s1.visual_description = "Cinematic 8k photorealistic Lord Krishna speaking to Arjuna"
+
+    mock_script = MagicMock()
+    mock_script.topic = "भगवद गीता कर्म रहस्य"
+    mock_script.narration = s1.narration
+    mock_script.scenes = [s1]
+
+    ai_img = tmp_path / "gita_ai_01.jpg"
+    ai_img.write_bytes(b"dummy_image_data_bytes_12345" * 500)
+    motion_mp4 = tmp_path / "gita_motion_01.mp4"
+    motion_mp4.write_bytes(b"dummy_motion_video_bytes_12345" * 1000)
+
+    with patch("autotube.media.ai_visuals.VisualGenerator.generate_image", return_value=ai_img) as mock_gen, \
+         patch("autotube.media.visual_waterfall._image_to_motion_clip", return_value=motion_mp4) as mock_motion, \
+         patch("autotube.media.multi_stock_aggregator.MultiStockAggregator.get_best_scene_asset") as mock_stock:
+
+        result = acquire_scene_visuals_waterfall(
+            script=mock_script,
+            output_dir=tmp_path,
+            slug="gita_test",
+            orientation="portrait",
+            max_scenes=1,
+        )
+
+        # Stock aggregator should NOT be called for Gita/Granth topics
+        assert not mock_stock.called
+        # AI image generator and motion converter must be called
+        assert mock_gen.called
+        assert mock_motion.called
+        assert len(result) == 1
+        assert result[0] == motion_mp4
+
+
+def test_non_gita_visual_waterfall_preserves_stock_path(tmp_path):
+    """Verify non-Gita topics (space, science, etc.) continue using existing multi-stock aggregator logic."""
+    from autotube.media.visual_waterfall import acquire_scene_visuals_waterfall
+
+    s1 = MagicMock()
+    s1.narration = "In the deep void of space, black holes distort spacetime."
+    s1.visual_subject = "black hole deep space"
+    s1.visual_description = "Accretion disk glowing around singularity"
+
+    mock_script = MagicMock()
+    mock_script.topic = "Black Hole Singularity"
+    mock_script.narration = s1.narration
+    mock_script.scenes = [s1]
+
+    stock_clip = tmp_path / "space_clip.mp4"
+    stock_clip.write_bytes(b"dummy_stock_video_bytes_12345" * 1000)
+
+    with patch("autotube.media.multi_stock_aggregator.MultiStockAggregator.get_best_scene_asset", return_value=stock_clip) as mock_stock, \
+         patch("autotube.media.visual_quality_gate.VisualQualityGate.verify", return_value={"accepted": True}):
+
+        result = acquire_scene_visuals_waterfall(
+            script=mock_script,
+            output_dir=tmp_path,
+            slug="space_test",
+            orientation="portrait",
+            max_scenes=1,
+        )
+
+        # MultiStockAggregator MUST be called for space topics
+        assert mock_stock.called
+        assert len(result) == 1
+        assert result[0] == stock_clip
+
+
+
 
 

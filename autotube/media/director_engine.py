@@ -66,6 +66,7 @@ class DirectorEngine:
 
         # BGM Tracks & Categories
         bgm_tracks = [
+            {"filename": "spiritual", "title": "🕉️ Spiritual & Vedic (Divine Bansuri / Tanpura)", "category": "Spiritual"},
             {"filename": "psychology", "title": "🧠 Dark Psychology (Ambient Tension)", "category": "Psychology"},
             {"filename": "space", "title": "🌌 Cosmic Space (Deep Ambient Void)", "category": "Space"},
             {"filename": "history", "title": "⚔️ History & Bharat (Ancient Epic Chords)", "category": "History"},
@@ -536,6 +537,24 @@ Output STRICT JSON with these keys:
         if any(k in s_lower for k in ("space", "antariksh", "brahmand", "galaxy", "universe", "solar system", "stars", "cosmos")):
             return "cinematic deep space cosmic view, distant stars and nebulae, astronomy documentary still, 8k"
 
+        # Check for Gita / Vedic / Sanatan / Scripture topics
+        if any(k in s_lower or k in t_lower for k in ("krishna", "कृष्ण", "gita", "गीता", "arjun", "अर्जुन", "kurukshetra", "कुरुक्षेत्र", "chariot", "rath", "रथ", "vishwaroop", "विश्वरूप")):
+            gita_prompts = [
+                "Lord Krishna standing majestically on golden chariot with warrior Arjuna in Kurukshetra battlefield at dramatic golden sunset, divine radiant aura, hyperrealistic 8k",
+                "Lord Krishna revealing cosmic divine form Vishwaroopam, celestial golden cosmic light, infinite radiant universe, sacred Vedic epic, hyperrealistic 8k",
+                "Warrior Arjuna bowing respectfully with Gandiva bow before Lord Krishna, golden hour dusty epic battlefield, dramatic cinematic lighting, 8k",
+                "Lord Krishna with peacock feather crown blowing divine Panchajanya conch, sacred aura, cinematic 8k masterpiece",
+                "Sacred ancient Bhagavad Gita Sanskrit manuscript glowing with divine golden energy in serene Vedic ashram, dramatic lighting, 8k",
+                "Ancient warrior standing on epic Kurukshetra battlefield amidst mist, holding divine bow, cinematic dramatic atmosphere, 8k",
+            ]
+            return gita_prompts[scene_idx % len(gita_prompts)]
+        if any(k in s_lower or k in t_lower for k in ("chanakya", "चाणक्य", "niti", "नीति")):
+            return "Acharya Chanakya wise ancient Indian philosopher standing in historic Takshashila royal court, candlelight, deep contemplation, cinematic 8k"
+        if any(k in s_lower or k in t_lower for k in ("ramayan", "रामायण", "ram", "राम")):
+            return "Lord Rama standing serenely with divine bow in lush ancient Dandakaranya forest, radiant golden divine aura, cinematic 8k masterpiece"
+        if any(k in s_lower or k in t_lower for k in ("karma", "कर्म", "sanatan", "सनातन", "vedic", "वेद", "upanishad", "उपनिषद")):
+            return "Ancient Vedic sage meditating in deep Himalayas under sacred banyan tree, cosmic energy and golden spiritual aura, cinematic 8k"
+
         # Check for historical mysteries
         if "bose" in t_lower or "netaji" in t_lower:
             subject = "1945 Subhas Chandra Bose WWII mystery"
@@ -895,14 +914,93 @@ Output STRICT JSON with these keys:
         # Studio motion scenes require actual frame-level semantic validation.
         multi_agg.visual_quality_gate.strict = True
 
+        # Check if topic/script represents Gita / Granth / Spiritual content
+        gita_granth_keywords = (
+            "gita", "गीता", "krishna", "कृष्ण", "arjuna", "अर्जुन", "karma", "कर्म",
+            "kurukshetra", "कुरुक्षेत्र", "chanakya", "चाणक्य", "upanishad", "उपनिषद",
+            "granth", "ग्रंथ", "shloka", "श्लोक", "bhagwat", "bhagavad", "vedic",
+            "vedas", "वेद", "ramayan", "रामायण", "mahabharat", "महाभारत", "sanatan",
+            "सनातन", "adhyatmik", "spiritual", "vishnu", "विष्णु", "bhagavan", "भगवान",
+            "dharma", "धर्म", "geeta"
+        )
+        scene_meta_str = " ".join(f"{s.get('visual_subject', '')} {s.get('visual_description', '')}" for s in scene_specs).lower()
+        combined_text = f"{title} {script_text} {' '.join(str(s.get('narration', '')) for s in scene_specs)} {scene_meta_str}".lower()
+        is_gita_granth_topic = any(k in combined_text for k in gita_granth_keywords)
+        if is_gita_granth_topic:
+            print_info("🕉️ [Gita/Granth Engine] Detected scripture/divine content: using direct 4K/8K photorealistic AI visuals + continuous motion clips.")
+
+        from autotube.media.visual_waterfall import _image_to_motion_clip
+        scene_durations = list(tts_res.scene_durations or [])
+
         for idx, scene in enumerate(scene_specs):
             sentence = str(scene["narration"]).strip()
             scene_target = TEMP_DIR / f"scene_{idx}_{slug}.mp4"
             acquired_video = None
             scene_plan = self._scene_plan_from_spec(scene)
+            scene_dur = scene_durations[idx] if idx < len(scene_durations) else float(scene.get("duration", 6.0))
 
             try:
-                if visual_mode in ("multi_cinematic", "multi_best", "auto"):
+                if is_gita_granth_topic:
+                    if progress_callback:
+                        progress_callback(55 + int((idx / max(1, len(scene_specs))) * 18), f"🎨 Scene {idx+1}/{len(scene_specs)}: Generating 4K/8K divine AI photorealistic visual...")
+
+                    v_desc = str(scene.get("visual_description", "")).strip()
+                    v_subj = str(scene.get("visual_subject", "")).strip()
+                    if not v_desc and scene_plan:
+                        v_desc = str(scene_plan.get("environment", "") or scene_plan.get("action", "")).strip()
+                    if not v_subj and scene_plan:
+                        v_subj = str(scene_plan.get("subject", "")).strip()
+
+                    # High-aesthetic 4K/8K prompt construction
+                    if v_desc and len(v_desc) > 15:
+                        prompt_parts = []
+                        if v_subj and v_subj.lower() not in v_desc.lower():
+                            prompt_parts.append(v_subj)
+                        prompt_parts.append(v_desc)
+                        core_prompt = ", ".join(prompt_parts)
+                    else:
+                        core_prompt = self._extract_ai_scene_prompt(sentence, title, idx)
+
+                    ai_prompt = f"8k photorealistic ultra-detailed cinematic divine art, {core_prompt}, golden divine aura, sacred majestic lighting, 8k resolution, cinematic composition, hyperrealistic sacred epic art"
+
+                    ai_img_path = TEMP_DIR / f"gita_ai_{idx}_{slug}.jpg"
+                    print_info(f"   🕉️ [Gita/Granth Visual Engine] Scene {idx+1}: Generating 4K/8K AI visual: '{ai_prompt[:75]}...'")
+
+                    ai_img = vg.generate_image(
+                        prompt=ai_prompt,
+                        output_path=ai_img_path,
+                        width=target_width,
+                        height=target_height,
+                        style="3d_cinematic",
+                    )
+                    if not ai_img or not ai_img.exists() or ai_img.stat().st_size <= 5000:
+                        fallback_subj = v_subj or "Lord Krishna divine wisdom in Kurukshetra"
+                        ai_img = vg.generate_image(
+                            prompt=f"8k photorealistic divine cinematic art, {fallback_subj}, golden aura, epic masterpiece, 8k",
+                            output_path=ai_img_path,
+                            width=target_width,
+                            height=target_height,
+                            style="3d_cinematic",
+                        )
+
+                    if ai_img and ai_img.exists() and ai_img.stat().st_size > 5000:
+                        motion_clip = _image_to_motion_clip(
+                            image_path=ai_img,
+                            output_path=scene_target,
+                            duration=scene_dur,
+                            fps=30,
+                            width=target_width,
+                            height=target_height,
+                            motion_type=idx,
+                        )
+                        if motion_clip and motion_clip.exists() and motion_clip.stat().st_size > 10000:
+                            acquired_video = motion_clip
+                            print_success(f"   🎬 [Gita AI Motion Clip] Scene {idx+1} successfully converted to continuous Ken Burns motion clip ({scene_dur:.1f}s)!")
+                        else:
+                            raise RuntimeError(f"Motion video conversion failed for Gita/Granth scene {idx+1}.")
+                    else:
+                        raise RuntimeError(f"AI visual generation failed for Gita/Granth scene {idx+1}.")
+                elif visual_mode in ("multi_cinematic", "multi_best", "auto"):
                     historical = any(
                         k in sentence.lower()
                         for k in (
@@ -1003,7 +1101,16 @@ Output STRICT JSON with these keys:
                         style="cinematic",
                     )
                     if ai_res and ai_res.exists() and ai_res.stat().st_size > 4000:
-                        acquired_video = ai_res
+                        motion_clip = _image_to_motion_clip(
+                            image_path=ai_res,
+                            output_path=scene_target,
+                            duration=scene_dur,
+                            fps=30,
+                            width=target_width,
+                            height=target_height,
+                            motion_type=idx,
+                        )
+                        acquired_video = motion_clip if (motion_clip and motion_clip.exists()) else ai_res
                     else:
                         raise RuntimeError(f"AI visual generation failed for scene {idx+1}.")
                 else:
@@ -1044,7 +1151,7 @@ Output STRICT JSON with these keys:
                             acquired_video = None
 
                 # Every video-first asset must pass the same strict frame-level QA.
-                if acquired_video and visual_mode in ("multi_cinematic", "multi_best", "auto", "hybrid", "stock"):
+                if acquired_video and not is_gita_granth_topic and visual_mode in ("multi_cinematic", "multi_best", "auto", "hybrid", "stock"):
                     acquired_path = Path(acquired_video)
                     if acquired_path.suffix.lower() not in {".mp4", ".mov", ".webm", ".mkv"}:
                         print_warning(f"   ⚠️ Non-video asset returned for Scene {idx+1}; rejecting.")
