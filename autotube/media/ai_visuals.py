@@ -169,7 +169,7 @@ class VisualGenerator:
                         request_headers["Authorization"] = f"Bearer {pollinations_key}"
                     print_info(
                         f"Generating AI [{style.upper()}] visual for: '{prompt[:45]}...' "
-                        f"({gen_w}x{gen_h if require_native_resolution else gen_h})"
+                        f"({gen_w}x{gen_h})"
                     )
                     resp = requests.get(
                         url,
