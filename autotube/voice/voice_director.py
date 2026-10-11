@@ -1,5 +1,19 @@
 """Subject-aware voice selection for AutoTube narration."""
 
+import re
+
+# Sacred-text and spiritual-motivation topics use a calmer, devotional narrator.
+# These markers deliberately avoid the generic word "motivation", which is not
+# sufficient evidence that a video is about a scripture.
+SPIRITUAL_KEYS = (
+    "bhagavad gita", "bhagwat gita", "gita", "geeta", "गीता", "श्रीमद्भगवद्गीता",
+    "granth", "ग्रंथ", "scripture", "shloka", "shlok", "श्लोक",
+    "upanishad", "उपनिषद", "chanakya niti", "चाणक्य नीति", "sanatan", "सनातन",
+    "spiritual", "adhyatm", "आध्यात्म", "आध्यात्मिक", "vedas", "वेद",
+    "karma yoga", "कर्मयोग", "nishkama karma", "निष्काम कर्म",
+    "krishna", "कृष्ण", "arjuna", "अर्जुन",
+)
+
 
 SPACE_KEYS = (
     "black hole", "blackhole", "space", "antariksh", "brahmand", "galaxy",
@@ -39,6 +53,7 @@ VIRAL_KEYS = (
 
 VOICE_RULES: dict[str, dict[str, str]] = {
     "hi": {
+        "spiritual": "akashvani",
         "space": "hi_deep_cinematic_male",
         "science": "hi_calm_male",
         "history": "hi_authoritative_male",
@@ -49,6 +64,7 @@ VOICE_RULES: dict[str, dict[str, str]] = {
         "default": "hi_authoritative_male",
     },
     "en": {
+        "spiritual": "en_deep_warm_male",
         "space": "en_deep_cinematic_male",
         "science": "en_calm_british_male",
         "history": "en_deep_british_male",
@@ -62,8 +78,16 @@ VOICE_RULES: dict[str, dict[str, str]] = {
 
 
 def _has_any(text: str, keys: tuple[str, ...]) -> bool:
+    """Match short ASCII abbreviations as whole words (e.g. AI, not the 'ai' in daily)."""
     lowered = text.lower()
-    return any(key in lowered for key in keys)
+    for key in keys:
+        normalized = key.lower()
+        if normalized.isascii() and normalized.isalpha() and len(normalized) <= 3:
+            if re.search(rf"\b{re.escape(normalized)}\b", lowered):
+                return True
+        elif normalized in lowered:
+            return True
+    return False
 
 
 def detect_language(text: str, requested: str = "hi") -> str:
@@ -83,7 +107,12 @@ def choose_subject_voice(title: str, script_text: str, language: str = "hi") -> 
     lang = detect_language(f"{title}\n{script_text}", language)
     text = f"{title} {script_text}".lower()
 
-    if _has_any(text, SPACE_KEYS):
+    if any(
+        re.search(rf"\b{re.escape(key)}\b", text) if key.isascii() else key in text
+        for key in SPIRITUAL_KEYS
+    ):
+        category = "spiritual"
+    elif _has_any(text, SPACE_KEYS):
         category = "space"
     elif _has_any(text, HISTORY_KEYS):
         category = "history"

@@ -199,94 +199,165 @@ def acquire_scene_visuals_waterfall(
     scenes = getattr(script, "scenes", []) or []
 
     # -------------------------------------------------------------
-    # GITA / GRANTH / SCRIPTURE: Direct 4K/8K AI Photorealistic + Ken Burns Motion
-    # Bypass stock footage scraping for scripture/sacred themes; produce bespoke 8K art
+    # GITA / GRANTH / SCRIPTURE: Verified native-4K AI stills, then motion clips
+    # Detection is based on the requested topic/title, not narration/visual text,
+    # so a casual "karma" reference in an unrelated story cannot redirect the pipeline.
     # -------------------------------------------------------------
+    import os
+    import re
+
     topic = str(getattr(script, "topic", "") or "")
-    narration_text = str(getattr(script, "narration", "") or "")
-    scene_narrations = " ".join(str(getattr(s, "narration", "") or getattr(s, "text", "")) for s in scenes)
-    scene_meta = " ".join(f"{getattr(s, 'visual_subject', '')} {getattr(s, 'visual_description', '')}" for s in scenes)
-    full_text = f"{topic} {narration_text} {scene_narrations} {scene_meta}".lower()
-
-    gita_keywords = (
-        "gita", "गीता", "krishna", "कृष्ण", "arjuna", "अर्जुन", "karma", "कर्म",
-        "kurukshetra", "कुरुक्षेत्र", "chanakya", "चाणक्य", "upanishad", "उपनिषद",
-        "granth", "ग्रंथ", "shloka", "श्लोक", "bhagwat", "bhagavad", "vedic",
-        "vedas", "वेद", "ramayan", "रामायण", "mahabharat", "महाभारत", "sanatan",
-        "सनातन", "adhyatmik", "spiritual", "vishnu", "विष्णु", "bhagavan", "भगवान",
-        "dharma", "धर्म", "geeta"
+    title = str(getattr(script, "title", "") or "")
+    identity = f"{title} {topic}".lower()
+    spiritual_terms = (
+        "bhagavad gita", "bhagwat gita", "gita", "geeta", "granth", "scripture",
+        "shloka", "shlok", "upanishad", "chanakya niti", "sanatan", "spiritual",
+        "adhyatmik", "karma yoga", "nishkama karma", "vedic scripture",
+        "krishna", "arjuna", "mahabharat", "ramayan",
     )
-    is_gita_topic = any(k in full_text for k in gita_keywords)
+    devanagari_terms = (
+        "गीता", "श्रीमद्भगवद्गीता", "ग्रंथ", "ग्रन्थ", "शास्त्र", "श्लोक",
+        "उपनिषद", "चाणक्य नीति", "सनातन", "आध्यात्म", "आध्यात्मिक",
+        "कर्मयोग", "निष्काम कर्म", "कृष्ण", "अर्जुन", "महाभारत", "रामायण", "वेद",
+    )
+    is_spiritual_topic = (
+        any(re.search(rf"\b{re.escape(term)}\b", identity) for term in spiritual_terms)
+        or any(term in identity for term in devanagari_terms)
+    )
 
-    if is_gita_topic:
-        print_info(f"🕉️ [Gita/Granth Pipeline] Detected scripture/divine topic '{topic}'. Generating 4K/8K photorealistic AI visuals + Ken Burns continuous motion...")
+    if is_spiritual_topic:
+        from PIL import Image
         from autotube.media.ai_visuals import VisualGenerator
-        vg = VisualGenerator()
-        target_w = 1080 if orientation == "portrait" else 1920
-        target_h = 1920 if orientation == "portrait" else 1080
 
-        target_scenes = scenes[:max_scenes] if scenes else []
-        fallback_queries = getattr(script, "visual_keywords", []) or [topic or "Bhagavad Gita divine wisdom"]
-        expected_count = len(target_scenes) if target_scenes else len(fallback_queries[:max_scenes])
+        target_scenes = list(scenes[:max_scenes])
+        if not target_scenes:
+            raise RuntimeError(
+                "Scripture AI-only mode requires scene-by-scene narration and visual descriptions; "
+                "refusing to substitute generic stock footage."
+            )
+
+        resolution = os.getenv("AUTOTUBE_SPIRITUAL_IMAGE_RESOLUTION", "4k").strip().lower()
+        if resolution in {"8k", "4320"}:
+            source_w, source_h = (4320, 7680) if orientation == "portrait" else (7680, 4320)
+            resolution_label = "8K"
+        else:
+            source_w, source_h = (2160, 3840) if orientation == "portrait" else (3840, 2160)
+            resolution_label = "4K"
+
+        # Shorts are still encoded at the configured 1080x1920 final size; the
+        # source image itself must pass the separate native 4K pixel validation.
+        video_w, video_h = (1080, 1920) if orientation == "portrait" else (1920, 1080)
+        expected_count = len(target_scenes)
         gita_motion_clips: List[Path] = []
+        vg = VisualGenerator()
 
-        for idx in range(expected_count):
-            s = target_scenes[idx] if idx < len(target_scenes) else None
-            v_subj = str(getattr(s, "visual_subject", "") or getattr(s, "subject", "") or "").strip()
-            v_desc = str(getattr(s, "visual_description", "") or getattr(s, "description", "") or "").strip()
+        print_info(
+            f"🕉️ Scripture Motivation Mode: generating {expected_count} scene-specific "
+            f"native {resolution_label} AI images ({source_w}x{source_h}). "
+            "Stock-photo fallback is disabled."
+        )
 
-            if v_desc and len(v_desc) > 15:
-                prompt_parts = []
-                if v_subj and v_subj.lower() not in v_desc.lower():
-                    prompt_parts.append(v_subj)
-                prompt_parts.append(v_desc)
-                core_p = ", ".join(prompt_parts)
-            elif v_subj:
-                core_p = v_subj
-            else:
-                core_p = fallback_queries[idx % len(fallback_queries)]
+        for idx, scene in enumerate(target_scenes):
+            v_subj = str(
+                _scene_value(scene, "visual_subject", "")
+                or _scene_value(scene, "subject", "")
+                or _scene_value(scene, "visual_query", "")
+                or topic
+            ).strip()
+            narration = str(
+                _scene_value(scene, "narration", "")
+                or _scene_value(scene, "text", "")
+                or ""
+            ).strip()
+            v_desc = str(
+                _scene_value(scene, "visual_description", "")
+                or _scene_value(scene, "description", "")
+                or v_subj
+            ).strip()
+            if not narration:
+                raise RuntimeError(
+                    f"Scripture scene {idx + 1} has no narration; refusing unsynchronized visuals."
+                )
 
-            ai_prompt = f"8k photorealistic ultra-detailed cinematic divine art, {core_p}, golden divine aura, sacred majestic lighting, 8k resolution, cinematic composition, hyperrealistic sacred epic art"
-            img_path = output_dir / f"{slug}_gita_ai_{idx+1:02d}.jpg"
-            out_clip = output_dir / f"{slug}_gita_motion_{idx+1:02d}.mp4"
-
+            ai_prompt = (
+                f"Create ONE respectful, culturally grounded, photorealistic Indian spiritual cinematic still. "
+                f"Exact subject: {v_subj}. Exact spoken narration to illustrate: {narration}. "
+                f"Scene-specific details: {v_desc}. Overall topic: {topic}. "
+                "Follow the described scene precisely; do not add unrelated gods, random temples, modern offices, "
+                "smartphones, cartoons or fantasy props. If Shri Krishna is explicitly in this scene, depict him "
+                "with respectful traditional Indian iconography and recognizable customary clothing/ornaments; "
+                "show Arjuna or a Kurukshetra chariot only when the narration calls for them. "
+                "For scripture scenes use historically plausible palm-leaf/manuscript materials, oil lamps and "
+                "Indic calligraphy that is decorative and not meant to be legible. Photographic skin, cloth, stone, "
+                "brass and gold textures, cinematic natural lighting, detailed composition. "
+                "No captions, text overlay, logo or watermark. Native high-resolution source image."
+            )
+            img_path = output_dir / f"{slug}_scripture_ai{resolution_label.lower()}_scene_{idx + 1:02d}.jpg"
             ai_img = vg.generate_image(
                 prompt=ai_prompt,
                 output_path=img_path,
-                width=target_w,
-                height=target_h,
-                style="3d_cinematic",
+                width=source_w,
+                height=source_h,
+                style="spiritual_photorealistic",
+                allow_fallback=False,
+                require_native_resolution=True,
+                allow_photo_fallback=False,
             )
-            if not ai_img or not ai_img.exists() or ai_img.stat().st_size <= 5000:
-                fallback_subj = v_subj or "Lord Krishna divine wisdom in Kurukshetra"
-                ai_img = vg.generate_image(
-                    prompt=f"8k photorealistic divine cinematic art, {fallback_subj}, golden aura, epic masterpiece, 8k",
-                    output_path=img_path,
-                    width=target_w,
-                    height=target_h,
-                    style="3d_cinematic",
+            if not ai_img or not Path(ai_img).exists():
+                raise RuntimeError(
+                    f"Native {resolution_label} AI generation failed for scene {idx + 1}. "
+                    "The provider did not return a verified source image; no stock fallback will be used."
                 )
 
-            if ai_img and ai_img.exists() and ai_img.stat().st_size > 5000:
-                motion_clip = _image_to_motion_clip(
-                    image_path=ai_img,
-                    output_path=out_clip,
-                    duration=6.0,
-                    fps=30,
-                    width=target_w,
-                    height=target_h,
-                    motion_type=idx,
+            with Image.open(ai_img) as generated:
+                actual_w, actual_h = generated.size
+            if actual_w < source_w or actual_h < source_h:
+                raise RuntimeError(
+                    f"Scene {idx + 1} image is {actual_w}x{actual_h}; "
+                    f"native {resolution_label} requires at least {source_w}x{source_h} pixels."
                 )
-                if motion_clip and motion_clip.exists():
-                    gita_motion_clips.append(motion_clip)
-                    print_success(f"   🎬 [Gita Motion Clip] Scene {idx+1}/{expected_count} ready ({out_clip.name})")
 
-        if len(gita_motion_clips) == expected_count:
-            print_success(f"🕉️ Successfully generated all {expected_count} 4K AI continuous motion scenes for Gita/Granth video!")
-            return gita_motion_clips
-        elif gita_motion_clips:
-            print_warning(f"⚠️ Generated {len(gita_motion_clips)}/{expected_count} Gita AI motion clips.")
-            return gita_motion_clips
+            out_clip = output_dir / f"{slug}_scripture_motion_scene_{idx + 1:02d}.mp4"
+            motion_clip = _image_to_motion_clip(
+                image_path=Path(ai_img),
+                output_path=out_clip,
+                duration=6.0,
+                fps=30,
+                width=video_w,
+                height=video_h,
+                motion_type=idx,
+            )
+            if not motion_clip or not Path(motion_clip).exists():
+                raise RuntimeError(
+                    f"Could not convert validated AI image to motion clip for scene {idx + 1}."
+                )
+            gita_motion_clips.append(Path(motion_clip))
+            print_success(
+                f"✅ Scripture scene {idx + 1}/{expected_count}: native {resolution_label} "
+                f"image {actual_w}x{actual_h} validated; motion clip rendered."
+            )
+
+        if len(gita_motion_clips) != expected_count:
+            raise RuntimeError(
+                f"Scripture scene count mismatch: {len(gita_motion_clips)}/{expected_count}; "
+                "refusing partial output."
+            )
+        if not _verify_scene_batch(
+            gita_motion_clips,
+            target_scenes,
+            topic,
+            f"Native {resolution_label} Scripture AI",
+            script,
+        ):
+            raise RuntimeError(
+                "Scripture frame QA failed or Gemini vision is unavailable. "
+                "No unchecked visuals will be rendered or uploaded."
+            )
+
+        print_success(
+            f"🕉️ All {expected_count} scenes passed native-resolution and frame-level visual QA."
+        )
+        return gita_motion_clips
 
     # -------------------------------------------------------------
     # TIER 1: Google Flow Bridge (Google AI Pro Studio Engine)

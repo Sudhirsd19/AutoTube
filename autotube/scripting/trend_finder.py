@@ -65,6 +65,13 @@ NICHE_KEYWORD_MAPPINGS = {
     "जीव": "animal_secrets",
 }
 
+GITA_MOTIVATION_FALLBACK_FOCUS = (
+    "Bhagavad Gita and ancient Indian scripture life lessons, karma yoga, self-discipline, "
+    "resilience, non-attachment, inner peace, ethical choices and practical motivation. "
+    "Never invent quotations, chapter numbers or scientific claims attributed to scripture."
+)
+
+
 VIRAL_NICHES = {
     "space": "Mind-bending cosmic mysteries, black holes, rogue planets, cosmic radiation, universe boundaries, quantum vacuum decay",
     "science": "Shocking physics paradoxes, quantum mechanics anomalies, strange biology glitches, crazy discoveries, time perception",
@@ -72,6 +79,7 @@ VIRAL_NICHES = {
     "psychology": "Dark psychology, human mind tricks, subconscious cognitive biases, body language micro-expressions, manipulation defense",
     "mystery": "Unsolved global enigmas, deep earth anomalies, forbidden archaeological discoveries, eerie legends, impossible ancient maps",
     "mythology": "Ancient Indian mythological secrets, sacred divine weapons, unsolved epic mysteries, lost temples, celestial beings",
+    "gita_motivation": GITA_MOTIVATION_FALLBACK_FOCUS,
     "bharat_vigyan": "Bharat Ka Adbhut Vigyan: Kailasa Temple Ellora impossible monolithic carving from top down, Padmanabhaswamy Vault B acoustic snake lock, Delhi Iron Pillar 1600-year rustproof mystery, Ram Setu floating stone acoustics, Lepakshi hanging pillar gravity anomaly, Brihadeeswarar Temple 80-ton granite dome science",
     "glitch_matrix": "Glitch in the Matrix & Time Slips: The Man from Taured 1954 mystery, Pan American Flight 914 37-year time jump, Green Children of Woolpit, simulation hypothesis physical proofs, parallel universe sightings, quantum timeline shifts, deja vu glitches",
     "ocean": "Deep sea abyssal horrors, Mariana Trench sonar anomalies, Point Nemo alien sounds, giant colossal squids, glowing ocean milky seas, deep underwater brine pools",
@@ -135,7 +143,30 @@ CANONICAL_ENTITIES = [
 ]
 
 # Rich, multi-faceted fallback pools (18 diverse topics per niche)
+GITA_MOTIVATION_FALLBACKS = [
+    "Bhagavad Gita: How to Work Without Being Controlled by the Result",
+    "What the Gita Teaches About Fear of Failure and Starting Again",
+    "The Meaning of Nishkama Karma in Everyday Life",
+    "How the Gita Explains a Steady Mind During Difficult Times",
+    "Krishna's Guidance to Arjuna: Acting Clearly When You Feel Confused",
+    "A Gita-Inspired Way to Stop Comparing Your Journey With Others",
+    "What Ancient Indian Wisdom Says About Discipline and Patience",
+    "How to Turn Setbacks Into Learning Without Losing Your Peace",
+    "Gita Life Lesson: Focus on the Next Right Action",
+    "The Difference Between Desire, Duty and Attachment in the Gita",
+    "How the Idea of Dharma Can Guide Difficult Decisions",
+    "What the Upanishads Teach About Knowing Your Inner Self",
+    "Chanakya Niti: Why Self-Control Matters More Than Empty Promises",
+    "Ancient Wisdom on Speaking Less and Choosing Words Carefully",
+    "How Reflection and Daily Practice Build a More Steady Mind",
+    "A Scripture-Inspired Lesson on Patience, Courage and Responsibility",
+    "What the Gita's Sthitaprajna Ideal Means in Modern Life",
+    "A Practical Reflection on Karma, Effort and Emotional Balance",
+]
+
+
 NICHE_FALLBACKS = {
+    "gita_motivation": GITA_MOTIVATION_FALLBACKS,
     "space": [
         "Why You Would Age Backwards Near A Supermassive Neutron Star",
         "The Rogue Planet Wandering Towards Our Solar System Unseen",
@@ -393,6 +424,33 @@ NICHE_FALLBACKS = {
 }
 
 
+SCRIPTURE_TOPIC_MARKERS = (
+    "bhagavad gita", "bhagwat gita", "gita", "geeta", "granth", "scripture",
+    "shloka", "shlok", "upanishad", "chanakya niti", "sanatan", "spiritual",
+    "vedic scripture", "karma yoga", "nishkama karma",
+)
+SCRIPTURE_DEVANAGARI_MARKERS = (
+    "गीता", "ग्रंथ", "ग्रन्थ", "शास्त्र", "श्लोक", "उपनिषद", "चाणक्य नीति",
+    "सनातन", "आध्यात्म", "कर्मयोग", "निष्काम कर्म", "वेद",
+)
+
+
+def _ensure_scripture_topic_identity(niche: str, topics: List[str]) -> List[str]:
+    """Retain a sacred-text marker so script, voice and visual routing remain consistent."""
+    if niche != "gita_motivation":
+        return topics
+    tagged: List[str] = []
+    for topic in topics:
+        text = str(topic).strip()
+        lowered = text.lower()
+        has_marker = (
+            any(re.search(rf"\b{re.escape(term)}\b", lowered) for term in SCRIPTURE_TOPIC_MARKERS)
+            or any(term in lowered for term in SCRIPTURE_DEVANAGARI_MARKERS)
+        )
+        tagged.append(text if has_marker else f"Ancient Scripture Wisdom: {text}")
+    return tagged
+
+
 class TrendFinder:
     """Discovers viral, high-retention topics and guarantees zero repetition with multi-factor deduplication."""
 
@@ -411,6 +469,19 @@ class TrendFinder:
     def resolve_niche(self, raw_niche: str) -> Tuple[str, str]:
         """Map any free-form slot niche string to a canonical key and rich prompt description."""
         raw_lower = raw_niche.lower().strip()
+        # Explicit scripture-topic routing comes before the broad substring map.
+        # Latin terms use word boundaries so "gita" does not accidentally match "digital".
+        sacred_terms = (
+            "bhagavad gita", "bhagwat gita", "gita", "geeta", "granth", "scripture",
+            "shloka", "shlok", "upanishad", "chanakya niti", "sanatan", "spiritual",
+            "karma yoga", "nishkama karma",
+        )
+        if any(re.search(rf"\b{re.escape(term)}\b", raw_lower) for term in sacred_terms) or any(
+            term in raw_lower
+            for term in ("गीता", "ग्रंथ", "श्लोक", "उपनिषद", "चाणक्य नीति", "सनातन", "आध्यात्मिक", "कर्मयोग", "निष्काम कर्म")
+        ):
+            return "gita_motivation", VIRAL_NICHES["gita_motivation"]
+
         # Direct lookup
         if raw_lower in VIRAL_NICHES:
             return raw_lower, VIRAL_NICHES[raw_lower]
@@ -607,6 +678,7 @@ Return ONLY a valid JSON list of strings, for example:
                                     break
 
                         if valid_topics:
+                            valid_topics = _ensure_scripture_topic_identity(canon_niche, valid_topics)
                             for vt in valid_topics:
                                 self.session_used_topics.add(vt.lower())
                                 # Immediately record so subsequent slots in batch cannot collide
@@ -645,6 +717,7 @@ Return ONLY a valid JSON list of strings, for example:
                 else:
                     selected.append(f"{base} [Deep Dive Mystery]")
 
+        selected = _ensure_scripture_topic_identity(canon_niche, selected)
         for s in selected:
             self.session_used_topics.add(s.lower())
             self.record_topic(s)
