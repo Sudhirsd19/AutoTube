@@ -1,4 +1,4 @@
-"""AI visual generation using free Pollinations API and Pillow fallbacks."""
+"""AI image generation through Pollinations with verified native-resolution mode."""
 
 import random
 import time
@@ -32,7 +32,7 @@ class VisualGenerator:
         """Generate an AI image or fallback graphic with custom style."""
         output_path.parent.mkdir(parents=True, exist_ok=True)
 
-        # Attempt free AI image generation via Pollinations
+        # Attempt AI image generation via the configured Pollinations image API
         success = self._fetch_pollinations_image(
             prompt,
             output_path,
