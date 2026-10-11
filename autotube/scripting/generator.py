@@ -38,7 +38,7 @@ def is_gita_granth_motivation_topic(topic: str) -> bool:
     """Detect a scripture topic without treating the generic word 'motivation' as scripture."""
     lowered = (topic or "").strip().lower()
     return (
-        any(re.search(rf"\\b{re.escape(term)}\\b", lowered) for term in SPIRITUAL_TOPIC_MARKERS)
+        any(re.search(rf"\b{re.escape(term)}\b", lowered) for term in SPIRITUAL_TOPIC_MARKERS)
         or any(term in lowered for term in SPIRITUAL_DEVANAGARI_MARKERS)
     )
 
@@ -48,7 +48,7 @@ def is_bhagavad_gita_topic(topic: str) -> bool:
     lowered = (topic or "").strip().lower()
     gita_terms = ("bhagavad gita", "bhagwat gita", "gita", "geeta")
     return (
-        any(re.search(rf"\\b{re.escape(term)}\\b", lowered) for term in gita_terms)
+        any(re.search(rf"\b{re.escape(term)}\b", lowered) for term in gita_terms)
         or "गीता" in lowered
     )
 
