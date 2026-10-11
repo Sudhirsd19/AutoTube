@@ -8,6 +8,7 @@
 
 import pytest
 from pathlib import Path
+from PIL import Image
 from unittest.mock import MagicMock, patch
 from fastapi import HTTPException
 
@@ -368,12 +369,17 @@ def test_gita_granth_visual_waterfall_direct_ai_image_to_motion(tmp_path):
     mock_script.scenes = [s1]
 
     ai_img = tmp_path / "gita_ai_01.jpg"
-    ai_img.write_bytes(b"dummy_image_data_bytes_12345" * 500)
+    # A valid image at the native 4K portrait dimensions is required by the
+    # dedicated scripture pipeline; use a flat image to keep this fixture small.
+    Image.new("RGB", (2160, 3840), color=(40, 60, 90)).save(
+        ai_img, format="JPEG", quality=25, optimize=True
+    )
     motion_mp4 = tmp_path / "gita_motion_01.mp4"
     motion_mp4.write_bytes(b"dummy_motion_video_bytes_12345" * 1000)
 
     with patch("autotube.media.ai_visuals.VisualGenerator.generate_image", return_value=ai_img) as mock_gen, \
          patch("autotube.media.visual_waterfall._image_to_motion_clip", return_value=motion_mp4) as mock_motion, \
+         patch("autotube.media.visual_waterfall._verify_scene_batch", return_value=True) as mock_qa, \
          patch("autotube.media.multi_stock_aggregator.MultiStockAggregator.get_best_scene_asset") as mock_stock:
 
         result = acquire_scene_visuals_waterfall(
@@ -389,6 +395,7 @@ def test_gita_granth_visual_waterfall_direct_ai_image_to_motion(tmp_path):
         # AI image generator and motion converter must be called
         assert mock_gen.called
         assert mock_motion.called
+        assert mock_qa.called
         assert len(result) == 1
         assert result[0] == motion_mp4
 
