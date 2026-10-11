@@ -87,4 +87,4 @@ def test_generic_motivation_does_not_force_spiritual_voice():
         "Daily Motivation",
         "Build a consistent routine and make progress every day.",
         "en",
-    ) == "en_cinematic_narrator"
+    ) == "en_authoritative_male"
