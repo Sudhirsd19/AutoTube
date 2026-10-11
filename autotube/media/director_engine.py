@@ -669,6 +669,8 @@ Output STRICT JSON with these keys:
                         "visual_environment": str(raw.get("visual_environment") or raw.get("environment") or "").strip(),
                         "must_show": list(raw.get("must_show") or []),
                         "avoid": list(raw.get("avoid") or []),
+                        "custom_image_path": str(raw.get("custom_image_path") or raw.get("image_path") or "").strip(),
+                        "visual_prompt": str(raw.get("visual_prompt") or raw.get("prompt") or "").strip(),
                     }
                 )
 
@@ -687,6 +689,8 @@ Output STRICT JSON with these keys:
                 scene["visual_environment"] = c.get("visual_environment", "")
                 scene["must_show"] = c.get("must_show", [])
                 scene["avoid"] = c.get("avoid", [])
+                scene["custom_image_path"] = c.get("custom_image_path", "")
+                scene["visual_prompt"] = c.get("visual_prompt", "")
 
             if not scene.get("visual_subject"):
                 q = self._extract_visual_search_query(scene["narration"], title, idx)
@@ -713,6 +717,87 @@ Output STRICT JSON with these keys:
         if not any(plan["subject"] or plan["action"] or plan["environment"] or plan["must_show"] or plan["search_queries"]):
             return None
         return plan
+
+    def breakdown_vedic_script(self, script_text: str) -> List[Dict[str, Any]]:
+        """Split a Hindi spiritual or Vedic script into 5-7 storyboard scenes with 8K English AI prompts."""
+        raw_text = (script_text or "").strip()
+        if not raw_text:
+            return []
+
+        # Try Gemini first if key available
+        gemini_key = os.getenv("GEMINI_API_KEY", "") or getattr(self.cfg, "gemini_api_key", "")
+        if gemini_key:
+            try:
+                from google import genai
+                client = genai.Client(api_key=gemini_key)
+                prompt = f"""You are a master Vedic and Hindu epic film director (Mahabharata, Gita, Ramayana).
+Break down the following Hindi narration script into 5 to 7 sequential video scenes.
+For each scene, output:
+1. 'scene_number': integer 1, 2, ...
+2. 'narration': exact spoken sentence in authentic Hindi Devanagari.
+3. 'visual_prompt': an ultra-detailed 8K photorealistic English prompt designed for Midjourney / Leonardo AI / Flux. Describe authentic Indian aesthetics, royal armor or silk, dramatic lighting, sacred Vedic atmosphere, no cartoon, no anime, 9:16 vertical aspect ratio.
+4. 'visual_subject': 2-3 simple English words.
+
+SCRIPT:
+\"\"\"{raw_text}\"\"\"
+
+Return ONLY a JSON list of scene objects matching this structure:
+[
+  {{"scene_number": 1, "narration": "...", "visual_prompt": "...", "visual_subject": "..."}}
+]"""
+                for m in ["gemini-2.0-flash", "gemini-1.5-flash"]:
+                    try:
+                        response = client.models.generate_content(
+                            model=m,
+                            contents=prompt,
+                            config={"response_mime_type": "application/json"},
+                        )
+                        if response.text:
+                            import json
+                            parsed = json.loads(response.text)
+                            if isinstance(parsed, list) and len(parsed) >= 2:
+                                return parsed
+                    except Exception:
+                        continue
+            except Exception as e:
+                print_warning(f"Gemini vedic script breakdown notice: {e}")
+
+        # Intelligent Rule-Based Fallback
+        split_scenes = self._split_script_into_scenes(raw_text, max_scenes=7)
+        results = []
+        for idx, s in enumerate(split_scenes):
+            sentence = str(s.get("narration", "")).strip()
+            s_low = sentence.lower()
+
+            if any(k in s_low for k in ("कृष्ण", "पार्थ", "माधव", "केशव", "krishna", "parth")):
+                v_prompt = "Cinematic 8k photorealistic shot of Lord Krishna in divine royal yellow pitambara silk and peacock feather crown, standing majestically on an ancient golden chariot in Kurukshetra at dramatic sunset, radiant golden divine aura around his head, serene compassionate smile, speaking sacred wisdom to Arjuna, sacred epic Vedic cinema, masterpiece, 9:16 vertical"
+                v_subj = "Lord Krishna speaking to Parth on chariot"
+            elif any(k in s_low for k in ("चिंता", "भविष्य", "बर्बाद", "तनाव", "worried", "anxious")):
+                v_prompt = "Cinematic 8k photorealistic close-up of a modern thoughtful Indian young man sitting alone at dusk, looking anxiously through a rain-streaked window, deep contemplation, dramatic volumetric lighting, realistic skin texture, moody cinematic masterpiece, 9:16 vertical"
+                v_subj = "man worried about future"
+            elif any(k in s_low for k in ("कांप", "अर्जुन", "arjuna", "trembl")) or ("हार का" in s_low or "डर था" in s_low or "हारना" in s_low):
+                v_prompt = "Cinematic 8k photorealistic shot of warrior prince Arjuna in ornate ancient Indian golden armor and royal crown, standing overwhelmed on the dusty battlefield of Kurukshetra, sacred Gandiva bow trembling in his hands, dark dramatic storm clouds and burning embers in background, hyperrealistic, 9:16 vertical"
+                v_subj = "Arjuna trembling in fear Kurukshetra"
+            elif any(k in s_low for k in ("फोकस", "तनाव छोड़ते", "डर खत्म", "focus", "clarity")):
+                v_prompt = "Cinematic 8k photorealistic shot of Arjuna's eyes filled with fierce determination and razor-sharp focus, gripping the divine bow firmly on Kurukshetra battlefield, divine golden rays of sunlight piercing through dark thunder clouds, cinematic lighting, hyperrealistic, 9:16 vertical"
+                v_subj = "Arjuna razor sharp focus on battlefield"
+            elif any(k in s_low for k in ("भाग्य", "मेहनत", "गिरने", "कर्म", "अधिकार", "destiny", "rise", "warrior")):
+                v_prompt = "Cinematic 8k photorealistic shot of a determined ancient warrior rising up powerfully from the battlefield with iron willpower, glorious golden dawn horizon in background, dust and glowing golden particles in air, inspirational victory atmosphere, 8k, 9:16 vertical"
+                v_subj = "warrior rising with iron will"
+            elif any(k in s_low for k in ("सब्सक्राइब", "जय श्री कृष्ण", "पहचान", "शंख", "conch")):
+                v_prompt = "Cinematic 8k photorealistic wide shot of Lord Krishna on the golden chariot blowing the sacred Panchajanya divine white conch, cosmic golden sky with celestial radiant energy, epic triumphant Mahabharata climax, hyperrealistic sacred art, masterpiece, 9:16 vertical"
+                v_subj = "Lord Krishna blowing Panchajanya conch"
+            else:
+                v_prompt = f"Cinematic 8k photorealistic sacred Indian epic art, {self._extract_ai_scene_prompt(sentence, 'Bhagavad Gita', idx)}, golden radiant aura, sacred cinematic lighting, 9:16 vertical"
+                v_subj = "sacred Vedic scene"
+
+            results.append({
+                "scene_number": idx + 1,
+                "narration": sentence,
+                "visual_prompt": v_prompt,
+                "visual_subject": v_subj,
+            })
+        return results
 
     def render_custom_video(
         self,
@@ -940,28 +1025,55 @@ Output STRICT JSON with these keys:
             scene_dur = scene_durations[idx] if idx < len(scene_durations) else float(scene.get("duration", 6.0))
 
             try:
-                if is_gita_granth_topic:
+                # 0. User-provided custom/uploaded image takes HIGHEST precedence
+                custom_img_str = str(scene.get("custom_image_path") or scene.get("image_path") or "").strip()
+                if custom_img_str:
+                    custom_img_p = Path(custom_img_str)
+                    if custom_img_p.exists() and custom_img_p.stat().st_size > 5000:
+                        print_info(f"   🖼️ [Custom User Image] Scene {idx+1}: Using uploaded 4K image '{custom_img_p.name}' -> Ken Burns motion clip...")
+                        if progress_callback:
+                            progress_callback(55 + int((idx / max(1, len(scene_specs))) * 18), f"🎬 Scene {idx+1}/{len(scene_specs)}: Animating user custom image...")
+                        motion_clip = _image_to_motion_clip(
+                            image_path=custom_img_p,
+                            output_path=scene_target,
+                            duration=scene_dur,
+                            fps=30,
+                            width=target_width,
+                            height=target_height,
+                            motion_type=idx,
+                        )
+                        if motion_clip and motion_clip.exists() and motion_clip.stat().st_size > 10000:
+                            acquired_video = motion_clip
+                            print_success(f"   🎬 [Custom Image Motion Clip] Scene {idx+1} successfully converted to Ken Burns motion clip ({scene_dur:.1f}s)!")
+                        else:
+                            print_warning(f"Ken Burns conversion failed for custom image in scene {idx+1}, falling back to AI visuals.")
+
+                if not acquired_video and is_gita_granth_topic:
                     if progress_callback:
                         progress_callback(55 + int((idx / max(1, len(scene_specs))) * 18), f"🎨 Scene {idx+1}/{len(scene_specs)}: Generating 4K/8K divine AI photorealistic visual...")
 
-                    v_desc = str(scene.get("visual_description", "")).strip()
-                    v_subj = str(scene.get("visual_subject", "")).strip()
-                    if not v_desc and scene_plan:
-                        v_desc = str(scene_plan.get("environment", "") or scene_plan.get("action", "")).strip()
-                    if not v_subj and scene_plan:
-                        v_subj = str(scene_plan.get("subject", "")).strip()
-
-                    # High-aesthetic 4K/8K prompt construction
-                    if v_desc and len(v_desc) > 15:
-                        prompt_parts = []
-                        if v_subj and v_subj.lower() not in v_desc.lower():
-                            prompt_parts.append(v_subj)
-                        prompt_parts.append(v_desc)
-                        core_prompt = ", ".join(prompt_parts)
+                    explicit_prompt = str(scene.get("visual_prompt") or "").strip()
+                    if explicit_prompt:
+                        ai_prompt = explicit_prompt
                     else:
-                        core_prompt = self._extract_ai_scene_prompt(sentence, title, idx)
+                        v_desc = str(scene.get("visual_description", "")).strip()
+                        v_subj = str(scene.get("visual_subject", "")).strip()
+                        if not v_desc and scene_plan:
+                            v_desc = str(scene_plan.get("environment", "") or scene_plan.get("action", "")).strip()
+                        if not v_subj and scene_plan:
+                            v_subj = str(scene_plan.get("subject", "")).strip()
 
-                    ai_prompt = f"8k photorealistic ultra-detailed cinematic divine art, {core_prompt}, golden divine aura, sacred majestic lighting, 8k resolution, cinematic composition, hyperrealistic sacred epic art"
+                        # High-aesthetic 4K/8K prompt construction
+                        if v_desc and len(v_desc) > 15:
+                            prompt_parts = []
+                            if v_subj and v_subj.lower() not in v_desc.lower():
+                                prompt_parts.append(v_subj)
+                            prompt_parts.append(v_desc)
+                            core_prompt = ", ".join(prompt_parts)
+                        else:
+                            core_prompt = self._extract_ai_scene_prompt(sentence, title, idx)
+
+                        ai_prompt = f"8k photorealistic ultra-detailed cinematic divine art, {core_prompt}, golden divine aura, sacred majestic lighting, 8k resolution, cinematic composition, hyperrealistic sacred epic art"
 
                     ai_img_path = TEMP_DIR / f"gita_ai_{idx}_{slug}.jpg"
                     print_info(f"   🕉️ [Gita/Granth Visual Engine] Scene {idx+1}: Generating 4K/8K AI visual: '{ai_prompt[:75]}...'")
@@ -974,7 +1086,7 @@ Output STRICT JSON with these keys:
                         style="3d_cinematic",
                     )
                     if not ai_img or not ai_img.exists() or ai_img.stat().st_size <= 5000:
-                        fallback_subj = v_subj or "Lord Krishna divine wisdom in Kurukshetra"
+                        fallback_subj = scene.get("visual_subject") or "Lord Krishna divine wisdom in Kurukshetra"
                         ai_img = vg.generate_image(
                             prompt=f"8k photorealistic divine cinematic art, {fallback_subj}, golden aura, epic masterpiece, 8k",
                             output_path=ai_img_path,
@@ -1000,7 +1112,7 @@ Output STRICT JSON with these keys:
                             raise RuntimeError(f"Motion video conversion failed for Gita/Granth scene {idx+1}.")
                     else:
                         raise RuntimeError(f"AI visual generation failed for Gita/Granth scene {idx+1}.")
-                elif visual_mode in ("multi_cinematic", "multi_best", "auto"):
+                elif not acquired_video and visual_mode in ("multi_cinematic", "multi_best", "auto"):
                     historical = any(
                         k in sentence.lower()
                         for k in (

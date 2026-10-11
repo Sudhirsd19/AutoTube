@@ -133,23 +133,26 @@ class VisualGenerator:
                     time.sleep(1)
                     continue
 
-        # If Pollinations failed or 402 rate-limited, fall back to high-res Pexels Photo
-        try:
-            from autotube.media.pexels_video import PexelsVideoFetcher
-            pv = PexelsVideoFetcher()
-            if pv.is_configured():
-                # Extract clean English keywords from prompt
-                stop_w = {"masterpiece", "detailed", "lighting", "render", "resolution", "cinematic", "photorealistic", "style", "vintage", "highly", "dramatic"}
-                words = [w for w in re.findall(r"[a-zA-Z]{3,}", prompt) if w.lower() not in stop_w]
-                clean_q = " ".join(words[:3]) if words else prompt[:30]
-                if clean_q:
-                    photo_path = pv.get_scene_photo(clean_q, orientation="portrait" if is_vertical else "landscape")
-                    if photo_path and photo_path.exists() and photo_path.stat().st_size > 10000:
-                        shutil.copy(photo_path, output_path)
-                        print_success(f"Pexels authentic photo fallback saved: {output_path.name}")
-                        return True
-        except Exception as pe:
-            print_warning(f"Pexels photo fallback notice: {pe}")
+        # For sacred/Vedic/epics (Gita, Krishna, Arjuna, Mahabharata), DO NOT fallback to random Pexels stock photos (avoids repeated deity statue photos)
+        is_divine_prompt = any(k in prompt.lower() for k in ("gita", "krishna", "arjuna", "parth", "kurukshetra", "vedic", "epic art", "divine art", "hindu", "bhagavad"))
+        if not is_divine_prompt:
+            # If Pollinations failed or 402 rate-limited, fall back to high-res Pexels Photo
+            try:
+                from autotube.media.pexels_video import PexelsVideoFetcher
+                pv = PexelsVideoFetcher()
+                if pv.is_configured():
+                    # Extract clean English keywords from prompt
+                    stop_w = {"masterpiece", "detailed", "lighting", "render", "resolution", "cinematic", "photorealistic", "style", "vintage", "highly", "dramatic"}
+                    words = [w for w in re.findall(r"[a-zA-Z]{3,}", prompt) if w.lower() not in stop_w]
+                    clean_q = " ".join(words[:3]) if words else prompt[:30]
+                    if clean_q:
+                        photo_path = pv.get_scene_photo(clean_q, orientation="portrait" if is_vertical else "landscape")
+                        if photo_path and photo_path.exists() and photo_path.stat().st_size > 10000:
+                            shutil.copy(photo_path, output_path)
+                            print_success(f"Pexels authentic photo fallback saved: {output_path.name}")
+                            return True
+            except Exception as pe:
+                print_warning(f"Pexels photo fallback notice: {pe}")
 
         return False
 

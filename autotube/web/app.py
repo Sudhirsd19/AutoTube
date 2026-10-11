@@ -16,8 +16,10 @@ import os
 import json
 import re
 import shutil
+import time
+import uuid
 
-from fastapi import FastAPI, BackgroundTasks, HTTPException, Request, UploadFile, File
+from fastapi import FastAPI, BackgroundTasks, HTTPException, Request, UploadFile, File, Form
 from fastapi.responses import HTMLResponse, JSONResponse, FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -194,6 +196,11 @@ class DirectorPublishRequest(BaseModel):
     privacy: str = "public"
     pinned_comment: Optional[str] = None
     channel: Optional[str] = "english"
+
+
+class VedicBreakdownRequest(BaseModel):
+    script_text: str
+    title: Optional[str] = "Bhagavad Gita Motivation"
 
 
 # State cache for last completed Director render
@@ -1469,7 +1476,16 @@ async def stream_director_temp_file(filename: str):
 async def stream_director_bgm_file(filename: str):
     """Stream background music track for browser preview."""
     audio_dir = PROJECT_ROOT / "assets" / "audio"
-    matches = list(audio_dir.rglob(filename))
+    clean_name = filename.strip()
+    # 1. Exact or partial match on audio file
+    matches = [p for p in audio_dir.rglob(f"*{clean_name}*") if p.is_file() and p.suffix.lower() in (".mp3", ".wav", ".m4a")]
+    if not matches:
+        # 2. Check if clean_name corresponds to a category folder
+        cat_dir = audio_dir / clean_name
+        if cat_dir.is_dir():
+            matches = [p for p in cat_dir.glob("*.mp3") if p.is_file()]
+    if not matches and "spirit" in clean_name.lower():
+        matches = list((audio_dir / "spiritual").glob("*.mp3"))
     if not matches:
         raise HTTPException(status_code=404, detail="BGM track not found")
     return FileResponse(matches[0], media_type="audio/mpeg")
@@ -1587,6 +1603,56 @@ async def publish_director_video(req: DirectorPublishRequest):
 
     log_event(f"Director Short successfully published to YouTube: {video_url}!")
     return {"success": True, "url": video_url}
+
+
+# -------------------------------------------------------------
+# API ROUTES: VEDIC & GRANTH STORYBOARD STUDIO
+# -------------------------------------------------------------
+@app.post("/api/vedic/breakdown")
+async def breakdown_vedic_script_endpoint(req: VedicBreakdownRequest):
+    """Breakdown Hindi Vedic / Granth script into storyboard scenes with 8K English AI prompts."""
+    from autotube.media.director_engine import DirectorEngine
+    director = DirectorEngine()
+    scenes = director.breakdown_vedic_script(req.script_text)
+    return {"success": True, "scenes": scenes}
+
+
+@app.post("/api/vedic/upload_image")
+async def upload_vedic_scene_image(
+    file: UploadFile = File(...),
+    scene_index: int = Form(1),
+):
+    """Upload user's manually generated 4K/8K image for a specific storyboard scene."""
+    upload_dir = PROJECT_ROOT / "temp" / "vedic_uploads"
+    upload_dir.mkdir(parents=True, exist_ok=True)
+    raw_ext = Path(file.filename or "scene.jpg").suffix.lower()
+    ext = raw_ext if raw_ext in (".jpg", ".jpeg", ".png", ".webp") else ".jpg"
+    safe_name = f"vedic_scene_{scene_index}_{int(time.time())}_{uuid.uuid4().hex[:6]}{ext}"
+    dest_path = upload_dir / safe_name
+
+    content = await file.read()
+    with open(dest_path, "wb") as f:
+        f.write(content)
+
+    return {
+        "success": True,
+        "scene_index": scene_index,
+        "file_path": str(dest_path),
+        "filename": safe_name,
+        "stream_url": f"/api/vedic/stream_upload/{safe_name}",
+        "size_bytes": len(content),
+    }
+
+
+@app.get("/api/vedic/stream_upload/{filename}")
+async def stream_vedic_uploaded_image(filename: str):
+    """Stream user-uploaded scene image to browser for live storyboard preview."""
+    clean_name = Path(filename).name
+    img_p = PROJECT_ROOT / "temp" / "vedic_uploads" / clean_name
+    if not img_p.exists():
+        raise HTTPException(status_code=404, detail="Uploaded scene image not found")
+    media_type = "image/png" if img_p.suffix.lower() == ".png" else "image/jpeg"
+    return FileResponse(img_p, media_type=media_type)
 
 
 # Backward compatibility aliases

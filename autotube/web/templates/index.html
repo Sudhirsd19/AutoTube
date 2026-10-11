@@ -112,6 +112,9 @@
       <button onclick="switchTab('aivideo')" id="tab-btn-aivideo" class="tab-btn px-4 py-2 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800/50 flex items-center gap-2">
         <i class="fa-solid fa-wand-magic-sparkles text-purple-400"></i> Custom Story & Video Studio
       </button>
+      <button onclick="switchTab('vedic')" id="tab-btn-vedic" class="tab-btn px-4 py-2 rounded-lg text-amber-400 hover:text-amber-300 hover:bg-slate-800/50 flex items-center gap-2 border border-amber-500/30">
+        <span class="text-base">🕉️</span> Vedic & Granth Studio
+      </button>
       <button onclick="switchTab('terminal')" id="tab-btn-terminal" class="tab-btn px-4 py-2 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800/50 flex items-center gap-2">
         <i class="fa-solid fa-terminal"></i> Live Generation Terminal
       </button>
@@ -839,6 +842,224 @@
     </div>
 
     <!-- ================================================================= -->
+    <!-- TAB 4.5: VEDIC & GRANTH STORYBOARD STUDIO (Bhagavad Gita / Scriptures) -->
+    <!-- ================================================================= -->
+    <div id="tab-vedic" class="tab-content hidden space-y-6">
+
+      <!-- TOP BANNER & PHILOSOPHY -->
+      <div class="glass-card p-6 rounded-2xl border border-amber-500/30 space-y-3 shadow-xl bg-gradient-to-r from-amber-950/20 via-slate-900/90 to-purple-950/20">
+        <div class="flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <h2 class="text-2xl font-bold text-amber-300 flex items-center gap-2">
+              <span>🕉️</span> वैदिक एवं ग्रन्थ स्टोरीबोर्ड स्टूडियो (Vedic &amp; Granth 4K Studio)
+            </h2>
+            <p class="text-xs sm:text-sm text-slate-300 mt-1">
+              श्रीमद्भगवद्गीता, महाभारत और सनातन ग्रंथों के लिए 9:16 Shorts स्टूडियो — सीन दर सीन 8K इंग्लिश AI प्रॉम्प्ट कॉपी करें, अपनी 4K कस्टम इमेज अपलोड करें (ऑटोमैटिक 30fps Ken Burns मोशन वीडियो), और पवित्र दिव्य आवाज के साथ वीडियो बनाएं।
+            </p>
+          </div>
+          <div class="flex items-center gap-2 bg-slate-900/90 px-3.5 py-2 rounded-xl border border-amber-500/30 text-xs">
+            <span class="text-amber-400 font-bold">📱 Format:</span>
+            <span class="text-white font-semibold">9:16 Vertical Short (1080x1920)</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- STEP 1: HINDI SCRIPT & SCENE BREAKDOWN -->
+      <div class="glass-card p-6 rounded-2xl border border-brand-border space-y-4 shadow-xl">
+        <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3">
+          <div class="flex items-center gap-2">
+            <span class="w-6 h-6 rounded-full bg-amber-500/20 text-amber-400 font-bold text-xs flex items-center justify-center border border-amber-500/40">1</span>
+            <h3 class="text-base font-bold text-white flex items-center gap-2">
+              <i class="fa-solid fa-scroll text-amber-400"></i> हिंदी कथा / श्लोक स्क्रिप्ट (Hindi Script)
+            </h3>
+          </div>
+          <div class="flex items-center gap-2">
+            <button type="button" onclick="copyAllVedicPrompts()" id="btn-copy-all-prompts" class="px-3.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-amber-300 border border-amber-500/30 text-xs font-bold transition flex items-center gap-1.5 shadow">
+              <i class="fa-solid fa-copy"></i> 📋 Copy All 8K Prompts (Batch)
+            </button>
+            <button type="button" onclick="breakdownVedicScript()" id="btn-breakdown-script" class="px-4 py-1.5 rounded-lg bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-black text-xs font-bold transition flex items-center gap-1.5 shadow-md">
+              <i class="fa-solid fa-bolt"></i> ⚡ Break Script into Scenes &amp; 8K Prompts
+            </button>
+          </div>
+        </div>
+
+        <div class="space-y-3">
+          <div class="flex items-center justify-between text-xs text-slate-400">
+            <label class="font-semibold text-slate-300">Script Narration (Revised Devanagari):</label>
+            <div class="flex items-center gap-3">
+              <span>Words: <b id="vedic-word-count" class="text-amber-400">0</b></span>
+              <span>Est. Duration: <b id="vedic-est-duration" class="text-emerald-400">0s</b></span>
+            </div>
+          </div>
+          <textarea id="vedic-script-input" rows="5" oninput="updateVedicScriptStats()" class="w-full glass bg-slate-900/90 p-3.5 rounded-xl border border-slate-700 text-xs sm:text-sm text-white focus:outline-none focus:border-amber-400 font-sans leading-relaxed">क्या आप भी भविष्य की चिंता में अपना आज बर्बाद कर रहे हैं? कुरुक्षेत्र में अर्जुन के हाथ कांप रहे थे, क्योंकि उन्हें अपनी हार का डर था। तब भगवान कृष्ण ने कहा— पार्थ, तुम्हारा अधिकार केवल कर्म पर है, फल पर नहीं। जब आप परिणाम का तनाव छोड़ते हैं, तो डर खत्म होता है और असली फोकस शुरू होता है। खुद को गिरने न दें, बल्कि अपनी मेहनत से अपना भाग्य खुद लिखें। हार केवल एक घटना है, आपकी पहचान नहीं। क्या आप आज अपना शत-प्रतिशत देने के लिए तैयार हैं? अगर हां, तो अभी सब्सक्राइब करें और कमेंट में जय श्री कृष्ण लिखें!</textarea>
+        </div>
+      </div>
+
+      <!-- STEP 2: SCENE-BY-SCENE STORYBOARD CARDS WITH PROMPT COPY & 4K IMAGE UPLOAD -->
+      <div class="glass-card p-6 rounded-2xl border border-brand-border space-y-4 shadow-xl">
+        <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3">
+          <div class="flex items-center gap-2">
+            <span class="w-6 h-6 rounded-full bg-amber-500/20 text-amber-400 font-bold text-xs flex items-center justify-center border border-amber-500/40">2</span>
+            <h3 class="text-base font-bold text-white flex items-center gap-2">
+              <i class="fa-solid fa-images text-amber-400"></i> स्टोरीबोर्ड: 8K AI प्रॉम्प्ट्स &amp; 4K इमेज अपलोड
+            </h3>
+            <span class="text-[11px] text-amber-400 bg-amber-950/60 px-2.5 py-0.5 rounded-full border border-amber-500/30">
+              प्रत्येक सीन का 8K प्रॉम्प्ट कॉपी करें ➔ Midjourney/Flux/ChatGPT से इमेज बनाएं ➔ यहां अपलोड करें (या AI को जनरेट करने दें)
+            </span>
+          </div>
+          <span id="vedic-scenes-badge" class="text-xs text-slate-400 font-mono">6 Scenes Ready</span>
+        </div>
+
+        <!-- STORYBOARD CONTAINER -->
+        <div id="vedic-storyboard-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <!-- Dynamic scenes rendered here by JavaScript -->
+        </div>
+      </div>
+
+      <!-- STEP 3: SACRED VOICE MATCHING & DIVINE AUDIO SETTINGS -->
+      <div class="glass-card p-6 rounded-2xl border border-brand-border space-y-5 shadow-xl">
+        <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3">
+          <div class="flex items-center gap-2">
+            <span class="w-6 h-6 rounded-full bg-amber-500/20 text-amber-400 font-bold text-xs flex items-center justify-center border border-amber-500/40">3</span>
+            <h3 class="text-base font-bold text-white flex items-center gap-2">
+              <i class="fa-solid fa-microphone-lines text-amber-400"></i> दिव्य स्वर एवं वैदिक संगीत चयन (Voice &amp; BGM Matching)
+            </h3>
+          </div>
+          <span class="text-xs text-emerald-400 flex items-center gap-1.5">
+            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> Voice Matching &amp; Audition Active
+          </span>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <!-- VOICE SELECTOR -->
+          <div class="space-y-1.5">
+            <label class="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
+              <span>🎙️</span> AI Narrator Voice:
+            </label>
+            <select id="vedic-select-voice" class="w-full glass bg-slate-900/90 px-3 py-2 rounded-xl border border-slate-700 text-xs text-white focus:border-amber-400 focus:outline-none">
+              <option value="akashvani" selected>🎙️ आकाशवाणी (Cosmic Echo Devavani - Divine Echo) ⭐ Default</option>
+              <option value="hi_deep_cinematic_male">🎙️ Deep Cinematic Male Hindi (Solemn Baritone) ⭐ Recommended</option>
+              <option value="madhur">🎙️ Madhur (Natural Hindi Documentary Narrator)</option>
+              <option value="swara">🎙️ Swara (Expressive Devotional Female)</option>
+            </select>
+            <p class="text-[10px] text-slate-400">आकाशवाणी में ब्रह्मांडीय गूंज (Cosmic Reverb) और गहरी बेस शामिल है।</p>
+          </div>
+
+          <!-- NARRATION SPEED -->
+          <div class="space-y-1.5">
+            <div class="flex justify-between items-center text-xs">
+              <label class="font-semibold text-slate-300">⚡ Voice Speed:</label>
+              <span id="vedic-speed-val" class="text-amber-400 font-mono font-bold">0.90x</span>
+            </div>
+            <input type="range" id="vedic-voice-speed" min="0.80" max="1.10" step="0.02" value="0.90" oninput="document.getElementById('vedic-speed-val').textContent = this.value + 'x'" class="w-full accent-amber-400 cursor-pointer">
+            <p class="text-[10px] text-slate-400">0.90x गीता के श्लोकों और गंभीर संवादों के लिए सर्वश्रेष्ठ है।</p>
+          </div>
+
+          <!-- AUDITION VOICE BUTTON & PLAYER -->
+          <div class="space-y-1.5">
+            <label class="text-xs font-semibold text-slate-300">🎧 Audition Voice:</label>
+            <button type="button" onclick="auditionVedicVoice()" id="btn-vedic-audition" class="w-full py-2 px-3 rounded-xl bg-purple-950/60 hover:bg-purple-900 border border-purple-500/40 text-purple-200 text-xs font-bold transition flex items-center justify-center gap-2 shadow">
+              <i class="fa-solid fa-play text-[10px]"></i> ▶ Audition Divine Voice
+            </button>
+            <audio id="vedic-voice-audio-player" class="hidden w-full mt-1 h-8" controls></audio>
+          </div>
+
+          <!-- BGM TRACK & VOLUME -->
+          <div class="space-y-1.5">
+            <label class="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
+              <span>🎵</span> Background Music (BGM):
+            </label>
+            <select id="vedic-select-bgm" class="w-full glass bg-slate-900/90 px-3 py-2 rounded-xl border border-slate-700 text-xs text-white focus:border-amber-400 focus:outline-none">
+              <option value="spiritual" selected>🕉️ Spiritual &amp; Vedic (Divine Bansuri / Tanpura) ⭐</option>
+              <option value="history">⚔️ History &amp; Bharat (Ancient Epic Chords)</option>
+              <option value="space">🌌 Cosmic Space (Deep Ambient Void)</option>
+              <option value="none">🔇 None (Narration Only)</option>
+            </select>
+            <div class="flex items-center gap-2 pt-1">
+              <button type="button" onclick="playVedicBgm()" id="btn-vedic-bgm-play" class="flex-1 py-1 px-2 rounded-lg bg-amber-950/60 hover:bg-amber-900 border border-amber-500/30 text-amber-300 text-[11px] font-semibold transition flex items-center justify-center gap-1">
+                <i class="fa-solid fa-music text-[9px]"></i> ▶ Play BGM
+              </button>
+              <input type="range" id="vedic-bgm-volume" min="0.05" max="0.30" step="0.01" value="0.16" title="BGM Volume (Default 16%)" class="w-20 accent-amber-400 cursor-pointer">
+            </div>
+            <audio id="vedic-bgm-audio-player" class="hidden w-full mt-1 h-8" controls></audio>
+          </div>
+        </div>
+      </div>
+
+      <!-- STEP 4: SUBTITLES, RENDER & PUBLISH -->
+      <div class="glass-card p-6 rounded-2xl border border-brand-border space-y-4 shadow-xl">
+        <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3">
+          <div class="flex items-center gap-2">
+            <span class="w-6 h-6 rounded-full bg-amber-500/20 text-amber-400 font-bold text-xs flex items-center justify-center border border-amber-500/40">4</span>
+            <h3 class="text-base font-bold text-white flex items-center gap-2">
+              <i class="fa-solid fa-clapperboard text-amber-400"></i> वीडियो रेंडर एवं यूट्यूब पब्लिश (Render &amp; Publish)
+            </h3>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+          <!-- RENDER CONTROLS -->
+          <div class="lg:col-span-2 space-y-4">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label class="text-xs font-semibold text-slate-300 block mb-1">Video Title (for YouTube &amp; Archive):</label>
+                <input type="text" id="vedic-video-title" value="कुरुक्षेत्र में श्री कृष्ण की सीख: कर्म ही तुम्हारी पहचान है #Shorts" class="w-full glass bg-slate-900/90 px-3 py-2 rounded-xl border border-slate-700 text-xs text-white focus:border-amber-400 focus:outline-none">
+              </div>
+              <div>
+                <label class="text-xs font-semibold text-slate-300 block mb-1">Subtitle Style:</label>
+                <select id="vedic-subtitle-style" class="w-full glass bg-slate-900/90 px-3 py-2 rounded-xl border border-slate-700 text-xs text-white focus:border-amber-400 focus:outline-none">
+                  <option value="hormozi" selected>🔥 Hormozi / Viral Pop (Yellow/Gold Highlights) ⭐</option>
+                  <option value="cinematic">💎 Clean Cinematic (White with Soft Shadow)</option>
+                  <option value="none">🚫 No Subtitles (Clean Video Only)</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- RENDER BUTTON -->
+            <button type="button" onclick="renderVedicVideo()" id="btn-render-vedic-video" class="w-full py-3.5 px-6 rounded-xl bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 hover:from-amber-400 hover:to-orange-400 text-black text-sm font-extrabold transition flex items-center justify-center gap-2 shadow-xl">
+              <i class="fa-solid fa-film text-base"></i> 🎬 Render Vedic Short Video (9:16 Ken Burns 4K)
+            </button>
+
+            <!-- RENDER PROGRESS & LOGS -->
+            <div id="vedic-render-progress-card" class="hidden p-4 rounded-xl bg-slate-950/80 border border-amber-500/30 space-y-2">
+              <div class="flex justify-between items-center text-xs">
+                <span id="vedic-render-status-text" class="text-amber-400 font-semibold flex items-center gap-1.5">
+                  <i class="fa-solid fa-spinner fa-spin"></i> Rendering video...
+                </span>
+                <span id="vedic-render-pct" class="font-mono text-white font-bold">0%</span>
+              </div>
+              <div class="w-full h-2 rounded-full bg-slate-800 overflow-hidden">
+                <div id="vedic-render-bar" class="h-full bg-gradient-to-r from-amber-500 to-orange-500 transition-all duration-300 w-0"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- COMPLETED VIDEO PLAYER & YOUTUBE PUBLISH -->
+          <div class="space-y-3 p-4 rounded-xl bg-slate-950/60 border border-slate-800 flex flex-col items-center justify-center text-center">
+            <h4 class="text-xs font-bold text-slate-300">Video Player &amp; 1-Click Upload:</h4>
+            <div id="vedic-player-empty" class="text-center py-8 text-slate-500 text-xs">
+              <i class="fa-solid fa-film text-3xl mb-2 text-slate-600 block"></i>
+              रेंडर पूरा होने के बाद 9:16 वीडियो यहां चलेगा
+            </div>
+            <div id="vedic-player-container" class="hidden w-full space-y-3">
+              <video id="vedic-video-element" class="w-full max-h-[320px] rounded-xl border border-amber-500/30 bg-black shadow-lg mx-auto" controls></video>
+              <div class="flex items-center gap-2 w-full">
+                <a id="vedic-download-btn" href="#" download class="flex-1 py-2 px-3 rounded-lg bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold flex items-center justify-center gap-1.5">
+                  <i class="fa-solid fa-download"></i> Download MP4
+                </a>
+                <button type="button" onclick="publishVedicToYouTube()" id="btn-publish-vedic-yt" class="flex-1 py-2 px-3 rounded-lg bg-red-600 hover:bg-red-500 text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow">
+                  <i class="fa-brands fa-youtube"></i> Publish Now
+                </button>
+              </div>
+              <div id="vedic-yt-feedback" class="hidden text-xs text-center py-2 rounded-lg bg-black/40"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ================================================================= -->
     <!-- TAB 5: LIVE TERMINAL CONSOLE -->
     <!-- ================================================================= -->
     <div id="tab-terminal" class="tab-content hidden space-y-4">
@@ -1118,6 +1339,7 @@
       if (tabId === 'media') loadMediaFiles();
       if (tabId === 'autopilot') loadSlotsMatrix();
       if (tabId === 'aivideo') loadDirectorOptions();
+      if (tabId === 'vedic') initVedicStudio();
     }
 
     // Clocks and Status
@@ -3431,6 +3653,513 @@
         showToast(`❌ Upload error: ${err.message}`, true);
       } finally {
         input.value = '';
+      }
+    }
+
+    // =========================================================================
+    // VEDIC & GRANTH STORYBOARD STUDIO ENGINE
+    // =========================================================================
+    let vedicScenesState = [];
+    let isVedicRendering = false;
+    let lastVedicResult = null;
+
+    function initVedicStudio() {
+      updateVedicScriptStats();
+      if (vedicScenesState.length === 0) {
+        breakdownVedicScript();
+      }
+    }
+
+    function updateVedicScriptStats() {
+      const input = document.getElementById('vedic-script-input');
+      if (!input) return;
+      const text = input.value.trim();
+      const words = text ? text.split(/\s+/).length : 0;
+      const estSec = Math.round(words / 2.6);
+      const wcEl = document.getElementById('vedic-word-count');
+      const estEl = document.getElementById('vedic-est-duration');
+      if (wcEl) wcEl.textContent = words;
+      if (estEl) estEl.textContent = estSec + 's';
+    }
+
+    async function breakdownVedicScript() {
+      const input = document.getElementById('vedic-script-input');
+      const btn = document.getElementById('btn-breakdown-script');
+      if (!input) return;
+      const scriptText = input.value.trim();
+      if (!scriptText) {
+        showToast('कृपया पहले कोई स्क्रिप्ट दर्ज करें!', true);
+        return;
+      }
+
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Breaking into Scenes...';
+      }
+
+      try {
+        const res = await fetch('/api/vedic/breakdown', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ script_text: scriptText })
+        });
+        const data = await res.json();
+        if (data.success && data.scenes && data.scenes.length > 0) {
+          const oldUploads = {};
+          vedicScenesState.forEach((s, idx) => {
+            if (s.custom_image_path) oldUploads[idx] = { path: s.custom_image_path, url: s.stream_url };
+          });
+
+          vedicScenesState = data.scenes.map((s, idx) => ({
+            scene_number: s.scene_number || (idx + 1),
+            narration: s.narration || '',
+            visual_prompt: s.visual_prompt || '',
+            visual_subject: s.visual_subject || '',
+            custom_image_path: (oldUploads[idx] && oldUploads[idx].path) || '',
+            stream_url: (oldUploads[idx] && oldUploads[idx].url) || ''
+          }));
+
+          renderVedicStoryboard();
+          showToast(`⚡ ${vedicScenesState.length} Vedic storyboard scenes & 8K prompts generated!`);
+        } else {
+          showToast('Failed to break down script. Check console.', true);
+        }
+      } catch (err) {
+        console.error('Vedic breakdown error:', err);
+        showToast('Error breaking down script: ' + err.message, true);
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = '<i class="fa-solid fa-bolt"></i> ⚡ Break Script into Scenes &amp; 8K Prompts';
+        }
+      }
+    }
+
+    function renderVedicStoryboard() {
+      const container = document.getElementById('vedic-storyboard-container');
+      const badge = document.getElementById('vedic-scenes-badge');
+      if (!container) return;
+      if (badge) badge.textContent = `${vedicScenesState.length} Scenes Ready`;
+
+      container.innerHTML = '';
+      vedicScenesState.forEach((scene, idx) => {
+        const hasImg = Boolean(scene.custom_image_path && scene.stream_url);
+        const card = document.createElement('div');
+        card.className = 'glass p-4 rounded-xl border border-slate-800 bg-slate-900/90 space-y-3 flex flex-col justify-between shadow-lg hover:border-amber-500/40 transition';
+
+        card.innerHTML = `
+          <div class="space-y-2.5">
+            <!-- HEADER -->
+            <div class="flex items-center justify-between border-b border-slate-800/80 pb-2">
+              <span class="text-xs font-bold text-amber-300 flex items-center gap-1.5">
+                <span class="w-5 h-5 rounded-full bg-amber-500/20 text-amber-300 text-[10px] flex items-center justify-center font-bold border border-amber-500/40">${scene.scene_number}</span>
+                सीन ${scene.scene_number}
+              </span>
+              <span class="text-[10px] text-slate-400 font-mono">9:16 Ken Burns</span>
+            </div>
+
+            <!-- NARRATION TEXT -->
+            <div>
+              <label class="text-[10px] text-slate-400 font-bold uppercase tracking-wider block mb-1">📢 Narration (Hindi):</label>
+              <p class="text-xs text-white font-medium bg-slate-950/60 p-2.5 rounded-lg border border-slate-800/80 leading-relaxed font-sans">
+                ${scene.narration}
+              </p>
+            </div>
+
+            <!-- 8K AI PROMPT WITH COPY BUTTON -->
+            <div>
+              <div class="flex items-center justify-between mb-1">
+                <label class="text-[10px] text-amber-400 font-bold uppercase tracking-wider">🎨 8K AI Visual Prompt (English):</label>
+                <button type="button" onclick="copyVedicPrompt(${idx})" id="btn-copy-prompt-${idx}" class="text-[10px] px-2 py-0.5 rounded bg-amber-950/60 hover:bg-amber-900 border border-amber-500/40 text-amber-300 font-bold flex items-center gap-1 transition">
+                  <i class="fa-solid fa-copy text-[9px]"></i> Copy Prompt
+                </button>
+              </div>
+              <textarea id="vedic-prompt-${idx}" rows="3" onchange="vedicScenesState[${idx}].visual_prompt = this.value" class="w-full glass bg-slate-950/90 p-2 rounded-lg border border-slate-800 text-[11px] text-slate-300 focus:outline-none focus:border-amber-400 font-mono leading-snug">${scene.visual_prompt}</textarea>
+            </div>
+          </div>
+
+          <!-- 4K IMAGE UPLOAD DROPZONE / THUMBNAIL -->
+          <div class="pt-2 border-t border-slate-800/80 space-y-2">
+            <div class="flex items-center justify-between text-[11px]">
+              <span class="font-bold text-slate-300 flex items-center gap-1">
+                <i class="fa-solid fa-image text-amber-400"></i> Scene Image:
+              </span>
+              ${hasImg ? `
+                <span class="text-[10px] text-emerald-400 bg-emerald-950/70 px-2 py-0.5 rounded-full border border-emerald-500/30 flex items-center gap-1 font-semibold">
+                  <i class="fa-solid fa-check"></i> Custom 4K Image
+                </span>
+              ` : `
+                <span class="text-[10px] text-purple-400 bg-purple-950/50 px-2 py-0.5 rounded-full border border-purple-500/30 flex items-center gap-1 font-semibold">
+                  ✨ Auto AI Generation
+                </span>
+              `}
+            </div>
+
+            ${hasImg ? `
+              <div class="relative group rounded-xl overflow-hidden border border-amber-500/40 bg-black aspect-[9/12] max-h-[160px] flex items-center justify-center">
+                <img src="${scene.stream_url}" alt="Scene ${scene.scene_number}" class="w-full h-full object-cover">
+                <div class="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition flex items-center justify-center gap-2">
+                  <button type="button" onclick="document.getElementById('vedic-file-input-${idx}').click()" class="px-2.5 py-1 bg-amber-500 hover:bg-amber-400 text-black text-[11px] font-bold rounded-lg shadow">
+                    Replace
+                  </button>
+                  <button type="button" onclick="removeVedicSceneImage(${idx})" class="px-2.5 py-1 bg-rose-600 hover:bg-rose-500 text-white text-[11px] font-bold rounded-lg shadow">
+                    Remove
+                  </button>
+                </div>
+              </div>
+            ` : `
+              <div onclick="document.getElementById('vedic-file-input-${idx}').click()" class="border-2 border-dashed border-slate-700 hover:border-amber-400/70 bg-slate-950/40 hover:bg-slate-950/80 rounded-xl p-3 text-center cursor-pointer transition space-y-1">
+                <i class="fa-solid fa-cloud-arrow-up text-amber-400 text-lg"></i>
+                <div class="text-[11px] font-bold text-slate-300">Upload Custom 4K Image</div>
+                <div class="text-[9px] text-slate-500">Midjourney / Flux / Leonardo image attach karein (Auto Ken Burns 30fps)</div>
+              </div>
+            `}
+
+            <input type="file" id="vedic-file-input-${idx}" accept="image/*" class="hidden" onchange="uploadVedicSceneImage(this, ${idx})">
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    function copyVedicPrompt(idx) {
+      if (!vedicScenesState[idx]) return;
+      const promptText = vedicScenesState[idx].visual_prompt || '';
+      navigator.clipboard.writeText(promptText).then(() => {
+        const btn = document.getElementById(`btn-copy-prompt-${idx}`);
+        if (btn) {
+          const orig = btn.innerHTML;
+          btn.innerHTML = '<i class="fa-solid fa-check text-emerald-400"></i> Copied!';
+          btn.classList.add('bg-emerald-950', 'border-emerald-500', 'text-emerald-300');
+          setTimeout(() => {
+            btn.innerHTML = orig;
+            btn.classList.remove('bg-emerald-950', 'border-emerald-500', 'text-emerald-300');
+          }, 2000);
+        }
+        showToast(`Scene ${idx + 1} 8K prompt copied to clipboard!`);
+      }).catch(err => {
+        showToast('Clipboard copy failed: ' + err, true);
+      });
+    }
+
+    function copyAllVedicPrompts() {
+      if (!vedicScenesState || vedicScenesState.length === 0) {
+        showToast('पहले स्क्रिप्ट ब्रेकडाउन करें!', true);
+        return;
+      }
+      let fullText = `=== VEDIC 8K IMAGE PROMPTS (MIDJOURNEY / FLUX) ===\n\n`;
+      vedicScenesState.forEach((s, idx) => {
+        fullText += `[SCENE ${idx + 1}]\nHindi: ${s.narration}\nPrompt: ${s.visual_prompt}\n\n`;
+      });
+      navigator.clipboard.writeText(fullText).then(() => {
+        showToast(`📋 All ${vedicScenesState.length} scene prompts copied to clipboard!`);
+      }).catch(err => {
+        showToast('Clipboard copy failed: ' + err, true);
+      });
+    }
+
+    async function uploadVedicSceneImage(fileInput, idx) {
+      if (!fileInput.files || fileInput.files.length === 0) return;
+      const file = fileInput.files[0];
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('scene_index', idx + 1);
+
+      showToast(`Uploading 4K image for Scene ${idx + 1}...`);
+      try {
+        const res = await fetch('/api/vedic/upload_image', {
+          method: 'POST',
+          body: formData
+        });
+        const data = await res.json();
+        if (data.success) {
+          vedicScenesState[idx].custom_image_path = data.file_path;
+          vedicScenesState[idx].stream_url = data.stream_url;
+          renderVedicStoryboard();
+          showToast(`✅ Scene ${idx + 1} custom 4K image attached successfully!`);
+        } else {
+          showToast('Image upload failed: ' + (data.detail || 'Unknown error'), true);
+        }
+      } catch (err) {
+        console.error('Image upload error:', err);
+        showToast('Upload error: ' + err.message, true);
+      } finally {
+        fileInput.value = '';
+      }
+    }
+
+    function removeVedicSceneImage(idx) {
+      if (!vedicScenesState[idx]) return;
+      vedicScenesState[idx].custom_image_path = '';
+      vedicScenesState[idx].stream_url = '';
+      renderVedicStoryboard();
+      showToast(`Scene ${idx + 1} custom image removed (AI generation will be used).`);
+    }
+
+    async function auditionVedicVoice() {
+      const voiceSelect = document.getElementById('vedic-select-voice');
+      const voiceId = voiceSelect ? voiceSelect.value : 'akashvani';
+      const btn = document.getElementById('btn-vedic-audition');
+      const audioPlayer = document.getElementById('vedic-voice-audio-player');
+      const sampleText = "कर्मण्येवाधिकारस्ते मा फलेषु कदाचन। पार्थ, तुम्हारा अधिकार केवल कर्म पर है।";
+
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin text-xs"></i> Synthesizing...';
+      }
+
+      try {
+        const res = await fetch('/api/director/test_voice', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ voice_id: voiceId, sample_text: sampleText })
+        });
+        const data = await res.json();
+        if (data.success && data.stream_url) {
+          audioPlayer.src = data.stream_url + '?t=' + Date.now();
+          audioPlayer.classList.remove('hidden');
+          audioPlayer.play();
+          showToast(`Playing audition sample for ${voiceId}!`);
+        } else {
+          showToast('Voice audition failed.', true);
+        }
+      } catch (err) {
+        showToast('Audition error: ' + err.message, true);
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = '<i class="fa-solid fa-play text-[10px]"></i> ▶ Audition Divine Voice';
+        }
+      }
+    }
+
+    function playVedicBgm() {
+      const bgmChoice = document.getElementById('vedic-select-bgm').value;
+      const audioPlayer = document.getElementById('vedic-bgm-audio-player');
+      const volumeInput = document.getElementById('vedic-bgm-volume');
+      const btn = document.getElementById('btn-vedic-bgm-play');
+
+      if (bgmChoice === 'none') {
+        showToast('No BGM track selected (Narration only).');
+        if (audioPlayer) audioPlayer.pause();
+        return;
+      }
+
+      if (audioPlayer.paused || !audioPlayer.src.includes(bgmChoice)) {
+        audioPlayer.src = `/api/director/stream_bgm/${bgmChoice}?t=` + Date.now();
+        audioPlayer.volume = parseFloat((volumeInput && volumeInput.value) || 0.16);
+        audioPlayer.classList.remove('hidden');
+        audioPlayer.play();
+        if (btn) btn.innerHTML = '<i class="fa-solid fa-pause text-[9px]"></i> ⏸ Pause BGM';
+        showToast(`Playing BGM: ${bgmChoice}`);
+      } else {
+        audioPlayer.pause();
+        if (btn) btn.innerHTML = '<i class="fa-solid fa-music text-[9px]"></i> ▶ Play BGM';
+      }
+    }
+
+    async function renderVedicVideo() {
+      const scriptInput = document.getElementById('vedic-script-input');
+      const titleInput = document.getElementById('vedic-video-title');
+      const voiceSelect = document.getElementById('vedic-select-voice');
+      const speedInput = document.getElementById('vedic-voice-speed');
+      const bgmSelect = document.getElementById('vedic-select-bgm');
+      const bgmVolInput = document.getElementById('vedic-bgm-volume');
+      const subStyleSelect = document.getElementById('vedic-subtitle-style');
+      const btn = document.getElementById('btn-render-vedic-video');
+
+      const scriptText = scriptInput ? scriptInput.value.trim() : '';
+      const title = titleInput ? titleInput.value.trim() : 'Bhagavad Gita Motivation';
+
+      if (!scriptText) {
+        showToast('कृपया पहले स्क्रिप्ट दर्ज करें!', true);
+        return;
+      }
+
+      const payload = {
+        script_text: scriptText,
+        title: title,
+        voice: voiceSelect ? voiceSelect.value : 'akashvani',
+        voice_speed: parseFloat((speedInput && speedInput.value) || 0.90),
+        bgm_filename: bgmSelect ? bgmSelect.value : 'spiritual',
+        bgm_volume: parseFloat((bgmVolInput && bgmVolInput.value) || 0.16),
+        subtitle_style: subStyleSelect ? subStyleSelect.value : 'hormozi',
+        video_format: 'short',
+        language: 'hi',
+        visual_mode: 'multi_cinematic',
+        auto_viral_hook: false,
+        scenes: vedicScenesState.length > 0 ? vedicScenesState : null
+      };
+
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Initializing Video Render...';
+      }
+
+      const progressCard = document.getElementById('vedic-render-progress-card');
+      const bar = document.getElementById('vedic-render-bar');
+      const pct = document.getElementById('vedic-render-pct');
+      const statusText = document.getElementById('vedic-render-status-text');
+
+      if (progressCard) progressCard.classList.remove('hidden');
+      if (bar) bar.style.width = '5%';
+      if (pct) pct.textContent = '5%';
+      if (statusText) statusText.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Starting Vedic Video Studio Render...';
+
+      try {
+        const res = await fetch('/api/director/render', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (data.success) {
+          showToast('🎬 Vedic Video rendering started in background!');
+          isVedicRendering = true;
+          pollVedicRenderProgress();
+        } else {
+          showToast('Render error: ' + (data.detail || 'Could not start'), true);
+          if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fa-solid fa-film text-base"></i> 🎬 Render Vedic Short Video (9:16 Ken Burns 4K)';
+          }
+        }
+      } catch (err) {
+        console.error('Render request error:', err);
+        showToast('Network error: ' + err.message, true);
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = '<i class="fa-solid fa-film text-base"></i> 🎬 Render Vedic Short Video (9:16 Ken Burns 4K)';
+        }
+      }
+    }
+
+    async function pollVedicRenderProgress() {
+      const pollTimer = setInterval(async () => {
+        try {
+          const res = await fetch('/api/director/status');
+          const data = await res.json();
+
+          const bar = document.getElementById('vedic-render-bar');
+          const pct = document.getElementById('vedic-render-pct');
+          const statusText = document.getElementById('vedic-render-status-text');
+          const btn = document.getElementById('btn-render-vedic-video');
+
+          if (data.is_running) {
+            const currentPct = Math.max(10, data.progress || 25);
+            if (bar) bar.style.width = currentPct + '%';
+            if (pct) pct.textContent = currentPct + '%';
+            if (statusText) statusText.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> ${data.current_task || 'Rendering Vedic Short...'}`;
+          } else {
+            clearInterval(pollTimer);
+            isVedicRendering = false;
+            if (bar) bar.style.width = '100%';
+            if (pct) pct.textContent = '100%';
+            if (statusText) statusText.innerHTML = '<i class="fa-solid fa-circle-check text-emerald-400"></i> Render Finished!';
+
+            const resResult = await fetch('/api/director/last_result');
+            const resultData = await resResult.json();
+            if (resultData && resultData.video_filename) {
+              lastVedicResult = resultData;
+              displayVedicVideoResult(resultData);
+              showToast(`✅ Video rendered successfully: ${resultData.video_filename}!`);
+            } else if (resultData && resultData.error) {
+              showToast(`❌ Render failed: ${resultData.error}`, true);
+              if (statusText) statusText.innerHTML = `<i class="fa-solid fa-triangle-exclamation text-rose-400"></i> Failed: ${resultData.error}`;
+            }
+
+            if (btn) {
+              btn.disabled = false;
+              btn.innerHTML = '<i class="fa-solid fa-film text-base"></i> 🎬 Render Vedic Short Video (9:16 Ken Burns 4K)';
+            }
+          }
+        } catch (e) {
+          console.error('Error polling render progress:', e);
+        }
+      }, 3000);
+    }
+
+    function displayVedicVideoResult(result) {
+      const emptyBox = document.getElementById('vedic-player-empty');
+      const playerBox = document.getElementById('vedic-player-container');
+      const videoEl = document.getElementById('vedic-video-element');
+      const downloadBtn = document.getElementById('vedic-download-btn');
+
+      if (emptyBox) emptyBox.classList.add('hidden');
+      if (playerBox) playerBox.classList.remove('hidden');
+
+      if (videoEl && result.stream_url) {
+        videoEl.src = result.stream_url + '?t=' + Date.now();
+        videoEl.load();
+      }
+
+      if (downloadBtn && result.stream_url) {
+        downloadBtn.href = result.stream_url;
+        downloadBtn.download = result.video_filename;
+      }
+    }
+
+    async function publishVedicToYouTube() {
+      if (!lastVedicResult || !lastVedicResult.video_filename) {
+        showToast('कोई रेंडर किया गया वीडियो उपलब्ध नहीं है!', true);
+        return;
+      }
+      const titleInput = document.getElementById('vedic-video-title');
+      const scriptInput = document.getElementById('vedic-script-input');
+      const feedback = document.getElementById('vedic-yt-feedback');
+      const btn = document.getElementById('btn-publish-vedic-yt');
+
+      const videoTitle = titleInput ? titleInput.value.trim() : 'कर्म ही तुम्हारी पहचान है #Shorts';
+      const scriptContent = scriptInput ? scriptInput.value.trim() : '';
+
+      const tags = ['BhagavadGita', 'LordKrishna', 'Karma', 'Mahabharata', 'Motivation', 'Shorts', 'HindiMotivation', 'Geeta'];
+      const desc = `${videoTitle}\n\n${scriptContent}\n\n#BhagavadGita #LordKrishna #Karma #Mahabharata #Shorts #HindiMotivation`;
+
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Uploading...';
+      }
+      if (feedback) {
+        feedback.classList.remove('hidden');
+        feedback.className = 'text-xs text-amber-300 py-2 rounded-lg bg-amber-950/40 border border-amber-500/30';
+        feedback.textContent = '🚀 YouTube Channel (Hindi) par upload ho raha hai...';
+      }
+
+      try {
+        const res = await fetch('/api/director/publish', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({
+            filename: lastVedicResult.video_filename,
+            title: videoTitle,
+            description: desc,
+            tags: tags,
+            privacy: 'public',
+            pinned_comment: '🚩 जय श्री कृष्ण! अगर आपको यह सीख अच्छी लगी, तो सब्सक्राइब अवश्य करें।',
+            channel: 'hindi'
+          })
+        });
+        const data = await res.json();
+        if (data.success && data.url) {
+          if (feedback) {
+            feedback.className = 'text-xs text-emerald-400 py-2 rounded-lg bg-emerald-950/40 border border-emerald-500/30 font-bold';
+            feedback.innerHTML = `✅ Successfully Uploaded! <a href="${data.url}" target="_blank" class="underline text-brand-cyan">Watch on YouTube</a>`;
+          }
+          showToast('🚀 Video uploaded to Hindi Shorts channel!');
+        } else {
+          throw new Error(data.detail || 'Upload failed');
+        }
+      } catch (err) {
+        if (feedback) {
+          feedback.className = 'text-xs text-rose-400 py-2 rounded-lg bg-rose-950/40 border border-rose-500/30 font-bold';
+          feedback.textContent = 'Error: ' + err.message;
+        }
+        showToast('YouTube upload error: ' + err.message, true);
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = '<i class="fa-brands fa-youtube"></i> Publish Now';
+        }
       }
     }
 
