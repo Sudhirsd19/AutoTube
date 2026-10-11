@@ -43,7 +43,9 @@ class BackgroundMusicManager:
         text = f"{niche or ''} {topic or ''}".lower()
 
         cat = "mystery"
-        if any(w in text for w in ("alien", "roswell", "airl", "ufo", "domain", "extraterrestrial")):
+        if any(w in text for w in ("spiritual", "gita", "गीता", "krishna", "कृष्ण", "meditation", "vedic", "sanatan", "karma", "adhyatmik", "peace", "peaceful", "wisdom")):
+            cat = "spiritual"
+        elif any(w in text for w in ("alien", "roswell", "airl", "ufo", "domain", "extraterrestrial")):
             cat = "alien"
             calm_alien_track = self.assets_dir / "alien" / "roswell_mystery_calm.mp3"
             if calm_alien_track.exists():

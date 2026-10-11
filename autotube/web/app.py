@@ -1317,6 +1317,7 @@ async def preview_bgm(category: str):
 
     cat_map = {
         "psychology": audio_dir / "psychology" / "anxiety.mp3",
+        "spiritual": audio_dir / "spiritual" / "spiritual_meditation_ambience.mp3",
         "space": audio_dir / "space" / "lightless_dawn.mp3",
         "history": audio_dir / "history" / "heroic_age.mp3",
         "mystery": audio_dir / "mystery" / "curse_of_the_scarab.mp3",

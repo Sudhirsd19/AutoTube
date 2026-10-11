@@ -314,6 +314,7 @@
               <span class="text-[11px] text-slate-400">BGM:</span>
               <select id="quick-bgm-select" class="bg-transparent text-white font-medium text-xs focus:outline-none cursor-pointer">
                 <option value="psychology" selected>🧠 Dark Psychology (Ambient)</option>
+                <option value="spiritual">🕉️ Spiritual & Vedic (Deep Ambience / Flute)</option>
                 <option value="space">🌌 Cosmic Space (Deep Ambient)</option>
                 <option value="history">⚔️ History & Bharat (Epic / Ancient)</option>
                 <option value="mystery">🕵️ Eerie Mystery & Unsolved</option>
@@ -654,6 +655,7 @@
             
             <select id="director-select-bgm" class="w-full glass bg-slate-900 px-3 py-2 rounded-lg border border-slate-700 text-xs text-white focus:outline-none focus:border-brand-cyan">
               <option value="psychology" selected>🧠 Dark Psychology (Ambient Tension)</option>
+              <option value="spiritual">🕉️ Spiritual & Vedic (Deep Meditative Ambience / Flute)</option>
               <option value="space">🌌 Cosmic Space (Deep Ambient Void)</option>
               <option value="history">⚔️ History & Bharat (Ancient Epic Chords)</option>
               <option value="mystery">🕵️ Eerie Mystery & Unsolved Cases</option>
@@ -1796,6 +1798,7 @@
               <select id="slot-bgm-${slot.id}" onchange="updateSlotField('${slot.id}', 'bgm', this.value); markSlotsUnsaved();" 
                 class="w-full bg-slate-950 border border-slate-800 text-slate-200 text-xs px-2 py-1.5 rounded-lg focus:outline-none focus:border-brand-cyan cursor-pointer">
                 <option value="auto" ${slotBgm === 'auto' ? 'selected' : ''}>🎯 Auto (Topic Match)</option>
+                <option value="spiritual" ${slotBgm === 'spiritual' ? 'selected' : ''}>🕉️ Spiritual & Vedic</option>
                 <option value="psychology" ${slotBgm === 'psychology' ? 'selected' : ''}>🧠 Dark Psychology</option>
                 <option value="space" ${slotBgm === 'space' ? 'selected' : ''}>🌌 Cosmic Space</option>
                 <option value="history" ${slotBgm === 'history' ? 'selected' : ''}>⚔️ History & Bharat</option>
@@ -2847,6 +2850,12 @@
           const incChk = document.getElementById('director-real-incident-mode');
           if (incChk && isReal) {
             incChk.checked = true;
+          }
+
+          const isSpiritual = ['gita', 'गीता', 'krishna', 'कृष्ण', 'arjuna', 'अर्जुन', 'karma', 'कर्म', 'vedic', 'sanatan', 'adhyatmik', 'upanishad', 'bhagwat', 'bhagavad'].some(k => combined.includes(k));
+          const bgmSelect = document.getElementById('director-select-bgm');
+          if (bgmSelect && isSpiritual) {
+            bgmSelect.value = 'spiritual';
           }
 
           showToast('✅ AI ne complete engaging story ready kar di!');
