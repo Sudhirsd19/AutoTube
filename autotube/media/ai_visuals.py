@@ -147,13 +147,14 @@ class VisualGenerator:
             gen_w, gen_h = width, height
             attempt_count = 1
         else:
-            # Fast legacy/default mode retains the original lighter request sizes.
+            # Fast legacy/default mode retains lighter request sizes with model fallback
             gen_w = 768 if is_vertical else 1344
             gen_h = 1344 if is_vertical else 768
             endpoints = [
                 f"https://image.pollinations.ai/prompt/{encoded}?model=sana&width={gen_w}&height={gen_h}&nologo=true&seed={seed}",
+                f"https://image.pollinations.ai/prompt/{encoded}?width={gen_w}&height={gen_h}&nologo=true&seed={seed}",
                 f"https://image.pollinations.ai/prompt/{encoded}?model=sana&width={gen_w}&height={gen_h}&nologo=true&seed={random.randint(100, 99999)}",
-                f"https://image.pollinations.ai/prompt/{encoded}?model=sana&width={gen_w}&height={gen_h}&nologo=true",
+                f"https://image.pollinations.ai/prompt/{encoded}?width={gen_w}&height={gen_h}&nologo=true",
             ]
             attempt_count = 2
 
@@ -216,10 +217,18 @@ class VisualGenerator:
                             f.write(resp.content)
                         print_success(f"AI visual saved: {output_path.name}")
                         return True
-                    elif resp.status_code in (401, 402, 403):
-                        print_warning(
-                            f"Pollinations image API returned {resp.status_code}; check API key/credits."
-                        )
+                    elif resp.status_code in (401, 402, 403, 429):
+                        if resp.status_code in (402, 429):
+                            backoff = 3.5 + attempt * 2.0
+                            print_warning(
+                                f"Pollinations rate-limit/credits notice ({resp.status_code}). "
+                                f"Backing off {backoff:.1f}s before retry..."
+                            )
+                            time.sleep(backoff)
+                        else:
+                            print_warning(
+                                f"Pollinations image API returned {resp.status_code}; check API key/credits."
+                            )
                         break
                 except Exception as e:
                     print_warning(f"Pollinations fetch attempt error: {e}")
@@ -290,4 +299,135 @@ class VisualGenerator:
         img.paste(overlay, (0, 0), overlay)
 
         img.save(output_path, "JPEG", quality=92)
+        return output_path
+
+    def create_sacred_vedic_fallback(
+        self,
+        prompt: str,
+        output_path: Path,
+        width: int = 1080,
+        height: int = 1920,
+        seed: Optional[int] = None,
+        mood: str = "auto",
+    ) -> Path:
+        """Create a bespoke high-aesthetic sacred Vedic cinematic backdrop.
+        Guaranteed $0, 100% offline-resilient, uniquely seeded per scene.
+        """
+        import math
+
+        if seed is None:
+            seed = random.randint(1000, 999999)
+        rng = random.Random(seed)
+
+        # Detect palette mood
+        p_lower = prompt.lower()
+        if mood == "auto":
+            if any(k in p_lower for k in ("war", "asura", "battle", "krodh", "shaurya", "yuddha")):
+                mood_key = "war_asura"
+            elif any(k in p_lower for k in ("cosmic", "universe", "vishwaroop", "brahmand", "rahasya", "galaxy")):
+                mood_key = "mystery_cosmic"
+            elif any(k in p_lower for k in ("itihas", "history", "ancient", "rajya", "empire", "stone")):
+                mood_key = "epic_history"
+            else:
+                mood_key = "divine_sacred"
+        else:
+            mood_key = mood if mood in ("war_asura", "mystery_cosmic", "epic_history", "divine_sacred") else "divine_sacred"
+
+        palettes = {
+            "divine_sacred": {
+                "top": (18, 10, 32),
+                "mid": (105, 42, 18),
+                "horizon": (220, 140, 25),
+                "glow": (255, 218, 90),
+            },
+            "war_asura": {
+                "top": (22, 10, 10),
+                "mid": (95, 25, 12),
+                "horizon": (195, 55, 20),
+                "glow": (255, 150, 45),
+            },
+            "mystery_cosmic": {
+                "top": (6, 6, 24),
+                "mid": (28, 24, 70),
+                "horizon": (45, 60, 115),
+                "glow": (150, 190, 255),
+            },
+            "epic_history": {
+                "top": (20, 14, 12),
+                "mid": (80, 48, 24),
+                "horizon": (175, 120, 45),
+                "glow": (245, 210, 120),
+            },
+        }
+
+        pal = palettes[mood_key]
+        base = Image.new("RGB", (width, height))
+        draw = ImageDraw.Draw(base)
+
+        # 3-stop vertical interpolation
+        for y in range(height):
+            factor = y / height
+            if factor < 0.5:
+                sub = factor / 0.5
+                r = int(pal["top"][0] + sub * (pal["mid"][0] - pal["top"][0]))
+                g = int(pal["top"][1] + sub * (pal["mid"][1] - pal["top"][1]))
+                b = int(pal["top"][2] + sub * (pal["mid"][2] - pal["top"][2]))
+            else:
+                sub = (factor - 0.5) / 0.5
+                r = int(pal["mid"][0] + sub * (pal["horizon"][0] - pal["mid"][0]))
+                g = int(pal["mid"][1] + sub * (pal["horizon"][1] - pal["mid"][1]))
+                b = int(pal["mid"][2] + sub * (pal["horizon"][2] - pal["mid"][2]))
+            draw.line([(0, y), (width, y)], fill=(r, g, b))
+
+        # Radial celestial aura glow
+        glow_layer = Image.new("RGBA", (width, height), (0, 0, 0, 0))
+        gdraw = ImageDraw.Draw(glow_layer)
+        cx = width // 2 + rng.randint(-50, 50)
+        cy = int(height * 0.42) + rng.randint(-35, 35)
+
+        max_r = int(width * 0.85)
+        for r_step in range(max_r, 20, -25):
+            alpha = int(45 * (1.0 - (r_step / max_r) ** 0.8))
+            color = (*pal["glow"], alpha)
+            gdraw.ellipse([cx - r_step, cy - r_step, cx + r_step, cy + r_step], fill=color)
+
+        # Celestial Ray Beams
+        for angle_deg in range(0, 360, 15):
+            rad = math.radians(angle_deg + (seed % 15))
+            ray_len = int(width * 0.9)
+            ex = cx + int(ray_len * math.cos(rad))
+            ey = cy + int(ray_len * math.sin(rad))
+            ray_alpha = rng.randint(8, 20)
+            gdraw.line([(cx, cy), (ex, ey)], fill=(*pal["glow"], ray_alpha), width=rng.randint(8, 22))
+
+        glow_blurred = glow_layer.filter(ImageFilter.GaussianBlur(radius=60))
+        base.paste(glow_blurred, (0, 0), glow_blurred)
+
+        # Floating Sacred Embers / Celestial Stars
+        star_layer = Image.new("RGBA", (width, height), (0, 0, 0, 0))
+        sdraw = ImageDraw.Draw(star_layer)
+        num_particles = rng.randint(120, 200)
+        for _ in range(num_particles):
+            px = rng.randint(0, width)
+            py = rng.randint(0, height)
+            p_rad = rng.randint(2, 6)
+            p_alpha = rng.randint(70, 230)
+            sdraw.ellipse([px - p_rad, py - p_rad, px + p_rad, py + p_rad], fill=(*pal["glow"], p_alpha))
+
+        stars_soft = star_layer.filter(ImageFilter.GaussianBlur(radius=2))
+        base.paste(stars_soft, (0, 0), stars_soft)
+
+        # Cinematic Vignette
+        vignette = Image.new("RGBA", (width, height), (0, 0, 0, 0))
+        vdraw = ImageDraw.Draw(vignette)
+        for inset in range(0, 180, 15):
+            alpha = int(100 * (1.0 - inset / 180))
+            vdraw.rectangle([inset, inset, width - inset, height - inset], outline=(0, 0, 0, alpha), width=15)
+
+        vignette_blur = vignette.filter(ImageFilter.GaussianBlur(radius=40))
+        base.paste(vignette_blur, (0, 0), vignette_blur)
+
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        base.save(output_path, "JPEG", quality=95)
+        print_success(f"Bespoke Sacred Cinematic Backdrop saved: {output_path.name}")
         return output_path

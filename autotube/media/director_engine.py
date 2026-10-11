@@ -582,6 +582,38 @@ Output STRICT JSON with these keys:
         eng_q = self._extract_visual_search_query(sentence, topic, scene_idx)
         return f"{subject}, {eng_q}, highly detailed, dramatic atmospheric lighting, 8k movie still"
 
+    def _extract_vedic_pexels_query(self, sentence: str, subject: Optional[str], scene_idx: int) -> str:
+        """Extract a unique atmospheric English stock search query for sacred/Vedic scenes."""
+        s_lower = f"{sentence} {subject or ''}".lower()
+        if any(k in s_lower for k in ("samudra", "ocean", "sea", "bridge", "setu", "ram setu", "water", "stone")):
+            return ["ancient ocean floating stones sunrise", "dramatic sea waves rocky coastline", "ancient stone bridge sea morning"][scene_idx % 3]
+        if any(k in s_lower for k in ("krishna", "chariot", "rath", "kurukshetra", "battle", "war")):
+            return ["ancient chariot golden sunset battlefield", "ancient warrior silhouette mist", "epic golden hour dusty horizon"][scene_idx % 3]
+        if any(k in s_lower for k in ("fire", "yajna", "homa", "havan", "flame", "aarti")):
+            return ["sacred holy fire ritual yajna", "burning holy flame temple embers", "sacred brass lamps temple aarti"][scene_idx % 3]
+        if any(k in s_lower for k in ("mountain", "himalaya", "meditation", "dhyana", "shiva", "tapasya")):
+            return ["himalayan snow peaks sunrise golden light", "ancient holy cave incense morning light", "misty sacred mountain summit dawn"][scene_idx % 3]
+        if any(k in s_lower for k in ("ganga", "river", "holy river", "varanasi", "ghat")):
+            return ["ganges river varanasi morning sunrise", "sacred river boat dawn holy water", "sacred river misty morning india"][scene_idx % 3]
+        if any(k in s_lower for k in ("temple", "mandir", "shrine", "puja", "worship")):
+            return ["ancient stone temple india sun rays", "carved temple pillars dramatic lighting", "ancient hindu temple golden dawn"][scene_idx % 3]
+        if any(k in s_lower for k in ("cosmic", "universe", "vishwaroop", "stars", "galaxy", "celestial")):
+            return ["cosmic galaxy nebula golden universe", "celestial deep space milky way golden stars", "cosmic nebulae sacred starry night"][scene_idx % 3]
+
+        defaults = [
+            "ancient stone temple sunrise india",
+            "himalayan snow peaks golden morning",
+            "sacred ganges river aarti light",
+            "holy fire ritual embers glow",
+            "sacred banyan tree golden sunlight",
+            "ancient indian architecture majestic light",
+            "spiritual meditation morning rays",
+            "sacred bells incense holy temple",
+            "divine cosmos galaxy golden glow",
+            "sacred mountains misty twilight",
+        ]
+        return defaults[scene_idx % len(defaults)]
+
     @staticmethod
     def _normalize_scene_text(text: str) -> str:
         """Normalize whitespace/punctuation for safe scene-script equivalence checks."""
@@ -1383,6 +1415,10 @@ Return ONLY a JSON list of scene objects matching this structure:
                     source_h = 3840 if is_vert else 2160
                     poll_key = os.getenv("POLLINATIONS_API_KEY", "").strip()
 
+                    # Inter-scene delay to keep below free AI burst rate-limit
+                    if idx > 0:
+                        time.sleep(2.0)
+
                     ai_img = vg.generate_image(
                         prompt=ai_prompt,
                         output_path=ai_img_path,
@@ -1394,6 +1430,7 @@ Return ONLY a JSON list of scene objects matching this structure:
                     )
                     if not ai_img or not ai_img.exists() or ai_img.stat().st_size <= 5000:
                         fallback_subj = scene.get("visual_subject") or "Lord Krishna divine wisdom in Kurukshetra"
+                        time.sleep(2.5)
                         ai_img = vg.generate_image(
                             prompt=f"8k photorealistic divine cinematic art, {fallback_subj}, golden aura, epic sacred masterpiece, 8k",
                             output_path=ai_img_path,
@@ -1402,6 +1439,35 @@ Return ONLY a JSON list of scene objects matching this structure:
                             style="spiritual_photorealistic",
                             require_native_resolution=bool(poll_key),
                             allow_photo_fallback=False,
+                        )
+
+                    # Multi-Tier Fail-Safe for Vedic scenes: Never fail closed or crash the render
+                    if not ai_img or not ai_img.exists() or ai_img.stat().st_size <= 5000:
+                        print_warning(f"   ⚠️ [Vedic Engine] Scene {idx+1}: AI generation throttled/busy. Activating authentic sacred visual fail-safe...")
+                        # Tier 1: High-res authentic Indian spiritual stock photo from Pexels
+                        try:
+                            from autotube.media.pexels_video import PexelsVideoFetcher
+                            pv = PexelsVideoFetcher()
+                            if pv.is_configured():
+                                pex_q = self._extract_vedic_pexels_query(sentence, scene.get("visual_subject"), idx)
+                                photo_path = pv.get_scene_photo(pex_q, orientation="portrait" if is_vert else "landscape")
+                                if photo_path and photo_path.exists() and photo_path.stat().st_size > 10000:
+                                    shutil.copy(photo_path, ai_img_path)
+                                    ai_img = ai_img_path
+                                    print_success(f"   🕉️ [Sacred Fail-Safe] High-res authentic spiritual photo acquired for Scene {idx+1}: '{pex_q}'")
+                        except Exception as pex_err:
+                            print_warning(f"   [Vedic Photo Fallback] Notice: {pex_err}")
+
+                    # Tier 2: Bespoke Procedural Sacred Cinematic Backdrop ($0, 100% reliable, uniquely seeded)
+                    if not ai_img or not ai_img.exists() or ai_img.stat().st_size <= 5000:
+                        print_info(f"   🕉️ [Sacred Engine] Generating bespoke sacred cinematic backdrop for Scene {idx+1}...")
+                        ai_img = vg.create_sacred_vedic_fallback(
+                            prompt=core_prompt,
+                            output_path=ai_img_path,
+                            width=target_width,
+                            height=target_height,
+                            seed=idx * 997 + random.randint(100, 999),
+                            mood=str(scene.get("vedic_mood") or "auto"),
                         )
 
                     if ai_img and ai_img.exists() and ai_img.stat().st_size > 5000:
@@ -1426,7 +1492,7 @@ Return ONLY a JSON list of scene objects matching this structure:
                         else:
                             raise RuntimeError(f"Motion video conversion failed for Gita/Granth scene {idx+1}.")
                     else:
-                        raise RuntimeError(f"AI visual generation failed for Gita/Granth scene {idx+1}.")
+                        raise RuntimeError(f"Visual asset acquisition failed for Gita/Granth scene {idx+1}.")
                 elif visual_mode in ("multi_cinematic", "multi_best", "auto"):
                     historical = any(
                         k in sentence.lower()
