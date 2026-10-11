@@ -444,7 +444,7 @@ def _ensure_scripture_topic_identity(niche: str, topics: List[str]) -> List[str]
         text = str(topic).strip()
         lowered = text.lower()
         has_marker = (
-            any(re.search(rf"\\b{re.escape(term)}\\b", lowered) for term in SCRIPTURE_TOPIC_MARKERS)
+            any(re.search(rf"\b{re.escape(term)}\b", lowered) for term in SCRIPTURE_TOPIC_MARKERS)
             or any(term in lowered for term in SCRIPTURE_DEVANAGARI_MARKERS)
         )
         tagged.append(text if has_marker else f"Ancient Scripture Wisdom: {text}")
