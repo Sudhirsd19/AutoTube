@@ -189,7 +189,7 @@ def test_scripture_video_path_requests_native_4k_ai_images_and_qas_every_scene(
         output_path.write_bytes(b"x" * 20000)
         return output_path
 
-    monkeypatch.setattr(visual_waterfall, "VisualGenerator", FakeGenerator, raising=False)
+    monkeypatch.setattr("autotube.media.ai_visuals.VisualGenerator", FakeGenerator)
     monkeypatch.setattr("PIL.Image.open", lambda *args, **kwargs: FakeImageContext())
     monkeypatch.setattr(visual_waterfall, "_image_to_motion_clip", fake_motion_clip)
     monkeypatch.setattr(
