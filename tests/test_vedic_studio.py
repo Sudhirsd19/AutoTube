@@ -189,3 +189,32 @@ def test_api_director_publish_mocked(client, tmp_path):
             dummy_video.unlink()
 
 
+def test_api_vedic_upload_invalid_file_rejected(client):
+    """Test that uploading corrupted or non-image files is rejected with HTTP 400."""
+    corrupted_data = b"THIS IS NOT AN IMAGE AT ALL JUST RAW CORRUPTED BYTES 12345"
+    files = {"file": ("corrupt.txt", corrupted_data, "text/plain")}
+    data = {"scene_index": "1"}
+
+    resp = client.post("/api/vedic/upload_image", data=data, files=files)
+    assert resp.status_code == 400
+    assert "Invalid or corrupted image file" in resp.json()["detail"]
+
+
+def test_optimize_vedic_script_mocked_gemini_active_model():
+    """Verify optimize_vedic_script queries modern Gemini models and returns metadata."""
+    director = DirectorEngine()
+    fake_client = MagicMock()
+    fake_response = MagicMock()
+    fake_response.text = '{"optimized_script": "कुरुक्षेत्र में भगवान कृष्ण ने अर्जुन को निष्काम कर्म का दिव्य ज्ञान दिया। जो व्यक्ति परिणाम की चिंता छोड़ केवल अपने कर्तव्य पर ध्यान केंद्रित करता है, वही सच्चा विजयी बनता है। आज ही अपने कर्म पर ध्यान दें और चैनल को सब्सक्राइब करें।", "title": "गीता का अमर संदेश #Shorts", "scripture_source": "श्रीमद्भगवद्गीता अध्याय २", "word_count": 48, "est_seconds": 18.5}'
+    fake_client.models.generate_content.return_value = fake_response
+
+    with patch("os.getenv", return_value="fake-gemini-key"), \
+         patch("google.genai.Client", return_value=fake_client):
+        res = director.optimize_vedic_script("कर्मण्येवाधिकारस्ते मा फलेषु कदाचन")
+        assert res["success"] is True
+        assert res["is_ai_generated"] is True
+        assert res["model_used"] in ["gemini-3.5-flash-lite", "gemini-3.1-flash-lite", "gemini-3.5-flash", "gemini-3.8-flash"]
+        assert "श्रीमद्भगवद्गीता" in res["scripture_source"]
+        assert len(res["optimized_script"].split()) >= 40
+
+

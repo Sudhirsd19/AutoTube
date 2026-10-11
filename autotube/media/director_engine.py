@@ -722,22 +722,26 @@ Output STRICT JSON with these keys:
             try:
                 from google import genai
                 client = genai.Client(api_key=gemini_key)
-                prompt = f"""You are a master Hindu scriptures and Sanatan Dharma storyteller (specializing in Bhagavad Gita, Ramcharitmanas, Upanishads, Chanakya Neeti, and Vedic wisdom).
-Transform the following raw input, shloka, chaupai, or thought into a deeply moving, highly viral, 45-50 second YouTube Shorts narration script (105-120 words total).
+                prompt = f"""You are a scholarly and respectful Sanatan Dharma Vedic researcher, Sanskrit scholar, and master scriptwriter (specializing in Srimad Bhagavad Gita, Ramcharitmanas, Upanishads, and Chanakya Neeti).
+Transform the following raw input, shloka, chaupai, or thought into a deeply moving, highly viral, 45-50 second YouTube Shorts narration script (95-115 words total).
 
 STRICT MANDATORY GUIDELINES:
 1. PURE DEVANAGARI HINDI (हिंदी देवनागरी लिपि):
    - Output must be 100% in authentic, spoken, respectful Devanagari Hindi.
    - Absolutely NO English/Hinglish characters for Hindi words.
-2. 4-ACT RETENTION STRUCTURE:
+2. VERBATIM SCRIPTURE & SHLOKA PRESERVATION:
+   - If the input contains an authentic Sanskrit Shloka (e.g. कर्मण्येवाधिकारस्ते, यदा यदा हि धर्मस्य), Chaupai, or Doha, PRESERVE the original verse VERBATIM in Act 2 without altering words or creating false quotes.
+   - Cite the authentic source and speaker accurately (e.g. भगवान कृष्ण अर्जुन से कहते हैं, गोस्वामी तुलसीदास जी लिखते हैं).
+   - If the user's input is a modern thought, frame it as inspired by Sanatan philosophy; NEVER invent fake quotes or falsely attribute lines to sacred scriptures.
+3. 4-ACT RETENTION STRUCTURE:
    - ACT 1 (Hook, 15-20 words): A gripping psychological or spiritual question that hooks viewers instantly in the first 3 seconds.
-   - ACT 2 (Sacred Verse, 30-35 words): Recite the verse/chaupai with its sacred context and author (e.g. Goswami Tulsidas, Bhagwan Krishna, Ved Vyasa).
+   - ACT 2 (Sacred Verse & Context, 25-35 words): Recite the verse/chaupai with its sacred context and author.
    - ACT 3 (Deep Lesson & Karma, 35-40 words): Practical, hard-hitting emotional wisdom on why this matters to the viewer today.
    - ACT 4 (CTA & Outro, 15-20 words): Thought-provoking closing question + comment trigger + subscribe CTA.
-3. DURATION BUDGET:
-   - Between 105 and 120 words strictly (optimal for 45-50s Shorts limit).
-4. CLEAN CONTINUOUS TEXT:
-   - No asterisks (**), no bracketed stage directions [Scene 1], no bullet points. Pure continuous narration.
+4. DURATION BUDGET:
+   - Between 95 and 115 words strictly (optimal for 45-48s Shorts limit).
+5. CLEAN CONTINUOUS TEXT:
+   - No asterisks (**), no bracketed stage directions [Scene 1], no bullet points. Pure continuous spoken narration.
 
 RAW INPUT:
 \"\"\"{cleaned_raw}\"\"\"
@@ -746,10 +750,12 @@ Output STRICT JSON:
 {{
   "optimized_script": "Full continuous spoken Hindi Devanagari narration script...",
   "title": "Inspiring viral YouTube video title with emojis and #Shorts",
-  "word_count": 115,
-  "est_seconds": 46.0
+  "scripture_source": "Accurate Granth & verse reference or 'वैदिक दर्शन आधारित प्रेरणा'",
+  "word_count": 105,
+  "est_seconds": 45.0
 }}"""
-                for m in ["gemini-2.0-flash", "gemini-1.5-flash"]:
+                active_models = ["gemini-3.5-flash-lite", "gemini-3.1-flash-lite", "gemini-3.5-flash", "gemini-3.8-flash"]
+                for m in active_models:
                     try:
                         response = client.models.generate_content(
                             model=m,
@@ -766,6 +772,9 @@ Output STRICT JSON:
                                     "success": True,
                                     "optimized_script": opt_text,
                                     "title": parsed.get("title") or "पवित्र सनातन सीख #Shorts",
+                                    "scripture_source": parsed.get("scripture_source") or "श्रीमद्भगवद्गीता / सनातन दर्शन",
+                                    "is_ai_generated": True,
+                                    "model_used": m,
                                     "word_count": opt_words,
                                     "est_seconds": round(opt_words / 2.6, 1),
                                 }
@@ -864,7 +873,8 @@ Return ONLY a JSON list of scene objects matching this structure:
 [
   {{"scene_number": 1, "narration": "...", "visual_prompt": "...", "visual_subject": "..."}}
 ]"""
-                for m in ["gemini-2.0-flash", "gemini-1.5-flash"]:
+                active_models = ["gemini-3.5-flash-lite", "gemini-3.1-flash-lite", "gemini-3.5-flash", "gemini-3.8-flash"]
+                for m in active_models:
                     try:
                         response = client.models.generate_content(
                             model=m,
@@ -1224,21 +1234,30 @@ Return ONLY a JSON list of scene objects matching this structure:
                     ai_img_path = TEMP_DIR / f"gita_ai_{idx}_{slug}.jpg"
                     print_info(f"   🕉️ [Gita/Granth Visual Engine] Scene {idx+1}: Generating 4K/8K AI visual: '{ai_prompt[:75]}...'")
 
+                    is_vert = target_height > target_width
+                    source_w = 2160 if is_vert else 3840
+                    source_h = 3840 if is_vert else 2160
+                    poll_key = os.getenv("POLLINATIONS_API_KEY", "").strip()
+
                     ai_img = vg.generate_image(
                         prompt=ai_prompt,
                         output_path=ai_img_path,
-                        width=target_width,
-                        height=target_height,
-                        style="3d_cinematic",
+                        width=source_w,
+                        height=source_h,
+                        style="spiritual_photorealistic",
+                        require_native_resolution=bool(poll_key),
+                        allow_photo_fallback=False,
                     )
                     if not ai_img or not ai_img.exists() or ai_img.stat().st_size <= 5000:
                         fallback_subj = scene.get("visual_subject") or "Lord Krishna divine wisdom in Kurukshetra"
                         ai_img = vg.generate_image(
-                            prompt=f"8k photorealistic divine cinematic art, {fallback_subj}, golden aura, epic masterpiece, 8k",
+                            prompt=f"8k photorealistic divine cinematic art, {fallback_subj}, golden aura, epic sacred masterpiece, 8k",
                             output_path=ai_img_path,
-                            width=target_width,
-                            height=target_height,
-                            style="3d_cinematic",
+                            width=source_w,
+                            height=source_h,
+                            style="spiritual_photorealistic",
+                            require_native_resolution=bool(poll_key),
+                            allow_photo_fallback=False,
                         )
 
                     if ai_img and ai_img.exists() and ai_img.stat().st_size > 5000:
@@ -1408,8 +1427,8 @@ Return ONLY a JSON list of scene objects matching this structure:
                             )
                             acquired_video = None
 
-                # Every video-first asset must pass the same strict frame-level QA.
-                if acquired_video and not is_gita_granth_topic and visual_mode in ("multi_cinematic", "multi_best", "auto", "hybrid", "stock"):
+                # Every video asset must pass frame-level QA, except explicitly user-provided custom images
+                if acquired_video and (not custom_img_str) and visual_mode in ("multi_cinematic", "multi_best", "auto", "hybrid", "stock"):
                     acquired_path = Path(acquired_video)
                     if acquired_path.suffix.lower() not in {".mp4", ".mov", ".webm", ".mkv"}:
                         print_warning(f"   ⚠️ Non-video asset returned for Scene {idx+1}; rejecting.")

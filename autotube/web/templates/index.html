@@ -3873,19 +3873,27 @@
         });
         const data = await res.json();
         if (data.success && data.scenes && data.scenes.length > 0) {
+          // Retain custom uploads only when the scene narration actually matches
           const oldUploads = {};
-          vedicScenesState.forEach((s, idx) => {
-            if (s.custom_image_path) oldUploads[idx] = { path: s.custom_image_path, url: s.stream_url };
+          vedicScenesState.forEach((s) => {
+            if (s.custom_image_path && s.narration) {
+              const normOld = (s.narration || '').toLowerCase().replace(/[^a-z0-9\u0900-\u097F]/g, '');
+              if (normOld) oldUploads[normOld] = { path: s.custom_image_path, url: s.stream_url };
+            }
           });
 
-          vedicScenesState = data.scenes.map((s, idx) => ({
-            scene_number: s.scene_number || (idx + 1),
-            narration: s.narration || '',
-            visual_prompt: s.visual_prompt || '',
-            visual_subject: s.visual_subject || '',
-            custom_image_path: (oldUploads[idx] && oldUploads[idx].path) || '',
-            stream_url: (oldUploads[idx] && oldUploads[idx].url) || ''
-          }));
+          vedicScenesState = data.scenes.map((s, idx) => {
+            const normNew = (s.narration || '').toLowerCase().replace(/[^a-z0-9\u0900-\u097F]/g, '');
+            const matchedOld = oldUploads[normNew];
+            return {
+              scene_number: s.scene_number || (idx + 1),
+              narration: s.narration || '',
+              visual_prompt: s.visual_prompt || '',
+              visual_subject: s.visual_subject || '',
+              custom_image_path: matchedOld ? matchedOld.path : '',
+              stream_url: matchedOld ? matchedOld.url : ''
+            };
+          });
 
           renderVedicStoryboard();
           showToast(`⚡ ${vedicScenesState.length} Vedic storyboard scenes & 8K prompts generated!`);

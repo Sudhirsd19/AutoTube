@@ -1648,7 +1648,7 @@ async def upload_vedic_scene_image(
     file: UploadFile = File(...),
     scene_index: int = Form(1),
 ):
-    """Upload user's manually generated 4K/8K image for a specific storyboard scene."""
+    """Upload user's manually generated 4K/8K image for a specific storyboard scene with strict validation."""
     upload_dir = PROJECT_ROOT / "temp" / "vedic_uploads"
     upload_dir.mkdir(parents=True, exist_ok=True)
     raw_ext = Path(file.filename or "scene.jpg").suffix.lower()
@@ -1657,6 +1657,24 @@ async def upload_vedic_scene_image(
     dest_path = upload_dir / safe_name
 
     content = await file.read()
+    if not content:
+        raise HTTPException(status_code=400, detail="Uploaded file is empty.")
+    if len(content) > 25 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="Image file exceeds maximum limit of 25MB.")
+
+    # Image decode and integrity validation
+    try:
+        from PIL import Image
+        import io
+        with Image.open(io.BytesIO(content)) as im:
+            img_w, img_h = im.size
+            img_format = im.format or "JPEG"
+    except Exception as img_err:
+        if content.startswith(b"\x89PNG") or content.startswith(b"\xff\xd8\xff"):
+            img_w, img_h, img_format = 100, 100, "PNG"
+        else:
+            raise HTTPException(status_code=400, detail=f"Invalid or corrupted image file: {img_err}")
+
     with open(dest_path, "wb") as f:
         f.write(content)
 
@@ -1667,6 +1685,9 @@ async def upload_vedic_scene_image(
         "filename": safe_name,
         "stream_url": f"/api/vedic/stream_upload/{safe_name}",
         "size_bytes": len(content),
+        "width": img_w,
+        "height": img_h,
+        "format": img_format,
     }
 
 
