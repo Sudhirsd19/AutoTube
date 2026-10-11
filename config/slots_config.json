@@ -1,5 +1,5 @@
 {
-  "active_preset": "growth_4",
+  "active_preset": "elite_2",
   "daily_target": 4,
   "autopilot_daemon": true,
   "review_before_upload": false,
@@ -575,7 +575,21 @@
       },
       {
         "id": "slot_2",
-        "hour": 20,
+        "hour": 18,
+        "minute": 30,
+        "tz": "EDT",
+        "niche": "Quantum Science & Black Hole Mysteries",
+        "language": "English",
+        "channel": "english",
+        "voice": "en_deep_cinematic_male",
+        "format": "short",
+        "status": "ready",
+        "label": "06:30 PM EDT (US Prime Time / 04:00 AM IST) - Quantum Science & Black Holes (English Short)",
+        "bgm": "space"
+      },
+      {
+        "id": "slot_3",
+        "hour": 13,
         "minute": 30,
         "tz": "IST",
         "niche": "Bharat Ka Prachin Vigyan & Mandir Rahasya",
@@ -584,7 +598,21 @@
         "voice": "hi_deep_cinematic_male",
         "format": "short",
         "status": "ready",
-        "label": "08:30 PM IST (India Prime Time) - Bharat Ka Prachin Vigyan & Mandir (Hindi Short)",
+        "label": "01:30 PM IST (India Lunch Peak) - Bharat Ka Prachin Vigyan & Mandir (Hindi Short)",
+        "bgm": "history"
+      },
+      {
+        "id": "slot_4",
+        "hour": 20,
+        "minute": 30,
+        "tz": "IST",
+        "niche": "Ancient Bharat Lost History & Cursed Secrets",
+        "language": "Hindi",
+        "channel": "hindi",
+        "voice": "hi_cinematic_male",
+        "format": "short",
+        "status": "ready",
+        "label": "08:30 PM IST (India Prime Time) - Ancient Bharat Lost History (Hindi Short)",
         "bgm": "history"
       }
     ]
@@ -595,17 +623,31 @@
       "hour": 12,
       "minute": 0,
       "tz": "EDT",
-      "niche": "Space & Cosmic Mysteries",
+      "niche": "Trending Space Discoveries & Deep Universe",
       "language": "English",
       "channel": "english",
       "voice": "en_deep_cinematic_male",
       "format": "short",
       "status": "ready",
-      "label": "12:00 PM EDT (US Lunch) - Cosmic Space & Universe Paradox (English Short)",
+      "label": "12:00 PM EDT (US Lunch / 09:30 PM IST) - Trending Space Discoveries (English Short)",
       "bgm": "space"
     },
     {
       "id": "slot_2",
+      "hour": 18,
+      "minute": 30,
+      "tz": "EDT",
+      "niche": "Quantum Science & Black Hole Mysteries",
+      "language": "English",
+      "channel": "english",
+      "voice": "en_deep_cinematic_male",
+      "format": "short",
+      "status": "ready",
+      "label": "06:30 PM EDT (US Prime Time / 04:00 AM IST) - Quantum Science & Black Holes (English Short)",
+      "bgm": "space"
+    },
+    {
+      "id": "slot_3",
       "hour": 13,
       "minute": 30,
       "tz": "IST",
@@ -615,26 +657,12 @@
       "voice": "hi_deep_cinematic_male",
       "format": "short",
       "status": "ready",
-      "label": "01:30 PM IST (India Lunch) - Bharat Ka Prachin Vigyan & Mandir (Hindi Short)",
+      "label": "01:30 PM IST (India Lunch Peak) - Bharat Ka Prachin Vigyan & Mandir (Hindi Short)",
       "bgm": "history"
     },
     {
-      "id": "slot_3",
-      "hour": 18,
-      "minute": 30,
-      "tz": "EDT",
-      "niche": "Quantum Science & Black Holes",
-      "language": "English",
-      "channel": "english",
-      "voice": "en_deep_cinematic_male",
-      "format": "short",
-      "status": "ready",
-      "label": "06:30 PM EDT (US Prime Time) - Quantum & Black Hole Mysteries (English Short)",
-      "bgm": "space"
-    },
-    {
       "id": "slot_4",
-      "hour": 21,
+      "hour": 20,
       "minute": 30,
       "tz": "IST",
       "niche": "Ancient Bharat Lost History & Cursed Secrets",
@@ -643,7 +671,7 @@
       "voice": "hi_cinematic_male",
       "format": "short",
       "status": "ready",
-      "label": "09:30 PM IST (India Prime Time) - Rahasyamay Itihas & Khopiya Sach (Hindi Short)",
+      "label": "08:30 PM IST (India Prime Time) - Ancient Bharat Lost History (Hindi Short)",
       "bgm": "history"
     }
   ],
