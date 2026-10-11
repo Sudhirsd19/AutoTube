@@ -65,7 +65,7 @@ def get_subject_outro_text(topic: str, language: str = "en") -> str:
         else:
             return "For more mind-bending cosmic mysteries and informative space videos, make sure to like, subscribe, and support our channel!"
 
-    elif any(k in t_lower for k in ("gita", "गीता", "krishna", "कृष्ण", "arjuna", "अर्जुन", "karma", "कर्म", "kurukshetra", "कुरुक्षेत्र", "chanakya", "चाणक्य", "upanishad", "उपनिषद", "granth", "ग्रंथ", "shloka", "श्लोक", "motivation", "bhagwat", "bhagavad")):
+    elif is_spiritual:
         if is_hindi:
             return "ऐसे ही श्रीमद्भगवद्गीता और सनातन ज्ञान के प्रेरणादायक वीडियोज़ के लिए हमें लाइक और सब्सक्राइब करें और सपोर्ट करें।"
         else:
@@ -125,7 +125,7 @@ def generate_polarizing_debate_comment(topic: str, language: str = "en") -> str:
         else:
             return "💥 What do you believe? Type 1 if you think alien life definitely exists in the universe, Type 2 if humans are completely alone! Drop your answer below! 👇👽"
 
-    elif any(k in t_lower for k in ("gita", "गीता", "krishna", "कृष्ण", "karma", "कर्म", "chanakya", "चाणक्य", "bhagwat", "bhagavad", "granth", "shloka")):
+    elif is_gita_granth_motivation_topic(topic):
         if is_hindi:
             return "🚩 गीता का शाश्वत संदेश! Type 1 अगर आप मानते हैं कि कर्म ही सब कुछ तय करता है, Type 2 अगर भाग्य बड़ा है! कमेंट में 'जय श्री कृष्ण' लिखकर अपनी राय बताएं! 👇"
         else:
