@@ -916,7 +916,12 @@
               प्रत्येक सीन का 8K प्रॉम्प्ट कॉपी करें ➔ Midjourney/Flux/ChatGPT से इमेज बनाएं ➔ यहां अपलोड करें (या AI को जनरेट करने दें)
             </span>
           </div>
-          <span id="vedic-scenes-badge" class="text-xs text-slate-400 font-mono">6 Scenes Ready</span>
+          <div class="flex items-center gap-2">
+            <button type="button" onclick="addVedicScene()" id="btn-add-vedic-scene" class="px-3 py-1.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-xs font-bold transition flex items-center gap-1.5 shadow cursor-pointer">
+              <i class="fa-solid fa-plus text-xs"></i> ➕ Add Scene
+            </button>
+            <span id="vedic-scenes-badge" class="text-xs text-amber-300 font-mono bg-slate-900 px-2.5 py-1 rounded-lg border border-slate-700">0 Scenes Ready</span>
+          </div>
         </div>
 
         <!-- STORYBOARD CONTAINER -->
@@ -4005,7 +4010,7 @@
                 <span class="w-5 h-5 rounded-full bg-amber-500/20 text-amber-300 text-[10px] flex items-center justify-center font-bold border border-amber-500/40">${scene.scene_number}</span>
                 सीन ${scene.scene_number}
               </span>
-              <div class="flex items-center gap-1">
+              <div class="flex items-center gap-1.5">
                 <select id="vedic-mood-${idx}" onchange="vedicScenesState[${idx}].vedic_mood = this.value" class="bg-slate-950 text-[10px] text-amber-300 font-semibold px-2 py-0.5 rounded border border-amber-500/30 focus:outline-none cursor-pointer">
                   <option value="auto" ${(!scene.vedic_mood || scene.vedic_mood === 'auto') ? 'selected' : ''}>⚡ Auto (AI Mood FX)</option>
                   <option value="war_asura" ${scene.vedic_mood === 'war_asura' ? 'selected' : ''}>🔥 War / Asura (Shake + Fiery)</option>
@@ -4013,15 +4018,16 @@
                   <option value="mystery_cosmic" ${scene.vedic_mood === 'mystery_cosmic' ? 'selected' : ''}>🌌 Cosmic (Deep Drift &amp; Void)</option>
                   <option value="epic_history" ${scene.vedic_mood === 'epic_history' ? 'selected' : ''}>🏛️ Epic Vedic (Ken Burns)</option>
                 </select>
+                <button type="button" onclick="deleteVedicScene(${idx})" class="p-1 rounded text-slate-400 hover:text-rose-400 hover:bg-rose-950/40 transition cursor-pointer" title="इस सीन को हटाएं">
+                  <i class="fa-solid fa-trash-can text-xs"></i>
+                </button>
               </div>
             </div>
 
             <!-- NARRATION TEXT -->
             <div>
               <label class="text-[10px] text-slate-400 font-bold uppercase tracking-wider block mb-1">📢 Narration (Hindi):</label>
-              <p class="text-xs text-white font-medium bg-slate-950/60 p-2.5 rounded-lg border border-slate-800/80 leading-relaxed font-sans">
-                ${escapeHtml(scene.narration)}
-              </p>
+              <textarea rows="2" oninput="vedicScenesState[${idx}].narration = this.value; syncVedicScriptFromScenes();" class="w-full text-xs text-white font-medium bg-slate-950/80 p-2 rounded-lg border border-slate-800 focus:border-amber-400 focus:outline-none leading-relaxed font-sans">${escapeHtml(scene.narration)}</textarea>
             </div>
 
             <!-- 8K AI PROMPT WITH COPY BUTTON -->
@@ -4082,6 +4088,56 @@
         `;
         container.appendChild(card);
       });
+
+      // Interactive 'Add Another Scene' card at the end of the grid
+      const addCard = document.createElement('div');
+      addCard.className = 'border-2 border-dashed border-slate-800 hover:border-amber-400/60 bg-slate-950/30 hover:bg-slate-900/50 rounded-xl p-6 text-center cursor-pointer transition flex flex-col items-center justify-center gap-2 group min-h-[220px] shadow';
+      addCard.onclick = addVedicScene;
+      addCard.innerHTML = `
+        <div class="w-10 h-10 rounded-full bg-amber-500/10 text-amber-400 flex items-center justify-center text-lg border border-amber-500/20 group-hover:bg-amber-500/20 group-hover:scale-110 transition">
+          <i class="fa-solid fa-plus"></i>
+        </div>
+        <div class="text-xs font-bold text-slate-300 group-hover:text-amber-300 transition">➕ Add Another Scene</div>
+        <div class="text-[10px] text-slate-500">जितने चाहें उतने सीन्स जोड़ सकते हैं (No 7-scene limit)</div>
+      `;
+      container.appendChild(addCard);
+    }
+
+    function addVedicScene() {
+      const newNum = vedicScenesState.length + 1;
+      vedicScenesState.push({
+        scene_number: newNum,
+        narration: '',
+        visual_prompt: '',
+        visual_subject: '',
+        vedic_mood: 'auto',
+        custom_image_path: '',
+        stream_url: ''
+      });
+      renderVedicStoryboard();
+      showToast(`➕ सीन ${newNum} जोड़ा गया!`);
+    }
+
+    function deleteVedicScene(idx) {
+      if (vedicScenesState.length <= 1) {
+        showToast('कम से कम 1 सीन होना आवश्यक है!', true);
+        return;
+      }
+      vedicScenesState.splice(idx, 1);
+      vedicScenesState.forEach((s, i) => { s.scene_number = i + 1; });
+      renderVedicStoryboard();
+      syncVedicScriptFromScenes();
+      showToast(`🗑️ सीन हटा दिया गया। अब कुल ${vedicScenesState.length} सीन्स हैं।`);
+    }
+
+    function syncVedicScriptFromScenes() {
+      const input = document.getElementById('vedic-script-input');
+      if (!input) return;
+      const combined = vedicScenesState.map(s => (s.narration || '').trim()).filter(Boolean).join(' ');
+      if (combined) {
+        input.value = combined;
+        updateVedicScriptStats();
+      }
     }
 
     function copyVedicPrompt(idx) {

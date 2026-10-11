@@ -671,6 +671,7 @@ Output STRICT JSON with these keys:
                         "avoid": list(raw.get("avoid") or []),
                         "custom_image_path": str(raw.get("custom_image_path") or raw.get("image_path") or "").strip(),
                         "visual_prompt": str(raw.get("visual_prompt") or raw.get("prompt") or "").strip(),
+                        "vedic_mood": str(raw.get("vedic_mood") or "auto"),
                     }
                 )
 
@@ -946,7 +947,8 @@ Output STRICT JSON:
                 from google import genai
                 client = genai.Client(api_key=gemini_key)
                 prompt = f"""You are a master Vedic and Hindu epic film director (Mahabharata, Gita, Ramayana, Puranas, Devi Mahatmya).
-Break down the following Hindi narration script into 5 to 7 sequential video scenes.
+Break down the following Hindi narration script into natural sequential video scenes based on the script's sentences, dramatic beats, and emotional flow (each scene typically 4 to 8 seconds).
+IMPORTANT: The number of scenes must be completely dynamic according to the story length and sentence structure (e.g. 4, 6, 8, 10, or as many as naturally needed). Do NOT force a fixed number of scenes.
 For each scene, output:
 1. 'scene_number': integer 1, 2, ...
 2. 'narration': exact spoken sentence in authentic Hindi Devanagari.
@@ -986,8 +988,8 @@ Return ONLY a JSON list of scene objects matching this structure:
             except Exception as e:
                 print_warning(f"Gemini vedic script breakdown notice: {e}")
 
-        # Intelligent Rule-Based Fallback
-        split_scenes = self._split_script_into_scenes(raw_text, max_scenes=7)
+        # Intelligent Rule-Based Fallback: dynamically split by natural sentences (up to 16 scenes)
+        split_scenes = self._split_script_into_scenes(raw_text, max_scenes=16)
         results = []
         for idx, s in enumerate(split_scenes):
             sentence = str(s.get("narration", "")).strip()
