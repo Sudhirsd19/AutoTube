@@ -89,6 +89,21 @@ def test_no_api_key_uses_topic_specific_spiritual_script():
     assert "सब्सक्राइब" in script.scenes[-1].narration
 
 
+def test_english_spiritual_fallback_respects_short_word_budget():
+    generator = ScriptGenerator.__new__(ScriptGenerator)
+    generator.client = None
+
+    script = generator.generate_short_script(
+        "Bhagavad Gita motivation for fear of failure",
+        target_duration=45,
+        language="en",
+    )
+
+    assert 90 <= len(script.narration.split()) <= 110
+    assert len(script.scenes) == 6
+    assert "Bhagavad Gita" in script.narration
+
+
 def test_native_4k_mode_rejects_a_smaller_image_and_never_uses_stock_fallback(
     monkeypatch, tmp_path
 ):
