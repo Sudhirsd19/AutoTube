@@ -58,3 +58,33 @@ def test_resolve_explicit_compatible_voice_preserves_choice():
         "यह अंतरिक्ष की कहानी है।",
         "hi",
     ) == "hi_deep_cinematic_male"
+
+
+
+def test_gita_and_scripture_topics_use_dedicated_spiritual_voices():
+    assert choose_subject_voice(
+        "Bhagavad Gita: Krishna's Wisdom",
+        "The Gita teaches selfless action and steady awareness.",
+        "en",
+    ) == "en_deep_warm_male"
+    assert choose_subject_voice(
+        "गीता से जीवन की सीख",
+        "श्रीकृष्ण अर्जुन को निष्काम कर्म का संदेश देते हैं।",
+        "hi",
+    ) == "akashvani"
+
+
+def test_spiritual_voice_takes_priority_over_space_or_history_words():
+    assert choose_subject_voice(
+        "Bhagavad Gita Cosmic Wisdom",
+        "Krishna explains karma yoga to Arjuna.",
+        "en",
+    ) == "en_deep_warm_male"
+
+
+def test_generic_motivation_does_not_force_spiritual_voice():
+    assert choose_subject_voice(
+        "Daily Motivation",
+        "Build a consistent routine and make progress every day.",
+        "en",
+    ) == "en_cinematic_narrator"
