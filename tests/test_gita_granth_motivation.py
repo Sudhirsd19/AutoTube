@@ -13,7 +13,7 @@ from autotube.scripting.generator import (
     is_bhagavad_gita_topic,
     is_gita_granth_motivation_topic,
 )
-from autotube.scripting.trend_finder import TrendFinder
+from autotube.scripting.trend_finder import TrendFinder, _ensure_scripture_topic_identity
 from autotube.voice.voice_director import choose_subject_voice
 
 
@@ -60,6 +60,17 @@ def test_trend_finder_routes_gita_granth_to_its_own_niche_without_false_digital_
     assert "Bhagavad Gita" in focus
     niche, _ = finder.resolve_niche("digital transformation")
     assert niche != "gita_motivation"
+
+
+def test_gita_niche_adds_scripture_marker_when_generated_topic_is_generic():
+    assert _ensure_scripture_topic_identity(
+        "gita_motivation",
+        ["How to stop comparing yourself with others"],
+    ) == ["Ancient Scripture Wisdom: How to stop comparing yourself with others"]
+    assert _ensure_scripture_topic_identity(
+        "space",
+        ["How to stop comparing yourself with others"],
+    ) == ["How to stop comparing yourself with others"]
 
 
 def test_no_api_key_uses_topic_specific_spiritual_script():
