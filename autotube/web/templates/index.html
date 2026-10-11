@@ -989,73 +989,136 @@
         </div>
       </div>
 
-      <!-- STEP 4: SUBTITLES, RENDER & PUBLISH -->
+      <!-- STEP 4: SUBTITLES & RENDER ACTION -->
       <div class="glass-card p-6 rounded-2xl border border-brand-border space-y-4 shadow-xl">
         <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3">
           <div class="flex items-center gap-2">
             <span class="w-6 h-6 rounded-full bg-amber-500/20 text-amber-400 font-bold text-xs flex items-center justify-center border border-amber-500/40">4</span>
             <h3 class="text-base font-bold text-white flex items-center gap-2">
-              <i class="fa-solid fa-clapperboard text-amber-400"></i> वीडियो रेंडर एवं यूट्यूब पब्लिश (Render &amp; Publish)
+              <i class="fa-solid fa-clapperboard text-amber-400"></i> वीडियो रेंडर एक्शन (Video Render Controls)
             </h3>
           </div>
         </div>
 
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
-          <!-- RENDER CONTROLS -->
-          <div class="lg:col-span-2 space-y-4">
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div class="space-y-4">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label class="text-xs font-semibold text-slate-300 block mb-1">Video Title (for YouTube &amp; Archive):</label>
+              <input type="text" id="vedic-video-title" value="कुरुक्षेत्र में श्री कृष्ण की सीख: कर्म ही तुम्हारी पहचान है #Shorts" class="w-full glass bg-slate-900/90 px-3 py-2 rounded-xl border border-slate-700 text-xs text-white focus:border-amber-400 focus:outline-none">
+            </div>
+            <div>
+              <label class="text-xs font-semibold text-slate-300 block mb-1">Subtitle Style:</label>
+              <select id="vedic-subtitle-style" class="w-full glass bg-slate-900/90 px-3 py-2 rounded-xl border border-slate-700 text-xs text-white focus:border-amber-400 focus:outline-none">
+                <option value="hormozi" selected>🔥 Hormozi / Viral Pop (Yellow/Gold Highlights) ⭐</option>
+                <option value="cinematic">💎 Clean Cinematic (White with Soft Shadow)</option>
+                <option value="none">🚫 No Subtitles (Clean Video Only)</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- RENDER BUTTON -->
+          <button type="button" onclick="renderVedicVideo()" id="btn-render-vedic-video" class="w-full py-3.5 px-6 rounded-xl bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 hover:from-amber-400 hover:to-orange-400 text-black text-sm font-extrabold transition flex items-center justify-center gap-2 shadow-xl">
+            <i class="fa-solid fa-film text-base"></i> 🎬 Render Vedic Short Video (9:16 Ken Burns 4K)
+          </button>
+
+          <!-- RENDER PROGRESS & LOGS -->
+          <div id="vedic-render-progress-card" class="hidden p-4 rounded-xl bg-slate-950/80 border border-amber-500/30 space-y-2">
+            <div class="flex justify-between items-center text-xs">
+              <span id="vedic-render-status-text" class="text-amber-400 font-semibold flex items-center gap-1.5">
+                <i class="fa-solid fa-spinner fa-spin"></i> Rendering video...
+              </span>
+              <span id="vedic-render-pct" class="font-mono text-white font-bold">0%</span>
+            </div>
+            <div class="w-full h-2 rounded-full bg-slate-800 overflow-hidden">
+              <div id="vedic-render-bar" class="h-full bg-gradient-to-r from-amber-500 to-orange-500 transition-all duration-300 w-0"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- STEP 5: VIDEO REVIEW & 1-CLICK YOUTUBE PUBLISHER -->
+      <div id="vedic-result-panel" class="hidden glass-card p-6 rounded-2xl border border-amber-500/40 bg-gradient-to-b from-amber-950/20 to-slate-950/80 space-y-5 shadow-2xl">
+        <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800 pb-3">
+          <div class="flex items-center gap-2">
+            <span class="w-6 h-6 rounded-full bg-amber-500 text-black font-bold text-xs flex items-center justify-center">5</span>
+            <h3 class="text-base font-bold text-white flex items-center gap-2">
+              <i class="fa-solid fa-circle-check text-emerald-400"></i> वीडियो रिव्यू एवं यूट्यूब पब्लिश (Video Review &amp; Direct YouTube Upload)
+            </h3>
+          </div>
+          <span id="vedic-res-specs" class="text-xs text-amber-300 font-mono bg-slate-900 px-3 py-1 rounded-full border border-amber-500/30">
+            1080x1920 Short • 0.0 MB • 0s
+          </span>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+          <!-- In-Browser Adaptive 9:16 Video Player -->
+          <div class="lg:col-span-5 flex flex-col items-center">
+            <div id="vedic-video-container" class="w-full max-w-[280px] aspect-[9/16] bg-black rounded-2xl overflow-hidden border-2 border-amber-500/40 shadow-2xl relative">
+              <video id="vedic-preview-player" controls preload="metadata" class="w-full h-full object-contain"></video>
+            </div>
+            <div class="mt-3 flex items-center gap-2">
+              <a id="btn-vedic-download" href="#" download class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-slate-200 font-semibold transition flex items-center gap-1.5 border border-slate-700">
+                <i class="fa-solid fa-download text-amber-400"></i> 📥 Download .mp4
+              </a>
+              <button id="btn-vedic-delete" onclick="deleteCurrentVedicVideo()" class="px-3 py-1.5 rounded-lg bg-rose-950/80 hover:bg-rose-900 border border-rose-600/50 text-xs text-rose-300 font-bold transition flex items-center gap-1.5 shadow" title="Review pasand nahi aaya? Video discard karein">
+                <i class="fa-solid fa-trash"></i> 🗑️ Discard &amp; Re-render
+              </button>
+            </div>
+          </div>
+
+          <!-- YouTube Publish Form -->
+          <div class="lg:col-span-7 glass bg-slate-900/80 p-5 rounded-xl border border-slate-800 space-y-3.5">
+            <div class="flex items-center justify-between pb-1 border-b border-slate-800">
+              <h4 class="text-xs font-bold text-amber-300 uppercase tracking-wider flex items-center gap-1.5">
+                <i class="fa-brands fa-youtube text-red-500"></i> YouTube Upload Details
+              </h4>
+              <span class="text-[11px] text-slate-400">रिव्यू के बाद तुरंत अपने चैनल पर पब्लिश करें</span>
+            </div>
+
+            <div>
+              <label class="block text-xs font-semibold text-slate-300 mb-1">YouTube Video Title:</label>
+              <input type="text" id="vedic-pub-title" class="w-full glass bg-slate-950 px-3 py-2 rounded-lg border border-slate-700 text-xs text-white font-semibold focus:outline-none focus:border-amber-400">
+            </div>
+
+            <div>
+              <label class="block text-xs font-semibold text-slate-300 mb-1">Description &amp; Story Narration:</label>
+              <textarea id="vedic-pub-desc" rows="4" class="w-full glass bg-slate-950 px-3 py-2 rounded-lg border border-slate-700 text-xs text-white focus:outline-none focus:border-amber-400 leading-relaxed"></textarea>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
-                <label class="text-xs font-semibold text-slate-300 block mb-1">Video Title (for YouTube &amp; Archive):</label>
-                <input type="text" id="vedic-video-title" value="कुरुक्षेत्र में श्री कृष्ण की सीख: कर्म ही तुम्हारी पहचान है #Shorts" class="w-full glass bg-slate-900/90 px-3 py-2 rounded-xl border border-slate-700 text-xs text-white focus:border-amber-400 focus:outline-none">
+                <label class="block text-xs font-semibold text-slate-300 mb-1">Target Channel:</label>
+                <select id="vedic-pub-channel" class="w-full glass bg-slate-950 px-3 py-2 rounded-lg border border-slate-700 text-xs text-white focus:outline-none focus:border-amber-400">
+                  <option value="hindi" selected>🇮🇳 Hindi Shorts Channel (Default)</option>
+                  <option value="english">🇬🇧 English Shorts Channel</option>
+                </select>
               </div>
               <div>
-                <label class="text-xs font-semibold text-slate-300 block mb-1">Subtitle Style:</label>
-                <select id="vedic-subtitle-style" class="w-full glass bg-slate-900/90 px-3 py-2 rounded-xl border border-slate-700 text-xs text-white focus:border-amber-400 focus:outline-none">
-                  <option value="hormozi" selected>🔥 Hormozi / Viral Pop (Yellow/Gold Highlights) ⭐</option>
-                  <option value="cinematic">💎 Clean Cinematic (White with Soft Shadow)</option>
-                  <option value="none">🚫 No Subtitles (Clean Video Only)</option>
+                <label class="block text-xs font-semibold text-slate-300 mb-1">Tags (Comma-Separated):</label>
+                <input type="text" id="vedic-pub-tags" value="#Shorts, #BhagavadGita, #LordKrishna, #Karma, #Mahabharata, #HindiMotivation" class="w-full glass bg-slate-950 px-3 py-2 rounded-lg border border-slate-700 text-xs text-white focus:outline-none focus:border-amber-400">
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-300 mb-1">Privacy Status:</label>
+                <select id="vedic-pub-privacy" class="w-full glass bg-slate-950 px-3 py-2 rounded-lg border border-slate-700 text-xs text-white focus:outline-none focus:border-amber-400">
+                  <option value="public" selected>🌍 Public (Instant Live)</option>
+                  <option value="unlisted">🔗 Unlisted (Review on YouTube)</option>
+                  <option value="private">🔒 Private (Draft)</option>
                 </select>
               </div>
             </div>
 
-            <!-- RENDER BUTTON -->
-            <button type="button" onclick="renderVedicVideo()" id="btn-render-vedic-video" class="w-full py-3.5 px-6 rounded-xl bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 hover:from-amber-400 hover:to-orange-400 text-black text-sm font-extrabold transition flex items-center justify-center gap-2 shadow-xl">
-              <i class="fa-solid fa-film text-base"></i> 🎬 Render Vedic Short Video (9:16 Ken Burns 4K)
-            </button>
+            <div>
+              <label class="block text-xs font-semibold text-slate-300 mb-1">Pinned Comment (Viewer Engagement CTA):</label>
+              <textarea id="vedic-pub-pinned" rows="2" class="w-full glass bg-slate-950 px-3 py-2 rounded-lg border border-slate-700 text-xs text-white focus:outline-none focus:border-amber-400">🚩 जय श्री कृष्ण! अगर आपको यह सीख अच्छी लगी, तो सब्सक्राइब अवश्य करें और कमेंट में 'जय श्री कृष्ण' लिखें।</textarea>
+            </div>
 
-            <!-- RENDER PROGRESS & LOGS -->
-            <div id="vedic-render-progress-card" class="hidden p-4 rounded-xl bg-slate-950/80 border border-amber-500/30 space-y-2">
-              <div class="flex justify-between items-center text-xs">
-                <span id="vedic-render-status-text" class="text-amber-400 font-semibold flex items-center gap-1.5">
-                  <i class="fa-solid fa-spinner fa-spin"></i> Rendering video...
-                </span>
-                <span id="vedic-render-pct" class="font-mono text-white font-bold">0%</span>
-              </div>
-              <div class="w-full h-2 rounded-full bg-slate-800 overflow-hidden">
-                <div id="vedic-render-bar" class="h-full bg-gradient-to-r from-amber-500 to-orange-500 transition-all duration-300 w-0"></div>
-              </div>
+            <div class="pt-2">
+              <button onclick="publishVedicToYouTube()" id="btn-publish-vedic-yt" class="w-full py-3.5 rounded-xl bg-gradient-to-r from-red-600 via-rose-600 to-red-700 hover:from-red-500 hover:to-rose-500 text-white text-sm font-extrabold transition flex items-center justify-center gap-2 shadow-xl">
+                <i class="fa-brands fa-youtube text-lg"></i> 🚀 Upload to YouTube Now
+              </button>
             </div>
-          </div>
 
-          <!-- COMPLETED VIDEO PLAYER & YOUTUBE PUBLISH -->
-          <div class="space-y-3 p-4 rounded-xl bg-slate-950/60 border border-slate-800 flex flex-col items-center justify-center text-center">
-            <h4 class="text-xs font-bold text-slate-300">Video Player &amp; 1-Click Upload:</h4>
-            <div id="vedic-player-empty" class="text-center py-8 text-slate-500 text-xs">
-              <i class="fa-solid fa-film text-3xl mb-2 text-slate-600 block"></i>
-              रेंडर पूरा होने के बाद 9:16 वीडियो यहां चलेगा
-            </div>
-            <div id="vedic-player-container" class="hidden w-full space-y-3">
-              <video id="vedic-video-element" class="w-full max-h-[320px] rounded-xl border border-amber-500/30 bg-black shadow-lg mx-auto" controls></video>
-              <div class="flex items-center gap-2 w-full">
-                <a id="vedic-download-btn" href="#" download class="flex-1 py-2 px-3 rounded-lg bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold flex items-center justify-center gap-1.5">
-                  <i class="fa-solid fa-download"></i> Download MP4
-                </a>
-                <button type="button" onclick="publishVedicToYouTube()" id="btn-publish-vedic-yt" class="flex-1 py-2 px-3 rounded-lg bg-red-600 hover:bg-red-500 text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow">
-                  <i class="fa-brands fa-youtube"></i> Publish Now
-                </button>
-              </div>
-              <div id="vedic-yt-feedback" class="hidden text-xs text-center py-2 rounded-lg bg-black/40"></div>
-            </div>
+            <div id="vedic-pub-feedback" class="hidden text-xs text-center py-2.5 rounded-xl bg-black/40"></div>
           </div>
         </div>
       </div>
@@ -3660,16 +3723,69 @@
     }
 
     // =========================================================================
-    // VEDIC & GRANTH STORYBOARD STUDIO ENGINE
+    // VEDIC & GRANTH STORYBOARD STUDIO ENGINE (WITH HTTP CLIPBOARD FALLBACK & 1-CLICK YT PUBLISH)
     // =========================================================================
     let vedicScenesState = [];
     let isVedicRendering = false;
     let lastVedicResult = null;
 
-    function initVedicStudio() {
+    // Robust Universal Clipboard Copy (Supports both HTTPS and HTTP/IP Remote contexts)
+    function copyToClipboard(text) {
+      if (!text) return Promise.resolve();
+      if (navigator.clipboard && window.isSecureContext) {
+        return navigator.clipboard.writeText(text);
+      }
+      return new Promise((resolve, reject) => {
+        try {
+          const textArea = document.createElement("textarea");
+          textArea.value = text;
+          textArea.style.position = "fixed";
+          textArea.style.top = "-9999px";
+          textArea.style.left = "-9999px";
+          textArea.setAttribute("readonly", "");
+          document.body.appendChild(textArea);
+          textArea.focus();
+          textArea.select();
+          const successful = document.execCommand('copy');
+          document.body.removeChild(textArea);
+          if (successful) {
+            resolve();
+          } else {
+            reject(new Error('Browser execCommand copy failed'));
+          }
+        } catch (err) {
+          reject(err);
+        }
+      });
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    async function initVedicStudio() {
       updateVedicScriptStats();
       if (vedicScenesState.length === 0) {
         breakdownVedicScript();
+      }
+      // Check if a recently rendered video is available for review/upload
+      if (!lastVedicResult) {
+        try {
+          const res = await fetch('/api/director/last_result');
+          const data = await res.json();
+          if (data && data.video_filename) {
+            lastVedicResult = data;
+            displayVedicVideoResult(data);
+          }
+        } catch (e) {
+          console.log('No recent Vedic video result:', e);
+        }
       }
     }
 
@@ -3814,7 +3930,7 @@
             <div>
               <label class="text-[10px] text-slate-400 font-bold uppercase tracking-wider block mb-1">📢 Narration (Hindi):</label>
               <p class="text-xs text-white font-medium bg-slate-950/60 p-2.5 rounded-lg border border-slate-800/80 leading-relaxed font-sans">
-                ${scene.narration}
+                ${escapeHtml(scene.narration)}
               </p>
             </div>
 
@@ -3822,11 +3938,11 @@
             <div>
               <div class="flex items-center justify-between mb-1">
                 <label class="text-[10px] text-amber-400 font-bold uppercase tracking-wider">🎨 8K AI Visual Prompt (English):</label>
-                <button type="button" onclick="copyVedicPrompt(${idx})" id="btn-copy-prompt-${idx}" class="text-[10px] px-2 py-0.5 rounded bg-amber-950/60 hover:bg-amber-900 border border-amber-500/40 text-amber-300 font-bold flex items-center gap-1 transition">
-                  <i class="fa-solid fa-copy text-[9px]"></i> Copy Prompt
+                <button type="button" onclick="copyVedicPrompt(${idx})" id="btn-copy-prompt-${idx}" class="text-[10px] px-2.5 py-1 rounded bg-amber-950/60 hover:bg-amber-900 border border-amber-500/40 text-amber-300 font-bold flex items-center gap-1 transition shadow cursor-pointer">
+                  <i class="fa-solid fa-copy text-[10px]"></i> Copy Prompt
                 </button>
               </div>
-              <textarea id="vedic-prompt-${idx}" rows="3" onchange="vedicScenesState[${idx}].visual_prompt = this.value" class="w-full glass bg-slate-950/90 p-2 rounded-lg border border-slate-800 text-[11px] text-slate-300 focus:outline-none focus:border-amber-400 font-mono leading-snug">${scene.visual_prompt}</textarea>
+              <textarea id="vedic-prompt-${idx}" rows="3" oninput="vedicScenesState[${idx}].visual_prompt = this.value" class="w-full glass bg-slate-950/90 p-2.5 rounded-lg border border-slate-800 text-[11px] text-slate-300 focus:outline-none focus:border-amber-400 font-mono leading-snug">${escapeHtml(scene.visual_prompt)}</textarea>
             </div>
           </div>
 
@@ -3851,19 +3967,23 @@
               <div class="relative group rounded-xl overflow-hidden border border-amber-500/40 bg-black aspect-[9/12] max-h-[160px] flex items-center justify-center">
                 <img src="${scene.stream_url}" alt="Scene ${scene.scene_number}" class="w-full h-full object-cover">
                 <div class="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition flex items-center justify-center gap-2">
-                  <button type="button" onclick="document.getElementById('vedic-file-input-${idx}').click()" class="px-2.5 py-1 bg-amber-500 hover:bg-amber-400 text-black text-[11px] font-bold rounded-lg shadow">
+                  <button type="button" onclick="document.getElementById('vedic-file-input-${idx}').click()" class="px-2.5 py-1 bg-amber-500 hover:bg-amber-400 text-black text-[11px] font-bold rounded-lg shadow cursor-pointer">
                     Replace
                   </button>
-                  <button type="button" onclick="removeVedicSceneImage(${idx})" class="px-2.5 py-1 bg-rose-600 hover:bg-rose-500 text-white text-[11px] font-bold rounded-lg shadow">
+                  <button type="button" onclick="removeVedicSceneImage(${idx})" class="px-2.5 py-1 bg-rose-600 hover:bg-rose-500 text-white text-[11px] font-bold rounded-lg shadow cursor-pointer">
                     Remove
                   </button>
                 </div>
               </div>
             ` : `
-              <div onclick="document.getElementById('vedic-file-input-${idx}').click()" class="border-2 border-dashed border-slate-700 hover:border-amber-400/70 bg-slate-950/40 hover:bg-slate-950/80 rounded-xl p-3 text-center cursor-pointer transition space-y-1">
+              <div ondragover="event.preventDefault(); this.classList.add('border-amber-400', 'bg-slate-900');"
+                   ondragleave="this.classList.remove('border-amber-400', 'bg-slate-900');"
+                   ondrop="handleVedicDrop(event, ${idx})"
+                   onclick="document.getElementById('vedic-file-input-${idx}').click()" 
+                   class="border-2 border-dashed border-slate-700 hover:border-amber-400/70 bg-slate-950/40 hover:bg-slate-950/80 rounded-xl p-3 text-center cursor-pointer transition space-y-1">
                 <i class="fa-solid fa-cloud-arrow-up text-amber-400 text-lg"></i>
-                <div class="text-[11px] font-bold text-slate-300">Upload Custom 4K Image</div>
-                <div class="text-[9px] text-slate-500">Midjourney / Flux / Leonardo image attach karein (Auto Ken Burns 30fps)</div>
+                <div class="text-[11px] font-bold text-slate-300">Click or Drag &amp; Drop 4K Image</div>
+                <div class="text-[9px] text-slate-500">Midjourney / Flux / Leonardo image yahan attach karein (Auto Ken Burns 30fps)</div>
               </div>
             `}
 
@@ -3875,9 +3995,13 @@
     }
 
     function copyVedicPrompt(idx) {
-      if (!vedicScenesState[idx]) return;
-      const promptText = vedicScenesState[idx].visual_prompt || '';
-      navigator.clipboard.writeText(promptText).then(() => {
+      const promptEl = document.getElementById(`vedic-prompt-${idx}`);
+      const promptText = promptEl ? promptEl.value.trim() : (vedicScenesState[idx] ? vedicScenesState[idx].visual_prompt : '');
+      if (!promptText) {
+        showToast(`Scene ${idx + 1} prompt is empty!`, true);
+        return;
+      }
+      copyToClipboard(promptText).then(() => {
         const btn = document.getElementById(`btn-copy-prompt-${idx}`);
         if (btn) {
           const orig = btn.innerHTML;
@@ -3888,9 +4012,10 @@
             btn.classList.remove('bg-emerald-950', 'border-emerald-500', 'text-emerald-300');
           }, 2000);
         }
-        showToast(`Scene ${idx + 1} 8K prompt copied to clipboard!`);
+        showToast(`✅ Scene ${idx + 1} 8K prompt copied to clipboard!`);
       }).catch(err => {
-        showToast('Clipboard copy failed: ' + err, true);
+        console.error('Clipboard copy error:', err);
+        showToast('Clipboard copy failed: ' + err.message, true);
       });
     }
 
@@ -3901,18 +4026,49 @@
       }
       let fullText = `=== VEDIC 8K IMAGE PROMPTS (MIDJOURNEY / FLUX) ===\n\n`;
       vedicScenesState.forEach((s, idx) => {
-        fullText += `[SCENE ${idx + 1}]\nHindi: ${s.narration}\nPrompt: ${s.visual_prompt}\n\n`;
+        const promptEl = document.getElementById(`vedic-prompt-${idx}`);
+        const pVal = promptEl ? promptEl.value.trim() : (s.visual_prompt || '');
+        fullText += `[SCENE ${idx + 1}]\nHindi: ${s.narration}\nPrompt: ${pVal}\n\n`;
       });
-      navigator.clipboard.writeText(fullText).then(() => {
+      copyToClipboard(fullText).then(() => {
+        const btn = document.getElementById('btn-copy-all-prompts');
+        if (btn) {
+          const orig = btn.innerHTML;
+          btn.innerHTML = '<i class="fa-solid fa-check text-emerald-400"></i> All Copied!';
+          setTimeout(() => { btn.innerHTML = orig; }, 2000);
+        }
         showToast(`📋 All ${vedicScenesState.length} scene prompts copied to clipboard!`);
       }).catch(err => {
-        showToast('Clipboard copy failed: ' + err, true);
+        console.error('Batch clipboard copy error:', err);
+        showToast('Clipboard copy failed: ' + err.message, true);
       });
     }
 
-    async function uploadVedicSceneImage(fileInput, idx) {
+    function handleVedicDrop(event, idx) {
+      event.preventDefault();
+      const dropzone = event.currentTarget;
+      if (dropzone) {
+        dropzone.classList.remove('border-amber-400', 'bg-slate-900');
+      }
+      if (event.dataTransfer && event.dataTransfer.files && event.dataTransfer.files.length > 0) {
+        const file = event.dataTransfer.files[0];
+        if (file.type.startsWith('image/')) {
+          uploadVedicSceneImageDirectly(file, idx);
+        } else {
+          showToast('कृपया केवल इमेज (JPG, PNG, WEBP) फाइल ड्रॉप करें!', true);
+        }
+      }
+    }
+
+    function uploadVedicSceneImage(fileInput, idx) {
       if (!fileInput.files || fileInput.files.length === 0) return;
       const file = fileInput.files[0];
+      uploadVedicSceneImageDirectly(file, idx);
+      fileInput.value = '';
+    }
+
+    async function uploadVedicSceneImageDirectly(file, idx) {
+      if (!file) return;
       const formData = new FormData();
       formData.append('file', file);
       formData.append('scene_index', idx + 1);
@@ -3935,8 +4091,6 @@
       } catch (err) {
         console.error('Image upload error:', err);
         showToast('Upload error: ' + err.message, true);
-      } finally {
-        fileInput.value = '';
       }
     }
 
@@ -4132,13 +4286,22 @@
     }
 
     function displayVedicVideoResult(result) {
-      const emptyBox = document.getElementById('vedic-player-empty');
-      const playerBox = document.getElementById('vedic-player-container');
-      const videoEl = document.getElementById('vedic-video-element');
-      const downloadBtn = document.getElementById('vedic-download-btn');
+      if (!result || !result.video_filename) return;
 
-      if (emptyBox) emptyBox.classList.add('hidden');
-      if (playerBox) playerBox.classList.remove('hidden');
+      const panel = document.getElementById('vedic-result-panel');
+      const videoEl = document.getElementById('vedic-preview-player');
+      const downloadBtn = document.getElementById('btn-vedic-download');
+      const specsBadge = document.getElementById('vedic-res-specs');
+
+      const pubTitle = document.getElementById('vedic-pub-title');
+      const pubDesc = document.getElementById('vedic-pub-desc');
+      const pubPinned = document.getElementById('vedic-pub-pinned');
+      const feedback = document.getElementById('vedic-pub-feedback');
+
+      if (panel) {
+        panel.classList.remove('hidden');
+        panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
 
       if (videoEl && result.stream_url) {
         videoEl.src = result.stream_url + '?t=' + Date.now();
@@ -4149,6 +4312,34 @@
         downloadBtn.href = result.stream_url;
         downloadBtn.download = result.video_filename;
       }
+
+      if (specsBadge) {
+        const dur = result.duration ? `${parseFloat(result.duration).toFixed(1)}s` : '50s';
+        const mb = result.size_mb ? `${result.size_mb} MB` : '';
+        specsBadge.textContent = `1080x1920 Short • ${mb} • ${dur}`;
+      }
+
+      // Pre-fill YouTube publish form
+      const rawTitle = result.title || (document.getElementById('vedic-video-title') ? document.getElementById('vedic-video-title').value.trim() : '');
+      const scriptInput = document.getElementById('vedic-script-input');
+      const scriptContent = scriptInput ? scriptInput.value.trim() : '';
+
+      if (pubTitle && (!pubTitle.value || pubTitle.value.trim() === '')) {
+        pubTitle.value = rawTitle || 'कुरुक्षेत्र में श्री कृष्ण की सीख: कर्म ही तुम्हारी पहचान है #Shorts';
+      }
+
+      if (pubDesc && (!pubDesc.value || pubDesc.value.trim() === '')) {
+        pubDesc.value = `${pubTitle ? pubTitle.value : rawTitle}\n\n${scriptContent}\n\n#BhagavadGita #LordKrishna #Karma #Mahabharata #Shorts #HindiMotivation #Geeta #SanatanDharma #Viral`;
+      }
+
+      if (pubPinned && (!pubPinned.value || pubPinned.value.trim() === '')) {
+        pubPinned.value = '🚩 जय श्री कृष्ण! अगर आपको यह सीख अच्छी लगी, तो सब्सक्राइब अवश्य करें और कमेंट में \'जय श्री कृष्ण\' लिखें।';
+      }
+
+      if (feedback) {
+        feedback.classList.add('hidden');
+        feedback.innerHTML = '';
+      }
     }
 
     async function publishVedicToYouTube() {
@@ -4156,25 +4347,39 @@
         showToast('कोई रेंडर किया गया वीडियो उपलब्ध नहीं है!', true);
         return;
       }
-      const titleInput = document.getElementById('vedic-video-title');
-      const scriptInput = document.getElementById('vedic-script-input');
-      const feedback = document.getElementById('vedic-yt-feedback');
+
+      const pubTitle = document.getElementById('vedic-pub-title');
+      const pubDesc = document.getElementById('vedic-pub-desc');
+      const pubChannel = document.getElementById('vedic-pub-channel');
+      const pubTags = document.getElementById('vedic-pub-tags');
+      const pubPrivacy = document.getElementById('vedic-pub-privacy');
+      const pubPinned = document.getElementById('vedic-pub-pinned');
       const btn = document.getElementById('btn-publish-vedic-yt');
+      const feedback = document.getElementById('vedic-pub-feedback');
 
-      const videoTitle = titleInput ? titleInput.value.trim() : 'कर्म ही तुम्हारी पहचान है #Shorts';
-      const scriptContent = scriptInput ? scriptInput.value.trim() : '';
+      const title = pubTitle ? pubTitle.value.trim() : (lastVedicResult.title || 'Vedic Short');
+      if (!title) {
+        showToast('कृपया वीडियो का टाइटल दर्ज करें!', true);
+        return;
+      }
 
-      const tags = ['BhagavadGita', 'LordKrishna', 'Karma', 'Mahabharata', 'Motivation', 'Shorts', 'HindiMotivation', 'Geeta'];
-      const desc = `${videoTitle}\n\n${scriptContent}\n\n#BhagavadGita #LordKrishna #Karma #Mahabharata #Shorts #HindiMotivation`;
+      const desc = pubDesc ? pubDesc.value.trim() : title;
+      const channel = pubChannel ? pubChannel.value : 'hindi';
+      const privacy = pubPrivacy ? pubPrivacy.value : 'public';
+      const pinned = pubPinned ? pubPinned.value.trim() : '';
+
+      const rawTags = pubTags ? pubTags.value.trim() : '#Shorts, #BhagavadGita, #LordKrishna, #Karma, #Mahabharata, #HindiMotivation';
+      const tagsList = rawTags.split(',').map(t => t.trim().replace(/^#/, '')).filter(Boolean);
 
       if (btn) {
         btn.disabled = true;
-        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Uploading...';
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Uploading to YouTube...';
       }
+
       if (feedback) {
         feedback.classList.remove('hidden');
-        feedback.className = 'text-xs text-amber-300 py-2 rounded-lg bg-amber-950/40 border border-amber-500/30';
-        feedback.textContent = '🚀 YouTube Channel (Hindi) par upload ho raha hai...';
+        feedback.className = 'text-xs text-amber-300 py-2.5 px-3 rounded-xl bg-amber-950/60 border border-amber-500/40 flex items-center justify-center gap-2';
+        feedback.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> 🚀 YouTube चैनल पर अपलोड हो रहा है... कृपया प्रतीक्षा करें...';
       }
 
       try {
@@ -4183,35 +4388,69 @@
           headers: {'Content-Type': 'application/json'},
           body: JSON.stringify({
             filename: lastVedicResult.video_filename,
-            title: videoTitle,
+            title: title,
             description: desc,
-            tags: tags,
-            privacy: 'public',
-            pinned_comment: '🚩 जय श्री कृष्ण! अगर आपको यह सीख अच्छी लगी, तो सब्सक्राइब अवश्य करें।',
-            channel: 'hindi'
+            tags: tagsList,
+            privacy: privacy,
+            pinned_comment: pinned,
+            channel: channel
           })
         });
         const data = await res.json();
         if (data.success && data.url) {
           if (feedback) {
-            feedback.className = 'text-xs text-emerald-400 py-2 rounded-lg bg-emerald-950/40 border border-emerald-500/30 font-bold';
-            feedback.innerHTML = `✅ Successfully Uploaded! <a href="${data.url}" target="_blank" class="underline text-brand-cyan">Watch on YouTube</a>`;
+            feedback.className = 'text-xs text-emerald-400 py-3 px-4 rounded-xl bg-emerald-950/60 border border-emerald-500/40 font-bold space-y-1';
+            feedback.innerHTML = `
+              <div class="flex items-center gap-2 text-emerald-300">
+                <i class="fa-solid fa-circle-check text-base"></i> 🎉 वीडियो सफलतापूर्वक यूट्यूब पर पब्लिश हो गया!
+              </div>
+              <div class="pt-1">
+                <a href="${data.url}" target="_blank" class="inline-flex items-center gap-1.5 px-3 py-1 bg-red-600 hover:bg-red-500 text-white rounded-lg text-xs font-bold transition">
+                  <i class="fa-brands fa-youtube"></i> Watch on YouTube Now &rarr;
+                </a>
+              </div>
+            `;
           }
-          showToast('🚀 Video uploaded to Hindi Shorts channel!');
+          showToast('🚀 Video successfully published to YouTube!');
         } else {
           throw new Error(data.detail || 'Upload failed');
         }
       } catch (err) {
         if (feedback) {
-          feedback.className = 'text-xs text-rose-400 py-2 rounded-lg bg-rose-950/40 border border-rose-500/30 font-bold';
-          feedback.textContent = 'Error: ' + err.message;
+          feedback.className = 'text-xs text-rose-300 py-2.5 px-3 rounded-xl bg-rose-950/60 border border-rose-500/40 font-bold';
+          feedback.innerHTML = `<i class="fa-solid fa-circle-xmark"></i> Upload Error: ${err.message}`;
         }
         showToast('YouTube upload error: ' + err.message, true);
       } finally {
         if (btn) {
           btn.disabled = false;
-          btn.innerHTML = '<i class="fa-brands fa-youtube"></i> Publish Now';
+          btn.innerHTML = '<i class="fa-brands fa-youtube text-base"></i> 🚀 Publish to YouTube Now';
         }
+      }
+    }
+
+    async function deleteCurrentVedicVideo() {
+      if (!lastVedicResult || !lastVedicResult.video_filename) {
+        showToast('Pehle koi video generate hona chahiye!', true);
+        return;
+      }
+      if (!confirm(`Review pasand nahi aaya? Kya aap "${lastVedicResult.video_filename}" ko delete aur discard karna chahte hain?`)) return;
+
+      try {
+        const res = await fetch(`/api/media/delete/${encodeURIComponent(lastVedicResult.video_filename)}`, { method: 'POST' });
+        const data = await res.json();
+        if (data.success) {
+          showToast('🗑️ Video successfully delete aur discard kar diya gaya!');
+          const vPlayer = document.getElementById('vedic-preview-player');
+          if (vPlayer) { vPlayer.pause(); vPlayer.src = ''; }
+          const panel = document.getElementById('vedic-result-panel');
+          if (panel) panel.classList.add('hidden');
+          lastVedicResult = null;
+        } else {
+          showToast(data.detail || 'Delete failed', true);
+        }
+      } catch (err) {
+        showToast('Delete error: ' + err.message, true);
       }
     }
 

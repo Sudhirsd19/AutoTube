@@ -1579,22 +1579,27 @@ async def publish_director_video(req: DirectorPublishRequest):
     if not video_path.exists():
         raise HTTPException(status_code=404, detail="Rendered video file not found")
 
-    target_ch = (req.channel or "english").lower().strip()
+    target_ch = (req.channel or "hindi").lower().strip()
     uploader = YouTubeUploader(channel=target_ch)
-    desc = (req.description or req.title) + "\n\n" + (" ".join(req.tags or ["#Shorts", "#Viral"]))
+    desc = (req.description or req.title).strip()
+    tags = req.tags or ["Shorts", "Viral"]
+    tag_str = " ".join(t if t.startswith("#") else f"#{t}" for t in tags[:6])
+    if tag_str not in desc:
+        desc = desc + "\n\n" + tag_str
 
     video_url = uploader.upload_video(
         video_path=video_path,
         title=req.title,
         description=desc,
-        tags=req.tags or ["Shorts", "Viral"],
+        tags=tags,
         privacy_status=req.privacy or "public",
         pinned_comment=req.pinned_comment,
         channel=target_ch,
     )
 
     if not video_url:
-        raise HTTPException(status_code=500, detail="YouTube upload failed (API limit or credentials error)")
+        err_msg = getattr(uploader, "last_error", None) or "YouTube upload failed (API limit or credentials error)"
+        raise HTTPException(status_code=500, detail=str(err_msg))
 
     # Record in publish tracker
     tracker = _load_publish_tracker()

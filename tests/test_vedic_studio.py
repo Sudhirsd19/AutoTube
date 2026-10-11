@@ -153,3 +153,35 @@ def test_api_vedic_optimize(client):
     assert len(data["optimized_script"]) > 50
     assert data["word_count"] > 30
 
+
+def test_api_director_publish_mocked(client, tmp_path):
+    """Test POST /api/director/publish endpoint with mocked uploader."""
+    from autotube.core.config import PROJECT_ROOT
+    dummy_video = PROJECT_ROOT / "output" / "shorts" / "test_vedic_short.mp4"
+    dummy_video.parent.mkdir(parents=True, exist_ok=True)
+    dummy_video.write_bytes(b"dummy video data")
+
+    try:
+        with patch("autotube.uploader.youtube_upload.YouTubeUploader.upload_video") as mock_upload:
+            mock_upload.return_value = "https://youtu.be/dummyVedic123"
+
+            payload = {
+                "filename": "test_vedic_short.mp4",
+                "title": "कर्म ही पहचान है #Shorts",
+                "description": "श्री कृष्ण की अमर सीख",
+                "tags": ["Shorts", "Geeta", "Krishna"],
+                "privacy": "public",
+                "pinned_comment": "जय श्री कृष्ण!",
+                "channel": "hindi"
+            }
+            resp = client.post("/api/director/publish", json=payload)
+            assert resp.status_code == 200
+            data = resp.json()
+            assert data["success"] is True
+            assert data["url"] == "https://youtu.be/dummyVedic123"
+            mock_upload.assert_called_once()
+    finally:
+        if dummy_video.exists():
+            dummy_video.unlink()
+
+
