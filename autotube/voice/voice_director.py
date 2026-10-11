@@ -84,7 +84,7 @@ def _has_any(text: str, keys: tuple[str, ...]) -> bool:
     for key in keys:
         normalized = key.lower()
         if normalized.isascii() and normalized.isalpha() and len(normalized) <= 3:
-            if re.search(rf"\\b{re.escape(normalized)}\\b", lowered):
+            if re.search(rf"\b{re.escape(normalized)}\b", lowered):
                 return True
         elif normalized in lowered:
             return True
@@ -108,7 +108,10 @@ def choose_subject_voice(title: str, script_text: str, language: str = "hi") -> 
     lang = detect_language(f"{title}\n{script_text}", language)
     text = f"{title} {script_text}".lower()
 
-    if _has_any(text, SPIRITUAL_KEYS):
+    if any(
+        re.search(rf"\b{re.escape(key)}\b", text) if key.isascii() else key in text
+        for key in SPIRITUAL_KEYS
+    ):
         category = "spiritual"
     elif _has_any(text, SPACE_KEYS):
         category = "space"
