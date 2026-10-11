@@ -1,5 +1,7 @@
 """Subject-aware voice selection for AutoTube narration."""
 
+import re
+
 
 # Sacred-text and spiritual-motivation topics use a calmer, devotional narrator.
 # These markers deliberately avoid the generic word "motivation", which is not
@@ -77,8 +79,16 @@ VOICE_RULES: dict[str, dict[str, str]] = {
 
 
 def _has_any(text: str, keys: tuple[str, ...]) -> bool:
+    """Match short ASCII abbreviations as whole words (e.g. AI, not the 'ai' in daily)."""
     lowered = text.lower()
-    return any(key in lowered for key in keys)
+    for key in keys:
+        normalized = key.lower()
+        if normalized.isascii() and normalized.isalpha() and len(normalized) <= 3:
+            if re.search(rf"\\b{re.escape(normalized)}\\b", lowered):
+                return True
+        elif normalized in lowered:
+            return True
+    return False
 
 
 def detect_language(text: str, requested: str = "hi") -> str:
