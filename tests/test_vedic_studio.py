@@ -156,7 +156,7 @@ def test_api_vedic_optimize(client):
 
 def test_api_director_publish_mocked(client, tmp_path):
     """Test POST /api/director/publish endpoint with mocked uploader."""
-    from autotube.core.config import PROJECT_ROOT
+    from autotube.web.app import PROJECT_ROOT
     dummy_video = PROJECT_ROOT / "output" / "shorts" / "test_vedic_short.mp4"
     dummy_video.parent.mkdir(parents=True, exist_ok=True)
     dummy_video.write_bytes(b"dummy video data")
