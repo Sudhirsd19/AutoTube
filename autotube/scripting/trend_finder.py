@@ -424,6 +424,33 @@ NICHE_FALLBACKS = {
 }
 
 
+SCRIPTURE_TOPIC_MARKERS = (
+    "bhagavad gita", "bhagwat gita", "gita", "geeta", "granth", "scripture",
+    "shloka", "shlok", "upanishad", "chanakya niti", "sanatan", "spiritual",
+    "vedic scripture", "karma yoga", "nishkama karma",
+)
+SCRIPTURE_DEVANAGARI_MARKERS = (
+    "गीता", "ग्रंथ", "ग्रन्थ", "शास्त्र", "श्लोक", "उपनिषद", "चाणक्य नीति",
+    "सनातन", "आध्यात्म", "कर्मयोग", "निष्काम कर्म", "वेद",
+)
+
+
+def _ensure_scripture_topic_identity(niche: str, topics: List[str]) -> List[str]:
+    """Retain a sacred-text marker so script, voice and visual routing remain consistent."""
+    if niche != "gita_motivation":
+        return topics
+    tagged: List[str] = []
+    for topic in topics:
+        text = str(topic).strip()
+        lowered = text.lower()
+        has_marker = (
+            any(re.search(rf"\\b{re.escape(term)}\\b", lowered) for term in SCRIPTURE_TOPIC_MARKERS)
+            or any(term in lowered for term in SCRIPTURE_DEVANAGARI_MARKERS)
+        )
+        tagged.append(text if has_marker else f"Ancient Scripture Wisdom: {text}")
+    return tagged
+
+
 class TrendFinder:
     """Discovers viral, high-retention topics and guarantees zero repetition with multi-factor deduplication."""
 
@@ -651,6 +678,7 @@ Return ONLY a valid JSON list of strings, for example:
                                     break
 
                         if valid_topics:
+                            valid_topics = _ensure_scripture_topic_identity(canon_niche, valid_topics)
                             for vt in valid_topics:
                                 self.session_used_topics.add(vt.lower())
                                 # Immediately record so subsequent slots in batch cannot collide
@@ -689,6 +717,7 @@ Return ONLY a valid JSON list of strings, for example:
                 else:
                     selected.append(f"{base} [Deep Dive Mystery]")
 
+        selected = _ensure_scripture_topic_identity(canon_niche, selected)
         for s in selected:
             self.session_used_topics.add(s.lower())
             self.record_topic(s)
