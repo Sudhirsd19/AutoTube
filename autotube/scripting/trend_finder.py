@@ -449,7 +449,7 @@ class TrendFinder:
             "shloka", "shlok", "upanishad", "chanakya niti", "sanatan", "spiritual",
             "karma yoga", "nishkama karma",
         )
-        if any(re.search(rf"\\b{re.escape(term)}\\b", raw_lower) for term in sacred_terms) or any(
+        if any(re.search(rf"\b{re.escape(term)}\b", raw_lower) for term in sacred_terms) or any(
             term in raw_lower
             for term in ("गीता", "ग्रंथ", "श्लोक", "उपनिषद", "चाणक्य नीति", "सनातन", "आध्यात्मिक", "कर्मयोग", "निष्काम कर्म")
         ):
