@@ -221,7 +221,7 @@ def acquire_scene_visuals_waterfall(
         "कर्मयोग", "निष्काम कर्म", "कृष्ण", "अर्जुन", "महाभारत", "रामायण", "वेद",
     )
     is_spiritual_topic = (
-        any(re.search(rf"\\b{re.escape(term)}\\b", identity) for term in spiritual_terms)
+        any(re.search(rf"\b{re.escape(term)}\b", identity) for term in spiritual_terms)
         or any(term in identity for term in devanagari_terms)
     )
 
