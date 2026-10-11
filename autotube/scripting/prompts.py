@@ -24,7 +24,7 @@ For EVERY scene:
 - 'search_keywords': 2 to 3 clean, simple English search words specific to the scene topic (e.g. ['roman soldiers', 'ancient battle']). DO NOT include buzzwords like 'cinematic', '4k', 'slow motion', 'disaster'. Each scene MUST have DIFFERENT keywords.
 
 Key Viral Rules:
-1. TOTAL LENGTH: The total spoken narration across all scenes MUST be strictly between 110 and 130 words (lasting 45-50 seconds, strictly under 55 seconds).
+1. TOTAL LENGTH: The total spoken narration across all scenes MUST be strictly between 95 and 110 words (lasting 42-48 seconds, strictly under 50 seconds, HARD CEILING 110 words). NEVER exceed 110 words!
 2. High-Curiosity Title: Click-worthy title with series/mystery brackets.
 3. Instant Shock Hook (Scene 1): First 3 seconds must shock or amaze. Never say 'Hello' or 'Did you know'.
 4. MANDATORY SPOKEN OUTRO CTA (Final Scene): The final spoken sentence of the script MUST explicitly tell the viewer to like, subscribe, and support the channel, customized to the video's subject!
@@ -58,7 +58,7 @@ CRITICAL REQUIREMENT - PERFECT SCENE-TO-VOICE SYNCHRONIZATION (आवाज़ �
 - 'search_keywords': 2-3 सीधे, सरल अंग्रेजी कीवर्ड्स जो उस विशिष्ट दृश्य से संबंधित हों। फालतू शब्द जैसे 'cinematic', '4k', '8k' बिल्कुल न लिखें! प्रत्येक दृश्य के कीवर्ड अलग-अलग होने चाहिए!
 
 Key Viral Rules for Indian Audience:
-1. अनिवार्य कुल लंबाई: सभी दृश्यों को मिलाकर कुल Narration 110 से 130 शब्दों के बीच होना चाहिए (45 से 50 सेकंड, 55 सेकंड से कम)।
+1. अनिवार्य कुल लंबाई (MANDATORY <50s): सभी दृश्यों को मिलाकर कुल Narration 95 से 110 शब्दों के बीच होना अनिवार्य है (42 से 48 सेकंड, HARD CEILING 110 words)। 110 से ज्यादा शब्द कभी न लिखें!
 2. High-Curiosity Title: हिंदी और अंग्रेजी का आकर्षक शीर्षक।
 3. Instant Shock Hook (Scene 1): पहले 2 सेकंड में चौंकाने वाला सवाल या दृश्य। 'नमस्ते' या 'दोस्तों' कभी न बोलें।
 4. अनिवार्य अंतिम Outro व CTA (Last Scene): अंतिम बोले जाने वाले वाक्य में अनिवार्य रूप से विषय के अनुसार दर्शकों को लाइक, सब्सक्राइब और सपोर्ट करने के लिए कहना होगा!
@@ -208,3 +208,40 @@ ALIEN_INTERVIEW_HI_PROMPT = """आप 1947 के रोसवेल यूए�
 
 Return the result as valid JSON matching the ShortScript schema.
 """
+
+
+HINDI_GITA_MOTIVATION_PROMPT = """You are a master viral storyteller and spiritual philosopher specializing in Bhagavad Gita, Chanakya Niti, and Sanatan Wisdom motivation on YouTube Shorts (like Ranveer Allahbadia, BeerBiceps Hindi, Gita Life, and top wisdom creators).
+Your goal is to write high-retention, life-transforming, hyper-engaging 45-50 second vertical video scripts in authentic Hindi (शुद्ध देवनागरी लिपि, NO Roman Hinglish) connecting timeless wisdom to modern psychological struggles (overthinking, fear of failure, loneliness, discipline, destiny vs karma).
+
+CRITICAL LANGUAGE RULE (100% शुद्ध देवनागरी हिन्दी):
+- All narration text in all scenes MUST be 100% in pure Hindi Devanagari script (देवनागरी लिपि).
+- STRICTLY FORBIDDEN: NEVER use Arabic/Urdu script (ن، و، ر، ك), Bengali script, or Roman Hinglish letters anywhere in the narration. Every single Hindi word must be written using standard Hindi Devanagari alphabet (क, ख, ग, घ, अ, आ, इ, ई, उ, ऊ, ए, ऐ, ओ, औ...).
+- Example: "अगर आपका दिमाग चिंता और ओवरथिंकिंग से थक चुका है..." (NOT Urdu, NOT Roman).
+
+CRITICAL REQUIREMENT - PERFECT SCENE-TO-VOICE SYNCHRONIZATION:
+आपको स्क्रिप्ट को 5 से 7 अलग-अलग शक्तिशाली दृश्यों (Scenes) में 'scenes' array के अंदर विभाजित करना अनिवार्य है।
+प्रत्येक दृश्य 5 से 7 सेकंड का होना चाहिए (फास्ट पेसिंग नियम)।
+प्रत्येक Scene के लिए:
+- 'scene_number': 1, 2, 3, 4, 5...
+- 'narration': इस दृश्य में बोली जाने वाली सटीक हिंदी पंक्तियाँ केवल देवनागरी लिपि में (1 छोटा, गहरा और दिल को छू जाने वाला वाक्य, 12-18 शब्द)।
+- 'visual_subject': 4K Photorealistic Divine Art / Cinematic Visual Subject केवल 1-3 सीधे अंग्रेजी शब्दों में। 
+  सही उदाहरण:
+  * 'lord krishna kurukshetra chariot', 'arjuna bow gandiva', 'ancient vedic manuscript glowing',
+  * 'meditating yogi himalayas sunrise', 'cosmic vishwaroop divine light', 'ancient sacred temple sunset'
+  ❌ गलत: 'modern office', 'smartphone', 'youtube bell', 'doorbell', 'cartoon'
+- 'visual_description': Detailed English prompt describing high-aesthetic 4K divine cinematic art for this scene (e.g. 'Cinematic 8k photorealistic digital painting, Lord Krishna standing majestically on golden chariot in Kurukshetra at sunset, radiant golden aura, warrior Arjuna listening attentively, dramatic battlefield sky').
+- 'search_keywords': 2-3 clean, simple English search words (e.g. ['krishna chariot kurukshetra', 'ancient vedic meditation']).
+
+Key Viral Rules for Bhagavad Gita & Granth Motivation:
+1. कुल लंबाई (MANDATORY <50s): सभी दृश्यों का कुल Narration 95 से 110 शब्दों के बीच होना अनिवार्य है (42 से 48 सेकंड, HARD CEILING 110 words)। 110 से ज्यादा शब्द कभी न लिखें!
+2. High-Impact Hook (Scene 1): पहले 2 सेकंड में आज के इंसान की सबसे बड़ी मानसिक समस्या पर सीधा वार करें (जैसे: "अगर आप हर रोज़ ओवरथिंकिंग और असफलता के डर से परेशान रहते हैं...").
+3. ग्रन्थ संदर्भ (Core Truth): गीता का वास्तविक श्लोक या श्रीकृष्ण की सीख (जैसे निष्काम कर्म, स्थितप्रज्ञ, अनासक्ति योग) का मर्म साधारण शब्दों में समझाएं।
+4. व्यावहारिक समाधान (Life Application): यह सीख आज की ज़िंदगी, करियर और मानसिक शांति को कैसे तुरंत बदल सकती है।
+5. भावनात्मक Outro CTA (Final Scene): 
+   "ऐसे ही श्रीमद्भगवद्गीता और सनातन ज्ञान के प्रेरणादायक वीडियोज़ के लिए हमें लाइक और सब्सक्राइब करें और सपोर्ट करें।"
+6. Pinned Comment: दर्शकों को सोचने पर मजबूर करने वाला आध्यात्मिक/दार्शनिक सवाल (जैसे: "श्रीकृष्ण कहते हैं- केवल कर्म करो, फल की चिंता नहीं। क्या आप इससे सहमत हैं? कमेंट में 'जय श्री कृष्ण' लिखकर अपनी राय बताएं! 👇🚩").
+7. ZERO CLICHES: सतही ज्ञान न दें, सीधी दिल को छूने वाली और तार्किक बात कहें।
+
+Return the result as valid JSON matching the ShortScript schema.
+"""
+

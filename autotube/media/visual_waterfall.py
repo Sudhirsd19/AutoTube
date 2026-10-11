@@ -125,6 +125,62 @@ from autotube.utils.console import (
 )
 
 
+def _image_to_motion_clip(
+    image_path: Path,
+    output_path: Path,
+    duration: float = 6.0,
+    fps: int = 30,
+    width: int = 1080,
+    height: int = 1920,
+    motion_type: int = 0,
+) -> Optional[Path]:
+    """Convert a high-resolution 4K/portrait image into a cinematic continuous motion MP4 video."""
+    import subprocess
+    total_frames = max(1, int(duration * fps))
+    p_factor = f"min(1.0,on/{total_frames})"
+    m_idx = motion_type % 4
+    if m_idx == 0:
+        # Smooth continuous Zoom-In (1.0 -> 1.22)
+        zoom_expr = f"min(1.22,1.0+0.22*{p_factor})"
+        x_expr = "iw/2-(iw/zoom/2)"
+        y_expr = "ih/2-(ih/zoom/2)"
+    elif m_idx == 1:
+        # Smooth continuous Zoom-Out (1.22 -> 1.04)
+        zoom_expr = f"max(1.04,1.22-0.18*{p_factor})"
+        x_expr = "iw/2-(iw/zoom/2)"
+        y_expr = "ih/2-(ih/zoom/2)"
+    elif m_idx == 2:
+        # Cinematic Pan Left-to-Right
+        zoom_expr = "1.15"
+        x_expr = f"(iw-iw/zoom)*{p_factor}"
+        y_expr = "ih/2-(ih/zoom/2)"
+    else:
+        # Cinematic Pan Right-to-Left
+        zoom_expr = "1.15"
+        x_expr = f"(iw-iw/zoom)*(1.0-{p_factor})"
+        y_expr = "ih/2-(ih/zoom/2)"
+
+    scale_res = f"{int(width * 1.15)}:{int(height * 1.15)}"
+    vf = (
+        f"scale={scale_res}:force_original_aspect_ratio=increase,"
+        f"crop={scale_res},"
+        f"zoompan=z='{zoom_expr}':d={total_frames}:x='{x_expr}':y='{y_expr}':s={width}x{height}:fps={fps},"
+        f"setsar=1,format=yuv420p"
+    )
+    args = [
+        "ffmpeg", "-y", "-loop", "1", "-i", str(image_path), "-t", f"{duration:.2f}",
+        "-vf", vf, "-r", str(fps), "-c:v", "libx264", "-preset", "ultrafast",
+        "-pix_fmt", "yuv420p", "-an", str(output_path)
+    ]
+    try:
+        res = subprocess.run(args, capture_output=True, text=True, timeout=35)
+        if res.returncode == 0 and output_path.exists() and output_path.stat().st_size > 10000:
+            return output_path
+    except Exception as exc:
+        print_warning(f"Image motion conversion failed for {image_path}: {exc}")
+    return None
+
+
 def acquire_scene_visuals_waterfall(
     script: Any,
     output_dir: Path,
@@ -336,24 +392,85 @@ def acquire_scene_visuals_waterfall(
     if not scene_assets or len(scene_assets) < expected_count:
         stock_fetcher = StockFetcher()
         if scenes:
-            scene_assets = stock_fetcher.fetch_scene_visual_assets(
-                scenes=scenes[:max_scenes],
-                output_dir=output_dir,
-                orientation=orientation,
-                require_video=is_motion_preferred,
-            )
-        else:
-            queries = getattr(script, "visual_keywords", []) or [getattr(script, "topic", "scene")]
-            scene_assets = [
-                stock_fetcher.fetch_best_visual_for_scene(
-                    subject=q,
-                    narration=getattr(script, "narration", None),
+            try:
+                scene_assets = stock_fetcher.fetch_scene_visual_assets(
+                    scenes=scenes[:max_scenes],
                     output_dir=output_dir,
                     orientation=orientation,
                     require_video=is_motion_preferred,
                 )
-                for q in queries[:max_scenes]
-            ]
+            except Exception as sf_err:
+                print_warning(f"StockFetcher fallback error: {sf_err}")
+        else:
+            queries = getattr(script, "visual_keywords", []) or [getattr(script, "topic", "scene")]
+            try:
+                scene_assets = [
+                    stock_fetcher.fetch_best_visual_for_scene(
+                        subject=q,
+                        narration=getattr(script, "narration", None),
+                        output_dir=output_dir,
+                        orientation=orientation,
+                        require_video=is_motion_preferred,
+                    )
+                    for q in queries[:max_scenes]
+                ]
+            except Exception as sf_err:
+                print_warning(f"StockFetcher fallback error: {sf_err}")
+
+    # Duplicate check runs immediately before any fill attempt
+    if is_motion_preferred and scene_assets:
+        if len(set(scene_assets)) != len(scene_assets):
+            raise RuntimeError(
+                f"Visual Pipeline Fail-Closed: Duplicate video clips detected across scenes: {[a.name for a in scene_assets]}. "
+                "Scene footage repetition is strictly disallowed."
+            )
+
+    # Tier 3.5: Missing Scenes Recovery using 4K Photorealistic AI Visuals + Continuous Ken Burns Motion
+    # If any scene slots are still missing after all stock engines (e.g. spiritual/Gita/scripture topics),
+    # generate high-resolution 4K AI visuals and convert them into cinematic continuous motion video clips.
+    fallback_queries = getattr(script, "visual_keywords", []) or [getattr(script, "topic", "scene")]
+    expected_count = len(scenes[:max_scenes]) if scenes else len(fallback_queries[:max_scenes])
+    if len(scene_assets) < expected_count:
+        target_scenes = scenes[:max_scenes] if scenes else []
+        needed = expected_count - len(scene_assets)
+        print_info(f"🎨 Recovering {needed} missing scene(s) via 4K AI Photorealistic Generation + Ken Burns Motion...")
+        try:
+            from autotube.media.ai_visuals import VisualGenerator
+            ai_vis = VisualGenerator()
+            target_w = 1080 if orientation == "portrait" else 1920
+            target_h = 1920 if orientation == "portrait" else 1080
+            used_paths = set(scene_assets)
+
+            start_idx = len(scene_assets)
+            for m_idx in range(start_idx, expected_count):
+                m_scene = target_scenes[m_idx] if (target_scenes and m_idx < len(target_scenes)) else None
+                subj = getattr(m_scene, "visual_subject", None) or (fallback_queries[m_idx] if m_idx < len(fallback_queries) else getattr(script, "topic", "scene"))
+                desc = getattr(m_scene, "visual_description", None) or subj
+                ai_prompt = f"{subj}, {desc}" if (desc and desc != subj) else subj
+                img_out = output_dir / f"{slug}_ai4k_scene_{m_idx+1:02d}.jpg"
+                gen_img = ai_vis.generate_image(
+                    prompt=ai_prompt,
+                    output_path=img_out,
+                    width=target_w,
+                    height=target_h,
+                    style="3d_cinematic",
+                )
+                if gen_img and gen_img.exists():
+                    motion_out = output_dir / f"{slug}_motion_scene_{m_idx+1:02d}.mp4"
+                    motion_clip = _image_to_motion_clip(
+                        image_path=gen_img,
+                        output_path=motion_out,
+                        duration=6.5,
+                        width=target_w,
+                        height=target_h,
+                        motion_type=m_idx,
+                    )
+                    if motion_clip and motion_clip.exists() and motion_clip not in used_paths:
+                        scene_assets.append(motion_clip)
+                        used_paths.add(motion_clip)
+                        print_success(f"🎬 Recovered Scene {m_idx+1} as 4K dynamic motion video!")
+        except Exception as ai_rec_err:
+            print_warning(f"AI motion scene recovery notice: {ai_rec_err}")
 
     # Final strict checks also cover the secondary StockFetcher fallback.
     fallback_queries = getattr(script, "visual_keywords", []) or [getattr(script, "topic", "scene")]

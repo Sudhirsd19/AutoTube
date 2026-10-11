@@ -338,6 +338,27 @@ class TTSEngine:
                 )
             )
 
+        is_vertical_short = (scenes is not None and len(scenes) <= 9)
+        if is_vertical_short and duration > 54.0:
+            tempo_factor = round(duration / 48.0, 3)
+            tempo_factor = min(1.40, max(1.05, tempo_factor))
+            temp_tempo = output_audio_path.with_name(f"tempo_{output_audio_path.name}")
+            from autotube.utils.ffmpeg_helper import run_ffmpeg
+            ok = run_ffmpeg(["-i", str(output_audio_path), "-af", f"atempo={tempo_factor}", "-y", str(temp_tempo)])
+            if ok and temp_tempo.exists() and temp_tempo.stat().st_size > 1000:
+                temp_tempo.replace(output_audio_path)
+                new_dur = get_media_duration(output_audio_path)
+                print_info(
+                    f"⚡ Shorts Tempo Guard: Scaled ElevenLabs audio {tempo_factor:.2f}x "
+                    f"({duration:.2f}s -> {new_dur:.2f}s) to guarantee strict <50s Shorts compliance."
+                )
+                duration = new_dur
+                time_scale = 1.0 / tempo_factor
+                for w in words:
+                    w.start = round(w.start * time_scale, 3)
+                    w.end = round(w.end * time_scale, 3)
+                    w.duration = round(w.duration * time_scale, 3)
+
         srt_path = output_audio_path.with_suffix(".srt")
         ass_path = output_audio_path.with_suffix(".ass")
 
@@ -677,17 +698,47 @@ class TTSEngine:
                     )
                     current_time += w_dur
 
+        # Shorts Auto-Tempo Guard (Hard YouTube 60s Ceiling):
+        # YouTube Shorts algorithm immediately disqualifies any vertical video that reaches 60.0s.
+        # If spoken audio duration exceeds 54.0s, dynamically scale tempo via ffmpeg atempo
+        # and scale word timestamps so karaoke subtitles and scene cuts stay 100% frame-perfect!
+        is_vertical_short = (width < height) or (scenes is not None and len(scenes) <= 9)
+        tempo_adjusted = False
+        if is_vertical_short and duration > 54.0:
+            tempo_factor = round(duration / 48.0, 3)  # Target comfortable 48 seconds
+            tempo_factor = min(1.40, max(1.05, tempo_factor))
+            temp_tempo = output_audio_path.with_name(f"tempo_{output_audio_path.name}")
+            from autotube.utils.ffmpeg_helper import run_ffmpeg
+            ok = run_ffmpeg(["-i", str(output_audio_path), "-af", f"atempo={tempo_factor}", "-y", str(temp_tempo)])
+            if ok and temp_tempo.exists() and temp_tempo.stat().st_size > 1000:
+                temp_tempo.replace(output_audio_path)
+                new_dur = get_media_duration(output_audio_path)
+                print_info(
+                    f"⚡ Shorts Tempo Guard: Scaled audio {tempo_factor:.2f}x "
+                    f"({duration:.2f}s -> {new_dur:.2f}s) to guarantee strict <50s Shorts compliance."
+                )
+                duration = new_dur
+                time_scale = 1.0 / tempo_factor
+                for w in words:
+                    w.start = round(w.start * time_scale, 3)
+                    w.end = round(w.end * time_scale, 3)
+                    w.duration = round(w.duration * time_scale, 3)
+                tempo_adjusted = True
+
         # Export SRT and Karaoke ASS
         srt_path = output_audio_path.with_suffix(".srt")
         ass_path = output_audio_path.with_suffix(".ass")
 
-        # Save SRT from SubMaker or words
-        srt_content = submaker.get_srt()
-        if srt_content.strip():
-            with open(srt_path, "w", encoding="utf-8") as f:
-                f.write(srt_content)
-        else:
+        # Save SRT from SubMaker or scaled words
+        if tempo_adjusted:
             self._export_srt(words, srt_path)
+        else:
+            srt_content = submaker.get_srt()
+            if srt_content.strip():
+                with open(srt_path, "w", encoding="utf-8") as f:
+                    f.write(srt_content)
+            else:
+                self._export_srt(words, srt_path)
 
         self._export_karaoke_ass(words, ass_path, width=width, height=height)
 

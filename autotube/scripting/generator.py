@@ -31,6 +31,12 @@ def get_subject_outro_text(topic: str, language: str = "en") -> str:
         else:
             return "For more mind-bending cosmic mysteries and informative space videos, make sure to like, subscribe, and support our channel!"
 
+    elif any(k in t_lower for k in ("gita", "गीता", "krishna", "कृष्ण", "arjuna", "अर्जुन", "karma", "कर्म", "kurukshetra", "कुरुक्षेत्र", "chanakya", "चाणक्य", "upanishad", "उपनिषद", "granth", "ग्रंथ", "shloka", "श्लोक", "motivation", "bhagwat", "bhagavad")):
+        if is_hindi:
+            return "ऐसे ही श्रीमद्भगवद्गीता और सनातन ज्ञान के प्रेरणादायक वीडियोज़ के लिए हमें लाइक और सब्सक्राइब करें और सपोर्ट करें।"
+        else:
+            return "For more life-changing wisdom from the Bhagavad Gita and ancient scriptures, please like, subscribe, and support our channel!"
+
     elif any(k in t_lower for k in ("bharat", "temple", "mandir", "ancient india", "vedic", "kailasa", "dwarka", "history", "itihas", "empire", "archaeology")):
         if is_hindi:
             return "ऐसे ही प्राचीन भारत और इतिहास के अनसुलझे रहस्यों के इंफॉर्मेटिव वीडियोज़ के लिए हमें लाइक और सब्सक्राइब करें और सपोर्ट करें।"
@@ -85,6 +91,12 @@ def generate_polarizing_debate_comment(topic: str, language: str = "en") -> str:
         else:
             return "💥 What do you believe? Type 1 if you think alien life definitely exists in the universe, Type 2 if humans are completely alone! Drop your answer below! 👇👽"
 
+    elif any(k in t_lower for k in ("gita", "गीता", "krishna", "कृष्ण", "karma", "कर्म", "chanakya", "चाणक्य", "bhagwat", "bhagavad", "granth", "shloka")):
+        if is_hindi:
+            return "🚩 गीता का शाश्वत संदेश! Type 1 अगर आप मानते हैं कि कर्म ही सब कुछ तय करता है, Type 2 अगर भाग्य बड़ा है! कमेंट में 'जय श्री कृष्ण' लिखकर अपनी राय बताएं! 👇"
+        else:
+            return "🚩 Eternal Wisdom! Type 1 if you believe Karma determines destiny, Type 2 if Fate is predetermined! Comment your thoughts below! 👇"
+
     elif any(k in t_lower for k in ("bharat", "temple", "mandir", "ancient india", "vedic", "kailasa", "dwarka", "history", "itihas", "archaeology", "pyramid")):
         if is_hindi:
             return "🏛️ असली सच्चाई क्या है? Type 1 अगर आपको लगता है हमारे पूर्वजों के पास कोई एडवांस गुप्त तकनीक थी, Type 2 अगर यह सिर्फ साधारण छेनी-हथौड़े से बना था! नीचे बताएं! 👇⚡"
@@ -130,7 +142,7 @@ def ensure_subject_outro_cta(script: ShortScript, topic: str, language: str) -> 
     has_like = "like" in lower_last or "लाइक" in lower_last
     has_support = "support" in lower_last or "सपोर्ट" in lower_last
 
-    if not (has_sub and has_like and has_support):
+    if not (has_sub or (has_like and has_support)):
         if len(last_text.split()) < 15:
             last_scene.narration = f"{last_text} {outro_text}".strip()
         else:
@@ -143,6 +155,9 @@ def ensure_subject_outro_cta(script: ShortScript, topic: str, language: str) -> 
             if any(k in t_low for k in ("space", "antariksh", "galaxy", "black hole", "cosmic", "universe", "planet")):
                 last_scene.visual_subject = "deep space galaxy cosmic finale"
                 last_scene.search_keywords = ["deep space galaxy", "outer space cosmos"]
+            elif any(k in t_low for k in ("gita", "गीता", "krishna", "कृष्ण", "karma", "कर्म", "chanakya", "bhagwat", "bhagavad")):
+                last_scene.visual_subject = "ancient sacred temple divine sunset grand finale"
+                last_scene.search_keywords = ["ancient sacred temple", "hindu temple sunset"]
             elif any(k in t_low for k in ("bharat", "temple", "mandir", "ancient", "prachin", "vedic", "kailasa", "history", "itihas", "vastu")):
                 last_scene.visual_subject = "ancient Indian stone temple sunset grand finale"
                 last_scene.search_keywords = ["ancient indian temple", "stone temple sunset"]
@@ -185,7 +200,11 @@ class ScriptGenerator:
     ) -> ShortScript:
         """Generate a viral YouTube Short script for the given topic in English or Hindi."""
         is_hindi = language.lower() in ("hi", "hindi")
-        from autotube.scripting.prompts import HINDI_SHORTS_SYSTEM_PROMPT, SHORTS_SYSTEM_PROMPT
+        from autotube.scripting.prompts import (
+            HINDI_GITA_MOTIVATION_PROMPT,
+            HINDI_SHORTS_SYSTEM_PROMPT,
+            SHORTS_SYSTEM_PROMPT,
+        )
 
         if not self.client:
             print_warning(
@@ -193,7 +212,22 @@ class ScriptGenerator:
             )
             return self._generate_fallback_short(topic, target_duration)
 
-        sys_prompt = HINDI_SHORTS_SYSTEM_PROMPT if is_hindi else SHORTS_SYSTEM_PROMPT
+        t_low = topic.lower()
+        is_gita_spiritual = any(
+            k in t_low
+            for k in (
+                "gita", "गीता", "krishna", "कृष्ण", "arjuna", "अर्जुन", "karma", "कर्म",
+                "kurukshetra", "कुरुक्षेत्र", "chanakya", "चाणक्य", "upanishad", "उपनिषद",
+                "granth", "ग्रंथ", "shloka", "श्लोक", "motivation", "motivational", "bhagwat", "bhagavad"
+            )
+        )
+        if is_hindi and is_gita_spiritual:
+            sys_prompt = HINDI_GITA_MOTIVATION_PROMPT
+        elif is_hindi:
+            sys_prompt = HINDI_SHORTS_SYSTEM_PROMPT
+        else:
+            sys_prompt = SHORTS_SYSTEM_PROMPT
+
         lang_note = "in authentic Devanagari Hindi script (शुद्ध हिंदी देवनागरी लिपि में बोले जाने वाले वाक्य, NO Roman Hinglish) with English visual search keywords" if is_hindi else "in English"
 
         if target_duration >= 90:
@@ -202,11 +236,11 @@ class ScriptGenerator:
             scene_guide = "8 to 14 sequential documentary scenes in 'scenes'"
             dur_label = f"{target_duration} seconds (Full In-Depth Documentary)"
         else:
-            target_duration = min(target_duration, 50)
-            min_words = 110
-            max_words = 130
-            scene_guide = "5 to 8 sequential scenes in 'scenes'"
-            dur_label = f"{target_duration} seconds (CRITICAL: YouTube Shorts STRICTLY UNDER 60 SECONDS, Target: 45 to 50 seconds spoken audio)"
+            target_duration = min(target_duration, 48)
+            min_words = 95
+            max_words = 110
+            scene_guide = "5 to 7 sequential scenes in 'scenes'"
+            dur_label = f"{target_duration} seconds (CRITICAL: YouTube Shorts STRICTLY UNDER 50 SECONDS, Target: 42 to 48 seconds spoken audio, HARD CEILING 110 words)"
 
         prompt = f"""Generate a high-retention viral YouTube video script about: '{topic}' {lang_note}.
 Target duration: {dur_label}.
@@ -215,11 +249,11 @@ MANDATORY STRUCTURAL REQUIREMENTS:
 1. Break the entire script into {scene_guide}.
 2. For each scene in 'scenes':
    - 'scene_number': 1, 2, 3, 4, 5...
-   - 'narration': 1-2 punchy spoken sentences for this scene ({'in authentic Hindi using Devanagari script only (शुद्ध देवनागरी लिपि, NO Roman Hinglish)' if is_hindi else 'in English'}).
+   - 'narration': 1 punchy spoken sentence for this scene ({'in authentic Hindi using Devanagari script only (शुद्ध देवनागरी लिपि, NO Roman Hinglish)' if is_hindi else 'in English'}, 12 to 16 words).
    - 'visual_subject': The exact physical subject on screen in 1-3 simple English words (e.g. 'black hole space', 'earth from space', 'pyramid egypt', 'deep ocean storm', 'glowing brain'). MUST directly match the spoken words!
    - 'visual_description': Vivid description in English of the visual scene.
    - 'search_keywords': 2-3 clean, simple English search words (e.g. ['black hole', 'space galaxy']).
-3. TOTAL SPOKEN WORDS across all scenes MUST be strictly between {min_words} and {max_words} words (hard ceiling 135 words). NEVER exceed 135 words as YouTube Shorts feed disqualifies any video over 60 seconds!
+3. TOTAL SPOKEN WORDS across all scenes MUST be strictly between {min_words} and {max_words} words (hard ceiling 110 words). NEVER exceed 110 words as YouTube Shorts feed disqualifies any vertical video 60 seconds or above!
 4. Set the top-level 'narration' field to the combined text of all scene narrations.
 5. High-converting climax cliffhanger CTA in the final scene.
 6. Seamless infinite loop: ending sentence flows back into opening hook.
@@ -242,6 +276,27 @@ MANDATORY STRUCTURAL REQUIREMENTS:
                 script = ShortScript(**data)
                 # Ensure spoken outro CTA matches subject with like, subscribe, support
                 script = ensure_subject_outro_cta(script, topic, language)
+                if is_hindi and script.scenes:
+                    import re
+                    has_foreign_script = any(
+                        re.search(r'[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\u0980-\u09FF]', s.narration)
+                        for s in script.scenes
+                    )
+                    if has_foreign_script:
+                        print_warning("Foreign/Urdu script detected in Hindi scene narration. Sanitizing to pure Devanagari...")
+                        try:
+                            clean_resp = self.client.models.generate_content(
+                                model=model_name,
+                                contents=f"Convert the following narration sentences into 100% pure Devanagari Hindi (देवनागरी लिपि). Return ONLY a JSON list of strings, one string per scene: {[s.narration for s in script.scenes]}",
+                                config=types.GenerateContentConfig(response_mime_type="application/json"),
+                            )
+                            cleaned_list = json.loads(clean_resp.text)
+                            if isinstance(cleaned_list, list) and len(cleaned_list) == len(script.scenes):
+                                for s_idx, clean_text in enumerate(cleaned_list):
+                                    script.scenes[s_idx].narration = str(clean_text).strip()
+                        except Exception as clean_err:
+                            print_warning(f"Could not sanitize foreign script: {clean_err}")
+
                 if script.scenes:
                     script.narration = " ".join(s.narration.strip() for s in script.scenes if s.narration.strip())
                 print_success(f"AI Script successfully generated with {model_name}!")
