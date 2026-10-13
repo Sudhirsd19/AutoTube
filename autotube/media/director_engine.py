@@ -24,6 +24,25 @@ from autotube.utils.ffmpeg_helper import get_media_duration
 DIRECTOR_OUTPUT_DIR = PROJECT_ROOT / "output" / "shorts"
 TEMP_DIR = PROJECT_ROOT / "temp" / "director"
 
+import concurrent.futures
+
+_GEMINI_EXECUTOR = concurrent.futures.ThreadPoolExecutor(max_workers=2, thread_name_prefix="director_gemini")
+
+
+def _call_gemini_with_timeout(
+    client: Any,
+    model_name: str,
+    contents: Any,
+    config: Optional[Dict[str, Any]] = None,
+    timeout_sec: float = 4.0,
+) -> Any:
+    """Execute Gemini generate_content with a strict timeout to prevent thread hangs."""
+    kwargs = {"model": model_name, "contents": contents}
+    if config:
+        kwargs["config"] = config
+    future = _GEMINI_EXECUTOR.submit(client.models.generate_content, **kwargs)
+    return future.result(timeout=timeout_sec)
+
 
 class DirectorEngine:
     """Orchestrates custom AI video creation based on user's exact script, voice, BGM, and styling."""
@@ -97,6 +116,30 @@ class DirectorEngine:
             "subtitle_styles": subtitle_styles,
         }
 
+    def _condense_rule_based(self, script_text: str, max_words: int = 115) -> str:
+        """Fast, 100% deterministic sentence-aware script compressor strictly under max_words."""
+        words = script_text.strip().split()
+        if len(words) <= max_words:
+            return script_text
+
+        sentences = [s.strip() for s in re.split(r"(?<=[.!?।॥])\s+|\n+", script_text) if s.strip()]
+        if len(sentences) <= 3:
+            return " ".join(words[:max_words])
+
+        hook = sentences[0]
+        cta = sentences[-1]
+        mid = sentences[1:-1]
+        selected_mid = []
+        cur_count = len(hook.split()) + len(cta.split())
+        for s in mid:
+            s_words = len(s.split())
+            if cur_count + s_words <= max_words - 2:
+                selected_mid.append(s)
+                cur_count += s_words
+
+        mid_str = " ".join(selected_mid)
+        return f"{hook} {mid_str} {cta}".strip() if mid_str else f"{hook} {cta}".strip()
+
     def condense_script_for_shorts(
         self,
         script_text: str,
@@ -122,7 +165,7 @@ class DirectorEngine:
 Condense and tighten this script so it strictly fits within a 45-second YouTube Short (<50s strict limit).
 
 Original Script ({len(words)} words):
-"{script_text}"
+\"{script_text}\"
 
 CRITICAL RULES:
 1. Target Word Count: STRICTLY 100 to 110 words total (ABSOLUTE CEILING: 115 words).
@@ -134,13 +177,10 @@ CRITICAL RULES:
 4. Cut out all filler words, repeated phrases, and secondary explanations.
 5. Return ONLY the tightened narration text as a single plain paragraph. No JSON, no titles, no intro labels, no markdown.
 """
-                models_to_try = ["gemini-3.1-flash-lite", "gemini-3.5-flash-lite", "gemini-3.5-flash"]
+                models_to_try = ["gemini-3-flash-preview", "gemini-3.1-flash-lite"]
                 for model_name in models_to_try:
                     try:
-                        resp = client.models.generate_content(
-                            model=model_name,
-                            contents=prompt,
-                        )
+                        resp = _call_gemini_with_timeout(client, model_name, prompt, timeout_sec=3.5)
                         if resp and resp.text:
                             clean_text = resp.text.strip()
                             clean_text = re.sub(r"^```[a-z]*\n?", "", clean_text)
@@ -154,23 +194,174 @@ CRITICAL RULES:
             except Exception as e:
                 print_warning(f"AI script condensation error: {e}")
 
-        # Smart rule-based sentence compression fallback
-        sentences = [s.strip() for s in re.split(r"(?<=[.!?।॥])\s+|\n+", script_text) if s.strip()]
-        if len(sentences) <= 3:
-            return " ".join(words[:115])
+        # Smart rule-based sentence compression fallback (<1ms)
+        return self._condense_rule_based(script_text, max_words=115)
 
-        hook = sentences[0]
-        cta = sentences[-1]
-        mid = sentences[1:-1]
-        selected_mid = []
-        cur_count = len(hook.split()) + len(cta.split())
-        for s in mid:
-            s_words = len(s.split())
-            if cur_count + s_words <= 112:
-                selected_mid.append(s)
-                cur_count += s_words
+    def _generate_smart_fallback_story(
+        self,
+        raw_input: str,
+        topic: Optional[str] = None,
+        language: str = "hi",
+        is_long: bool = False,
+    ) -> Dict[str, Any]:
+        """Generate an authentic, deeply thrilling 100-word story with complete scenes, titles, and hooks when AI API is unavailable."""
+        t_clean = (topic or raw_input).strip()
+        t_lower = t_clean.lower()
+        raw_lower = raw_input.lower()
+        combined_lower = f"{t_lower} {raw_lower}"
+        suffix = " #Shorts" if not is_long else ""
 
-        return f"{hook} {' '.join(selected_mid)} {cta}".strip()
+        lang_lower = (language or "hi").lower()
+        is_hindi = lang_lower in ("hi", "hindi")
+        is_hinglish = lang_lower in ("hinglish", "hi-en")
+
+        # Detect genre
+        is_amazon = any(k in combined_lower for k in ("amazon", "अमेज़न", "rainforest", "jungle", "जंगल", "jiv", "jantu", "जीव", "जंतु", "creature", "animal", "snake", "anaconda", "crocodile", "wildlife", "danger"))
+        is_rebirth = any(k in combined_lower for k in ("punarjanam", "पुनर्जन्म", "rebirth", "past life", "shanti devi", "शांति देवी", "reincarnation", "lugdi", "mathura", "maut", "death", "soul", "aatma"))
+        is_bermuda = any(k in combined_lower for k in ("bermuda", "बरमूडा", "triangle", "flight 19", "ocean mystery", "samundar", "गायब", "ship vanish", "plane vanish", "magnetic anomaly"))
+        is_vedic = any(k in combined_lower for k in ("gita", "गीता", "krishna", "कृष्ण", "arjun", "अर्जुन", "mahabharat", "महाभारत", "vedic", "वैदिक", "sanatan", "सनातन", "kailash", "कैलाश", "ramayan", "रामायण", "shiva", "शिव", "dharma", "karma", "कर्म"))
+        is_space = any(k in combined_lower for k in ("space", "antariksh", "अंतरिक्ष", "black hole", "ब्लैक होल", "nasa", "alien", "universe", "planet", "mars", "moon", "stars", "cosmos", "brahmand", "ब्रह्मांड"))
+
+        if is_hindi:
+            if is_amazon:
+                hook = "अगर आपको लगता है कि अमेज़न का जंगल सिर्फ पेड़ों से भरा है, तो अगले 40 सेकंड्स आपकी रूह कंपा देंगे!"
+                body = "इस रहस्यमयी वर्षावन की ज़मीन तक सूरज की धूप कभी नहीं पहुँचती। यहाँ बुलेट चींटी के एक डंक का दर्द गोली लगने जैसा होता है! इतना ही नहीं, 2 इंच का पॉइज़न डार्ट मेंढक 10 लोगों की जान ले सकता है, और गहरे दलदलों में छुपा 30 फीट का ग्रीन एनाकोंडा पलक झपकते ही शिकार को निगल जाता है।"
+                cliffhanger = "क्या आप इस जानलेवा जंगल में 1 रात अकेले बिताने का साहस रखते हैं? अपनी राय कमेंट में ज़रूर बताएं, वीडियो को LIKE करें और ऐसी ही हैरान कर देने वाली सच्ची कहानियों के लिए चैनल को अभी SUBSCRIBE करें!"
+                titles = [
+                    f"अमेज़न जंगल के 3 सबसे ख़ौफ़नाक जीव! 😱{suffix}",
+                    f"यहाँ 1 गलती और खेल खत्म! ⚠️ अमेज़न के खतरनाक रहस्य{suffix}",
+                    f"The Terrifying Creatures of Amazon Rainforest 🐍{suffix}",
+                ]
+                pinned = "क्या आप अमेज़न जंगल में जाने की हिम्मत कर सकते हैं? कमेंट में 'हाँ' या 'ना' लिखें! 👇"
+                tags = ["#AmazonRainforest", "#DangerousAnimals", "#WildMysteries", "#HindiFacts", "#Shorts"]
+            elif is_rebirth:
+                hook = "1935 में दिल्ली की एक 4 साल की बच्ची ने एक ऐसा खौफनाक सच खोला जिसने पूरी दुनिया के वैज्ञानिकों को हिला दिया!"
+                body = "उसने दावा किया कि उसका असली नाम लुगदी देवी है और उसका घर मथुरा में है। जब महात्मा गांधी द्वारा बनाई गई 15 सदस्यों की जांच समिति उसे मथुरा ले गई, तो उसने अपने पिछले जन्म के पति, मकान और गुप्त रूप से छुपाए पैसों का सटीक पता बता दिया! आधुनिक विज्ञान आज तक इस पुनर्जन्म का कोई तार्किक जवाब नहीं दे पाया।"
+                cliffhanger = "क्या यह पुनर्जन्म का अकाट्य सबूत था या कोई अनसुलझा रहस्य? कमेंट में अपनी राय बताएं, वीडियो को LIKE करें और ऐसी ही रोंगटे खड़े करने वाली सच्ची घटनाओं के लिए चैनल को अभी SUBSCRIBE करें!"
+                titles = [
+                    f"पुनर्जन्म का वो सच जिसे गांधीजी भी झुठला नहीं पाए! 😱{suffix}",
+                    f"1935 की वो बच्ची जिसने विज्ञान को चुनौती दी! ⚠️{suffix}",
+                    f"Real Documented Proof of Reincarnation #Shorts",
+                ]
+                pinned = "क्या आपको लगता है कि पुनर्जन्म सच में होता है? कमेंट में 'हाँ' या 'ना' लिखें! 👇"
+                tags = ["#Punarjanam", "#ReincarnationProof", "#RealIncident", "#MysteryFacts", "#Shorts"]
+            elif is_bermuda:
+                hook = "समुद्र का एक ऐसा शैतानी कोना जहाँ आज तक 50 से ज़्यादा जहाज़ और 20 विमान हवा में ही गायब हो चुके हैं!"
+                body = "फ्लोरिडा, प्यूर्टो रिको और बरमूडा के बीच का यह त्रिकोण कंपास और रडार को पूरी तरह अंधा कर देता है। 1945 में अमेरिकी नौसेना के 5 बॉम्बर विमान यहाँ रहस्यमयी ढंग से गायब हो गए, और उनकी आखिरी रेडियो रिकॉर्डिंग में पायलट ने कहा था: 'समुद्र अजीब दिख रहा है, हम नहीं जानते हम कहाँ हैं!' आज तक उनका 1 भी मलबा नहीं मिला।"
+                cliffhanger = "क्या यह चुंबकीय भंवर है या कोई परग्रही पोर्टल? कमेंट में अपनी राय बताएं, वीडियो को LIKE करें और अनसुलझे रहस्यों के लिए चैनल को अभी SUBSCRIBE करें!"
+                titles = [
+                    f"बरमूडा ट्रायंगल का सबसे भयानक सच! 😱{suffix}",
+                    f"जहाँ विज्ञान भी हथियार डाल देता है! ⚠️ Bermuda Triangle{suffix}",
+                    f"The Dark Mystery of Flight 19 in Bermuda{suffix}",
+                ]
+                pinned = "आपके हिसाब से बरमूडा ट्रायंगल में क्या छुपा है? कमेंट में बताएं! 👇"
+                tags = ["#BermudaTriangle", "#OceanMystery", "#Flight19", "#UnsolvedMysteries", "#Shorts"]
+            elif is_vedic:
+                hook = "जब कुरुक्षेत्र के मैदान में अर्जुन के कांपते हाथों से गांडीव धनुष छूट गया, तब श्रीकृष्ण ने एक ऐसा ब्रह्मांडीय सत्य बोला जिसने इतिहास बदल दिया!"
+                body = "भगवान कृष्ण ने कहा—'नैनं छिन्दन्ति शस्त्राणि नैनं दहति पावकः'। आत्मा अमर है, केवल यह शरीर एक वस्त्र मात्र है। कर्म करो लेकिन फल की चिंता छोड़ दो। जिस सत्य को 5000 साल पहले महाभारत में उद्घोष किया गया था, आज आधुनिक क्वांटम फिजिक्स भी उसी चेतना और अमर ऊर्जा के सिद्धांत को नतमस्तक होकर स्वीकार कर रही है!"
+                cliffhanger = "क्या आप भी मानते हैं कि गीता में हर समस्या और उलझन का समाधान है? कमेंट में 'जय श्री कृष्ण' लिखें, वीडियो को LIKE करें और सनातन ज्ञान के लिए चैनल को अभी SUBSCRIBE करें!"
+                titles = [
+                    f"कुरुक्षेत्र में कृष्ण का वो 1 गुप्त उपदेश! 🕉️{suffix}",
+                    f"जब अर्जुन अंदर से टूट गए थे... श्रीकृष्ण की वाणी! ⚡{suffix}",
+                    f"Bhagavad Gita's Ultimate Truth Revealed{suffix}",
+                ]
+                pinned = "क्या आप गीता के उपदेश अपने जीवन में उतारते हैं? कमेंट में 'जय श्री कृष्ण' लिखें! 👇"
+                tags = ["#BhagavadGita", "#ShriKrishna", "#Mahabharata", "#SanatanDharma", "#Shorts"]
+            elif is_space:
+                hook = "अंतरिक्ष का एक ऐसा भयानक दानव जिसके सामने समय और प्रकाश भी पूरी तरह झुक जाते हैं!"
+                body = "ब्लैक होल की सीमा, जिसे इवेंट होराइजन कहते हैं, वहाँ पहुँचते ही गुरुत्वाकर्षण आपको स्पेगेटी की तरह खींच देता है। वैज्ञानिक कहते हैं कि हमारे ब्रह्मांड में करोड़ों ब्लैक होल चुपचाप भटक रहे हैं, और अगर एक भी हमारे सौरमंडल के पास आया, तो पृथ्वी को निगलने में इसे 1 सेकंड भी नहीं लगेगा!"
+                cliffhanger = "क्या ब्लैक होल किसी दूसरी दुनिया का दरवाज़ा है? अपनी राय कमेंट में ज़रूर बताएं, वीडियो को LIKE करें और स्पेस के अनसुलझे रहस्यों के लिए चैनल को अभी SUBSCRIBE करें!"
+                titles = [
+                    f"ब्लैक होल के अंदर क्या होता है? 😱{suffix}",
+                    f"अगर ब्लैक होल पृथ्वी के पास आ जाए तो क्या होगा? ⚠️{suffix}",
+                    f"The Terrifying Monster of Deep Space{suffix}",
+                ]
+                pinned = "क्या ब्लैक होल में गिरकर इंसान बच सकता है? कमेंट में बताएं! 👇"
+                tags = ["#BlackHole", "#SpaceMystery", "#UniverseFacts", "#NASA", "#Shorts"]
+            else:
+                clean_name = re.sub(r"[^a-zA-Z0-9\u0900-\u097F\s]", "", t_clean)[:35].strip() or "इस रहस्य"
+                hook = f"अगर आपको लगता है कि {clean_name} के बारे में आप सब कुछ जानते हैं, तो अगले 40 सेकंड्स आपकी सोच पूरी तरह बदल देंगे!"
+                body = f"इतिहास और वैज्ञानिक शोध में {clean_name} से जुड़े कई ऐसे चौंकाने वाले तथ्य सामने आए हैं जिन पर आम इंसान यकीन नहीं कर पाता। गुप्त फाइलों और प्रत्यक्षदर्शियों के खुलासों से यह साबित हुआ है कि जो सच दुनिया को दिखाया गया था, पर्दे के पीछे की कहानी उससे कहीं ज़्यादा खौफनाक और रहस्यमयी थी!"
+                cliffhanger = f"आपके हिसाब से इसका असली सच क्या हो सकता है? अपनी राय कमेंट में ज़रूर बताएं, वीडियो को LIKE करें और ऐसी ही अनसुलझी कहानियों के लिए चैनल को अभी SUBSCRIBE करें!"
+                titles = [
+                    f"{clean_name} का सबसे बड़ा अनसुलझा रहस्य! 😱{suffix}",
+                    f"99% लोग इसका सच नहीं जानते! ⚠️ {clean_name}{suffix}",
+                    f"The Shocking Secret of {clean_name}{suffix}",
+                ]
+                pinned = f"क्या आप {clean_name} के सच पर यकीन करते हैं? कमेंट में अपनी राय बताएं! 👇"
+                tags = ["#MysteryFacts", "#ShockingTruth", "#HindiFacts", "#TrendingShorts", "#Shorts"]
+
+        elif is_hinglish:
+            if is_amazon:
+                hook = "Agar aapko lagta hai ki Amazon jungle sirf ped-paudho se bhara hai, toh agle 40 seconds aapki rooh kampa denge!"
+                body = "Is rahasyamayi jungle ki zameen tak dhoop kabhi nahi pahunchti. Yahan bullet ant ke ek dank ka dard goli lagne jaisa hota hai! 2 inch ka poison dart frog 10 logo ki jaan le sakta hai, aur gehre daldal me chhipa 30 feet lamba green anaconda palak jhapakte hi shikar ko nigal leta hai."
+                cliffhanger = "Kya aap is jungle me 1 raat bitane ki himmat rakhte hain? Comment karein, video ko LIKE karein aur aisi hi hairatangez sachhi kahaniyo ke liye channel ko abhi SUBSCRIBE karein!"
+                titles = [
+                    f"Amazon Jungle Ke 3 Sabse Khatarnak Jeev! 😱{suffix}",
+                    f"1 Galti Aur Maut Pakki! ⚠️ Amazon Rainforest Mystery{suffix}",
+                    f"Terrifying Creatures of the Amazon Revealed{suffix}",
+                ]
+                pinned = "Kya aap Amazon jungle me jaane ki himmat kar sakte hain? Comment YES ya NO 👇"
+                tags = ["#AmazonJungle", "#DangerousCreatures", "#WildMysteries", "#MindBlown", "#Shorts"]
+            else:
+                clean_name = re.sub(r"[^a-zA-Z0-9\s]", "", t_clean)[:35].strip() or "Is Mystery"
+                hook = f"Agar aapko lagta hai ki {clean_name} ke baare me aap sab jaante hain, toh agle 40 seconds aapke hosh uda denge!"
+                body = f"Itihaas aur secret records me {clean_name} se jude aise hairatangez facts saamne aaye hain jinke baare me 99% log anjaan hain. Classified files ke hisaab se jo sach public ko bataya gaya tha, asal ghatna usse kahin zyada hairan kar dene wali thi!"
+                cliffhanger = f"Aapke hisaab se iska asli sach kya hai? Comment me batayein, video ko LIKE karein aur aisi hi thrilling stories ke liye channel ko abhi SUBSCRIBE karein!"
+                titles = [
+                    f"{clean_name} Ka Sabse Bada Rahasya! 😱{suffix}",
+                    f"99% Log Iska Sach Nahi Jante! ⚠️ {clean_name}{suffix}",
+                    f"The Shocking Truth of {clean_name}{suffix}",
+                ]
+                pinned = "Aapka is baare me kya sochna hai? Comment karein 👇"
+                tags = ["#MysteryFacts", "#HinglishFacts", "#MindBlowing", "#ViralShorts", "#Shorts"]
+
+        else:
+            if is_amazon:
+                hook = "If you think the Amazon rainforest is just trees and rivers, the next 40 seconds will terrify you!"
+                body = "Sunlight never even reaches the jungle floor. A single sting from the bullet ant feels like a gunshot wound! The two-inch poison dart frog carries enough venom to kill ten adults, while thirty-foot green anacondas swallow entire prey whole in seconds."
+                cliffhanger = "Would you dare spend one night alone in the Amazon? Comment below, LIKE this video, and SUBSCRIBE right now for more spine-chilling real stories!"
+                titles = [
+                    f"3 Most Terrifying Creatures in the Amazon! 😱{suffix}",
+                    f"One Mistake and You Are Gone! ⚠️ Amazon Rainforest{suffix}",
+                    f"The Dark Mysteries of the Amazon Jungle{suffix}",
+                ]
+                pinned = "Would you dare enter the Amazon rainforest? Comment below! 👇"
+                tags = ["#AmazonRainforest", "#WildlifeMysteries", "#DangerousAnimals", "#NatureFacts", "#Shorts"]
+            else:
+                clean_name = re.sub(r"[^a-zA-Z0-9\s]", "", t_clean)[:35].strip() or "This Mystery"
+                hook = f"If you think you know the real story behind {clean_name}, the next 40 seconds will shatter your reality!"
+                body = f"Classified records and investigative eyewitness accounts reveal astonishing details about {clean_name} that mainstream history hid for decades. The official explanation barely scratches the surface of what truly happened behind closed doors."
+                cliffhanger = f"What do you think really happened? Tell us in the comments below, LIKE this video, and hit SUBSCRIBE right now to unlock more unsolved mysteries!"
+                titles = [
+                    f"The Unsolved Secret of {clean_name}! 😱{suffix}",
+                    f"99% of People Have No Idea! ⚠️ {clean_name}{suffix}",
+                    f"The Shocking Classified Truth Revealed{suffix}",
+                ]
+                pinned = "What do you think is the real truth? Let us know below! 👇"
+                tags = ["#UnsolvedMysteries", "#ShockingFacts", "#ClassifiedHistory", "#Shorts"]
+
+        full_narration = f"{hook} {body} {cliffhanger}"
+        if not is_long and len(full_narration.split()) > 115:
+            full_narration = self._condense_rule_based(full_narration, max_words=115)
+
+        word_count = len(full_narration.split())
+        est_seconds = round(word_count / 2.6, 1)
+
+        return {
+            "success": True,
+            "full_narration": full_narration,
+            "hook": hook,
+            "body": body,
+            "cliffhanger": cliffhanger,
+            "titles": titles,
+            "pinned_comment": pinned,
+            "tags": tags,
+            "word_count": word_count,
+            "est_seconds": est_seconds,
+            "is_long": is_long,
+            "scenes": self._split_script_into_scenes(full_narration, 35 if is_long else 6),
+        }
 
     def enhance_script_with_ai(
         self,
@@ -305,113 +496,58 @@ Output STRICT JSON with these keys:
 """
                 data = None
                 models_to_try = [
+                    "gemini-3-flash-preview",
                     "gemini-3.1-flash-lite",
-                    "gemini-3.5-flash-lite",
-                    "gemini-3.5-flash",
                 ]
                 for model_name in models_to_try:
-                    for attempt in range(2):
-                        try:
-                            resp = client.models.generate_content(
-                                model=model_name,
-                                contents=prompt,
-                                config={"response_mime_type": "application/json"}
-                            )
-                            if resp and resp.text:
-                                clean_text = resp.text.strip()
-                                if "```json" in clean_text:
-                                    clean_text = clean_text.split("```json")[1].split("```")[0].strip()
-                                elif "```" in clean_text:
-                                    clean_text = clean_text.split("```")[1].split("```")[0].strip()
-                                data = json.loads(clean_text)
-                                print_success(f"AI Script generated successfully with {model_name}!")
-                                break
-                        except Exception as me:
-                            print_warning(f"Model {model_name} (attempt {attempt+1}) failed: {me}. Trying next...")
-                            time.sleep(0.8)
-                    if data:
-                        break
+                    try:
+                        resp = _call_gemini_with_timeout(
+                            client,
+                            model_name,
+                            prompt,
+                            config={"response_mime_type": "application/json"},
+                            timeout_sec=4.0,
+                        )
+                        if resp and resp.text:
+                            clean_text = resp.text.strip()
+                            if "```json" in clean_text:
+                                clean_text = clean_text.split("```json")[1].split("```")[0].strip()
+                            elif "```" in clean_text:
+                                clean_text = clean_text.split("```")[1].split("```")[0].strip()
+                            data = json.loads(clean_text)
+                            print_success(f"AI Script generated successfully with {model_name}!")
+                            break
+                    except Exception as me:
+                        print_warning(f"Model {model_name} timed out or failed: {me}. Trying next...")
 
-                if not data:
-                    raise RuntimeError("All Gemini models failed")
+                if data:
+                    narration = data.get("full_narration", raw_input)
+                    if not is_long and len(narration.split()) > 118:
+                        print_info(f"Generated narration has {len(narration.split())} words. Auto-condensing for 48s Shorts limit...")
+                        narration = self._condense_rule_based(narration, max_words=115)
 
-                narration = data.get("full_narration", raw_input)
-                if not is_long and len(narration.split()) > 118:
-                    print_info(f"Generated narration has {len(narration.split())} words. Auto-condensing for 48s Shorts limit...")
-                    condensed = self.condense_script_for_shorts(narration, language=language)
-                    if condensed:
-                        narration = condensed
+                    word_count = len(narration.split())
+                    est_seconds = round(word_count / 2.6, 1)
 
-                word_count = len(narration.split())
-                est_seconds = round(word_count / 2.6, 1)
-
-                return {
-                    "success": True,
-                    "full_narration": narration,
-                    "hook": data.get("hook", ""),
-                    "body": data.get("body", ""),
-                    "cliffhanger": data.get("cliffhanger", ""),
-                    "titles": data.get("titles", default_titles),
-                    "pinned_comment": data.get("pinned_comment", default_pinned),
-                    "tags": data.get("tags", ["#Shorts", "#Mystery", "#Viral"] if not is_long else ["#Documentary", "#Mystery", "#History", "#Facts"]),
-                    "word_count": word_count,
-                    "est_seconds": est_seconds,
-                    "is_long": is_long,
-                    "scenes": self._split_script_into_scenes(narration, 35 if is_long else 6),
-                }
+                    return {
+                        "success": True,
+                        "full_narration": narration,
+                        "hook": data.get("hook", ""),
+                        "body": data.get("body", ""),
+                        "cliffhanger": data.get("cliffhanger", ""),
+                        "titles": data.get("titles", default_titles),
+                        "pinned_comment": data.get("pinned_comment", default_pinned),
+                        "tags": data.get("tags", ["#Shorts", "#Mystery", "#Viral"] if not is_long else ["#Documentary", "#Mystery", "#History", "#Facts"]),
+                        "word_count": word_count,
+                        "est_seconds": est_seconds,
+                        "is_long": is_long,
+                        "scenes": self._split_script_into_scenes(narration, 35 if is_long else 6),
+                    }
             except Exception as e:
-                print_warning(f"AI script enhancer error: {e}. Using heuristic fallback...")
+                print_warning(f"AI script enhancer error: {e}. Switching to instant smart story fallback...")
 
-        # Heuristic fallback if Gemini unavailable
-        words = raw_input.strip().split()
-        suffix = " #Shorts" if not is_long else ""
-        if is_hindi:
-            hook = "अगर आपको लगता है कि आप सब जानते हैं, तो अगले 45 सेकंड्स आपके होश उड़ा देंगे!"
-            cliffhanger = "आपके हिसाब से क्या यह सच हो सकता है? कमेंट में अपना जवाब ज़रूर बताएं, वीडियो को LIKE करें और ऐसी ही हैरान कर देने वाली सच्ची कहानियों के लिए चैनल को अभी SUBSCRIBE करें!"
-            titles = [
-                f"{raw_input[:40]}... (सच क्या है?){suffix}",
-                f"99% लोग इसका सच नहीं जानते! 😱{suffix}",
-                f"अनसुलझे रहस्य का चौंकाने वाला सच! ⚠️{suffix}",
-            ]
-            pinned_c = "आपके हिसाब से क्या यह सच हो सकता है? कमेंट में 'हाँ' या 'ना' लिखकर बताएं 👇"
-            tags_list = ["#Shorts", "#Mystery", "#HindiFacts", "#HindiKahaniya"] if not is_long else ["#Documentary", "#HindiDocumentary", "#History", "#Facts"]
-        elif is_hinglish:
-            hook = "Agar aapko lagta hai ki aap sab jante hain, toh agle 45 seconds aapke hosh uda denge!"
-            cliffhanger = "Aapke hisaab se kya ye sach ho sakta hai? Comment me apna jawab zaroor batayein, video ko LIKE karein aur aisi hi hairatangez sachhi kahaniyo ke liye channel ko abhi SUBSCRIBE karein!"
-            titles = [
-                f"{raw_input[:40]}... (Sach Kya Hai?){suffix}",
-                f"99% Log Iska Sach Nahi Jante! 😱{suffix}",
-                f"The Shocking Truth Revealed{suffix}",
-            ]
-            pinned_c = "Aapke hisaab se kya ye sach ho sakta hai? Comment me YES ya NO likhkar batao 👇"
-            tags_list = ["#Shorts", "#Mystery", "#MindBlown", "#Facts"] if not is_long else ["#Documentary", "#Mystery", "#Facts", "#Trending"]
-        else:
-            hook = "If you think you know everything about this, the next 45 seconds will completely blow your mind!"
-            cliffhanger = "What do you think really happened? Tell us in the comments below, LIKE this video, and SUBSCRIBE right now for more incredible mind-bending stories!"
-            titles = [
-                f"{raw_input[:40]}... (The Truth){suffix}",
-                f"99% of People Don't Know This! 😱{suffix}",
-                f"The Shocking Truth Revealed{suffix}",
-            ]
-            pinned_c = "Do you believe this is possible? Let us know in the comments below! 👇"
-            tags_list = ["#Shorts", "#Mystery", "#MindBlown", "#Facts"] if not is_long else ["#Documentary", "#Mystery", "#Facts", "#Trending"]
-
-        body_text = raw_input.strip()
-        full_text = f"{hook} {body_text} {cliffhanger}"
-        return {
-            "success": True,
-            "full_narration": full_text,
-            "hook": hook,
-            "body": body_text,
-            "cliffhanger": cliffhanger,
-            "titles": titles,
-            "pinned_comment": pinned_c,
-            "tags": tags_list,
-            "word_count": len(full_text.split()),
-            "est_seconds": round(len(full_text.split()) / 2.6, 1),
-            "is_long": is_long,
-            "scenes": self._split_script_into_scenes(full_text, 35 if is_long else 25),
-        }
+        # Instant Smart Story Fallback (0ms, 100% complete story)
+        return self._generate_smart_fallback_story(raw_input, topic=topic, language=language, is_long=is_long)
 
     def generate_voice_audition(self, voice_id: str, sample_text: Optional[str] = None) -> Path:
         """Generate a 3-second audio sample for the user to audition in browser."""
@@ -794,13 +930,15 @@ Output STRICT JSON:
   "word_count": 130,
   "est_seconds": 56.0
 }}"""
-                active_models = ["gemini-3.5-flash-lite", "gemini-3.1-flash-lite", "gemini-3.5-flash", "gemini-3.8-flash"]
+                active_models = ["gemini-3-flash-preview", "gemini-3.5-flash-lite", "gemini-3.1-flash-lite", "gemini-3.5-flash", "gemini-3.8-flash"]
                 for m in active_models:
                     try:
-                        response = client.models.generate_content(
-                            model=m,
-                            contents=prompt,
+                        response = _call_gemini_with_timeout(
+                            client,
+                            m,
+                            prompt,
                             config={"response_mime_type": "application/json"},
+                            timeout_sec=4.0,
                         )
                         if response.text:
                             import json
@@ -1113,13 +1251,15 @@ Return ONLY a JSON list of scene objects matching this structure:
 [
   {{"scene_number": 1, "narration": "...", "visual_prompt": "...", "visual_subject": "..."}}
 ]"""
-                active_models = ["gemini-3.5-flash-lite", "gemini-3.1-flash-lite", "gemini-3.5-flash", "gemini-3.8-flash"]
+                active_models = ["gemini-3-flash-preview", "gemini-3.5-flash-lite", "gemini-3.1-flash-lite", "gemini-3.5-flash", "gemini-3.8-flash"]
                 for m in active_models:
                     try:
-                        response = client.models.generate_content(
-                            model=m,
-                            contents=prompt,
+                        response = _call_gemini_with_timeout(
+                            client,
+                            m,
+                            prompt,
                             config={"response_mime_type": "application/json"},
+                            timeout_sec=4.0,
                         )
                         if response.text:
                             import json

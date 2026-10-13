@@ -14,6 +14,7 @@ from autotube.utils.console import print_error, print_info, print_success, print
 
 # Recommended modern models with automatic fallback
 CANDIDATE_MODELS = [
+    "gemini-3-flash-preview",
     "gemini-3.5-flash-lite",
     "gemini-3.1-flash-lite",
     "gemini-3.5-flash",

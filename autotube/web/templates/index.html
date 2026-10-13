@@ -3175,6 +3175,9 @@
       btn.disabled = true;
       btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Writing Story...';
 
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000);
+
       try {
         const res = await fetch('/api/director/enhance_script', {
           method: 'POST',
@@ -3184,8 +3187,10 @@
             topic: titleInput.value.trim() || null,
             language: studioLanguage,
             video_format: studioVideoFormat
-          })
+          }),
+          signal: controller.signal
         });
+        clearTimeout(timeoutId);
         const data = await res.json();
         if (data.success) {
           studioScenePlan = Array.isArray(data.scenes) ? data.scenes : null;
@@ -3229,7 +3234,9 @@
           showToast(data.detail || 'Could not generate story', true);
         }
       } catch (err) {
-        showToast('Story generation error: ' + err.message, true);
+        clearTimeout(timeoutId);
+        const isTimeout = err.name === 'AbortError';
+        showToast(isTimeout ? '⚠️ Story generation timed out. Please try again!' : 'Story generation error: ' + err.message, true);
       } finally {
         btn.disabled = false;
         btn.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> ✨ Write Story from Idea (AI)';
@@ -3247,6 +3254,9 @@
       btn.disabled = true;
       btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Polishing Hook...';
 
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000);
+
       try {
         const res = await fetch('/api/director/enhance_script', {
           method: 'POST',
@@ -3256,8 +3266,10 @@
             topic: titleInput.value.trim() || null,
             language: studioLanguage,
             video_format: studioVideoFormat
-          })
+          }),
+          signal: controller.signal
         });
+        clearTimeout(timeoutId);
         const data = await res.json();
         if (data.success) {
           studioScenePlan = Array.isArray(data.scenes) ? data.scenes : null;
@@ -3288,7 +3300,9 @@
           showToast(data.detail || 'Could not enhance script', true);
         }
       } catch (err) {
-        showToast('Enhance error: ' + err.message, true);
+        clearTimeout(timeoutId);
+        const isTimeout = err.name === 'AbortError';
+        showToast(isTimeout ? '⚠️ Script enhancement timed out. Please try again!' : 'Enhance error: ' + err.message, true);
       } finally {
         btn.disabled = false;
         btn.innerHTML = '<i class="fa-solid fa-bolt"></i> ⚡ Enhance Hook & Retention (AI)';

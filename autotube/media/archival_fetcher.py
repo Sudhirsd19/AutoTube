@@ -62,7 +62,7 @@ Archive search engines (Wikimedia Commons & Wikipedia) STRICTLY REQUIRE CONCISE 
 - Return strictly a valid JSON array of strings: ["Entity 1", "Entity 2", ...]"""
 
                 resp = None
-                for model_name in ["gemini-3.5-flash-lite", "gemini-3.1-flash-lite", "gemini-3.5-flash", "gemini-3.8-flash"]:
+                for model_name in ["gemini-3-flash-preview", "gemini-3.5-flash-lite", "gemini-3.1-flash-lite", "gemini-3.5-flash", "gemini-3.8-flash"]:
                     for attempt in range(2):
                         try:
                             resp = client.models.generate_content(
