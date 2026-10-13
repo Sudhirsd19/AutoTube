@@ -196,6 +196,7 @@ class DirectorPublishRequest(BaseModel):
     privacy: str = "public"
     pinned_comment: Optional[str] = None
     channel: Optional[str] = "english"
+    content_type: Optional[str] = "standard"
 
 
 class VedicBreakdownRequest(BaseModel):
@@ -206,6 +207,11 @@ class VedicBreakdownRequest(BaseModel):
 class VedicOptimizeRequest(BaseModel):
     raw_script: str
     topic: Optional[str] = "Sanatan Wisdom"
+
+
+class VedicMetadataRequest(BaseModel):
+    script_text: str
+    custom_title: Optional[str] = None
 
 
 # State cache for last completed Director render
@@ -1606,6 +1612,7 @@ async def publish_director_video(req: DirectorPublishRequest):
         privacy_status=req.privacy or "public",
         pinned_comment=req.pinned_comment,
         channel=target_ch,
+        content_type=getattr(req, "content_type", "standard") or "standard",
     )
 
     if not video_url:
@@ -1629,6 +1636,18 @@ async def publish_director_video(req: DirectorPublishRequest):
 # -------------------------------------------------------------
 # API ROUTES: VEDIC & GRANTH STORYBOARD STUDIO
 # -------------------------------------------------------------
+@app.post("/api/vedic/metadata")
+async def get_vedic_metadata_endpoint(req: VedicMetadataRequest):
+    """Generate contextual Vedic YouTube metadata (Title, Description, Tags, Pinned Comment)."""
+    from autotube.media.director_engine import DirectorEngine
+    director = DirectorEngine()
+    meta = director.generate_vedic_metadata(
+        script_text=req.script_text,
+        custom_title=req.custom_title,
+    )
+    return {"success": True, "metadata": meta}
+
+
 @app.post("/api/vedic/optimize_script")
 async def optimize_vedic_script_endpoint(req: VedicOptimizeRequest):
     """Optimize raw Vedic / Granth script into a viral 45-50s Devanagari Shorts script."""

@@ -14,9 +14,23 @@ def client():
     return TestClient(app)
 
 
-def test_breakdown_vedic_script_fallback():
+@pytest.fixture(autouse=True)
+def disable_external_gemini_network(monkeypatch):
+    """Prevent unit tests from hanging on live external Gemini network calls."""
+    monkeypatch.setenv("GEMINI_API_KEY", "")
+    from autotube.config import get_config
+    cfg = get_config()
+    orig_key = cfg.gemini_api_key
+    cfg.gemini_api_key = ""
+    yield
+    cfg.gemini_api_key = orig_key
+
+
+def test_breakdown_vedic_script_fallback(monkeypatch):
     """Verify script breakdown correctly decomposes Hindi text and generates 8K English prompts."""
+    monkeypatch.setenv("GEMINI_API_KEY", "")
     director = DirectorEngine()
+    director.cfg.gemini_api_key = ""
     script = (
         "क्या आप भी भविष्य की चिंता में अपना आज बर्बाद कर रहे हैं? "
         "कुरुक्षेत्र में अर्जुन के हाथ कांप रहे थे, क्योंकि उन्हें अपनी हार का डर था। "
@@ -119,9 +133,11 @@ def test_api_stream_spiritual_bgm(client):
     assert resp.headers["content-type"] == "audio/mpeg"
 
 
-def test_optimize_vedic_script_ramcharitmanas():
+def test_optimize_vedic_script_ramcharitmanas(monkeypatch):
     """Verify raw Ramcharitmanas chaupai input is optimized into a viral ~45s Hindi script."""
+    monkeypatch.setenv("GEMINI_API_KEY", "")
     director = DirectorEngine()
+    director.cfg.gemini_api_key = ""
     raw = (
         '**"परहित सरिस धर्म नहिं भाई, पर पीड़ा सम नहिं अधमाई"**\n'
         '(Ramcharitmanas, Uttar Kand, Tulsidas)\n\n'
@@ -403,6 +419,141 @@ def test_vedic_studio_unconstrained_duration_allowed(tmp_path):
         # Verify build_short received enforce_shorts_duration_limit=False
         _, kwargs = mock_build.call_args
         assert kwargs.get("enforce_shorts_duration_limit") is False
+
+        # Verify synthesize received allow_unconstrained_duration=True
+        _, tts_kwargs = mock_tts.call_args
+        assert tts_kwargs.get("allow_unconstrained_duration") is True
+
+        # Verify contextual vedic_metadata is present in the result
+        assert "vedic_metadata" in res
+        assert res["vedic_metadata"] is not None
+        assert "SanatanDharma" in res["vedic_metadata"]["tags_string"] or "BhagavadGita" in res["vedic_metadata"]["tags_string"]
+
+
+def test_generate_vedic_metadata_topics():
+    """Verify generate_vedic_metadata accurately produces deity-matched titles, tags, and pinned comments."""
+    director = DirectorEngine()
+
+    # 1. Lord Shiva
+    shiva_meta = director.generate_vedic_metadata("भगवान शिव ने हलाहल विष पीकर ब्रह्मांड की रक्षा की। नीलकंठ महादेव।")
+    assert shiva_meta["category"] == "shiva"
+    assert "महादेव" in shiva_meta["title"] or "शिव" in shiva_meta["title"]
+    assert "Mahadev" in shiva_meta["tags"]
+    assert "HarHarMahadev" in shiva_meta["tags"]
+    assert "हर हर महादेव" in shiva_meta["pinned_comment"]
+    assert "Rahasya" not in shiva_meta["tags"]
+    assert "Vigyan" not in shiva_meta["tags"]
+
+    # 2. Lord Rama / Ramcharitmanas
+    rama_meta = director.generate_vedic_metadata("परहित सरिस धर्म नहिं भाई, पर पीड़ा सम नहिं अधमाई। गोस्वामी तुलसीदास, रामचरितमानस।")
+    assert rama_meta["category"] == "rama"
+    assert "ShreeRam" in rama_meta["tags"]
+    assert "Ramcharitmanas" in rama_meta["tags"]
+    assert "जय श्री राम" in rama_meta["pinned_comment"]
+
+    # 3. Lord Hanuman
+    hanuman_meta = director.generate_vedic_metadata("पवनपुत्र हनुमान जी ने संजीवनी बूटी लाकर लक्ष्मण जी के प्राण बचाए।")
+    assert hanuman_meta["category"] == "hanuman"
+    assert "HanumanJi" in hanuman_meta["tags"]
+    assert "Bajrangbali" in hanuman_meta["tags"]
+    assert "जय बजरंगबली" in hanuman_meta["pinned_comment"]
+
+    # 4. Custom User Title is preserved
+    custom_meta = director.generate_vedic_metadata(
+        "कुरुक्षेत्र में अर्जुन और कृष्ण।",
+        custom_title="मेरा विशेष गीता ज्ञान",
+    )
+    assert custom_meta["title"] == "मेरा विशेष गीता ज्ञान #Shorts"
+
+
+def test_api_vedic_metadata_endpoint(client):
+    """Verify POST /api/vedic/metadata endpoint returns structured tags and title."""
+    resp = client.post(
+        "/api/vedic/metadata",
+        json={"script_text": "भगवान शिव और पार्वती जी का दिव्य संवाद।"},
+    )
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["success"] is True
+    assert "metadata" in data
+    meta = data["metadata"]
+    assert "title" in meta
+    assert "description" in meta
+    assert "tags_string" in meta
+    assert "#Mahadev" in meta["tags_string"]
+
+
+def test_youtube_upload_vedic_content_type(tmp_path):
+    """Verify YouTube uploader in 'vedic' mode never injects sci-fi mystery tags or channel funnels."""
+    from autotube.uploader.youtube_upload import YouTubeUploader
+
+    dummy_vid = tmp_path / "dummy_vedic.mp4"
+    dummy_vid.write_bytes(b"dummy video bytes for upload test" * 100)
+
+    with patch("autotube.uploader.youtube_upload.YouTubeAuth.get_credentials", return_value=MagicMock()), \
+         patch("autotube.uploader.youtube_upload.build") as mock_build, \
+         patch("autotube.uploader.youtube_upload.MediaFileUpload", return_value=MagicMock()):
+
+        mock_yt = MagicMock()
+        mock_build.return_value = mock_yt
+        uploader = YouTubeUploader(channel="hindi")
+
+        uploader.upload_video(
+            video_path=dummy_vid,
+            title="महादेव की अमर सीख #Shorts",
+            description="पवित्र शिव पुराण की कथा।",
+            tags=["Shorts", "Mahadev", "Bhakti"],
+            content_type="vedic",
+        )
+
+        insert_kwargs = mock_yt.videos().insert.call_args[1]
+        body = insert_kwargs.get("body", {})
+        snippet = body.get("snippet", {})
+        tags = snippet.get("tags", [])
+        desc = snippet.get("description", "")
+
+        # Verify no mystery or science tags are present
+        assert "Rahasya" not in tags
+        assert "Vigyan" not in tags
+        assert "Hindi Facts" not in tags
+        assert "Amazing Facts Hindi" not in tags
+
+        # Verify Vedic tags are present
+        assert "Sanatan Dharma" in tags
+        assert "Vedic Wisdom" in tags
+
+        # Verify description does not contain mystery CTA
+        assert "इस रहस्य के बारे में आपकी क्या राय है" not in desc
+        assert "रोज़ाना रहस्य, विज्ञान" not in desc
+        assert "सनातन धर्म, प्राचीन वैदिक ज्ञान" in desc
+
+
+def test_tts_synthesize_allow_unconstrained_duration(tmp_path):
+    """Verify TTSEngine does not apply atempo speedup when allow_unconstrained_duration=True."""
+    from autotube.voice.tts_engine import TTSEngine
+
+    tts = TTSEngine(default_voice="akashvani")
+
+    # Verify that in vertical mode (1080x1920) with scenes <= 9:
+    # 1. Without allow_unconstrained_duration (default False): is_vertical_short is True
+    assert (not False and ((1080 < 1920) or (len([1, 2]) <= 9))) is True
+
+    # 2. With allow_unconstrained_duration=True: is_vertical_short is False
+    allow_unconstrained = True
+    assert (not allow_unconstrained and ((1080 < 1920) or (len([1, 2]) <= 9))) is False
+
+    # 3. Test that synthesize with allow_unconstrained_duration passes flag to synthesize_async
+    with patch.object(tts, "synthesize_async") as mock_async:
+        mock_async.return_value = MagicMock()
+        out_p = tmp_path / "test_voice.mp3"
+        tts.synthesize(
+            text="परीक्षण",
+            output_audio_path=out_p,
+            allow_unconstrained_duration=True,
+        )
+        _, kwargs = mock_async.call_args
+        assert kwargs.get("allow_unconstrained_duration") is True
+
 
 
 

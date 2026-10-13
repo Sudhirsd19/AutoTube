@@ -26,13 +26,14 @@ For EVERY scene:
 Key Viral Rules:
 1. TOTAL LENGTH: The total spoken narration across all scenes MUST be strictly between 95 and 110 words (lasting 42-48 seconds, strictly under 50 seconds, HARD CEILING 110 words). NEVER exceed 110 words!
 2. High-Curiosity Title: Click-worthy title with series/mystery brackets.
-3. Instant Shock Hook (Scene 1): First 3 seconds must shock or amaze. Never say 'Hello' or 'Did you know'.
-4. MANDATORY SPOKEN OUTRO CTA (Final Scene): The final spoken sentence of the script MUST explicitly tell the viewer to like, subscribe, and support the channel, customized to the video's subject!
-   Example Format: "For more mind-bending [subject-specific: cosmic / ancient historical / psychology / science] videos like this, please like, subscribe, and support our channel!"
-5. Pinned Comment: A provocative engagement question for comments.
-6. The top-level 'narration' field should contain the combined narration text of all scenes.
-7. EVERY scene's visual_subject MUST be unique and directly related to the specific sentence being spoken. NO two scenes should have the same visual.
-8. ZERO STORY REPETITION & NO CLICHES: Never use generic stock phrasing (e.g. 'What if I told you', 'Have you ever wondered'). Deliver fresh, deeply factual, unique narrative angles that feel completely original to this specific topic.
+3. Instant Shock Hook (Scene 1): First 3 seconds MUST use an Impossible Paradox, High-Stakes Secret, or Mind-Bending Fact (e.g. "If you think you control your own decisions, the next 30 seconds will completely shatter your reality!" or "In 1983, a single computer glitch brought humanity 120 seconds from nuclear extinction, and 99% of people were never told this truth!"). NEVER use weak openings like 'Hello', 'Did you know', or 'Have you ever wondered'.
+4. The 15-Second Retention Twist (Scene 3 or 4): Inject a mid-video curiosity gap or open-loop twist (e.g. "But the real nightmare began when researchers uncovered what was buried 100 feet below...") to lock the viewer's brain until the very last second.
+5. HIGH-CONVERSION SUBSCRIBE TRIGGER (Final Scene): NEVER use weak begging phrases like "please like, subscribe, and support our channel". Instead, use an irresistible Identity/Value-Driven conversion hook:
+    Example Format: "If you're among the 1% who want to uncover the real truth before it's deleted, subscribe right now so you never miss what history tried to hide!" or "The next part is 10 times more terrifying—hit subscribe right now so you don't miss it!"
+6. Pinned Comment: A provocative engagement question for comments to drive 50+ replies.
+7. The top-level 'narration' field should contain the combined narration text of all scenes.
+8. EVERY scene's visual_subject MUST be unique and directly related to the specific sentence being spoken. NO two scenes should have the same visual.
+9. ZERO STORY REPETITION & NO CLICHES: Never use generic stock phrasing (e.g. 'What if I told you', 'Have you ever wondered'). Deliver fresh, deeply factual, unique narrative angles that feel completely original to this specific topic.
 
 Return the result as valid JSON matching the ShortScript schema.
 """
@@ -60,13 +61,20 @@ CRITICAL REQUIREMENT - PERFECT SCENE-TO-VOICE SYNCHRONIZATION (आवाज़ �
 Key Viral Rules for Indian Audience:
 1. अनिवार्य कुल लंबाई (MANDATORY <50s): सभी दृश्यों को मिलाकर कुल Narration 95 से 110 शब्दों के बीच होना अनिवार्य है (42 से 48 सेकंड, HARD CEILING 110 words)। 110 से ज्यादा शब्द कभी न लिखें!
 2. High-Curiosity Title: हिंदी और अंग्रेजी का आकर्षक शीर्षक।
-3. Instant Shock Hook (Scene 1): पहले 2 सेकंड में चौंकाने वाला सवाल या दृश्य। 'नमस्ते' या 'दोस्तों' कभी न बोलें।
-4. अनिवार्य अंतिम Outro व CTA (Last Scene): अंतिम बोले जाने वाले वाक्य में अनिवार्य रूप से विषय के अनुसार दर्शकों को लाइक, सब्सक्राइब और सपोर्ट करने के लिए कहना होगा!
-   उदाहरण प्रारूप: "ऐसे ही [विषय अनुसार: अंतरिक्ष के / प्राचीन इतिहास के / साइकोलॉजी के / साइंस के] इंफॉर्मेटिव वीडियोज़ के लिए हमें लाइक और सब्सक्राइब करें और सपोर्ट करें।"
-5. Pinned Comment: दर्शकों को कमेंट करने पर मजबूर करने वाला सवाल।
-6. टॉप-लेवल 'narration' फील्ड में सभी सीन्स का पूरा जुड़ा हुआ टेक्स्ट रखें।
-7. प्रत्येक दृश्य का visual_subject अद्वितीय होना चाहिए और बोले जा रहे वाक्य से सीधे संबंधित होना चाहिए।
-8. हर बार बिल्कुल नई कहानी (ZERO REPETITION): पुरानी घिसी-पिटी बातें या एक जैसी कहानियां न दोहराएं। हर बार नए चौंकाने वाले तथ्य, वैज्ञानिक खोज और अनसुलझे रहस्य लाएं।
+3. Instant Shock Hook (Scene 1): पहले 2-3 सेकंड में दर्शक का दिमाग हिला देने वाला मनोवैज्ञानिक हुक अनिवार्य है।
+   - विरोधाभास हुक: "अगर आपको लगता है कि आप अपने फैसलों के खुद मालिक हैं, तो अगले 30 सेकंड्स में आपकी यह सोच पूरी तरह बदलने वाली है!"
+   - ऐतिहासिक/गुप्त सत्य हुक: "1983 में एक छोटी सी गलती ने पूरी दुनिया को परमाणु तबाही के कगार पर ला खड़ा किया था, और 99% लोगों को यह सच कभी नहीं बताया गया!"
+   - पावन वैदिक हुक: "क्या जिंदगी की जंग लड़ते-लड़ते तुम अंदर से टूट चुके हो? जब कुरुक्षेत्र में अर्जुन के कांपते हाथों से गांडीव छूट गया, तब कृष्ण ने 1 ऐसा सत्य बोला जिसने पूरा इतिहास बदल दिया!"
+   - सख्त नियम: 'नमस्ते', 'दोस्तों', 'क्या आप जानते हैं' जैसे कमजोर शब्दों का प्रयोग 100% वर्जित है!
+4. 15वें सेकंड का ट्विस्ट (The 15-Second Retention Gap): Scene 3 या 4 में एक ऐसा अप्रत्याशित मोड़ या रहस्यमयी सवाल लाएं जो दर्शक को अंत तक देखने पर मजबूर कर दे (उदा. "लेकिन असली झटका वैज्ञानिकों को तब लगा, जब उन्होंने उस गुफा के 100 फीट नीचे देखा...").
+5. अनिवार्य मनोवैज्ञानिक सब्सक्राइब ट्रिगर (Last Scene): कमजोर याचना ("लाइक और सपोर्ट करें") बिल्कुल न लिखें! इसकी जगह दर्शक की पहचान और मूल्य पर आधारित पावरफुल ट्रिगर दें:
+   - रहस्य/विज्ञान/इतिहास: "अगर आप भी उन 1% लोगों में हैं जो हर दिन कुछ नया और गहरा सीखना चाहते हैं, तो चैनल को अभी SUBSCRIBE करें ताकि ऐसा कोई भी सच आपसे कभी न छूटे!"
+   - सनातन/वैदिक सीख: "यदि आप भी सनातन धर्म की इस पावन सीख को अपने जीवन में उतारना चाहते हैं, तो कमेंट में 'हर हर महादेव' / 'जय श्री राम' लिखें और चैनल को अभी SUBSCRIBE करें ताकि यह दिव्य ज्ञान रोज़ आपके पास पहुंचे।"
+   - पार्ट 2 सस्पेंस: "और इसका अगला भाग इससे 10 गुना ज़्यादा रोंगटे खड़े करने वाला है—उसे मिस न करने के लिए अभी SUBSCRIBE बटन दबाएं!"
+6. Pinned Comment: दर्शकों को कमेंट करने पर मजबूर करने वाला सवाल।
+7. टॉप-लेवल 'narration' फील्ड में सभी सीन्स का पूरा जुड़ा हुआ टेक्स्ट रखें।
+8. प्रत्येक दृश्य का visual_subject अद्वितीय होना चाहिए और बोले जा रहे वाक्य से सीधे संबंधित होना चाहिए।
+9. हर बार बिल्कुल नई कहानी (ZERO REPETITION): पुरानी घिसी-पिटी बातें या एक जैसी कहानियां न दोहराएं। हर बार नए चौंकाने वाले तथ्य, वैज्ञानिक खोज और अनसुलझे रहस्य लाएं।
 9. विशेष नियम - "प्राचीन भारत व खोया विज्ञान" (Prachin Vigyan - Impossible & Amazing Historical Secrets):
    - केवल वही ऐतिहासिक विषय और खोजें चुनें जो आज के आधुनिक वैज्ञानिकों और इंजीनियरों के लिए भी 'असंभव' (Impossible Engineering / Lost Ancient Tech) जैसे लगते हैं!
    - उदाहरण: एलोरा का कैलाश मंदिर (एक ही विशाल पर्वत को ऊपर से नीचे काटकर 4 लाख टन पत्थर हटाना), दिल्ली का 1600 साल पुराना जंग-रोधी लौह स्तंभ, तंजावुर मंदिर का 80 टन का अखंड गुंबद, पद्मनाभस्वामी का नागा बंधम वॉल्ट बी, लेपाक्षी का झूलता खंभा, राम सेतु के तैरते पत्थर, कोणार्क के चुंबकीय चक्र!
@@ -85,8 +93,8 @@ Key Rules:
    - Scene 1: Cinematic Hook & Problem Statement
    - Middle Scenes: Engaging breakdown, chronological story, or key insights with smooth transitions
    - Final Scene: Climax, philosophical takeaway, and a spoken Outro CTA:
-     In Hindi: "ऐसे ही [विषय अनुसार] इंफॉर्मेटिव वीडियोज़ के लिए हमें लाइक और सब्सक्राइब करें और सपोर्ट करें।"
-     In English: "For more mind-bending [subject-specific] informative videos like this, please like, subscribe, and support our channel!"
+     In Hindi: "अगर आप भी उन 1% जिज्ञासुओं में हैं जो सतही बातों के पीछे का असली सच जानना चाहते हैं, तो चैनल को अभी SUBSCRIBE करें ताकि आगामी गहन खुलासे आप तक सबसे पहले पहुंचें।"
+     In English: "If you're among the curious 1% who want unfiltered historical and scientific truths, subscribe right now so you never miss our next deep dive."
 2. Every scene must have:
    - Natural spoken narration
    - Specific, high-quality visual query (for stock footage / AI image prompt)
@@ -220,7 +228,7 @@ MANDATORY STRUCTURE:
 - Keep total narration between 95 and 110 words and target 42–48 seconds.
 - Scene 1 must hook the viewer with a direct question or relatable problem.
 - Explain a real teaching such as nishkama karma, dharma or sthitaprajna in accessible language, then give a practical application.
-- End with a natural spoken CTA to like, subscribe and support the channel.
+- High-Converting Subscribe Trigger (Final Scene): Connect subscribing directly to the viewer's journey of inner strength and dharma (e.g. "If you choose to walk this path of unwavering inner strength, subscribe right now and let timeless wisdom guide your life every single day!").
 - Every visual must directly support the specific narration line. Use respectful, culturally grounded Indian settings only where appropriate.
 - Scripture accuracy is mandatory: quote Sanskrit or provide chapter/verse numbers only when certain. Never invent a verse or attribution. When unsure, clearly present the idea as a paraphrase or interpretation.
 - Do not claim a teaching guarantees wealth, success, or any medical/mental-health outcome.
@@ -256,8 +264,10 @@ Key Viral Rules for Bhagavad Gita & Granth Motivation:
 2. High-Impact Hook (Scene 1): पहले 2 सेकंड में आज के इंसान की सबसे बड़ी मानसिक समस्या पर सीधा वार करें (जैसे: "अगर आप हर रोज़ ओवरथिंकिंग और असफलता के डर से परेशान रहते हैं...").
 3. ग्रन्थ संदर्भ (Core Truth): गीता का वास्तविक श्लोक या श्रीकृष्ण की सीख (जैसे निष्काम कर्म, स्थितप्रज्ञ, अनासक्ति योग) का मर्म साधारण शब्दों में समझाएं।
 4. व्यावहारिक समाधान (Life Application): यह सीख आज की ज़िंदगी, करियर और मानसिक शांति को कैसे तुरंत बदल सकती है।
-5. भावनात्मक Outro CTA (Final Scene): 
-   "ऐसे ही श्रीमद्भगवद्गीता और सनातन ज्ञान के प्रेरणादायक वीडियोज़ के लिए हमें लाइक और सब्सक्राइब करें और सपोर्ट करें।"
+5. अनिवार्य आध्यात्मिक संकल्प व सब्सक्राइब ट्रिगर (High-Converting Spiritual Trigger - Final Scene):
+   कमजोर याचना ("लाइक और सपोर्ट करें") बिल्कुल न लिखें! इसके स्थान पर दर्शक के आत्मबल, सनातन संस्कार और आगामी आध्यात्मिक प्रेरणा से जुड़ा शक्तिशाली ट्रिगर दें:
+   - "यदि आप भी अपने भीतर के अर्जुन को जगाकर जीवन का हर युद्ध जीतना चाहते हैं, तो कमेंट में 'जय श्री कृष्ण' लिखें और चैनल को अभी SUBSCRIBE करें ताकि यह पावन मार्गदर्शन रोज़ आपको शक्ति दे!"
+   - "महादेव और सनातन धर्म के इस अमर ज्ञान को अपने दैनिक जीवन का हिस्सा बनाने के लिए, कमेंट में 'हर हर महादेव' लिखें और चैनल को अभी SUBSCRIBE करें।"
 6. Pinned Comment: दर्शकों को सोचने पर मजबूर करने वाला आध्यात्मिक/दार्शनिक सवाल (जैसे: "श्रीकृष्ण कहते हैं- केवल कर्म करो, फल की चिंता नहीं। क्या आप इससे सहमत हैं? कमेंट में 'जय श्री कृष्ण' लिखकर अपनी राय बताएं! 👇🚩").
 7. ZERO CLICHES: सतही ज्ञान न दें, सीधी दिल को छूने वाली और तार्किक बात कहें।
 8. SCRIPTURAL ACCURACY: श्लोक, अध्याय/श्लोक संख्या या शब्दशः उद्धरण तभी दें जब वे विश्वसनीय रूप से ज्ञात हों। शंका हो तो श्लोक न गढ़ें; स्पष्ट रूप से सरल भावार्थ/व्याख्या कहें। किसी आधुनिक चिकित्सकीय या वैज्ञानिक दावे को ग्रंथ की ओर से प्रमाणित न बताएं।

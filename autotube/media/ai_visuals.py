@@ -100,22 +100,23 @@ class VisualGenerator:
             seed = random.randint(1000, 999999)
 
         if style.lower() in ("cartoon", "pixar", "ai3d", "dltoons", "3danimation"):
-            style_suffix = "3D Pixar Disney animation style, cute expressive 3D character, Unreal Engine 5 render, cinematic lighting, high detail, masterpiece"
+            style_suffix = "3D Pixar Disney animation style, cute expressive 3D character, Unreal Engine 5 render, cinematic volumetric lighting, high detail, masterpiece"
         elif style.lower() in ("3d_cinematic", "cinematic_3d", "realistic_3d", "3d_realistic", "3d", "cinematic"):
-            style_suffix = "3D cinematic hyperrealistic CGI render, Unreal Engine 5, Octane Render, 8k resolution, ray tracing, volumetric atmospheric lighting, photorealistic textures, dramatic cinematic depth of field, IMAX cinematography, highly detailed"
+            style_suffix = "masterpiece 3D cinematic hyperrealistic CGI, Unreal Engine 5.4, Octane Render, 8k resolution, hardware ray tracing, global illumination, volumetric atmospheric fog and dust motes, photorealistic micro-surface textures, dramatic cinematic depth of field, Panavision 70mm IMAX cinematography, hyper-detailed lighting"
         elif style.lower() in ("spiritual_photorealistic", "divine_photorealistic", "gita_4k"):
             style_suffix = (
-                "respectful photorealistic Indian spiritual cinema, natural skin and fabric textures, "
-                "historically grounded Indian environments, realistic stone, brass, gold and palm-leaf textures, "
-                "cinematic natural lighting, detailed composition, true photographic detail, no cartoon, "
-                "no anime, no toy-like CGI, no logo, no watermark, no written text"
+                "shot on ARRI Alexa 65, 35mm anamorphic lens, f/1.8 shallow depth of field, "
+                "respectful photorealistic Indian spiritual cinema, natural skin and raw silk fabric textures, "
+                "historically grounded Indian environments, realistic weathered stone, glowing brass oil lamps, "
+                "subtle gold leaf and palm-leaf textures, dramatic volumetric god rays, chiaroscuro lighting, "
+                "true photographic realism, no cartoon, no anime, no toy-like CGI, no logo, no watermark, no written text"
             )
         elif style.lower() in ("anime", "ghibli"):
             style_suffix = "Studio Ghibli modern anime animation style, lush aesthetic, vibrant colorful, beautiful anime digital art"
         elif style.lower() in ("comic", "2d"):
             style_suffix = "funny 2D cartoon illustration, bold comic ink outlines, saturated colors, modern cartoon network aesthetic"
         else:
-            style_suffix = "8k resolution, cinematic lighting, photorealistic, dramatic contrast"
+            style_suffix = "masterpiece, 8k resolution, shot on ARRI Alexa 65 with 35mm anamorphic lens, shallow depth of field, photorealistic, dramatic chiaroscuro lighting, volumetric atmosphere, hyper-detailed micro textures, award-winning cinematography"
 
         enhanced_prompt = f"{prompt}, {style_suffix}"
         encoded = requests.utils.quote(enhanced_prompt)

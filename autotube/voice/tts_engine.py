@@ -246,6 +246,7 @@ class TTSEngine:
         voice: Optional[str] = None,
         api_key: Optional[str] = None,
         scenes: Optional[List[Any]] = None,
+        allow_unconstrained_duration: bool = False,
     ) -> TTSResult:
         """Synthesize voiceover using ElevenLabs API with character-level alignment."""
         has_devanagari = any("\u0900" <= c <= "\u097f" for c in text)
@@ -338,7 +339,7 @@ class TTSEngine:
                 )
             )
 
-        is_vertical_short = (scenes is not None and len(scenes) <= 9)
+        is_vertical_short = not allow_unconstrained_duration and (scenes is not None and len(scenes) <= 9)
         if is_vertical_short and duration > 58.5:
             tempo_factor = round(duration / 56.5, 3)
             tempo_factor = min(1.40, max(1.05, tempo_factor))
@@ -450,6 +451,7 @@ class TTSEngine:
         width: int = 1080,
         height: int = 1920,
         scenes: Optional[List[Any]] = None,
+        allow_unconstrained_duration: bool = False,
     ) -> TTSResult:
         """Synchronous wrapper to run async synthesis (safe inside running event loops)."""
         try:
@@ -471,6 +473,7 @@ class TTSEngine:
                         width=width,
                         height=height,
                         scenes=scenes,
+                        allow_unconstrained_duration=allow_unconstrained_duration,
                     )
                 )
                 return future.result()
@@ -485,6 +488,7 @@ class TTSEngine:
                 width=width,
                 height=height,
                 scenes=scenes,
+                allow_unconstrained_duration=allow_unconstrained_duration,
             )
         )
 
@@ -498,6 +502,7 @@ class TTSEngine:
         width: int = 1080,
         height: int = 1920,
         scenes: Optional[List[Any]] = None,
+        allow_unconstrained_duration: bool = False,
     ) -> TTSResult:
         """Synthesize text into speech and extract word & sentence boundaries."""
         # Resolve auto voice here too, so scheduled/batch paths are safe even when
@@ -557,6 +562,7 @@ class TTSEngine:
                     voice=voice,
                     api_key=self.elevenlabs_api_key,
                     scenes=scenes,
+                    allow_unconstrained_duration=allow_unconstrained_duration,
                 )
             except Exception as e:
                 print_warning(
@@ -702,7 +708,7 @@ class TTSEngine:
         # YouTube Shorts algorithm immediately disqualifies any vertical video that reaches 60.0s.
         # If spoken audio duration exceeds 54.0s, dynamically scale tempo via ffmpeg atempo
         # and scale word timestamps so karaoke subtitles and scene cuts stay 100% frame-perfect!
-        is_vertical_short = (width < height) or (scenes is not None and len(scenes) <= 9)
+        is_vertical_short = not allow_unconstrained_duration and ((width < height) or (scenes is not None and len(scenes) <= 9))
         tempo_adjusted = False
         if is_vertical_short and duration > 58.5:
             tempo_factor = round(duration / 56.5, 3)  # Target comfortable 56.5s to fit 55-60s Shorts ceiling

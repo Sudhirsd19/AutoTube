@@ -448,9 +448,10 @@ class AutoPilot:
                                 f"AutoPilot Fail-Closed: Scene {i+1} received invalid or static asset: {a}. "
                                 "Shorts require 100% verified motion video footage for every scene."
                             )
-                    if len(set(scene_assets)) != len(scene_assets):
+                    valid_scene_assets = [Path(a) for a in scene_assets if a is not None]
+                    if len(set(valid_scene_assets)) != len(valid_scene_assets):
                         raise RuntimeError(
-                            f"AutoPilot Fail-Closed: Duplicate video clips detected across scenes: {[a.name for a in scene_assets]}. "
+                            f"AutoPilot Fail-Closed: Duplicate video clips detected across scenes: {[a.name for a in valid_scene_assets]}. "
                             "Scene repetition is strictly disallowed."
                         )
 
@@ -542,7 +543,7 @@ class AutoPilot:
                     else:
                         print_warning(
                             f"Upload could not be completed for '{topic}'. "
-                            f"Rendered video is safely preserved at: {output_video_path.name}"
+                            f"Rendered video is safely preserved at: {output_video_path.name if output_video_path else 'unknown'}"
                         )
                 else:
                     self.trend_finder.record_topic(topic)

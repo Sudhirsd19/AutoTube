@@ -509,6 +509,7 @@ class StockFetcher:
         output_dir: Optional[Path] = None,
         orientation: str = "portrait",
         require_video: bool = False,
+        skip_multi_stock: bool = False,
     ) -> Path:
         """Multi-tier visual fetcher:
         1. Genuine Relevant Pexels Stock Video
@@ -520,20 +521,21 @@ class StockFetcher:
         out_dir = output_dir or cfg.paths.temp_dir
         out_dir.mkdir(parents=True, exist_ok=True)
 
-        try:
-            from autotube.media.multi_stock_aggregator import MultiStockAggregator
-            multi_agg = MultiStockAggregator()
-            scene_text = f"{subject} {' '.join(keywords or [])} {description or ''} {narration or ''}".strip()
-            res_asset = multi_agg.get_best_scene_asset(
-                scene_text=scene_text or subject,
-                title=subject,
-                scene_index=0,
-                orientation=orientation,
-            )
-            if res_asset and res_asset.exists():
-                return res_asset
-        except Exception:
-            pass
+        if not skip_multi_stock:
+            try:
+                from autotube.media.multi_stock_aggregator import MultiStockAggregator
+                multi_agg = MultiStockAggregator()
+                scene_text = f"{subject} {' '.join(keywords or [])} {description or ''} {narration or ''}".strip()
+                res_asset = multi_agg.get_best_scene_asset(
+                    scene_text=scene_text or subject,
+                    title=subject,
+                    scene_index=0,
+                    orientation=orientation,
+                )
+                if res_asset and res_asset.exists():
+                    return res_asset
+            except Exception:
+                pass
 
         candidates = [subject]
         if keywords:
@@ -575,6 +577,8 @@ class StockFetcher:
             motion_fallbacks = ["space galaxy stars", "deep space galaxy", "earth rotating in space", "cosmic nebula colorful", "black hole space"]
         elif any(k in context_lower for k in ("temple", "mandir", "kailasa", "ellora", "prachin", "monument", "mahabharat", "ramayan", "dwarka", "vedic")) or (not is_space and any(k in context_lower for k in ("stone", "ruins", "ancient", "bharat"))):
             motion_fallbacks = ["ancient indian temple architecture", "ancient stone temple carvings", "hindu temple drone aerial", "ancient archaeological ruins"]
+        elif any(k in context_lower for k in ("cell", "biology", "microscop", "organism", "dna", "gene", "bacteria", "science", "laboratory", "molecule", "hydra", "tissue", "regenerat")):
+            motion_fallbacks = ["microscopic cells dividing", "laboratory science research", "abstract medical cellular biology", "dna helix animation"]
         elif any(k in context_lower for k in ("animal", "creature", "bird", "falcon", "cheetah", "predator", "wildlife", "beast", "shrimp", "crocodile")):
             motion_fallbacks = ["wild animal in nature", "peregrine falcon flying sky", "wild cheetah sprinting", "wild predator close up"]
         elif any(k in context_lower for k in ("history", "army", "soldier", "war", "tomb", "emperor", "king", "cavalry")):
@@ -681,7 +685,8 @@ class StockFetcher:
 
             # If this exact file was already used in a previous scene, try alternate keywords
             if asset in used_paths:
-                print_warning(f"Scene {idx+1} got duplicate visual ({asset.name}), trying alternate keywords...")
+                asset_label = getattr(asset, "name", str(asset))
+                print_warning(f"Scene {idx+1} got duplicate visual ({asset_label}), trying alternate keywords...")
                 alt_candidates = list(keywords or []) + [
                     f"{subject} space",
                     f"{subject} cosmic",
@@ -703,8 +708,9 @@ class StockFetcher:
                         break
 
             if asset in used_paths and require_video:
+                asset_label = getattr(asset, "name", str(asset))
                 raise RuntimeError(
-                    f"Visual Pipeline Fail-Closed: Scene {idx+1} received duplicate footage '{asset.name}'. "
+                    f"Visual Pipeline Fail-Closed: Scene {idx+1} received duplicate footage '{asset_label}'. "
                     "Every scene must have a distinct, non-repeated video asset."
                 )
 

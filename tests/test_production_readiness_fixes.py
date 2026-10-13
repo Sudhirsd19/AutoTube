@@ -149,3 +149,45 @@ def test_visual_quality_gate_checks_still_image_without_extracting_video_frames(
     assert result["accepted"] is True
     assert result["frame_count"] == 1
     assert image.exists()
+
+
+def test_visual_waterfall_recovers_missing_stock_scene_without_none_attribute_error(tmp_path, monkeypatch):
+    """Verify that when MultiStockAggregator and StockFetcher fail to find motion footage for a scene,
+    the pipeline safely falls through to Tier 3.5 AI Recovery instead of crashing on 'NoneType' has no attribute 'name'.
+    """
+    from unittest.mock import MagicMock, patch
+    from autotube.media.visual_waterfall import acquire_scene_visuals_waterfall
+
+    s1 = MagicMock()
+    s1.narration = "Hydra vulgaris regenerates its cells continuously."
+    s1.visual_subject = "Hydra vulgaris cellular regeneration"
+    s1.visual_description = "Microscopic hydra tentacles and glowing cells"
+
+    mock_script = MagicMock()
+    mock_script.topic = "The Immortal Hydra's secret"
+    mock_script.narration = s1.narration
+    mock_script.scenes = [s1]
+
+    ai_img = tmp_path / "ai_hydra_4k.jpg"
+    ai_img.write_bytes(b"x" * 6000)
+    motion_mp4 = tmp_path / "motion_hydra.mp4"
+    motion_mp4.write_bytes(b"dummy_mp4_bytes_12345" * 1000)
+
+    with patch("autotube.media.multi_stock_aggregator.MultiStockAggregator.get_best_scene_asset", return_value=None), \
+         patch("autotube.media.stock_fetcher.StockFetcher.fetch_best_visual_for_scene", side_effect=RuntimeError("Could not acquire motion video footage for subject: 'stem cells'")), \
+         patch("autotube.media.ai_visuals.VisualGenerator.generate_image", return_value=ai_img), \
+         patch("autotube.media.visual_waterfall._image_to_motion_clip", return_value=motion_mp4), \
+         patch("autotube.media.visual_waterfall._verify_scene_batch", return_value=True):
+
+        results = acquire_scene_visuals_waterfall(
+            script=mock_script,
+            output_dir=tmp_path,
+            slug="hydra_test",
+            orientation="portrait",
+            max_scenes=1,
+        )
+
+        assert len(results) == 1
+        assert results[0] == motion_mp4
+        assert results[0].exists()
+

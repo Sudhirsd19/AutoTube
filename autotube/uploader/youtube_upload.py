@@ -34,6 +34,7 @@ class YouTubeUploader:
         pinned_comment: Optional[str] = None,
         chapters: Optional[List[tuple]] = None,
         channel: Optional[str] = None,
+        content_type: str = "standard",
     ) -> Optional[str]:
         """Upload video file to YouTube with metadata, optional thumbnail and auto engagement comment."""
         if not video_path.exists():
@@ -51,7 +52,18 @@ class YouTubeUploader:
         category = category_id or self.cfg.youtube.default_category
 
         is_short = "#Shorts" in title or (tags and "#Shorts" in tags)
-        if is_short:
+        if content_type == "vedic":
+            base_viral_tags = [
+                "Shorts",
+                "YouTube Shorts",
+                "Sanatan Dharma",
+                "Vedic Wisdom",
+                "Spiritual",
+                "Hindi Motivation",
+                "Bhakti",
+                "Viral",
+            ]
+        elif is_short:
             if active_channel == "hindi":
                 base_viral_tags = [
                     "Shorts",
@@ -101,7 +113,7 @@ class YouTubeUploader:
 
         funnel_desc = ""
         funnel_pin = ""
-        if is_short and latest_long and latest_long.get("video_url"):
+        if content_type != "vedic" and is_short and latest_long and latest_long.get("video_url"):
             l_url = latest_long["video_url"]
             l_title = latest_long.get("title", "Full Documentary")
             funnel_desc = (
@@ -133,7 +145,28 @@ class YouTubeUploader:
                 pass
 
         sub_link = f"https://www.youtube.com/{channel_handle}?sub_confirmation=1"
-        if active_channel == "hindi":
+        if content_type == "vedic":
+            vedic_tag_line = " ".join(t if t.startswith("#") else f"#{t}" for t in clean_tags[:8])
+            sub_cta_block = (
+                "\n\n"
+                + chapters_block
+                + "🔔 सनातन धर्म, प्राचीन वैदिक ज्ञान, गीता एवं उपनिषदों की अमर शिक्षाओं के लिए सब्सक्राइब करें:\n"
+                f"👉 {sub_link}\n\n"
+                "💬 इस पावन सीख के बारे में अपनी राय कमेंट में ज़रूर बताएं!\n"
+                "⚡ वीडियो को लाइक करें और परिजनों के साथ शेयर करें।\n\n"
+                f"{vedic_tag_line}"
+            )
+            if pinned_comment:
+                if "sub_confirmation=1" not in pinned_comment:
+                    effective_pinned_comment = f"{pinned_comment.strip()}\n\n👉 {channel_handle} को अभी सब्सक्राइब करें:\n{sub_link}"
+                else:
+                    effective_pinned_comment = pinned_comment.strip()
+            else:
+                effective_pinned_comment = (
+                    "🚩 सनातन धर्म और प्राचीन शास्त्रों की अमर सीख के लिए सब्सक्राइब करें! 🙏\n"
+                    f"👉 {channel_handle}:\n{sub_link}"
+                )
+        elif active_channel == "hindi":
             sub_cta_block = (
                 "\n\n"
                 + chapters_block
