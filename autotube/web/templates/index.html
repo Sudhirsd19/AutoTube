@@ -790,6 +790,32 @@
                 <i class="fa-solid fa-trash"></i> 🗑️ Delete Video & Discard
               </button>
             </div>
+
+            <!-- High-CTR Viral Thumbnail Card -->
+            <div id="director-thumb-card" class="w-full max-w-[280px] mt-4 p-3 rounded-xl bg-slate-900/90 border border-cyan-500/40 shadow-xl space-y-2">
+              <div class="flex items-center justify-between">
+                <span class="text-[11px] font-bold text-cyan-300 flex items-center gap-1">
+                  <i class="fa-solid fa-image text-cyan-400"></i> 🔥 High-CTR Thumbnail
+                </span>
+                <span class="text-[9px] px-1.5 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-600/40 font-semibold">
+                  Auto-Uploads on Publish
+                </span>
+              </div>
+              <div class="w-full aspect-video bg-black rounded-lg overflow-hidden border border-slate-700 relative group">
+                <img id="director-thumb-img" src="" alt="Thumbnail Preview" class="w-full h-full object-cover">
+                <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center gap-2">
+                  <a id="btn-director-thumb-download" href="#" download class="px-2.5 py-1 rounded bg-slate-900/90 hover:bg-slate-800 text-[10px] text-white font-bold border border-slate-600">
+                    📥 Download
+                  </a>
+                </div>
+              </div>
+              <div class="flex items-center gap-1.5 pt-1">
+                <input type="text" id="director-thumb-custom-hook" placeholder="Custom Hook (e.g. THE FORBIDDEN TRUTH!)" class="flex-1 bg-slate-950 px-2 py-1 rounded border border-slate-700 text-[11px] text-slate-200 focus:outline-none focus:border-brand-cyan">
+                <button type="button" onclick="regenerateDirectorThumbnail()" class="px-2.5 py-1 rounded bg-cyan-950 hover:bg-cyan-900 border border-cyan-600/50 text-[11px] text-cyan-300 font-bold transition flex items-center gap-1" title="Regenerate thumbnail">
+                  <i class="fa-solid fa-arrows-rotate"></i> 🔄 Re-roll
+                </button>
+              </div>
+            </div>
           </div>
 
           <!-- YouTube Publish Form -->
@@ -1077,6 +1103,32 @@
               <button id="btn-vedic-delete" onclick="deleteCurrentVedicVideo()" class="px-3 py-1.5 rounded-lg bg-rose-950/80 hover:bg-rose-900 border border-rose-600/50 text-xs text-rose-300 font-bold transition flex items-center gap-1.5 shadow" title="Review pasand nahi aaya? Video discard karein">
                 <i class="fa-solid fa-trash"></i> 🗑️ Discard &amp; Re-render
               </button>
+            </div>
+
+            <!-- High-CTR Viral Thumbnail Card -->
+            <div id="vedic-thumb-card" class="w-full max-w-[280px] mt-4 p-3 rounded-xl bg-slate-900/90 border border-amber-500/40 shadow-xl space-y-2">
+              <div class="flex items-center justify-between">
+                <span class="text-[11px] font-bold text-amber-300 flex items-center gap-1">
+                  <i class="fa-solid fa-image text-amber-400"></i> 🔥 High-CTR Thumbnail
+                </span>
+                <span class="text-[9px] px-1.5 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-600/40 font-semibold">
+                  Auto-Uploads on Publish
+                </span>
+              </div>
+              <div class="w-full aspect-video bg-black rounded-lg overflow-hidden border border-slate-700 relative group">
+                <img id="vedic-thumb-img" src="" alt="Thumbnail Preview" class="w-full h-full object-cover">
+                <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center gap-2">
+                  <a id="btn-vedic-thumb-download" href="#" download class="px-2.5 py-1 rounded bg-slate-900/90 hover:bg-slate-800 text-[10px] text-white font-bold border border-slate-600">
+                    📥 Download
+                  </a>
+                </div>
+              </div>
+              <div class="flex items-center gap-1.5 pt-1">
+                <input type="text" id="vedic-thumb-custom-hook" placeholder="Custom Hook (उदा: 1000 साल पुराना रहस्य!)" class="flex-1 bg-slate-950 px-2 py-1 rounded border border-slate-700 text-[11px] text-slate-200 focus:outline-none focus:border-amber-400">
+                <button type="button" onclick="regenerateVedicThumbnail()" class="px-2.5 py-1 rounded bg-amber-950 hover:bg-amber-900 border border-amber-600/50 text-[11px] text-amber-300 font-bold transition flex items-center gap-1" title="नया थंबनेल बनाएं">
+                  <i class="fa-solid fa-arrows-rotate"></i> 🔄 Re-roll
+                </button>
+              </div>
             </div>
           </div>
 
@@ -3426,6 +3478,17 @@
               pubPinned.value = pinnedPreview.textContent.replace(/"/g, '').trim();
             }
 
+            // Display High-CTR Thumbnail
+            const thumbImg = document.getElementById('director-thumb-img');
+            const thumbDl = document.getElementById('btn-director-thumb-download');
+            if (data.thumbnail_url) {
+              if (thumbImg) thumbImg.src = data.thumbnail_url + '?t=' + Date.now();
+              if (thumbDl) {
+                thumbDl.href = data.thumbnail_url;
+                thumbDl.download = data.thumbnail_filename || 'thumbnail.jpg';
+              }
+            }
+
             resPanel.classList.remove('hidden');
             resPanel.scrollIntoView({ behavior: 'smooth' });
 
@@ -3441,6 +3504,39 @@
           console.error('Polling director result error:', err);
         }
       }, 4000);
+    }
+
+    async function regenerateDirectorThumbnail() {
+      if (!currentRenderedFilename) return showToast('Pehle video render kijiye!', true);
+      const customHook = document.getElementById('director-thumb-custom-hook').value.trim();
+      const thumbImg = document.getElementById('director-thumb-img');
+      const thumbDl = document.getElementById('btn-director-thumb-download');
+      showToast('🎨 Generating High-CTR Thumbnail...');
+      try {
+        const res = await fetch('/api/director/thumbnail/generate', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({
+            filename: currentRenderedFilename,
+            custom_hook_text: customHook || null,
+            language: 'en',
+            topic_category: 'mystery'
+          })
+        });
+        const data = await res.json();
+        if (data.success && data.thumbnail_url) {
+          if (thumbImg) thumbImg.src = data.thumbnail_url + '?t=' + Date.now();
+          if (thumbDl) {
+            thumbDl.href = data.thumbnail_url;
+            thumbDl.download = data.thumbnail_filename;
+          }
+          showToast('✅ High-CTR Thumbnail updated!');
+        } else {
+          showToast('Thumbnail generation failed: ' + (data.detail || 'Error'), true);
+        }
+      } catch (e) {
+        showToast('Error: ' + e.message, true);
+      }
     }
 
     async function publishDirectorVideoNow() {
@@ -3476,7 +3572,8 @@
             tags: tags.length ? tags : null,
             privacy: privacy,
             channel: channel,
-            pinned_comment: pinned || null
+            pinned_comment: pinned || null,
+            thumbnail_filename: (currentRenderedFilename ? currentRenderedFilename.replace(/\.[^/.]+$/, "") + "_thumb.jpg" : null)
           })
         });
         const data = await res.json();
@@ -4494,9 +4591,55 @@
         refreshVedicPublishMetadata(false, rawTitle);
       }
 
+      // Display High-CTR Thumbnail
+      const thumbImg = document.getElementById('vedic-thumb-img');
+      const thumbDl = document.getElementById('btn-vedic-thumb-download');
+      if (result.thumbnail_url) {
+        if (thumbImg) thumbImg.src = result.thumbnail_url + '?t=' + Date.now();
+        if (thumbDl) {
+          thumbDl.href = result.thumbnail_url;
+          thumbDl.download = result.thumbnail_filename || 'thumbnail.jpg';
+        }
+      }
+
       if (feedback) {
         feedback.classList.add('hidden');
         feedback.innerHTML = '';
+      }
+    }
+
+    async function regenerateVedicThumbnail() {
+      if (!lastVedicResult || !lastVedicResult.video_filename) return showToast('Pehle video render kijiye!', true);
+      const customHook = document.getElementById('vedic-thumb-custom-hook').value.trim();
+      const thumbImg = document.getElementById('vedic-thumb-img');
+      const thumbDl = document.getElementById('btn-vedic-thumb-download');
+      showToast('🎨 Generating High-CTR Vedic Thumbnail...');
+      try {
+        const res = await fetch('/api/director/thumbnail/generate', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({
+            filename: lastVedicResult.video_filename,
+            custom_hook_text: customHook || null,
+            language: 'hi',
+            topic_category: 'vedic'
+          })
+        });
+        const data = await res.json();
+        if (data.success && data.thumbnail_url) {
+          lastVedicResult.thumbnail_filename = data.thumbnail_filename;
+          lastVedicResult.thumbnail_url = data.thumbnail_url;
+          if (thumbImg) thumbImg.src = data.thumbnail_url + '?t=' + Date.now();
+          if (thumbDl) {
+            thumbDl.href = data.thumbnail_url;
+            thumbDl.download = data.thumbnail_filename;
+          }
+          showToast('✅ High-CTR Vedic Thumbnail updated!');
+        } else {
+          showToast('Thumbnail generation failed: ' + (data.detail || 'Error'), true);
+        }
+      } catch (e) {
+        showToast('Error: ' + e.message, true);
       }
     }
 
@@ -4588,7 +4731,8 @@
             privacy: privacy,
             pinned_comment: pinned,
             channel: channel,
-            content_type: 'vedic'
+            content_type: 'vedic',
+            thumbnail_filename: lastVedicResult.thumbnail_filename || null
           })
         });
         const data = await res.json();

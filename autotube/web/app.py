@@ -197,6 +197,15 @@ class DirectorPublishRequest(BaseModel):
     pinned_comment: Optional[str] = None
     channel: Optional[str] = "english"
     content_type: Optional[str] = "standard"
+    thumbnail_filename: Optional[str] = None
+
+
+class ThumbnailGenerateRequest(BaseModel):
+    filename: str
+    custom_hook_text: Optional[str] = None
+    language: Optional[str] = "hi"
+    topic_category: Optional[str] = "auto"
+    badge_text: Optional[str] = None
 
 
 class VedicBreakdownRequest(BaseModel):
@@ -1604,11 +1613,17 @@ async def publish_director_video(req: DirectorPublishRequest):
     if tag_str not in desc:
         desc = desc + "\n\n" + tag_str
 
+    thumb_path = None
+    candidate = video_path.parent / f"{video_path.stem}_thumb.jpg"
+    if candidate.exists():
+        thumb_path = candidate
+
     video_url = uploader.upload_video(
         video_path=video_path,
         title=req.title,
         description=desc,
         tags=tags,
+        thumbnail_path=thumb_path,
         privacy_status=req.privacy or "public",
         pinned_comment=req.pinned_comment,
         channel=target_ch,
@@ -2009,13 +2024,28 @@ def run_publish_task(
                 "UFO", "Extraterrestrial", "Mystery", "Shorts",
             ]
 
+        # Resolve thumbnail for publishing
+        thumb_path = None
+        if getattr(req, "thumbnail_filename", None):
+            tp = PROJECT_ROOT / "output" / "director" / req.thumbnail_filename
+            if not tp.exists():
+                tp = PROJECT_ROOT / "output" / req.thumbnail_filename
+            if tp.exists():
+                thumb_path = tp
+        if not thumb_path:
+            candidate = video_path.parent / f"{video_path.stem}_thumb.jpg"
+            if candidate.exists():
+                thumb_path = candidate
+
         video_url = uploader.upload_video(
             video_path=video_path,
             title=title,
             description=description,
             tags=tags,
+            thumbnail_path=thumb_path,
             privacy_status=privacy,
             channel=target_ch,
+            content_type=getattr(req, "content_type", "standard") or "standard",
         )
 
         if video_url:
@@ -2048,6 +2078,24 @@ def run_publish_task(
     finally:
         GENERATION_STATUS["is_running"] = False
         GENERATION_STATUS["current_task"] = "Idle"
+
+
+@app.post("/api/director/thumbnail/generate")
+async def api_generate_thumbnail(req: ThumbnailGenerateRequest):
+    """Generate or regenerate high-CTR thumbnail on demand for an existing video."""
+    from autotube.media.director_engine import DirectorEngine
+    engine = DirectorEngine()
+    try:
+        res = engine.generate_custom_thumbnail(
+            video_filename=req.filename,
+            custom_hook_text=req.custom_hook_text,
+            language=req.language or "hi",
+            topic_category=req.topic_category or "auto",
+            badge_text=req.badge_text,
+        )
+        return res
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 # -------------------------------------------------------------

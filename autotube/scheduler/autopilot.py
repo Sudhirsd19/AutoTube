@@ -521,6 +521,28 @@ class AutoPilot:
                         if item_channel == "hindi"
                         else "Subscribe to the channel for daily mind-bending space & science facts!"
                     )
+
+                    # Generate High-CTR Thumbnail for automated video
+                    auto_thumb_path = final_video.parent / f"{final_video.stem}_thumb.jpg"
+                    try:
+                        from autotube.video.thumbnail import ThumbnailGenerator
+                        th_gen = ThumbnailGenerator()
+                        topic_cat = (
+                            "vedic" if ("vedic" in niche.lower() or "bharat" in niche.lower() or "history" in niche.lower())
+                            else ("space" if "space" in niche.lower() else "auto")
+                        )
+                        th_gen.generate_high_ctr_thumbnail(
+                            title=v_title,
+                            output_path=auto_thumb_path,
+                            script_text=script.narration,
+                            video_path=final_video,
+                            language=item_channel,
+                            topic_category=topic_cat,
+                        )
+                    except Exception as th_err:
+                        print_warning(f"Autopilot thumbnail generation skipped: {th_err}")
+                        auto_thumb_path = None
+
                     video_url = self.uploader.upload_video(
                         video_path=final_video,
                         title=v_title,
@@ -530,6 +552,7 @@ class AutoPilot:
                             f"{' '.join(script.tags)}"
                         ),
                         tags=script.tags,
+                        thumbnail_path=auto_thumb_path if auto_thumb_path and auto_thumb_path.exists() else None,
                         privacy_status="private" if publish_time_iso else "public",
                         publish_at=publish_time_iso,
                         pinned_comment=getattr(script, "pinned_comment", None),

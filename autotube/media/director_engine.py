@@ -2061,11 +2061,33 @@ Return ONLY a JSON list of scene objects matching this structure:
 
         final_ret_title = (vedic_metadata["title"] if (vedic_metadata and (not title or title in ("Bhagavad Gita Motivation", "Custom Video", "Vedic Short"))) else title)
 
+        # Automatically generate high-CTR thumbnail for the rendered video
+        thumb_path = final_video_path.parent / f"{final_video_path.stem}_thumb.jpg"
+        try:
+            from autotube.video.thumbnail import ThumbnailGenerator
+            thumb_gen = ThumbnailGenerator()
+            topic_cat = "vedic" if is_vedic_granth_mode else ("mystery" if real_incident_mode else "auto")
+            thumb_gen.generate_high_ctr_thumbnail(
+                title=final_ret_title,
+                output_path=thumb_path,
+                script_text=active_script,
+                video_path=final_video_path,
+                language=language,
+                topic_category=topic_cat,
+            )
+            print_success(f"High-CTR Thumbnail generated: {thumb_path.name}")
+        except Exception as th_err:
+            print_warning(f"Could not auto-generate thumbnail: {th_err}")
+            thumb_path = None
+
         return {
             "success": True,
             "video_filename": final_video_path.name,
             "video_path": str(final_video_path),
             "stream_url": f"/api/media/stream/{final_video_path.name}",
+            "thumbnail_filename": thumb_path.name if thumb_path and thumb_path.exists() else None,
+            "thumbnail_path": str(thumb_path) if thumb_path and thumb_path.exists() else None,
+            "thumbnail_url": f"/api/media/stream/{thumb_path.name}" if thumb_path and thumb_path.exists() else None,
             "size_mb": size_mb,
             "duration": total_duration,
             "title": final_ret_title,
@@ -2076,3 +2098,53 @@ Return ONLY a JSON list of scene objects matching this structure:
             "scene_manifest": scene_manifest,
             "manifest_path": str(manifest_path),
         }
+
+    def generate_custom_thumbnail(
+        self,
+        video_filename: str,
+        custom_hook_text: Optional[str] = None,
+        language: str = "hi",
+        topic_category: str = "auto",
+        badge_text: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """Generate or regenerate an eye-catching thumbnail for an existing video."""
+        from autotube.video.thumbnail import ThumbnailGenerator
+        target_video = PROJECT_ROOT / "output" / "director" / video_filename
+        if not target_video.exists():
+            target_video = PROJECT_ROOT / "output" / video_filename
+        if not target_video.exists():
+            raise FileNotFoundError(f"Video file '{video_filename}' not found in output directories.")
+
+        thumb_output = target_video.parent / f"{target_video.stem}_thumb.jpg"
+        th_gen = ThumbnailGenerator()
+        title_guess = target_video.stem.replace("_", " ").title()
+
+        # Check if manifest exists for title or context
+        manifest_p = target_video.with_suffix(".manifest.json")
+        context_text = None
+        if manifest_p.exists():
+            try:
+                with open(manifest_p, "r", encoding="utf-8") as mf:
+                    scenes = json.load(mf)
+                    context_text = " ".join(s.get("narration", "") for s in scenes)
+            except Exception:
+                pass
+
+        th_gen.generate_high_ctr_thumbnail(
+            title=title_guess,
+            output_path=thumb_output,
+            script_text=context_text,
+            video_path=target_video,
+            custom_hook_text=custom_hook_text,
+            language=language,
+            topic_category=topic_category,
+            badge_text=badge_text,
+        )
+
+        return {
+            "success": True,
+            "thumbnail_filename": thumb_output.name,
+            "thumbnail_path": str(thumb_output),
+            "thumbnail_url": f"/api/media/stream/{thumb_output.name}",
+        }
+
