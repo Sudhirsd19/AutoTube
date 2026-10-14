@@ -22,7 +22,7 @@ class VisualQualityGate:
 
     MODELS = ("gemini-3.5-flash-lite", "gemini-flash-lite-latest", "gemini-3.1-flash-lite-preview", "gemini-3.1-flash-lite", "gemini-3-flash-preview")
 
-    def __init__(self, min_confidence: int = 75, min_coverage: int = 70) -> None:
+    def __init__(self, min_confidence: int = 70, min_coverage: int = 60) -> None:
         self.min_confidence = min_confidence
         self.min_coverage = min_coverage
         self.strict = os.getenv("AUTOTUBE_FRAME_QA_STRICT", "0").lower() in {"1", "true", "yes"}
@@ -94,7 +94,8 @@ Guidelines:
 - If narration is in Hindi or non-English, understand the spoken sentence in context with TARGET SUBJECT.
 - Check MUST SHOW and MUST AVOID elements reasonably:
   * For history, mythology, temple, or archaeology topics: footage of ancient stone ruins, temple architecture, archaeological excavations, ancient artifacts, or historical landscapes ARE VALID ACCEPTABLE EVIDENCE for the subject.
-  * DO NOT accept modern gadgets, doorbells, modern yoga studios, modern city streets, or outer space footage for ancient history/temple narration!
+  * For nature, geography, science, wildlife, rivers, or Amazon topics: footage of rainforest canopies, rivers, thermal steam, jungle wildlife, reptiles, or deep nature landscapes ARE VALID ACCEPTABLE EVIDENCE for the subject.
+  * DO NOT accept modern gadgets, doorbells, modern yoga studios, modern city streets, or outer space footage for ancient history/temple/rainforest narration!
   * Do NOT fail footage if one optional secondary element from MUST SHOW is absent, as long as the core TARGET SUBJECT is visually represented.
 - Check MUST AVOID items strictly: if modern offices, smartphones, irrelevant talking faces, doorbells, or modern cartoons appear, add them to 'violations'.
 - DO NOT accept completely unrelated stock footage (e.g., modern cities/offices/talking faces when narration discusses space, biology, physics, or ancient temples).

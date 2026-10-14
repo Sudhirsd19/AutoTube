@@ -349,7 +349,7 @@ def test_condense_script_for_shorts_under_limit():
 
     condensed = director.condense_script_for_shorts(long_script, language="hi")
     word_count = len(condensed.split())
-    assert word_count <= 118, f"Condensed word count {word_count} must be <= 118"
+    assert word_count <= 140, f"Condensed word count {word_count} must be <= 140"
     assert "महाभारत" in condensed
     assert "सब्सक्राइब" in condensed or "लाइक" in condensed or "कमेंट" in condensed
 
@@ -454,8 +454,10 @@ def test_director_engine_empty_visual_mode_normalization(tmp_path):
     from autotube.media.director_engine import DirectorEngine
 
     director = DirectorEngine()
-    fake_video = tmp_path / "fake_scene.mp4"
-    fake_video.write_bytes(b"dummy_video_data_12345" * 1000)
+    fake_video1 = tmp_path / "fake_scene_1.mp4"
+    fake_video2 = tmp_path / "fake_scene_2.mp4"
+    fake_video1.write_bytes(b"dummy_video_data_12345_scene1" * 1000)
+    fake_video2.write_bytes(b"dummy_video_data_12345_scene2" * 1000)
 
     def fake_build(audio_path, output_path, **kwargs):
         from pathlib import Path
@@ -469,7 +471,7 @@ def test_director_engine_empty_visual_mode_normalization(tmp_path):
 
     # Mock TTS and aggregator
     with patch("autotube.voice.tts_engine.TTSEngine.synthesize") as mock_tts, \
-         patch("autotube.media.multi_stock_aggregator.MultiStockAggregator.get_best_scene_asset", return_value=fake_video), \
+         patch("autotube.media.multi_stock_aggregator.MultiStockAggregator.get_best_scene_asset", side_effect=[fake_video1, fake_video2, fake_video1, fake_video2]), \
          patch("autotube.media.multi_stock_aggregator.MultiStockAggregator._record_asset_fingerprint", return_value=True), \
          patch("autotube.video.shorts_builder.ShortsBuilder.build_short", side_effect=fake_build), \
          patch("autotube.media.director_engine.burn_subtitles", side_effect=fake_burn), \

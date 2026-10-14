@@ -301,8 +301,10 @@ def test_custom_story_mode_preserves_stock_video_logic(tmp_path):
     script = "माँ वैष्णो देवी के दर्शन की अद्भुत गाथा। श्रद्धा और विश्वास।"
     title = "माँ वैष्णो देवी का रहस्य #Shorts"
 
-    dummy_video = tmp_path / "mock_stock_video.mp4"
-    dummy_video.write_bytes(b"dummy mp4 video bytes" * 1000)
+    dummy_video1 = tmp_path / "mock_stock_video_1.mp4"
+    dummy_video2 = tmp_path / "mock_stock_video_2.mp4"
+    dummy_video1.write_bytes(b"dummy mp4 video bytes 1" * 1000)
+    dummy_video2.write_bytes(b"dummy mp4 video bytes 2" * 1000)
 
     with patch("autotube.media.multi_stock_aggregator.MultiStockAggregator.get_best_scene_asset") as mock_get_stock, \
          patch("autotube.media.ai_visuals.VisualGenerator.generate_image") as mock_gen_ai, \
@@ -321,7 +323,7 @@ def test_custom_story_mode_preserves_stock_video_logic(tmp_path):
         mock_tts.return_value = fake_tts_res
         mock_clamp.return_value = fake_tts_res
 
-        mock_get_stock.return_value = dummy_video
+        mock_get_stock.side_effect = [dummy_video1, dummy_video2, dummy_video1, dummy_video2]
 
         def fake_build_short(*args, **kwargs):
             out_p = kwargs.get("output_path")

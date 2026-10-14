@@ -116,7 +116,7 @@ class DirectorEngine:
             "subtitle_styles": subtitle_styles,
         }
 
-    def _condense_rule_based(self, script_text: str, max_words: int = 115) -> str:
+    def _condense_rule_based(self, script_text: str, max_words: int = 140) -> str:
         """Fast, 100% deterministic sentence-aware script compressor strictly under max_words."""
         words = script_text.strip().split()
         if len(words) <= max_words:
@@ -144,10 +144,11 @@ class DirectorEngine:
         self,
         script_text: str,
         language: str = "hi",
+        max_words: int = 140,
     ) -> str:
-        """Condense narration into a high-retention 100-115 word script strictly under 50s (<60s Shorts limit)."""
+        """Condense narration into a high-retention 125-140 word script strictly under 58s (<60s Shorts limit)."""
         words = script_text.strip().split()
-        if len(words) <= 115:
+        if len(words) <= max_words + 2:
             return script_text
 
         gemini_key = os.getenv("GEMINI_API_KEY", "") or getattr(self.cfg, "gemini_api_key", "")
@@ -162,18 +163,18 @@ class DirectorEngine:
                 lang_rule = "pure Devanagari Hindi (हिंदी देवनागरी लिपि)" if is_hindi else ("conversational Hinglish" if is_hinglish else "punchy English")
 
                 prompt = f"""You are a master viral YouTube Shorts script editor.
-Condense and tighten this script so it strictly fits within a 45-second YouTube Short (<50s strict limit).
+Condense and tighten this script so it strictly fits within a 50-to-56 second YouTube Short (<58s strict limit).
 
 Original Script ({len(words)} words):
 \"{script_text}\"
 
 CRITICAL RULES:
-1. Target Word Count: STRICTLY 100 to 110 words total (ABSOLUTE CEILING: 115 words).
+1. Target Word Count: STRICTLY 125 to 140 words total (ABSOLUTE CEILING: 142 words).
 2. Language: Write 100% in {lang_rule}.
 3. Structure:
    - Punchy 3s Opening Hook (15-20 words)
-   - Core Thrilling Facts / Evidence Body (65-75 words, 3 sharp sentences)
-   - Provocative Question & Subscribe CTA (15-20 words)
+   - Core Thrilling Facts / Evidence Body (85-98 words, 4 sharp suspenseful sentences)
+   - Provocative Question & Subscribe CTA (20-24 words)
 4. Cut out all filler words, repeated phrases, and secondary explanations.
 5. Return ONLY the tightened narration text as a single plain paragraph. No JSON, no titles, no intro labels, no markdown.
 """
@@ -192,7 +193,7 @@ CRITICAL RULES:
                             clean_text = re.sub(r"^```[a-z]*\n?", "", clean_text)
                             clean_text = re.sub(r"\n?```$", "", clean_text).strip()
                             clean_words = clean_text.split()
-                            if 75 <= len(clean_words) <= 120:
+                            if 100 <= len(clean_words) <= 145:
                                 print_success(f"Script condensed to {len(clean_words)} words (~{len(clean_words)/2.6:.0f}s) via {model_name}!")
                                 return clean_text
                     except Exception:
@@ -201,7 +202,7 @@ CRITICAL RULES:
                 print_warning(f"AI script condensation error: {e}")
 
         # Smart rule-based sentence compression fallback (<1ms)
-        return self._condense_rule_based(script_text, max_words=115)
+        return self._condense_rule_based(script_text, max_words=max_words)
 
     def _generate_smart_fallback_story(
         self,
@@ -383,7 +384,7 @@ CRITICAL RULES:
         is_long = (video_format == "landscape_long")
         gemini_key = os.getenv("GEMINI_API_KEY", "") or getattr(self.cfg, "gemini_api_key", "")
 
-        target_words = "350 to 500 words (3.0 to 4.5 minutes documentary length)" if is_long else "100 to 115 words (strictly 42 to 48 seconds, YouTube Shorts limit under 50s)"
+        target_words = "350 to 500 words (3.0 to 4.5 minutes documentary length)" if is_long else "125 to 140 words (strictly 50 to 57 seconds, YouTube Shorts sweet spot under 58s)"
         format_desc = "16:9 Landscape Documentary Video" if is_long else "9:16 Vertical YouTube Short"
 
         if gemini_key:
@@ -451,12 +452,12 @@ CRITICAL RULES:
 - For 16:9 Long Video, the script narration should be 350 to 500 words (3.0 to 4.5 minutes spoken audio).
 - Deliver deep investigative depth, rich historical context, and comprehensive storytelling."""
                 else:
-                    duration_mandate = """CRITICAL YOUTUBE SHORTS DURATION MANDATE (STRICTLY UNDER 50 SECONDS, HARD LIMIT <60s):
-- For YouTube Shorts, the script narration MUST BE STRICTLY UNDER 50 SECONDS (Target: 42 to 48 seconds spoken audio).
-- YouTube Shorts feed HARD CUTOFF is 60.0 seconds! Any video >60s is rejected.
-- At standard natural speaking pace (~2.4 words/second), the script MUST BE STRICTLY 100 TO 115 WORDS TOTAL (ABSOLUTE CEILING: 120 words).
-- Word Budget: Hook = 15-20 words, Body = 65-75 words (3 punchy sentences), Outro + Subscribe CTA = 15-20 words.
-- DO NOT WRITE MORE THAN 115 WORDS! Brevity and viral suspense are paramount."""
+                    duration_mandate = """CRITICAL YOUTUBE SHORTS DURATION MANDATE (TARGET: 50 TO 57 SECONDS, STRICT LIMIT <58.5s):
+- For YouTube Shorts, the script narration MUST BE 50 TO 57 SECONDS (Optimal YouTube Shorts watch-time, retention & revenue sweet spot).
+- YouTube Shorts feed HARD CUTOFF is 60.0 seconds! The video must strictly remain under 58.5s.
+- At standard natural speaking pace (~2.4 words/second), the script MUST BE STRICTLY 125 TO 140 WORDS TOTAL (ABSOLUTE CEILING: 142 words).
+- Word Budget: Hook = 15-20 words, Body = 85-98 words (4-5 intense story beats), Outro + Subscribe CTA = 20-24 words.
+- TARGET RANGE: 125 to 140 words. DO NOT WRITE LESS THAN 125 WORDS OR MORE THAN 142 WORDS!"""
 
                 prompt = f"""You are a top-tier viral YouTube Short & Documentary scriptwriter who crafts scripts that retain 80%+ audience retention and drive massive subscriber conversion.
 
@@ -531,9 +532,9 @@ Output STRICT JSON with these keys:
 
                 if data:
                     narration = data.get("full_narration", raw_input)
-                    if not is_long and len(narration.split()) > 118:
-                        print_info(f"Generated narration has {len(narration.split())} words. Auto-condensing for 48s Shorts limit...")
-                        narration = self._condense_rule_based(narration, max_words=115)
+                    if not is_long and len(narration.split()) > 145:
+                        print_info(f"Generated narration has {len(narration.split())} words. Auto-condensing for 56s Shorts limit...")
+                        narration = self._condense_rule_based(narration, max_words=140)
 
                     word_count = len(narration.split())
                     est_seconds = round(word_count / 2.6, 1)
@@ -1458,9 +1459,9 @@ Return ONLY a JSON list of scene objects matching this structure:
         has_user_scenes = bool(scenes and isinstance(scenes, list) and len(scenes) > 0)
 
         # Only auto-condense if user did NOT provide explicit storyboard scenes and NOT in Vedic mode
-        if not has_user_scenes and not is_long and not is_vedic_granth_mode and len(active_script.split()) > 120:
-            print_info(f"Input script has {len(active_script.split())} words. Auto-condensing for 48s Shorts limit...")
-            condensed = self.condense_script_for_shorts(active_script, language=language)
+        if not has_user_scenes and not is_long and not is_vedic_granth_mode and len(active_script.split()) > 145:
+            print_info(f"Input script has {len(active_script.split())} words. Auto-condensing for 56s Shorts limit...")
+            condensed = self.condense_script_for_shorts(active_script, language=language, max_words=140)
             if condensed:
                 active_script = condensed
 
@@ -1640,6 +1641,7 @@ Return ONLY a JSON list of scene objects matching this structure:
             sentence = str(scene["narration"]).strip()
             scene_target = TEMP_DIR / f"scene_{idx}_{slug}.mp4"
             acquired_video = None
+            qa_approved = False
             scene_plan = self._scene_plan_from_spec(scene)
             scene_dur = scene_durations[idx] if idx < len(scene_durations) else float(scene.get("duration", 6.0))
 
@@ -1832,6 +1834,8 @@ Return ONLY a JSON list of scene objects matching this structure:
                             # missing motion footage with a static AI/Pexels image.
                             allow_ai_fallback=False,
                         )
+                        if acquired_video:
+                            qa_approved = True
                 elif visual_mode == "real_only":
                     if not archival_fetcher:
                         raise RuntimeError(f"Archival mode unavailable for scene {idx+1}.")
@@ -1876,6 +1880,8 @@ Return ONLY a JSON list of scene objects matching this structure:
                             # missing motion footage with a static AI/Pexels image.
                             allow_ai_fallback=False,
                         )
+                        if acquired_video:
+                            qa_approved = True
                 elif visual_mode == "stock":
                     acquired_video = multi_agg.get_best_scene_asset(
                         scene_text=sentence,
@@ -1887,6 +1893,8 @@ Return ONLY a JSON list of scene objects matching this structure:
                         allow_archival_fallback=False,
                         allow_ai_fallback=False,
                     )
+                    if acquired_video:
+                        qa_approved = True
                 elif visual_mode == "ai_only":
                     ai_prompt = self._extract_ai_scene_prompt(sentence, title, idx)
                     ai_img_path = TEMP_DIR / f"pure_ai_{idx}_{slug}.jpg"
@@ -1922,6 +1930,8 @@ Return ONLY a JSON list of scene objects matching this structure:
                         allow_archival_fallback=False,
                         allow_ai_fallback=False,
                     )
+                    if acquired_video:
+                        qa_approved = True
 
                 # Dedicated motion-video fallback chain. MultiStockAggregator can return
                 # None after strict video/QA filtering; do not stop the scene there.
@@ -1958,7 +1968,7 @@ Return ONLY a JSON list of scene objects matching this structure:
                             acquired_video = None
 
                 # Every video asset must pass frame-level QA, except explicitly user-provided custom images
-                if acquired_video and (not custom_img_str) and visual_mode in ("multi_cinematic", "multi_best", "auto", "hybrid", "stock"):
+                if acquired_video and (not custom_img_str) and (not qa_approved) and visual_mode in ("multi_cinematic", "multi_best", "auto", "hybrid", "stock"):
                     acquired_path = Path(acquired_video)
                     if acquired_path.suffix.lower() not in {".mp4", ".mov", ".webm", ".mkv"}:
                         print_warning(f"   ⚠️ Non-video asset returned for Scene {idx+1}; rejecting.")
@@ -1975,6 +1985,8 @@ Return ONLY a JSON list of scene objects matching this structure:
                                 f"{qa.get('reason', 'visual mismatch')}"
                             )
                             acquired_video = None
+                        else:
+                            qa_approved = True
 
                 # Pexels is the final real-motion fallback for every video-first Studio mode.
                 # Previously this was gated by visual_engine, so multi_cinematic could exhaust
