@@ -1548,9 +1548,11 @@
         if (ch === 'english') {
           btnEn.className = 'px-4 py-2 rounded-lg text-xs font-bold bg-brand-cyan/20 text-brand-cyan border border-brand-cyan/40 flex items-center gap-2 transition shadow';
           btnHi.className = 'px-4 py-2 rounded-lg text-xs font-bold text-slate-400 hover:text-white hover:bg-slate-900 border border-transparent flex items-center gap-2 transition';
+          selectStudioLang('en');
         } else {
           btnHi.className = 'px-4 py-2 rounded-lg text-xs font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40 flex items-center gap-2 transition shadow';
           btnEn.className = 'px-4 py-2 rounded-lg text-xs font-bold text-slate-400 hover:text-white hover:bg-slate-900 border border-transparent flex items-center gap-2 transition';
+          selectStudioLang('hi');
         }
       }
       loadVideos(ch);
@@ -3033,6 +3035,20 @@
       wordCountEl.textContent = words;
       estDurEl.textContent = estSec + 's';
 
+      // Smart Language Detection: Auto-align studio language if text is provided
+      if (words >= 6) {
+        const hasDevanagari = /[\u0900-\u097F]/.test(text);
+        if (hasDevanagari && studioLanguage !== 'hi') {
+          selectStudioLang('hi');
+        } else if (!hasDevanagari && studioLanguage === 'hi') {
+          const lower = text.toLowerCase();
+          const enMarkers = ['the ', 'is ', 'this ', 'in ', 'and ', 'of ', 'to ', 'it ', 'that ', 'you ', 'are ', 'for ', 'with '];
+          if (enMarkers.some(m => lower.includes(m))) {
+            selectStudioLang('en');
+          }
+        }
+      }
+
       if (studioVideoFormat === 'short') {
         if (words > 145 || estSec > 58) {
           wordCountEl.className = 'text-red-400 font-bold';
@@ -3178,6 +3194,18 @@
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 15000);
 
+      // Auto-detect language if user provided English text or channel is English
+      let targetLang = studioLanguage;
+      const hasDev = /[\u0900-\u097F]/.test(rawText);
+      if (!hasDev && (targetLang === 'hi' || currentYouTubeChannel === 'english')) {
+        const lower = rawText.toLowerCase();
+        const enMarkers = ['the ', 'is ', 'this ', 'in ', 'and ', 'of ', 'to ', 'it ', 'that ', 'you ', 'are ', 'for ', 'with '];
+        if (enMarkers.some(m => lower.includes(m)) || currentYouTubeChannel === 'english') {
+          targetLang = 'en';
+          selectStudioLang('en');
+        }
+      }
+
       try {
         const res = await fetch('/api/director/enhance_script', {
           method: 'POST',
@@ -3185,7 +3213,7 @@
           body: JSON.stringify({
             raw_script: rawText,
             topic: titleInput.value.trim() || null,
-            language: studioLanguage,
+            language: targetLang,
             video_format: studioVideoFormat
           }),
           signal: controller.signal
@@ -3257,6 +3285,18 @@
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 15000);
 
+      // Auto-detect language if user provided English text or channel is English
+      let targetLang = studioLanguage;
+      const hasDev = /[\u0900-\u097F]/.test(rawText);
+      if (!hasDev && (targetLang === 'hi' || currentYouTubeChannel === 'english')) {
+        const lower = rawText.toLowerCase();
+        const enMarkers = ['the ', 'is ', 'this ', 'in ', 'and ', 'of ', 'to ', 'it ', 'that ', 'you ', 'are ', 'for ', 'with '];
+        if (enMarkers.some(m => lower.includes(m)) || currentYouTubeChannel === 'english') {
+          targetLang = 'en';
+          selectStudioLang('en');
+        }
+      }
+
       try {
         const res = await fetch('/api/director/enhance_script', {
           method: 'POST',
@@ -3264,7 +3304,7 @@
           body: JSON.stringify({
             raw_script: rawText,
             topic: titleInput.value.trim() || null,
-            language: studioLanguage,
+            language: targetLang,
             video_format: studioVideoFormat
           }),
           signal: controller.signal
@@ -4821,6 +4861,9 @@
       loadVideos();
       loadHarvesterStatus();
       loadSlotsMatrix();
+      if (currentYouTubeChannel === 'english') {
+        selectStudioLang('en');
+      }
       setInterval(loadStatus, 10000);
       setInterval(pollLogs, 3000);
     };

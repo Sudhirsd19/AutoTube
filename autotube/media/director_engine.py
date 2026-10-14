@@ -381,6 +381,20 @@ CRITICAL RULES:
         lang_lower = (language or "hi").lower()
         is_hindi = lang_lower in ("hi", "hindi")
         is_hinglish = lang_lower in ("hinglish", "hi-en")
+
+        # Smart Language Guard: If input is pure English (no Devanagari characters)
+        # but language was passed as 'hi', do not force Hindi translation and Hindi titles!
+        combined_input = (raw_input or "") + " " + (topic or "")
+        has_devanagari = any("\u0900" <= ch <= "\u097f" for ch in combined_input)
+        if not has_devanagari and is_hindi and len(raw_input.strip().split()) >= 4:
+            lower_input = raw_input.lower()
+            en_words = {"the", "is", "this", "in", "and", "of", "to", "it", "that", "you", "are", "for", "with", "on", "as", "at"}
+            if any(w in en_words for w in lower_input.split()) or all(ord(c) < 128 for c in raw_input[:100] if c.isalpha()):
+                print_info("Smart Language Engine: Detected English input text. Auto-switching language mandate to English.")
+                is_hindi = False
+                is_hinglish = False
+                lang_lower = "en"
+
         is_long = (video_format == "landscape_long")
         gemini_key = os.getenv("GEMINI_API_KEY", "") or getattr(self.cfg, "gemini_api_key", "")
 
@@ -1457,6 +1471,25 @@ Return ONLY a JSON list of scene objects matching this structure:
         # Build a stable scene contract before any TTS or visual acquisition.
         active_script = script_text.strip()
         has_user_scenes = bool(scenes and isinstance(scenes, list) and len(scenes) > 0)
+
+        # Smart Language Engine: Auto-detect English script if passed language was 'hi'
+        has_devanagari = any("\u0900" <= ch <= "\u097f" for ch in active_script)
+        if not has_devanagari and (language or "hi").lower() in ("hi", "hindi") and len(active_script.split()) >= 6:
+            lower_script = active_script.lower()
+            en_words = {"the", "is", "this", "in", "and", "of", "to", "it", "that", "you", "are", "for", "with", "on", "as", "at"}
+            if any(w in en_words for w in lower_script.split()):
+                print_info("Smart Language Engine: Narration script is in English. Auto-switching video language to 'en'.")
+                language = "en"
+
+        # Align title language with narrative: if script is English, but title contains Devanagari Hindi characters
+        title_has_devanagari = any("\u0900" <= ch <= "\u097f" for ch in title)
+        if (language or "").lower() in ("en", "english") and title_has_devanagari:
+            print_warning(f"Detected Hindi title '{title}' for English video render. Auto-aligning title with English narrative.")
+            first_sentence = active_script.split(".")[0].strip()
+            first_words = " ".join(first_sentence.split()[:7])
+            title = f"{first_words}... 😱 #Shorts" if not is_long else f"{first_words} - Full Documentary"
+            slug = sanitize_filename(title)
+            final_video_path = output_dir / f"{slug}_{int(time.time())}.mp4"
 
         # Only auto-condense if user did NOT provide explicit storyboard scenes and NOT in Vedic mode
         if not has_user_scenes and not is_long and not is_vedic_granth_mode and len(active_script.split()) > 145:

@@ -509,3 +509,66 @@ def test_devanagari_hindi_text_english_voice_auto_switch(tmp_path):
     assert out_audio.exists()
     assert out_audio.stat().st_size > 1000
     assert res.duration_seconds > 0
+
+
+def test_smart_language_detection_english_input_with_hi_param():
+    """Verify enhance_script_with_ai auto-switches to English when input is in English despite language='hi'."""
+    from autotube.media.director_engine import DirectorEngine
+    director = DirectorEngine()
+
+    raw_text = "This is the Amazon Rain forest, spread across South America. It is the largest tropical rainforest in the world."
+    # Calling with language='hi'
+    res = director.enhance_script_with_ai(raw_input=raw_text, language="hi")
+    assert res["success"] is True
+    # The output narrative and titles must NOT contain Devanagari Hindi characters
+    assert not any("\u0900" <= c <= "\u097f" for c in res["full_narration"])
+    assert not any("\u0900" <= c <= "\u097f" for c in res["titles"][0])
+    assert "Amazon" in res["full_narration"]
+
+
+def test_render_custom_video_aligns_hindi_title_with_english_script(tmp_path):
+    """Verify render_custom_video replaces a leftover Hindi title when the script is English."""
+    from autotube.media.director_engine import DirectorEngine
+    director = DirectorEngine()
+
+    fake_video1 = tmp_path / "fake_eng_1.mp4"
+    fake_video2 = tmp_path / "fake_eng_2.mp4"
+    fake_video1.write_bytes(b"dummy_eng_1" * 1000)
+    fake_video2.write_bytes(b"dummy_eng_2" * 1000)
+
+    mock_tts_res = MagicMock()
+    mock_tts_res.audio_path = tmp_path / "fake_eng_voice.mp3"
+    mock_tts_res.audio_path.write_bytes(b"fake_mp3_data" * 100)
+    mock_tts_res.duration_seconds = 10.0
+    mock_tts_res.scene_durations = [5.0, 5.0]
+
+    def fake_build(audio_path, output_path, **kwargs):
+        from pathlib import Path
+        Path(output_path).write_bytes(b"dummy_unsubbed_video_bytes" * 500)
+        return True
+
+    def fake_burn(input_video, output_video, **kwargs):
+        from pathlib import Path
+        Path(output_video).write_bytes(b"dummy_final_video_bytes" * 500)
+        return True
+
+    with patch("autotube.voice.tts_engine.TTSEngine.synthesize", return_value=mock_tts_res), \
+         patch("autotube.media.multi_stock_aggregator.MultiStockAggregator.get_best_scene_asset", side_effect=[fake_video1, fake_video2, fake_video1, fake_video2]), \
+         patch("autotube.media.multi_stock_aggregator.MultiStockAggregator._record_asset_fingerprint", return_value=True), \
+         patch("autotube.video.shorts_builder.ShortsBuilder.build_short", side_effect=fake_build), \
+         patch("autotube.media.director_engine.burn_subtitles", side_effect=fake_burn), \
+         patch("autotube.media.director_engine.get_media_duration", return_value=10.0):
+
+        # Calling render with English script, but leftover Hindi title and language='hi'
+        res = director.render_custom_video(
+            script_text="This is the Amazon Rainforest. Deep inside are dangerous creatures.",
+            title="अमेज़न की खौफनाक उबलती हुई नदी! 😱 #Shorts",
+            language="hi",
+            visual_mode="multi_cinematic",
+            video_format="short",
+        )
+        assert res is not None
+        assert res.get("success") is True
+        # Output title or video filename must be in English
+        assert not any("\u0900" <= c <= "\u097f" for c in res.get("video_filename", ""))
+
