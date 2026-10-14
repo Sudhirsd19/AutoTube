@@ -1372,7 +1372,7 @@ Return ONLY a JSON list of scene objects matching this structure:
         video_format: str = "short",
         language: str = "hi",
         real_incident_mode: bool = False,
-        visual_mode: str = "hybrid",
+        visual_mode: str = "multi_cinematic",
         auto_viral_hook: bool = True,
         scenes: Optional[List[Dict[str, Any]]] = None,
         progress_callback = None,
@@ -1384,6 +1384,20 @@ Return ONLY a JSON list of scene objects matching this structure:
         target_height = 1080 if is_long else 1920
         orientation = "landscape" if is_long else "portrait"
         format_label = "16:9 Landscape Long Video" if is_long else "9:16 Vertical Short"
+
+        VALID_VISUAL_MODES = {
+            "multi_cinematic", "multi_best", "auto", "hybrid", "real_only",
+            "stock", "ai_only", "vedic_granth_ai", "vedic_storyboard", "vedic_ai",
+        }
+        clean_v_mode = str(visual_mode or "").strip().lower()
+        if not clean_v_mode or clean_v_mode not in VALID_VISUAL_MODES:
+            print_warning(
+                f"Visual mode '{visual_mode}' is empty or unrecognized. "
+                "Defaulting to 'multi_cinematic'."
+            )
+            clean_v_mode = "multi_cinematic"
+        visual_mode = clean_v_mode
+
         # Respect user's explicit choice for real_incident_mode (no aggressive auto-override)
         if visual_mode == "real_only":
             real_incident_mode = True
@@ -1482,13 +1496,26 @@ Return ONLY a JSON list of scene objects matching this structure:
 
         # Resolve voice from subject + language unless the user explicitly selected one.
         selected_voice = str(voice or "").strip()
+
+        # Check actual script characters. Devanagari script strictly requires a Hindi voice.
+        devanagari_chars = sum("\u0900" <= c <= "\u097f" for c in active_script)
+        script_is_hindi = devanagari_chars >= 5
+
         if selected_voice.lower() in {"", "auto", "automatic", "smart"}:
+            effective_lang = "hi" if script_is_hindi else language
             selected_voice = choose_subject_voice(
                 title=title,
                 script_text=active_script,
-                language=language,
+                language=effective_lang,
             )
             print_info(f"🎙️ Auto Voice Director: '{selected_voice}' selected for subject/language.")
+        elif script_is_hindi and (selected_voice.lower().startswith("en_") or not is_voice_language_compatible(selected_voice, "hi")):
+            auto_voice = choose_subject_voice(title=title, script_text=active_script, language="hi")
+            print_warning(
+                f"Voice '{selected_voice}' is an English voice, but the script is in Devanagari (Hindi) script. "
+                f"English voices cannot speak Devanagari. Auto-switching to Hindi voice '{auto_voice}'."
+            )
+            selected_voice = auto_voice
         elif not is_voice_language_compatible(selected_voice, language):
             auto_voice = choose_subject_voice(title=title, script_text=active_script, language=language)
             print_warning(
@@ -1862,10 +1889,18 @@ Return ONLY a JSON list of scene objects matching this structure:
                             motion_type=idx,
                         )
                         acquired_video = motion_clip if (motion_clip and motion_clip.exists()) else ai_res
-                    else:
-                        raise RuntimeError(f"AI visual generation failed for scene {idx+1}.")
                 else:
-                    raise RuntimeError(f"Unsupported visual mode: {visual_mode}")
+                    print_warning(f"Unrecognized visual mode '{visual_mode}' for scene {idx+1}; defaulting to multi-source video acquisition.")
+                    acquired_video = multi_agg.get_best_scene_asset(
+                        scene_text=sentence,
+                        title=title,
+                        scene_index=idx,
+                        orientation=orientation,
+                        scene_plan=scene_plan,
+                        archival_pool=None,
+                        allow_archival_fallback=False,
+                        allow_ai_fallback=False,
+                    )
 
                 # Dedicated motion-video fallback chain. MultiStockAggregator can return
                 # None after strict video/QA filtering; do not stop the scene there.

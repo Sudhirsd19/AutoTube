@@ -432,8 +432,78 @@ def test_non_gita_visual_waterfall_preserves_stock_path(tmp_path):
         assert mock_stock.called
         assert len(result) == 1
         assert result[0] == stock_clip
+def test_director_render_request_empty_visual_mode_normalization():
+    """Verify that an empty or whitespace visual_mode in request normalizes to multi_cinematic."""
+    from autotube.web.app import DirectorRenderRequest
+
+    req1 = DirectorRenderRequest(script_text="Hello world", title="Test", visual_mode="")
+    assert req1.visual_mode == "multi_cinematic"
+
+    req2 = DirectorRenderRequest(script_text="Hello world", title="Test", visual_mode="   ")
+    assert req2.visual_mode == "multi_cinematic"
+
+    req3 = DirectorRenderRequest(script_text="Hello world", title="Test", visual_mode=None)
+    assert req3.visual_mode == "multi_cinematic"
+
+    req4 = DirectorRenderRequest(script_text="Hello world", title="Test", visual_mode="hybrid")
+    assert req4.visual_mode == "hybrid"
 
 
+def test_director_engine_empty_visual_mode_normalization(tmp_path):
+    """Verify DirectorEngine normalizes empty visual_mode and doesn't crash scenes."""
+    from autotube.media.director_engine import DirectorEngine
+
+    director = DirectorEngine()
+    fake_video = tmp_path / "fake_scene.mp4"
+    fake_video.write_bytes(b"dummy_video_data_12345" * 1000)
+
+    def fake_build(audio_path, output_path, **kwargs):
+        from pathlib import Path
+        Path(output_path).write_bytes(b"dummy_unsubbed_video_bytes" * 500)
+        return True
+
+    def fake_burn(input_video, output_video, **kwargs):
+        from pathlib import Path
+        Path(output_video).write_bytes(b"dummy_final_video_bytes" * 500)
+        return True
+
+    # Mock TTS and aggregator
+    with patch("autotube.voice.tts_engine.TTSEngine.synthesize") as mock_tts, \
+         patch("autotube.media.multi_stock_aggregator.MultiStockAggregator.get_best_scene_asset", return_value=fake_video), \
+         patch("autotube.media.multi_stock_aggregator.MultiStockAggregator._record_asset_fingerprint", return_value=True), \
+         patch("autotube.video.shorts_builder.ShortsBuilder.build_short", side_effect=fake_build), \
+         patch("autotube.media.director_engine.burn_subtitles", side_effect=fake_burn), \
+         patch("autotube.media.director_engine.get_media_duration", return_value=10.0):
+
+        mock_tts_res = MagicMock()
+        mock_tts_res.audio_path = tmp_path / "fake_voice.mp3"
+        mock_tts_res.audio_path.write_bytes(b"fake_mp3_data" * 100)
+        mock_tts_res.duration_seconds = 10.0
+        mock_tts_res.scene_durations = [5.0, 5.0]
+        mock_tts.return_value = mock_tts_res
+
+        # Pass visual_mode=""
+        res = director.render_custom_video(
+            script_text="Scene one narration. Scene two narration.",
+            title="Amazon Creatures",
+            visual_mode="",
+            video_format="short",
+        )
+        assert res is not None
+        assert res.get("success") is True
 
 
+def test_devanagari_hindi_text_english_voice_auto_switch(tmp_path):
+    """Verify that Devanagari text with en_deep_cinematic_male automatically switches to Hindi voice."""
+    tts = TTSEngine(default_voice="en_deep_cinematic_male")
+    out_audio = tmp_path / "hindi_speech.mp3"
 
+    res = tts.synthesize(
+        text="अगर आपको लगता है कि अमेज़न का जंगल सिर्फ पेड़ों से भरा है",
+        output_audio_path=out_audio,
+        voice="en_deep_cinematic_male",
+    )
+    assert res is not None
+    assert out_audio.exists()
+    assert out_audio.stat().st_size > 1000
+    assert res.duration_seconds > 0

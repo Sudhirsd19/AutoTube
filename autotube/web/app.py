@@ -22,7 +22,7 @@ import uuid
 from fastapi import FastAPI, BackgroundTasks, HTTPException, Request, UploadFile, File, Form
 from fastapi.responses import HTMLResponse, JSONResponse, FileResponse
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 from googleapiclient.discovery import build
 
 from autotube.config import get_config, PROJECT_ROOT
@@ -186,6 +186,13 @@ class DirectorRenderRequest(BaseModel):
     visual_mode: Optional[str] = "multi_cinematic"
     auto_viral_hook: bool = True
     scenes: Optional[List[Dict[str, Any]]] = None
+
+    @field_validator("visual_mode", mode="before")
+    @classmethod
+    def normalize_visual_mode(cls, v):
+        if not v or not str(v).strip():
+            return "multi_cinematic"
+        return str(v).strip()
 
 
 class DirectorPublishRequest(BaseModel):
@@ -1517,7 +1524,9 @@ def run_director_render_task(req_data: dict):
     LAST_DIRECTOR_RESULT = {}
     GENERATION_STATUS["is_running"] = True
     v_fmt = req_data.get("video_format", "short")
-    is_vedic = req_data.get("visual_mode") in ("vedic_granth_ai", "vedic_storyboard", "vedic_ai")
+    raw_v_mode = str(req_data.get("visual_mode") or "").strip()
+    clean_v_mode = raw_v_mode if raw_v_mode else "multi_cinematic"
+    is_vedic = clean_v_mode in ("vedic_granth_ai", "vedic_storyboard", "vedic_ai")
     if is_vedic:
         fmt_tag = "Vedic Sacred Video"
     else:
@@ -1553,7 +1562,7 @@ def run_director_render_task(req_data: dict):
             video_format=v_fmt,
             language=req_data.get("language", "hi"),
             real_incident_mode=bool(req_data.get("real_incident_mode", False)),
-            visual_mode=req_data.get("visual_mode", "multi_cinematic"),
+            visual_mode=clean_v_mode,
             auto_viral_hook=bool(req_data.get("auto_viral_hook", True)),
             scenes=req_data.get("scenes"),
             progress_callback=update_progress,

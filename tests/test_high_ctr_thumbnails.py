@@ -15,6 +15,8 @@ from autotube.config import PROJECT_ROOT
 def disable_external_gemini_network(monkeypatch):
     """Prevent tests from hanging on live external Gemini network calls."""
     monkeypatch.setenv("GEMINI_API_KEY", "")
+    from autotube.config import get_config
+    monkeypatch.setattr(get_config(), "gemini_api_key", "")
 
 
 def test_thumbnail_generator_heuristic_hooks():

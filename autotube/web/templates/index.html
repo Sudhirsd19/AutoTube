@@ -3416,7 +3416,7 @@
             video_format: studioVideoFormat,
             language: studioLanguage,
             real_incident_mode: document.getElementById('director-real-incident-mode') ? document.getElementById('director-real-incident-mode').checked : false,
-            visual_mode: document.getElementById('director-visual-mode') ? document.getElementById('director-visual-mode').value : 'multi_cinematic',
+            visual_mode: (document.getElementById('director-visual-mode') && document.getElementById('director-visual-mode').value && document.getElementById('director-visual-mode').value.trim()) ? document.getElementById('director-visual-mode').value.trim() : 'multi_cinematic',
             auto_viral_hook: document.getElementById('director-auto-viral-hook') ? document.getElementById('director-auto-viral-hook').checked : true,
             scenes: studioScenePlan
           })

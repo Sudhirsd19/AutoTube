@@ -510,12 +510,26 @@ class TTSEngine:
         requested_voice = str(voice or "").strip()
         if requested_voice.lower() in {"", "auto", "automatic", "smart"}:
             voice = choose_subject_voice("", text, language="auto")
-            print_info(f"🎙️ TTS Auto Voice: selected '{voice}' from narration subject/language.")
+        has_devanagari = sum("\u0900" <= c <= "\u097f" for c in text) >= 5
+        # If text is in Devanagari script, an English-only voice will fail in Edge-TTS.
+        # Seamlessly auto-switch to an equivalent Hindi catalog voice.
+        if has_devanagari:
+            v_key = str(voice or "").lower().strip()
+            if v_key.startswith("en_") or any(k in v_key for k in ("christopher", "guy", "aria", "andrew", "ryan")):
+                matched_hi = "hi_cinematic_female" if ("female" in v_key or "aria" in v_key) else (
+                    "hi_deep_cinematic_male" if "deep" in v_key else "hi_authoritative_male"
+                )
+                print_warning(
+                    f"Narration text contains Devanagari (Hindi) script, which English voice '{voice}' cannot read. "
+                    f"Auto-switching voice to '{matched_hi}'."
+                )
+                voice = matched_hi
+
         # Smart Hindi Phonetic Normalization (Devanagari, Number Expansion, Acronyms, Loanwords)
         is_hindi_target = (
             "hi-IN" in str(voice or "").lower()
             or any(k in str(voice or "").lower() for k in ("hi", "hindi", "madhur", "swara", "akashvani"))
-            or any("\u0900" <= c <= "\u097f" for c in text)
+            or has_devanagari
         )
         if is_hindi_target:
             from autotube.voice.hindi_normalizer import normalize_hindi_for_tts

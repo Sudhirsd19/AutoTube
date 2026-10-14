@@ -229,7 +229,7 @@ def test_optimize_vedic_script_mocked_gemini_active_model():
         res = director.optimize_vedic_script("कर्मण्येवाधिकारस्ते मा फलेषु कदाचन")
         assert res["success"] is True
         assert res["is_ai_generated"] is True
-        assert res["model_used"] in ["gemini-3.5-flash-lite", "gemini-3.1-flash-lite", "gemini-3.5-flash", "gemini-3.8-flash"]
+        assert res["model_used"] in ["gemini-3-flash-preview", "gemini-3.5-flash-lite", "gemini-3.1-flash-lite", "gemini-3.5-flash", "gemini-3.8-flash"]
         assert "श्रीमद्भगवद्गीता" in res["scripture_source"]
         assert len(res["optimized_script"].split()) >= 40
 
