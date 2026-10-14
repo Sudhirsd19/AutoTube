@@ -124,7 +124,7 @@ STRICT RULES:
    - English: "THE FORBIDDEN TRUTH!", "99% DON'T KNOW!", "SCIENTISTS SHOCKED!", "IMPOSSIBLE DISCOVERY!"
 6. Return ONLY the 2-4 words hook. NO quotes, NO punctuation explanation, NO filler."""
 
-                for model_candidate in ["gemini-2.5-flash", "gemini-3.5-flash-lite", "gemini-1.5-flash"]:
+                for model_candidate in ["gemini-3.5-flash-lite", "gemini-flash-lite-latest", "gemini-3.1-flash-lite-preview", "gemini-3-flash-preview"]:
                     try:
                         resp = client.models.generate_content(
                             model=model_candidate,

@@ -177,10 +177,16 @@ CRITICAL RULES:
 4. Cut out all filler words, repeated phrases, and secondary explanations.
 5. Return ONLY the tightened narration text as a single plain paragraph. No JSON, no titles, no intro labels, no markdown.
 """
-                models_to_try = ["gemini-3-flash-preview", "gemini-3.1-flash-lite"]
+                models_to_try = [
+                    "gemini-3.5-flash-lite",
+                    "gemini-flash-lite-latest",
+                    "gemini-3.1-flash-lite-preview",
+                    "gemini-3.1-flash-lite",
+                    "gemini-3-flash-preview",
+                ]
                 for model_name in models_to_try:
                     try:
-                        resp = _call_gemini_with_timeout(client, model_name, prompt, timeout_sec=3.5)
+                        resp = _call_gemini_with_timeout(client, model_name, prompt, timeout_sec=6.0)
                         if resp and resp.text:
                             clean_text = resp.text.strip()
                             clean_text = re.sub(r"^```[a-z]*\n?", "", clean_text)
@@ -496,8 +502,11 @@ Output STRICT JSON with these keys:
 """
                 data = None
                 models_to_try = [
-                    "gemini-3-flash-preview",
+                    "gemini-3.5-flash-lite",
+                    "gemini-flash-lite-latest",
+                    "gemini-3.1-flash-lite-preview",
                     "gemini-3.1-flash-lite",
+                    "gemini-3-flash-preview",
                 ]
                 for model_name in models_to_try:
                     try:
@@ -506,7 +515,7 @@ Output STRICT JSON with these keys:
                             model_name,
                             prompt,
                             config={"response_mime_type": "application/json"},
-                            timeout_sec=4.0,
+                            timeout_sec=8.0,
                         )
                         if resp and resp.text:
                             clean_text = resp.text.strip()
@@ -930,7 +939,13 @@ Output STRICT JSON:
   "word_count": 130,
   "est_seconds": 56.0
 }}"""
-                active_models = ["gemini-3-flash-preview", "gemini-3.5-flash-lite", "gemini-3.1-flash-lite", "gemini-3.5-flash", "gemini-3.8-flash"]
+                active_models = [
+                    "gemini-3.5-flash-lite",
+                    "gemini-flash-lite-latest",
+                    "gemini-3.1-flash-lite-preview",
+                    "gemini-3.1-flash-lite",
+                    "gemini-3-flash-preview",
+                ]
                 for m in active_models:
                     try:
                         response = _call_gemini_with_timeout(
@@ -938,7 +953,7 @@ Output STRICT JSON:
                             m,
                             prompt,
                             config={"response_mime_type": "application/json"},
-                            timeout_sec=4.0,
+                            timeout_sec=6.0,
                         )
                         if response.text:
                             import json
@@ -1251,7 +1266,13 @@ Return ONLY a JSON list of scene objects matching this structure:
 [
   {{"scene_number": 1, "narration": "...", "visual_prompt": "...", "visual_subject": "..."}}
 ]"""
-                active_models = ["gemini-3-flash-preview", "gemini-3.5-flash-lite", "gemini-3.1-flash-lite", "gemini-3.5-flash", "gemini-3.8-flash"]
+                active_models = [
+                    "gemini-3.5-flash-lite",
+                    "gemini-flash-lite-latest",
+                    "gemini-3.1-flash-lite-preview",
+                    "gemini-3.1-flash-lite",
+                    "gemini-3-flash-preview",
+                ]
                 for m in active_models:
                     try:
                         response = _call_gemini_with_timeout(
@@ -1259,7 +1280,7 @@ Return ONLY a JSON list of scene objects matching this structure:
                             m,
                             prompt,
                             config={"response_mime_type": "application/json"},
-                            timeout_sec=4.0,
+                            timeout_sec=6.0,
                         )
                         if response.text:
                             import json
