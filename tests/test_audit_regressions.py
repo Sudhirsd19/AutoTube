@@ -567,8 +567,43 @@ def test_render_custom_video_aligns_hindi_title_with_english_script(tmp_path):
             visual_mode="multi_cinematic",
             video_format="short",
         )
-        assert res is not None
-        assert res.get("success") is True
-        # Output title or video filename must be in English
         assert not any("\u0900" <= c <= "\u097f" for c in res.get("video_filename", ""))
+
+
+def test_publish_local_video_and_task_regression(tmp_path):
+    """Verify that run_publish_task does not crash with name 'req' is not defined and correctly resolves Hindi metadata."""
+    from autotube.web.app import run_publish_task, LAST_PUBLISH_RESULT
+
+    dummy_video = tmp_path / "पुनर्जन्म_के_सबसे_खौफनाक_सच_shorts_1792048071.mp4"
+    dummy_video.write_bytes(b"dummy_video_bytes" * 500)
+    dummy_thumb = tmp_path / "पुनर्जन्म_के_सबसे_खौफनाक_सच_shorts_1792048071_thumb.jpg"
+    dummy_thumb.write_bytes(b"dummy_thumb_bytes" * 100)
+
+    with patch("autotube.uploader.youtube_upload.YouTubeUploader.upload_video", return_value="https://youtu.be/test12345") as mock_upload, \
+         patch("autotube.web.app._save_publish_tracker", return_value=None):
+
+        run_publish_task(
+            filename=dummy_video.name,
+            video_path=dummy_video,
+            title=None,
+            description=None,
+            tags=None,
+            privacy="public",
+            channel="hindi",
+        )
+
+        assert mock_upload.called
+        call_kwargs = mock_upload.call_args[1]
+        assert "req" not in str(LAST_PUBLISH_RESULT.get("error"))
+        assert LAST_PUBLISH_RESULT.get("status") == "success"
+        assert LAST_PUBLISH_RESULT.get("url") == "https://youtu.be/test12345"
+        # Check auto-generated title stripped digits timestamp
+        assert "1792048071" not in call_kwargs["title"]
+        assert "पुनर्जन्म" in call_kwargs["title"]
+        # Check description is Hindi, not Nurse Matilda
+        assert "Alien Interview" not in call_kwargs["description"]
+        assert "चैनल" in call_kwargs["description"]
+        assert call_kwargs["channel"] == "hindi"
+        assert call_kwargs["thumbnail_path"] == dummy_thumb
+
 

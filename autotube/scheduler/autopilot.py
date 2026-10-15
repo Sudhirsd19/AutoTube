@@ -528,8 +528,8 @@ class AutoPilot:
                         from autotube.video.thumbnail import ThumbnailGenerator
                         th_gen = ThumbnailGenerator()
                         topic_cat = (
-                            "vedic" if ("vedic" in niche.lower() or "bharat" in niche.lower() or "history" in niche.lower())
-                            else ("space" if "space" in niche.lower() else "auto")
+                            "vedic" if ("vedic" in str(item_niche).lower() or "bharat" in str(item_niche).lower() or "history" in str(item_niche).lower())
+                            else ("space" if "space" in str(item_niche).lower() else "auto")
                         )
                         th_gen.generate_high_ctr_thumbnail(
                             title=v_title,

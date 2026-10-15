@@ -7,7 +7,7 @@ Tier 2: Vocal-Aligned Real Motion Stock Video Footage (Pexels HD) + Photorealist
 """
 
 from pathlib import Path
-from typing import Any, List, Optional
+from typing import Any, List, Optional, Set
 
 from autotube.config import get_config
 from autotube.media.stock_fetcher import StockFetcher

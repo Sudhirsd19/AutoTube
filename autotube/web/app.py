@@ -139,6 +139,8 @@ class PublishLocalVideoRequest(BaseModel):
     tags: Optional[List[str]] = None
     privacy: str = "public"
     channel: Optional[str] = "english"
+    thumbnail_filename: Optional[str] = None
+    content_type: Optional[str] = "standard"
 
 
 class HarvestJobRequest(BaseModel):
@@ -1960,7 +1962,11 @@ async def publish_local_video(req: PublishLocalVideoRequest, bg_tasks: Backgroun
     """Upload a local rendered video to YouTube. Prevents duplicate uploads."""
     video_path = PROJECT_ROOT / "output" / "shorts" / req.filename
     if not video_path.exists():
-        raise HTTPException(status_code=404, detail=f"Video file '{req.filename}' not found in output/shorts/")
+        video_path = PROJECT_ROOT / "output" / "longform" / req.filename
+    if not video_path.exists():
+        video_path = PROJECT_ROOT / "output" / req.filename
+    if not video_path.exists():
+        raise HTTPException(status_code=404, detail=f"Video file '{req.filename}' not found in output/")
 
     # Duplicate check
     tracker = _load_publish_tracker()
@@ -1979,7 +1985,18 @@ async def publish_local_video(req: PublishLocalVideoRequest, bg_tasks: Backgroun
     LAST_PUBLISH_RESULT["error"] = None
     LAST_PUBLISH_RESULT["url"] = None
 
-    bg_tasks.add_task(run_publish_task, req.filename, video_path, req.title, req.description, req.tags, req.privacy, req.channel or "english")
+    bg_tasks.add_task(
+        run_publish_task,
+        req.filename,
+        video_path,
+        req.title,
+        req.description,
+        req.tags,
+        req.privacy,
+        req.channel or "english",
+        req.thumbnail_filename,
+        req.content_type or "standard",
+    )
     return {"success": True, "message": f"Publishing '{req.filename}' to YouTube ({(req.channel or 'english').title()} Channel) in background..."}
 
 
@@ -1991,6 +2008,8 @@ def run_publish_task(
     tags: Optional[List[str]],
     privacy: str,
     channel: str = "english",
+    thumbnail_filename: Optional[str] = None,
+    content_type: str = "standard",
 ):
     """Background task to upload a local video to YouTube."""
     global LAST_PUBLISH_RESULT
@@ -2007,9 +2026,12 @@ def run_publish_task(
         # Auto-generate title from filename if not provided
         if not title:
             stem = video_path.stem
-            title = stem.replace("_", " ").title()
-            # Add series branding for alien interview videos
-            if "alien_interview" in stem:
+            clean_stem = re.sub(r"_\d{9,12}$", "", stem)
+            clean_stem = re.sub(r"_shorts$", "", clean_stem, flags=re.IGNORECASE)
+            clean_title = clean_stem.replace("_", " ").strip()
+            if any("\u0900" <= ch <= "\u097f" for ch in clean_title):
+                title = f"{clean_title} #Shorts"
+            elif "alien_interview" in stem:
                 part_num = ""
                 for seg in stem.split("_"):
                     if seg.isdigit():
@@ -2017,28 +2039,56 @@ def run_publish_task(
                         break
                 lang = "Hindi" if stem.endswith("_hi") else "English"
                 title = f"78 Years Secret: Roswell Alien's First Words Shocked the US Military 😱 (Part {part_num or 1}) #Shorts" if lang == "English" else f"78 साल का राज: रोसवेल एलियन के पहले शब्दों ने सेना को हिला दिया 😱 (Part {part_num or 1}) #Shorts"
+            else:
+                title = f"{clean_title.title()} #Shorts"
 
         if not description:
-            description = (
-                f"{title}\n\n"
-                "Based on 'Alien Interview' by Lawrence Spencer - The classified transcripts "
-                "of Nurse Matilda O'Donnell MacElroy's telepathic sessions with the alien being "
-                "known as 'Airl' at Roswell, 1947.\n\n"
-                "#AlienInterview #Roswell1947 #TopSecret #Shorts"
-            )
+            if "alien_interview" in video_path.stem:
+                description = (
+                    f"{title}\n\n"
+                    "Based on 'Alien Interview' by Lawrence Spencer - The classified transcripts "
+                    "of Nurse Matilda O'Donnell MacElroy's telepathic sessions with the alien being "
+                    "known as 'Airl' at Roswell, 1947.\n\n"
+                    "#AlienInterview #Roswell1947 #TopSecret #Shorts"
+                )
+            elif any("\u0900" <= ch <= "\u097f" for ch in title):
+                description = (
+                    f"{title}\n\n"
+                    "पूरा वीडियो अंत तक देखें! ऐसे ही रोचक और रहस्यमयी तथ्यों के लिए चैनल को लाइक और सब्सक्राइब करें!\n\n"
+                    "#Shorts #HindiFacts #Viral #Trending"
+                )
+            else:
+                description = (
+                    f"{title}\n\n"
+                    "Watch until the end! Like, share and subscribe for daily mind-blowing facts and stories!\n\n"
+                    "#Shorts #Viral #Trending #Facts"
+                )
 
         if not tags:
-            tags = [
-                "Alien Interview", "Roswell 1947", "Airl", "Top Secret",
-                "UFO", "Extraterrestrial", "Mystery", "Shorts",
-            ]
+            if "alien_interview" in video_path.stem:
+                tags = [
+                    "Alien Interview", "Roswell 1947", "Airl", "Top Secret",
+                    "UFO", "Extraterrestrial", "Mystery", "Shorts",
+                ]
+            elif any("\u0900" <= ch <= "\u097f" for ch in title):
+                tags = [
+                    "Shorts", "YouTube Shorts", "Hindi Facts", "Rahasya",
+                    "Trending", "Viral", "Amazing Facts",
+                ]
+            else:
+                tags = [
+                    "Shorts", "YouTube Shorts", "Viral", "Trending",
+                    "Mind Blowing Facts", "Mysteries",
+                ]
 
         # Resolve thumbnail for publishing
         thumb_path = None
-        if getattr(req, "thumbnail_filename", None):
-            tp = PROJECT_ROOT / "output" / "director" / req.thumbnail_filename
+        if thumbnail_filename:
+            tp = PROJECT_ROOT / "output" / "director" / thumbnail_filename
             if not tp.exists():
-                tp = PROJECT_ROOT / "output" / req.thumbnail_filename
+                tp = PROJECT_ROOT / "output" / thumbnail_filename
+            if not tp.exists():
+                tp = PROJECT_ROOT / "output" / "shorts" / thumbnail_filename
             if tp.exists():
                 thumb_path = tp
         if not thumb_path:
@@ -2054,7 +2104,7 @@ def run_publish_task(
             thumbnail_path=thumb_path,
             privacy_status=privacy,
             channel=target_ch,
-            content_type=getattr(req, "content_type", "standard") or "standard",
+            content_type=content_type,
         )
 
         if video_url:
