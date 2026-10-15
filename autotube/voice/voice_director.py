@@ -54,14 +54,14 @@ VIRAL_KEYS = (
 VOICE_RULES: dict[str, dict[str, str]] = {
     "hi": {
         "spiritual": "akashvani",
-        "space": "hi_deep_cinematic_male",
-        "science": "hi_calm_male",
+        "space": "hi_astro_vibes_male",
+        "science": "hi_astro_vibes_male",
         "history": "hi_authoritative_male",
         "mystery": "hi_cinematic_male",
         "emotional": "hi_cinematic_female",
-        "technology": "hi_young_male",
-        "viral": "hi_young_male",
-        "default": "hi_authoritative_male",
+        "technology": "hi_astro_vibes_male",
+        "viral": "hi_astro_vibes_male",
+        "default": "hi_astro_vibes_male",
     },
     "en": {
         "spiritual": "en_deep_warm_male",
