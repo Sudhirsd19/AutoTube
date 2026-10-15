@@ -1105,8 +1105,19 @@ Output STRICT JSON with:
         target_h = 1920 if orientation == "portrait" else 1080
         slug = sanitize_filename(title[:30])
 
-        # Step A: Preserve an upstream structured scene plan when available.
-        if scene_plan:
+        # Step A: Preserve an upstream structured scene plan only when rich/complete.
+        # If upstream plan is missing must_show/avoid or only has a single pseudo-keyword query,
+        # we MUST run AI visual planning (plan_visual_scene) to get true narrative understanding,
+        # concrete must_show elements, strict avoid tags, and 3-4 high-converting search queries.
+        has_rich_plan = bool(
+            scene_plan and (
+                (scene_plan.get("must_show") and len(scene_plan.get("must_show")) > 0)
+                or (scene_plan.get("avoid") and len(scene_plan.get("avoid")) > 0)
+                or len(scene_plan.get("search_queries") or scene_plan.get("search_keywords") or []) > 1
+                or scene_plan.get("custom_image_path")
+            )
+        )
+        if has_rich_plan:
             normalized_plan = {
                 "subject": str(scene_plan.get("subject") or "").strip(),
                 "action": str(scene_plan.get("action") or "").strip(),
@@ -1115,18 +1126,21 @@ Output STRICT JSON with:
                 "avoid": [str(v).strip() for v in scene_plan.get("avoid", []) if str(v).strip()],
                 "search_queries": [str(q).strip() for q in scene_plan.get("search_queries", []) if str(q).strip()][:4],
             }
-            if normalized_plan["subject"] or normalized_plan["must_show"] or normalized_plan["search_queries"]:
-                q_info = {
-                    "primary_query": normalized_plan["search_queries"][0] if normalized_plan["search_queries"] else normalized_plan["subject"],
-                    "alternative_query": normalized_plan["search_queries"][1] if len(normalized_plan["search_queries"]) > 1 else normalized_plan["subject"],
-                    "mood_query": normalized_plan["search_queries"][2] if len(normalized_plan["search_queries"]) > 2 else "cinematic dramatic",
-                    "negative_tags": normalized_plan["avoid"],
-                    "scene_plan": normalized_plan,
-                }
-            else:
-                q_info = self.generate_smart_queries(scene_text, title, scene_index)
+            q_info = {
+                "primary_query": normalized_plan["search_queries"][0] if normalized_plan["search_queries"] else normalized_plan["subject"],
+                "alternative_query": normalized_plan["search_queries"][1] if len(normalized_plan["search_queries"]) > 1 else normalized_plan["subject"],
+                "mood_query": normalized_plan["search_queries"][2] if len(normalized_plan["search_queries"]) > 2 else "cinematic dramatic",
+                "negative_tags": normalized_plan["avoid"],
+                "scene_plan": normalized_plan,
+            }
         else:
             q_info = self.generate_smart_queries(scene_text, title, scene_index)
+            # If the upstream caller provided a single query or subject, retain it as an alternative search angle
+            if scene_plan and q_info.get("scene_plan"):
+                up_q = [str(q).strip() for q in (scene_plan.get("search_queries") or scene_plan.get("search_keywords") or []) if str(q).strip()]
+                for q in up_q:
+                    if q and q.lower() not in {s.lower() for s in q_info["scene_plan"].get("search_queries", [])}:
+                        q_info["scene_plan"].setdefault("search_queries", []).append(q)
         scene_plan = q_info.get("scene_plan", {})
         queries = scene_plan.get("search_queries") or [
             q_info.get("primary_query", ""),
@@ -1199,15 +1213,16 @@ Output STRICT JSON with:
             qa = self.visual_quality_gate.verify(downloaded, scene_text, scene_plan)
             if qa.get("accepted"):
                 cand["frame_qa"] = qa
-                print_info(
-                    f"   🎬 Frame-QA approved scene {scene_index+1}: "
-                    f"'{cand.get('title', '')[:55]}'"
+                print_success(
+                    f"   🎬 [Frame QA Approved] Scene {scene_index+1}: "
+                    f"'{cand.get('title', '')[:55]}' (Confidence: {qa.get('confidence')}%, Coverage: {qa.get('coverage')}%) - {qa.get('reason', '')}"
                 )
                 return downloaded
 
+            viol_str = f" [Violations: {', '.join(qa.get('violations', []))}]" if qa.get("violations") else ""
             print_warning(
-                f"   ⚠️ Frame QA rejected candidate for scene {scene_index+1}: "
-                f"{qa.get('reason', 'visual mismatch')}"
+                f"   ⚠️ [Frame QA Rejected] Scene {scene_index+1}: "
+                f"'{cand.get('title', '')[:55]}' -> {qa.get('reason', 'visual mismatch')}{viol_str}"
             )
 
         # Step E: Authentic archival proof is opt-in and scene-indexed.

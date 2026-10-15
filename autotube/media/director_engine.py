@@ -193,7 +193,10 @@ CRITICAL RULES:
                             clean_text = re.sub(r"^```[a-z]*\n?", "", clean_text)
                             clean_text = re.sub(r"\n?```$", "", clean_text).strip()
                             clean_words = clean_text.split()
-                            if 100 <= len(clean_words) <= 145:
+                            if len(clean_words) > max_words:
+                                clean_text = self._condense_rule_based(clean_text, max_words=max_words)
+                                clean_words = clean_text.split()
+                            if 80 <= len(clean_words) <= max_words:
                                 print_success(f"Script condensed to {len(clean_words)} words (~{len(clean_words)/2.6:.0f}s) via {model_name}!")
                                 return clean_text
                     except Exception:
@@ -1869,6 +1872,7 @@ Return ONLY a JSON list of scene objects matching this structure:
                         )
                         if acquired_video:
                             qa_approved = True
+                            print_success(f"   🎬 [Scene {idx+1} Asset Ready] Frame QA verified: {Path(acquired_video).name}")
                 elif visual_mode == "real_only":
                     if not archival_fetcher:
                         raise RuntimeError(f"Archival mode unavailable for scene {idx+1}.")
@@ -1915,6 +1919,7 @@ Return ONLY a JSON list of scene objects matching this structure:
                         )
                         if acquired_video:
                             qa_approved = True
+                            print_success(f"   🎬 [Scene {idx+1} Asset Ready] Frame QA verified: {Path(acquired_video).name}")
                 elif visual_mode == "stock":
                     acquired_video = multi_agg.get_best_scene_asset(
                         scene_text=sentence,
@@ -1928,6 +1933,7 @@ Return ONLY a JSON list of scene objects matching this structure:
                     )
                     if acquired_video:
                         qa_approved = True
+                        print_success(f"   🎬 [Scene {idx+1} Asset Ready] Frame QA verified: {Path(acquired_video).name}")
                 elif visual_mode == "ai_only":
                     ai_prompt = self._extract_ai_scene_prompt(sentence, title, idx)
                     ai_img_path = TEMP_DIR / f"pure_ai_{idx}_{slug}.jpg"
@@ -1965,6 +1971,7 @@ Return ONLY a JSON list of scene objects matching this structure:
                     )
                     if acquired_video:
                         qa_approved = True
+                        print_success(f"   🎬 [Scene {idx+1} Asset Ready] Frame QA verified: {Path(acquired_video).name}")
 
                 # Dedicated motion-video fallback chain. MultiStockAggregator can return
                 # None after strict video/QA filtering; do not stop the scene there.
@@ -2013,13 +2020,18 @@ Return ONLY a JSON list of scene objects matching this structure:
                             scene_plan,
                         )
                         if not qa.get("accepted"):
+                            viol_str = f" [Violations: {', '.join(qa.get('violations', []))}]" if qa.get("violations") else ""
                             print_warning(
-                                f"   ⚠️ Frame QA rejected Scene {idx+1}: "
-                                f"{qa.get('reason', 'visual mismatch')}"
+                                f"   ⚠️ [Frame QA Rejected] Scene {idx+1}: "
+                                f"{qa.get('reason', 'visual mismatch')}{viol_str}"
                             )
                             acquired_video = None
                         else:
                             qa_approved = True
+                            print_success(
+                                f"   🎬 [Frame QA Approved] Scene {idx+1}: "
+                                f"{acquired_path.name} (Confidence: {qa.get('confidence')}%, Coverage: {qa.get('coverage')}%)"
+                            )
 
                 # Pexels is the final real-motion fallback for every video-first Studio mode.
                 # Previously this was gated by visual_engine, so multi_cinematic could exhaust
@@ -2040,14 +2052,16 @@ Return ONLY a JSON list of scene objects matching this structure:
                         )
                         if qa.get("accepted"):
                             acquired_video = candidate
+                            qa_approved = True
                             print_success(
-                                f"   🎬 [Pexels Video Fallback] Scene {idx+1} acquired fresh, QA-approved motion footage "
-                                f"with query: '{english_q}'"
+                                f"   🎬 [Pexels Fallback QA Approved] Scene {idx+1} acquired fresh motion footage "
+                                f"with query: '{english_q}' (Confidence: {qa.get('confidence')}%)"
                             )
                             break
+                        viol_str = f" [Violations: {', '.join(qa.get('violations', []))}]" if qa.get("violations") else ""
                         print_warning(
-                            f"   ⚠️ Pexels fallback QA rejected Scene {idx+1}: "
-                            f"{qa.get('reason', 'visual mismatch')}"
+                            f"   ⚠️ [Pexels Fallback QA Rejected] Scene {idx+1}: "
+                            f"{qa.get('reason', 'visual mismatch')}{viol_str}"
                         )
 
                 if not acquired_video and visual_mode in ("multi_cinematic", "multi_best", "auto", "hybrid", "stock"):

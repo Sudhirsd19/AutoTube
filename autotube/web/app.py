@@ -1543,10 +1543,10 @@ def run_director_render_task(req_data: dict):
         director = DirectorEngine()
         if v_fmt == "short" and not req_data.get("scenes") and not is_vedic:
             raw_words = req_data["script_text"].strip().split()
-            if len(raw_words) > 120:
-                log_event(f"Studio: Script has {len(raw_words)} words (~{len(raw_words)/2.6:.0f}s). Auto-tightening to fit <50s Shorts limit...")
-                condensed = director.condense_script_for_shorts(req_data["script_text"], language=req_data.get("language", "hi"))
-                if condensed and len(condensed.split()) <= 120:
+            if len(raw_words) > 145:
+                log_event(f"Studio: Script has {len(raw_words)} words (~{len(raw_words)/2.6:.0f}s). Auto-tightening to fit <56s Shorts limit...")
+                condensed = director.condense_script_for_shorts(req_data["script_text"], language=req_data.get("language", "hi"), max_words=140)
+                if condensed and len(condensed.split()) <= 145:
                     req_data["script_text"] = condensed
 
         result = director.render_custom_video(
