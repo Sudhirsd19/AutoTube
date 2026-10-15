@@ -116,7 +116,7 @@ class DirectorEngine:
             "subtitle_styles": subtitle_styles,
         }
 
-    def _condense_rule_based(self, script_text: str, max_words: int = 140) -> str:
+    def _condense_rule_based(self, script_text: str, max_words: int = 145) -> str:
         """Fast, 100% deterministic sentence-aware script compressor strictly under max_words."""
         words = script_text.strip().split()
         if len(words) <= max_words:
@@ -144,9 +144,9 @@ class DirectorEngine:
         self,
         script_text: str,
         language: str = "hi",
-        max_words: int = 140,
+        max_words: int = 145,
     ) -> str:
-        """Condense narration into a high-retention 125-140 word script strictly under 58s (<60s Shorts limit)."""
+        """Condense narration into a high-retention 135-148 word script strictly between 55-58s (<59s Shorts limit)."""
         words = script_text.strip().split()
         if len(words) <= max_words + 2:
             return script_text
@@ -163,17 +163,17 @@ class DirectorEngine:
                 lang_rule = "pure Devanagari Hindi (हिंदी देवनागरी लिपि)" if is_hindi else ("conversational Hinglish" if is_hinglish else "punchy English")
 
                 prompt = f"""You are a master viral YouTube Shorts script editor.
-Condense and tighten this script so it strictly fits within a 50-to-56 second YouTube Short (<58s strict limit).
+Condense and tighten this script so it strictly fits within a 55-to-58 second YouTube Short (<59s strict limit).
 
 Original Script ({len(words)} words):
 \"{script_text}\"
 
 CRITICAL RULES:
-1. Target Word Count: STRICTLY 125 to 140 words total (ABSOLUTE CEILING: 142 words).
+1. Target Word Count: STRICTLY 135 to 148 words total (ABSOLUTE CEILING: 148 words).
 2. Language: Write 100% in {lang_rule}.
 3. Structure:
-   - Punchy 3s Opening Hook (15-20 words)
-   - Core Thrilling Facts / Evidence Body (85-98 words, 4 sharp suspenseful sentences)
+   - Punchy 3s Opening Hook (18-24 words)
+   - Core Thrilling Facts / Evidence Body (95-102 words, 4-5 sharp suspenseful sentences)
    - Provocative Question & Subscribe CTA (20-24 words)
 4. Cut out all filler words, repeated phrases, and secondary explanations.
 5. Return ONLY the tightened narration text as a single plain paragraph. No JSON, no titles, no intro labels, no markdown.
@@ -352,8 +352,8 @@ CRITICAL RULES:
                 tags = ["#UnsolvedMysteries", "#ShockingFacts", "#ClassifiedHistory", "#Shorts"]
 
         full_narration = f"{hook} {body} {cliffhanger}"
-        if not is_long and len(full_narration.split()) > 115:
-            full_narration = self._condense_rule_based(full_narration, max_words=115)
+        if not is_long and len(full_narration.split()) > 148:
+            full_narration = self._condense_rule_based(full_narration, max_words=145)
 
         word_count = len(full_narration.split())
         est_seconds = round(word_count / 2.6, 1)
@@ -401,7 +401,7 @@ CRITICAL RULES:
         is_long = (video_format == "landscape_long")
         gemini_key = os.getenv("GEMINI_API_KEY", "") or getattr(self.cfg, "gemini_api_key", "")
 
-        target_words = "350 to 500 words (3.0 to 4.5 minutes documentary length)" if is_long else "125 to 140 words (strictly 50 to 57 seconds, YouTube Shorts sweet spot under 58s)"
+        target_words = "350 to 500 words (3.0 to 4.5 minutes documentary length)" if is_long else "135 to 148 words (strictly 55 to 58 seconds, YouTube Shorts sweet spot under 59s)"
         format_desc = "16:9 Landscape Documentary Video" if is_long else "9:16 Vertical YouTube Short"
 
         if gemini_key:
@@ -469,12 +469,12 @@ CRITICAL RULES:
 - For 16:9 Long Video, the script narration should be 350 to 500 words (3.0 to 4.5 minutes spoken audio).
 - Deliver deep investigative depth, rich historical context, and comprehensive storytelling."""
                 else:
-                    duration_mandate = """CRITICAL YOUTUBE SHORTS DURATION MANDATE (TARGET: 50 TO 57 SECONDS, STRICT LIMIT <58.5s):
-- For YouTube Shorts, the script narration MUST BE 50 TO 57 SECONDS (Optimal YouTube Shorts watch-time, retention & revenue sweet spot).
-- YouTube Shorts feed HARD CUTOFF is 60.0 seconds! The video must strictly remain under 58.5s.
-- At standard natural speaking pace (~2.4 words/second), the script MUST BE STRICTLY 125 TO 140 WORDS TOTAL (ABSOLUTE CEILING: 142 words).
-- Word Budget: Hook = 15-20 words, Body = 85-98 words (4-5 intense story beats), Outro + Subscribe CTA = 20-24 words.
-- TARGET RANGE: 125 to 140 words. DO NOT WRITE LESS THAN 125 WORDS OR MORE THAN 142 WORDS!"""
+                    duration_mandate = """CRITICAL YOUTUBE SHORTS DURATION MANDATE (TARGET: 55 TO 58 SECONDS, STRICT LIMIT <59.0s):
+- For YouTube Shorts, the script narration MUST BE 55 TO 58 SECONDS (Optimal YouTube Shorts watch-time, retention & algorithm sweet spot).
+- YouTube Shorts feed HARD CUTOFF is 60.0 seconds! The video must strictly remain under 59.0s.
+- At standard natural speaking pace (~2.45-2.55 words/second), the script MUST BE STRICTLY 135 TO 148 WORDS TOTAL (ABSOLUTE CEILING: 148 words).
+- Word Budget: Hook = 18-24 words, Body = 95-102 words (5-6 intense story beats), Outro + Subscribe CTA = 20-24 words.
+- TARGET RANGE: 135 to 148 words. DO NOT WRITE LESS THAN 135 WORDS OR MORE THAN 148 WORDS!"""
 
                 prompt = f"""You are a top-tier viral YouTube Short & Documentary scriptwriter who crafts scripts that retain 80%+ audience retention and drive massive subscriber conversion.
 
@@ -549,9 +549,9 @@ Output STRICT JSON with these keys:
 
                 if data:
                     narration = data.get("full_narration", raw_input)
-                    if not is_long and len(narration.split()) > 145:
-                        print_info(f"Generated narration has {len(narration.split())} words. Auto-condensing for 56s Shorts limit...")
-                        narration = self._condense_rule_based(narration, max_words=140)
+                    if not is_long and len(narration.split()) > 150:
+                        print_info(f"Generated narration has {len(narration.split())} words. Auto-condensing for 56-58s Shorts limit...")
+                        narration = self._condense_rule_based(narration, max_words=145)
 
                     word_count = len(narration.split())
                     est_seconds = round(word_count / 2.6, 1)

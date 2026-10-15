@@ -133,7 +133,7 @@ def shorts(
     voice: str = typer.Option(
         "christopher", "--voice", "-v", help="AI Voice (e.g. christopher, guy, madhur, swara)"
     ),
-    duration: int = typer.Option(50, "--duration", "-d", help="Target duration in seconds (45-55s standard)"),
+    duration: int = typer.Option(56, "--duration", "-d", help="Target duration in seconds (55-58s standard)"),
     lang: str = typer.Option("en", "--lang", "-l", help="Language: 'en' for English or 'hi' for Hindi"),
     visuals: str = typer.Option(
         "auto",

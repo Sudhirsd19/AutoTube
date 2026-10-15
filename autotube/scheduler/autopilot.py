@@ -378,7 +378,7 @@ class AutoPilot:
 
                 item_fmt = item.get("format", "short")
                 is_landscape = (item_fmt == "landscape_long")
-                target_dur = 180 if is_landscape else 50
+                target_dur = 180 if is_landscape else 56
                 orientation = "landscape" if is_landscape else "portrait"
                 video_subfolder = "longform" if is_landscape else "shorts"
                 v_w = 1920 if is_landscape else 1080

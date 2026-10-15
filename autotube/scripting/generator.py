@@ -360,11 +360,11 @@ class ScriptGenerator:
             scene_guide = "8 to 14 sequential documentary scenes in 'scenes'"
             dur_label = f"{target_duration} seconds (Full In-Depth Documentary)"
         else:
-            target_duration = min(target_duration, 48)
-            min_words = 95
-            max_words = 110
-            scene_guide = "5 to 7 sequential scenes in 'scenes'"
-            dur_label = f"{target_duration} seconds (CRITICAL: YouTube Shorts STRICTLY UNDER 50 SECONDS, Target: 42 to 48 seconds spoken audio, HARD CEILING 110 words)"
+            target_duration = max(55, min(target_duration, 58))
+            min_words = 135
+            max_words = 148
+            scene_guide = "7 to 9 sequential scenes in 'scenes'"
+            dur_label = f"{target_duration} seconds (CRITICAL: YouTube Shorts sweet spot 55 to 58 seconds spoken audio, strictly under 59 seconds, HARD CEILING 148 words)"
 
         prompt = f"""Generate a high-retention viral YouTube video script about: '{topic}' {lang_note}.
 Target duration: {dur_label}.
@@ -373,11 +373,11 @@ MANDATORY STRUCTURAL REQUIREMENTS:
 1. Break the entire script into {scene_guide}.
 2. For each scene in 'scenes':
    - 'scene_number': 1, 2, 3, 4, 5...
-   - 'narration': 1 punchy spoken sentence for this scene ({'in authentic Hindi using Devanagari script only (शुद्ध देवनागरी लिपि, NO Roman Hinglish)' if is_hindi else 'in English'}, 12 to 16 words).
+   - 'narration': 1 punchy spoken sentence for this scene ({'in authentic Hindi using Devanagari script only (शुद्ध देवनागरी लिपि, NO Roman Hinglish)' if is_hindi else 'in English'}, 14 to 20 words).
    - 'visual_subject': The exact physical subject on screen in 1-3 simple English words (e.g. 'black hole space', 'earth from space', 'pyramid egypt', 'deep ocean storm', 'glowing brain'). MUST directly match the spoken words!
    - 'visual_description': Vivid description in English of the visual scene.
    - 'search_keywords': 2-3 clean, simple English search words (e.g. ['black hole', 'space galaxy']).
-3. TOTAL SPOKEN WORDS across all scenes MUST be strictly between {min_words} and {max_words} words (hard ceiling 110 words). NEVER exceed 110 words as YouTube Shorts feed disqualifies any vertical video 60 seconds or above!
+3. TOTAL SPOKEN WORDS across all scenes MUST be strictly between {min_words} and {max_words} words (hard ceiling {max_words} words). NEVER exceed {max_words} words as YouTube Shorts feed disqualifies any vertical video 60 seconds or above!
 4. Set the top-level 'narration' field to the combined text of all scene narrations.
 5. High-converting climax cliffhanger CTA in the final scene.
 6. Seamless infinite loop: ending sentence flows back into opening hook.

@@ -899,7 +899,7 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
         if speed_factor > 1.8:
             raise RuntimeError(
                 f"Audio duration ({tts_res.duration_seconds:.1f}s) is too long for YouTube Shorts "
-                f"(requires excessive {speed_factor:.2f}x speedup). Script must be under 135 words to qualify for Shorts."
+                f"(requires excessive {speed_factor:.2f}x speedup). Script must be under 160 words to qualify for Shorts."
             )
 
         print_warning(

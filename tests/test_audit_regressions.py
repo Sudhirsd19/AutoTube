@@ -351,7 +351,7 @@ def test_condense_script_for_shorts_under_limit():
 
     condensed = director.condense_script_for_shorts(long_script, language="hi")
     word_count = len(condensed.split())
-    assert word_count <= 140, f"Condensed word count {word_count} must be <= 140"
+    assert word_count <= 148, f"Condensed word count {word_count} must be <= 148"
     assert "महाभारत" in condensed
     assert "सब्सक्राइब" in condensed or "लाइक" in condensed or "कमेंट" in condensed
 

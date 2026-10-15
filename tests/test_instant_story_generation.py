@@ -17,9 +17,9 @@ def test_amazon_jungle_story_generation():
     duration = time.time() - t0
 
     assert res["success"] is True
-    assert duration < 12.0  # Must never hang or exceed 12s
-    assert 70 <= res["word_count"] <= 140
-    assert 25.0 <= res["est_seconds"] <= 55.0
+    assert duration < 25.0  # Must never hang or exceed 25s across model retries
+    assert 70 <= res["word_count"] <= 155
+    assert 25.0 <= res["est_seconds"] <= 60.0
     assert len(res["titles"]) >= 3
     assert len(res["scenes"]) >= 4
 
@@ -36,22 +36,22 @@ def test_smart_fallback_story_genres():
     # Rebirth / Punarjanam
     res_rebirth = engine._generate_smart_fallback_story("punarjanam real incident proof", language="hi")
     assert "1935" in res_rebirth["full_narration"] or "पुनर्जन्म" in res_rebirth["full_narration"]
-    assert res_rebirth["word_count"] <= 120
+    assert res_rebirth["word_count"] <= 150
 
     # Bermuda Triangle
     res_bermuda = engine._generate_smart_fallback_story("bermuda triangle mystery", language="hi")
     assert "बरमूडा" in res_bermuda["full_narration"] or "जहाज़" in res_bermuda["full_narration"]
-    assert res_bermuda["word_count"] <= 120
+    assert res_bermuda["word_count"] <= 150
 
     # Vedic / Gita
     res_vedic = engine._generate_smart_fallback_story("bhagavad gita krishna updesh", language="hi")
     assert "कृष्ण" in res_vedic["full_narration"] or "गीता" in res_vedic["full_narration"]
-    assert res_vedic["word_count"] <= 120
+    assert res_vedic["word_count"] <= 150
 
     # Space / Black hole
     res_space = engine._generate_smart_fallback_story("black hole secret nasa", language="hi")
     assert "ब्लैक होल" in res_space["full_narration"] or "अंतरिक्ष" in res_space["full_narration"]
-    assert res_space["word_count"] <= 120
+    assert res_space["word_count"] <= 150
 
 
 def test_condense_rule_based():
