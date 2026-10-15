@@ -175,7 +175,7 @@ class VoiceAuditionRequest(BaseModel):
 class DirectorRenderRequest(BaseModel):
     script_text: str
     title: str
-    voice: str = "auto"
+    voice: str = "hi_astro_vibes_male"
     voice_speed: float = 1.05
     bgm_filename: Optional[str] = "auto"
     bgm_volume: float = 0.16
@@ -1554,7 +1554,7 @@ def run_director_render_task(req_data: dict):
         result = director.render_custom_video(
             script_text=req_data["script_text"],
             title=req_data["title"],
-            voice=req_data.get("voice", "akashvani"),
+            voice=req_data.get("voice", "hi_astro_vibes_male"),
             voice_speed=float(req_data.get("voice_speed", 1.05)),
             bgm_filename=req_data.get("bgm_filename", "auto"),
             bgm_volume=float(req_data.get("bgm_volume", 0.16)),

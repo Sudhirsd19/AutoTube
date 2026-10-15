@@ -279,7 +279,8 @@
               <span class="text-[11px] text-slate-400">Voice:</span>
               <select id="quick-voice-select" class="bg-transparent text-white font-medium text-xs focus:outline-none cursor-pointer">
                 <optgroup label="🇮🇳 HINDI VOICES — SPACE / MYSTERY / SCIENCE" class="bg-slate-900 text-slate-200">
-                  <option value="hi_deep_cinematic_male" selected>🎙️ Deep Cinematic Male Hindi ⭐ BEST</option>
+                  <option value="hi_astro_vibes_male" selected>🎙️ Astro Vibes Male Hindi (Space & Science Facts) ⭐ DEFAULT</option>
+                  <option value="hi_deep_cinematic_male">🎙️ Deep Cinematic Male Hindi ⭐ BEST</option>
                   <option value="hi_calm_male">🎙️ Calm Male Hindi (Science Explanations)</option>
                   <option value="hi_cinematic_male">🎙️ Cinematic Male Hindi (Mystery, रहस्य)</option>
                   <option value="hi_authoritative_male">🎙️ Authoritative Male Hindi (History, Facts)</option>
@@ -610,7 +611,8 @@
             </div>
             
             <select id="director-select-voice" class="w-full glass bg-slate-900 px-3 py-2 rounded-lg border border-slate-700 text-xs text-white focus:outline-none focus:border-brand-cyan">
-              <option value="auto" selected>🤖 Auto — Subject + Language Matched Voice</option>
+              <option value="hi_astro_vibes_male" selected>🎙️ Astro Vibes Male Hindi (Space & Science Facts - 95% Match) ⭐ DEFAULT</option>
+              <option value="auto">🤖 Auto — Subject + Language Matched Voice</option>
               <optgroup label="🇮🇳 HINDI VOICES — SPACE / MYSTERY / SCIENCE">
                 <option value="hi_astro_vibes_male">🎙️ Astro Vibes Male Hindi (Space & Science Facts - 95% Match) ⭐ VIRAL</option>
                 <option value="hi_deep_cinematic_male">🎙️ Deep Cinematic Male Hindi (Space, Universe, Black Holes)</option>
@@ -2120,6 +2122,7 @@
                 class="w-full bg-slate-950 border border-slate-800 text-slate-200 text-xs px-2 py-1.5 rounded-lg focus:outline-none focus:border-brand-cyan cursor-pointer truncate">
                 <option value="auto" ${slotVoice === 'auto' ? 'selected' : ''}>🤖 Auto — Subject + Language Matched</option>
                 <optgroup label="🇮🇳 HINDI VOICES — SPACE / MYSTERY / SCIENCE">
+                  <option value="hi_astro_vibes_male" ${slotVoice === 'hi_astro_vibes_male' ? 'selected' : ''}>🎙️ Astro Vibes Male Hindi (Space & Science Facts) ⭐ DEFAULT</option>
                   <option value="hi_deep_cinematic_male" ${slotVoice === 'hi_deep_cinematic_male' ? 'selected' : ''}>🎙️ Deep Cinematic Male Hindi (Space, Universe, Black Holes) ⭐ BEST</option>
                   <option value="hi_calm_male" ${slotVoice === 'hi_calm_male' ? 'selected' : ''}>🎙️ Calm Male Hindi (Science Explanations, Astronomy)</option>
                   <option value="hi_cinematic_male" ${slotVoice === 'hi_cinematic_male' ? 'selected' : ''}>🎙️ Cinematic Male Hindi (Mystery, रहस्य, Unsolved Stories)</option>
@@ -3010,11 +3013,11 @@
       if (lang === 'hi' && btnHi) {
         btnHi.className = 'px-3 py-1.5 rounded-lg text-xs font-bold transition bg-purple-600 text-white shadow-md';
         if (pubChSelect) pubChSelect.value = 'hindi';
-        if (voiceSelect && (voiceSelect.value.startsWith('en_') || voiceSelect.value === 'auto')) voiceSelect.value = 'hi_deep_cinematic_male';
+        if (voiceSelect && (voiceSelect.value.startsWith('en_') || voiceSelect.value === 'auto')) voiceSelect.value = 'hi_astro_vibes_male';
       } else if (lang === 'hinglish' && btnHinglish) {
         btnHinglish.className = 'px-3 py-1.5 rounded-lg text-xs font-bold transition bg-purple-600 text-white shadow-md';
         if (pubChSelect) pubChSelect.value = 'hindi';
-        if (voiceSelect && (voiceSelect.value.startsWith('en_') || voiceSelect.value === 'auto')) voiceSelect.value = 'hi_deep_cinematic_male';
+        if (voiceSelect && (voiceSelect.value.startsWith('en_') || voiceSelect.value === 'auto')) voiceSelect.value = 'hi_astro_vibes_male';
       } else if (lang === 'en' && btnEn) {
         btnEn.className = 'px-3 py-1.5 rounded-lg text-xs font-bold transition bg-purple-600 text-white shadow-md';
         if (pubChSelect) pubChSelect.value = 'english';

@@ -1401,7 +1401,7 @@ Return ONLY a JSON list of scene objects matching this structure:
         self,
         script_text: str,
         title: str,
-        voice: str = "auto",
+        voice: str = "hi_astro_vibes_male",
         voice_speed: float = 1.05,
         bgm_filename: Optional[str] = None,
         bgm_volume: float = 0.16,

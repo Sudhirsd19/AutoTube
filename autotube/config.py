@@ -70,10 +70,10 @@ class VideoConfig(BaseModel):
 
 
 class VoiceConfig(BaseModel):
-    default_voice: str = "en-US-ChristopherNeural"
-    hindi_voice: str = "hi-IN-MadhurNeural"
-    rate: str = "-3%"
-    pitch: str = "-4Hz"
+    default_voice: str = "hi_astro_vibes_male"
+    hindi_voice: str = "hi_astro_vibes_male"
+    rate: str = "+7%"
+    pitch: str = "-3Hz"
     volume: str = "+0%"
 
 
