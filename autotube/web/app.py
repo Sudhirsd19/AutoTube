@@ -176,7 +176,7 @@ class DirectorRenderRequest(BaseModel):
     script_text: str
     title: str
     voice: str = "auto"
-    voice_speed: float = 0.92
+    voice_speed: float = 1.05
     bgm_filename: Optional[str] = "auto"
     bgm_volume: float = 0.16
     subtitle_style: str = "hormozi"

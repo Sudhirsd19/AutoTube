@@ -29,7 +29,7 @@ VOICE_CATALOG: Dict[str, VoiceProfile] = {
         language="Hindi",
         description="Deep, resonant, low-bass cinematic voice. Perfect for Black Holes, Cosmic Event Horizons, and Space Mysteries.",
         best_for="Space, Universe, Black Holes, Time Travel",
-        rate="-8%",   # 0.92x speed
+        rate="+4%",   # 1.04x speed (natural engaging cadence)
         pitch="-14Hz", # Deep sub-bass resonance
         audio_filter="equalizer=f=110:width_type=o:width=1.5:g=4.5,equalizer=f=3200:width_type=o:width=1.2:g=2.0,acompressor=threshold=-18dB:ratio=2.5:attack=10:release=120",
     ),
@@ -41,7 +41,7 @@ VOICE_CATALOG: Dict[str, VoiceProfile] = {
         language="Hindi",
         description="Intellectual, calm, clear storytelling pace. Perfect for scientific explanations and astronomy facts.",
         best_for="Science explanations, Astronomy, Planet facts",
-        rate="-6%",   # 0.94x speed
+        rate="+6%",   # 1.06x speed
         pitch="-4Hz",
         audio_filter="equalizer=f=180:width_type=o:width=1.2:g=2.0,equalizer=f=3500:width_type=o:width=1.0:g=1.5",
     ),
@@ -53,7 +53,7 @@ VOICE_CATALOG: Dict[str, VoiceProfile] = {
         language="Hindi",
         description="Dark, suspenseful, thrilling narration with subtle atmospheric depth for unexplained phenomena.",
         best_for="Mystery, रहस्य, Unsolved Stories",
-        rate="-9%",   # 0.91x speed
+        rate="+5%",   # 1.05x speed
         pitch="-10Hz",
         audio_filter="equalizer=f=120:width_type=o:width=1.4:g=3.5,equalizer=f=2800:width_type=o:width=1.2:g=2.0,aecho=0.8:0.4:80:0.15",
     ),
@@ -65,7 +65,7 @@ VOICE_CATALOG: Dict[str, VoiceProfile] = {
         language="Hindi",
         description="Commanding, historical documentary presence with crisp articulation and educational authority.",
         best_for="History, Science Facts, Educational Videos",
-        rate="-6%",   # 0.94x speed
+        rate="+6%",   # 1.06x speed
         pitch="-7Hz",
         audio_filter="equalizer=f=140:width_type=o:width=1.5:g=3.0,equalizer=f=4000:width_type=o:width=1.0:g=2.5",
     ),
@@ -77,7 +77,7 @@ VOICE_CATALOG: Dict[str, VoiceProfile] = {
         language="Hindi",
         description="Energetic, fast-paced, high retention delivery for quick Shorts and viral hooks.",
         best_for="YouTube Shorts, Fast Facts, Viral Content",
-        rate="+2%",   # 1.02x speed
+        rate="+10%",  # 1.10x speed
         pitch="+0Hz",
         audio_filter="equalizer=f=2500:width_type=o:width=1.0:g=2.5",
     ),
@@ -89,7 +89,7 @@ VOICE_CATALOG: Dict[str, VoiceProfile] = {
         language="Hindi",
         description="Eerie, deep, mysterious female narration for supernatural, paranormal, and dark cosmic stories.",
         best_for="Mystery, Paranormal, Dark Stories",
-        rate="-7%",   # 0.93x speed
+        rate="+5%",   # 1.05x speed
         pitch="-12Hz",
         audio_filter="equalizer=f=160:width_type=o:width=1.4:g=3.0,equalizer=f=3000:width_type=o:width=1.0:g=2.0",
     ),
@@ -101,7 +101,7 @@ VOICE_CATALOG: Dict[str, VoiceProfile] = {
         language="Hindi",
         description="Gentle, cosmic wonder, clear and comforting tone for planetary journeys and space storytelling.",
         best_for="Science, Space & Storytelling",
-        rate="-5%",   # 0.95x speed
+        rate="+6%",   # 1.06x speed
         pitch="-2Hz",
         audio_filter="equalizer=f=220:width_type=o:width=1.0:g=1.5,equalizer=f=3800:width_type=o:width=1.0:g=1.8",
     ),
@@ -113,7 +113,7 @@ VOICE_CATALOG: Dict[str, VoiceProfile] = {
         language="Hindi",
         description="Expressive, dramatic cinematic depth with subtle emotional presence.",
         best_for="Emotional & Mysterious Stories",
-        rate="-8%",   # 0.92x speed
+        rate="+5%",   # 1.05x speed
         pitch="-6Hz",
         audio_filter="equalizer=f=150:width_type=o:width=1.2:g=2.5,aecho=0.85:0.5:100:0.18",
     ),
@@ -229,7 +229,7 @@ VOICE_CATALOG: Dict[str, VoiceProfile] = {
         language="Hindi",
         description="Gambhira Devavani / Cosmic Voice with divine echo & deep bass",
         best_for="Space, Cosmic Mysteries, Ancient Bharat",
-        rate="-7%",
+        rate="+4%",
         pitch="-14Hz",
         audio_filter="aecho=0.85:0.75:100|220:0.35|0.2,equalizer=f=120:width_type=o:width=1.5:g=4,equalizer=f=3500:width_type=o:width=1.2:g=2",
     ),
@@ -241,7 +241,7 @@ VOICE_CATALOG: Dict[str, VoiceProfile] = {
         language="Hindi",
         description="Classic natural Hindi documentary narrator",
         best_for="Hindi documentaries and facts",
-        rate="-6%",
+        rate="+6%",
         pitch="-8Hz",
         audio_filter="equalizer=f=120:width_type=o:width=1.5:g=3.5,equalizer=f=3200:width_type=o:width=1.2:g=2.0",
     ),
@@ -253,7 +253,7 @@ VOICE_CATALOG: Dict[str, VoiceProfile] = {
         language="Hindi",
         description="Crisp expressive Indian female voice",
         best_for="Stories and mysteries",
-        rate="-6%",
+        rate="+6%",
         pitch="-4Hz",
     ),
     "adam": VoiceProfile(

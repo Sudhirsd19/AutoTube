@@ -410,6 +410,7 @@ class AutoPilot:
                     text=script.narration,
                     output_audio_path=audio_path,
                     voice=item_voice,
+                    rate="+6%" if (item_lang == "hi" or "hi" in str(item_voice).lower()) else None,
                 )
 
                 # Strict duration clamp for Shorts (<60s hard feed limit)

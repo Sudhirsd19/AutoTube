@@ -638,13 +638,13 @@
               </optgroup>
             </select>
 
-            <!-- Voice Speed Slider (Default 0.92x for Deep Suspense) -->
+            <!-- Voice Speed Slider (Default 1.05x for Energetic Delivery) -->
             <div class="pt-1">
               <div class="flex items-center justify-between text-xs mb-1">
                 <span class="text-slate-400">Voice Delivery Speed:</span>
-                <span id="val-voice-speed" class="font-bold text-brand-cyan">0.92x (Deep, Calm & Mysterious)</span>
+                <span id="val-voice-speed" class="font-bold text-brand-cyan">1.05x (Energetic & Engaging)</span>
               </div>
-              <input type="range" id="slider-voice-speed" min="0.85" max="1.15" step="0.01" value="0.92" oninput="document.getElementById('val-voice-speed').textContent = this.value + 'x' + (this.value <= 0.95 ? ' (Deep Suspense & Calm)' : ' (Fast)')" class="w-full accent-brand-cyan cursor-pointer">
+              <input type="range" id="slider-voice-speed" min="0.85" max="1.25" step="0.01" value="1.05" oninput="document.getElementById('val-voice-speed').textContent = this.value + 'x' + (this.value < 1.0 ? ' (Slow / Dramatic)' : (this.value <= 1.10 ? ' (Energetic & Engaging)' : ' (Fast / Viral Shorts)'))" class="w-full accent-brand-cyan cursor-pointer">
             </div>
           </div>
 
@@ -3427,7 +3427,7 @@
       }
 
       const voice = document.getElementById('director-select-voice').value;
-      const speed = parseFloat(document.getElementById('slider-voice-speed').value || 0.92);
+      const speed = parseFloat(document.getElementById('slider-voice-speed').value || 1.05);
       const bgm = document.getElementById('director-select-bgm').value;
       const volume = parseFloat(document.getElementById('slider-bgm-volume').value || 0.16);
       const subStyle = document.getElementById('director-select-subtitle-style').value;

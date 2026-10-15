@@ -590,17 +590,17 @@ class TTSEngine:
         is_hindi = "hi-IN" in selected_voice or (voice and any(k in voice.lower() for k in ("hi", "hindi", "madhur", "swara", "akashvani")))
 
         if is_akashvani:
-            selected_rate = rate or "-7%"
+            selected_rate = rate or (self.rate if self.rate != "+0%" else "+4%")
             selected_pitch = pitch or "-14Hz"
         elif is_thanos:
-            selected_rate = rate or "-8%"
+            selected_rate = rate or (self.rate if self.rate != "+0%" else ("-4%" if is_hindi else "-8%"))
             selected_pitch = pitch or ("-25Hz" if is_hindi else "-22Hz")
         elif profile:
-            # Use profile's tuned deep pitch and rate (default 0.90x-0.95x speed)
-            selected_rate = rate or profile.rate
+            # Use explicit rate if passed, or self.rate if custom tuned, otherwise profile's tuned rate
+            selected_rate = rate or (self.rate if self.rate != "+0%" else profile.rate)
             selected_pitch = pitch or profile.pitch
         else:
-            selected_rate = rate or (self.rate if self.rate != "+0%" else ("-8%" if is_hindi else "-8%"))
+            selected_rate = rate or (self.rate if self.rate != "+0%" else ("+5%" if is_hindi else "-4%"))
             selected_pitch = pitch or ("-10Hz" if is_hindi else self.pitch)
 
         output_audio_path.parent.mkdir(parents=True, exist_ok=True)

@@ -1402,7 +1402,7 @@ Return ONLY a JSON list of scene objects matching this structure:
         script_text: str,
         title: str,
         voice: str = "auto",
-        voice_speed: float = 0.92,
+        voice_speed: float = 1.05,
         bgm_filename: Optional[str] = None,
         bgm_volume: float = 0.16,
         subtitle_style_id: str = "hormozi",
@@ -1584,12 +1584,13 @@ Return ONLY a JSON list of scene objects matching this structure:
 
         # 1. Synthesize Voice using the exact scene contract for word-level scene timing.
         voice_audio = TEMP_DIR / f"{slug}_voice.mp3"
-        rate_str = f"+{int((voice_speed - 1.0) * 100)}%" if voice_speed >= 1.0 else f"-{int((1.0 - voice_speed) * 100)}%"
+        rate_str = f"+{int(round((voice_speed - 1.0) * 100))}%" if voice_speed >= 1.0 else f"-{int(round((1.0 - voice_speed) * 100))}%"
         tts = TTSEngine(default_voice=selected_voice, rate=rate_str)
         tts_res = tts.synthesize(
             text=active_script,
             output_audio_path=voice_audio,
             voice=selected_voice,
+            rate=rate_str,
             scenes=scene_specs,
             allow_unconstrained_duration=(is_long or is_vedic_granth_mode),
         )
