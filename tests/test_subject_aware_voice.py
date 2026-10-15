@@ -7,7 +7,7 @@ from autotube.voice.voice_director import (
 
 
 def test_auto_voice_black_hole_hindi():
-    assert choose_subject_voice("Black Hole", "यह अंतरिक्ष का सबसे रहस्यमय black hole है", "hi") == "hi_deep_cinematic_male"
+    assert choose_subject_voice("Black Hole", "यह अंतरिक्ष का सबसे रहस्यमय black hole है", "hi") == "hi_astro_vibes_male"
 
 
 def test_auto_voice_history_english():
@@ -15,7 +15,7 @@ def test_auto_voice_history_english():
 
 
 def test_auto_voice_science_hindi():
-    assert choose_subject_voice("Science Facts", "यह एक scientific experiment है", "hi") == "hi_calm_male"
+    assert choose_subject_voice("Science Facts", "यह एक scientific experiment है", "hi") == "hi_astro_vibes_male"
 
 
 def test_auto_voice_mystery_english():

@@ -750,6 +750,9 @@ Return STRICT JSON with keys:
                     if not v_info or not v_info.get("url"):
                         continue
                     tags = [t.strip().lower() for t in hit.get("tags", "").split(",") if t.strip()]
+                    is_food_query = any(k in clean_q for k in ("food", "recipe", "cook", "kitchen", "restaurant", "dish", "meal", "eat", "culinary", "bbq", "grill"))
+                    if not is_food_query and any(bad in tags for bad in ("food", "grilled", "skewer", "barbecue", "bbq", "cook", "cooking", "recipe", "dish", "restaurant", "kitchen", "street food", "delicacy", "roasting", "charcoal grill")):
+                        continue
                     w = v_info.get("width", 0)
                     h = v_info.get("height", 0)
                     results.append({
@@ -1185,6 +1188,12 @@ Output STRICT JSON with:
             if is_space_scene and any(bad in combined_desc for bad in ("forest", "autumn", "leaves", "trees", "flowers", "kitchen", "office", "bedroom", "shopping", "traffic", "car ", "dog", "cat")):
                 print_warning(f"   ⚠️ Skipping contradictory clip '{cand.get('title', '')[:40]}' for space scene.")
                 continue
+
+            is_nature_or_science = any(k in scene_text.lower() or k in subj_name.lower() for k in ("squid", "ocean", "deep sea", "animal", "wildlife", "falcon", "cheetah", "nature", "science", "biology", "history", "temple", "abyss", "marine"))
+            if is_nature_or_science and not any(k in scene_text.lower() for k in ("food", "recipe", "cook", "restaurant", "dish", "meal", "kitchen", "culinary")):
+                if any(bad in combined_desc for bad in ("grilled", "skewer", "barbecue", "bbq", "cooking", "recipe", "dish", "restaurant", "kitchen", "street food", "delicacy", "roasting", "charcoal grill")):
+                    print_warning(f"   ⚠️ Skipping food/cooking clip '{cand.get('title', '')[:40]}' for non-food scene.")
+                    continue
 
             ai_conf = cand.get("ai_confidence")
             metadata_coverage = int(cand.get("visual_coverage_pct", 0))

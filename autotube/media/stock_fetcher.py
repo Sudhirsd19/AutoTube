@@ -24,6 +24,14 @@ STOP_WORDS = {
     "or", "of", "for", "with", "into", "from", "by", "about", "to", "just", "is"
 }
 
+FOOD_COOKING_TAGS = {
+    "food", "grilled", "skewer", "skewers", "barbecue", "bbq", "cook", "cooking",
+    "recipe", "dish", "dishes", "restaurant", "meal", "kitchen", "snack", "eat",
+    "eating", "street food", "culinary", "delicacy", "fried", "roast", "roasting",
+    "delicious", "tasty", "meat", "grill", "buffet", "dine", "dining", "chef",
+    "seafood", "lunch", "dinner", "breakfast", "cuisine", "charcoal grill"
+}
+
 # Semantic archetype mapping to guarantee real motion video footage matching spoken words
 VOCAL_THEME_VIDEO_QUERIES = [
     # UFO, Saucer, Roswell, Crash, Mothership
@@ -73,6 +81,10 @@ VOCAL_THEME_VIDEO_QUERIES = [
     # Ocean, Mariana, Deep Sea, Trench, Abyss
     (r"\b(ocean|mariana|deep sea|underwater|trench|abyss|water)\b", [
         "deep underwater dark", "abyssal ocean waves", "submarine sonar ocean", "dark water bubbles"
+    ]),
+    # Squid, Octopus, Marine Monsters, Abyssal Creatures
+    (r"\b(squid|colossal squid|giant squid|octopus|tentacle|jellyfish|deep sea creature|marine monster|abyssal creature)\b", [
+        "deep ocean creature underwater", "giant squid underwater deep", "deep sea dark water", "abyssal underwater dark", "bioluminescence deep sea"
     ]),
     # Ancient Indian Architecture, Temples, Prachin Vigyan, Monolith, Pillar, Carvings
     (r"\b(temple|mandir|kailasa|ellora|brihadeeswarar|thanjavur|padmanabhaswamy|lepakshi|ram setu|dwarka|konark|hampi|stone|carving|pillar|monolith|basalt|ruins|ancient india|prachin|vedic|architecture)\b", [
@@ -217,12 +229,15 @@ class StockFetcher:
                 return None
 
             # Collect ALL relevant candidates, then randomly pick one that hasn't been used
+            is_food_query = any(k in clean_q.lower() for k in ("food", "recipe", "cook", "kitchen", "restaurant", "dish", "meal", "eat", "culinary", "bbq", "grill"))
             relevant_candidates = []
             for v in videos:
                 vid_id = str(v.get("id", ""))
-                slug = v.get("url", "").split("/video/")[-1].rstrip("/")
+                slug = v.get("url", "").split("/video/")[-1].rstrip("/").lower()
                 if self._is_media_used(vid_id):
                     continue  # Skip already-used clips
+                if not is_food_query and any(bad in slug for bad in ("grilled", "skewer", "barbecue", "bbq", "cooking", "recipe", "dish", "restaurant", "kitchen", "street-food", "delicacy", "roasting")):
+                    continue
                 if not require_relevance or self.is_relevant(clean_q, slug):
                     relevant_candidates.append(v)
 
@@ -306,12 +321,35 @@ class StockFetcher:
             if not hits:
                 return None
 
-            # Filter candidates that haven't been used
-            fresh_hits = [h for h in hits if not self._is_media_used(str(h.get("id", "")))]
-            if not fresh_hits:
+            # Filter candidates that haven't been used and do not contain contradictory food tags
+            is_food_query = any(k in clean_q.lower() for k in ("food", "recipe", "cook", "kitchen", "restaurant", "dish", "meal", "eat", "culinary", "bbq", "grill"))
+            valid_candidates = []
+            for h in hits:
+                vid_id = str(h.get("id", ""))
+                if self._is_media_used(vid_id):
+                    continue
+                tags_str = (h.get("tags") or "").lower()
+                tag_tokens = {t.strip() for t in tags_str.replace(",", " ").split() if t.strip()}
+                if not is_food_query and bool(tag_tokens & FOOD_COOKING_TAGS):
+                    continue
+                if self.is_relevant(clean_q, tags_str):
+                    valid_candidates.append(h)
+
+            if not valid_candidates:
+                # Secondary fallback: non-food candidates
+                if not is_food_query:
+                    valid_candidates = [
+                        h for h in hits
+                        if not self._is_media_used(str(h.get("id", "")))
+                        and not bool({t.strip() for t in (h.get("tags") or "").lower().replace(",", " ").split() if t.strip()} & FOOD_COOKING_TAGS)
+                    ]
+                else:
+                    valid_candidates = [h for h in hits if not self._is_media_used(str(h.get("id", "")))]
+
+            if not valid_candidates:
                 print_warning(f"No fresh Pixabay stock video found for '{clean_q}'. Will try fallback.")
                 return None
-            chosen = random.choice(fresh_hits)
+            chosen = random.choice(valid_candidates)
 
             vid_id = str(chosen.get("id", ""))
             videos = chosen.get("videos", {})
@@ -579,6 +617,8 @@ class StockFetcher:
             motion_fallbacks = ["ancient indian temple architecture", "ancient stone temple carvings", "hindu temple drone aerial", "ancient archaeological ruins"]
         elif any(k in context_lower for k in ("cell", "biology", "microscop", "organism", "dna", "gene", "bacteria", "science", "laboratory", "molecule", "hydra", "tissue", "regenerat")):
             motion_fallbacks = ["microscopic cells dividing", "laboratory science research", "abstract medical cellular biology", "dna helix animation"]
+        elif any(k in context_lower for k in ("ocean", "squid", "mariana", "abyss", "trench", "deep sea", "underwater", "marine", "octopus")):
+            motion_fallbacks = ["deep ocean creature underwater", "deep sea dark water", "abyssal ocean waves", "dark underwater bubbles"]
         elif any(k in context_lower for k in ("animal", "creature", "bird", "falcon", "cheetah", "predator", "wildlife", "beast", "shrimp", "crocodile")):
             motion_fallbacks = ["wild animal in nature", "peregrine falcon flying sky", "wild cheetah sprinting", "wild predator close up"]
         elif any(k in context_lower for k in ("history", "army", "soldier", "war", "tomb", "emperor", "king", "cavalry")):

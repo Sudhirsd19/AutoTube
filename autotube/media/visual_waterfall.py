@@ -38,15 +38,15 @@ def _remove_assets(paths: List[Path]) -> None:
             pass
 
 
-def _verify_scene_batch(
+def _find_unapproved_scene_indices(
     clips: List[Path],
     scenes: List[Any],
     topic: str,
     provider: str,
     script: Any = None,
     require_video: bool = True,
-) -> bool:
-    """Fail closed unless every returned scene asset passes frame QA for its narration."""
+) -> List[int]:
+    """Inspect every clip in the batch and return the list of scene indices that failed Frame QA."""
     video_exts = {".mp4", ".mov", ".webm", ".mkv"}
     image_exts = {".jpg", ".jpeg", ".png", ".webp"}
     accepted_exts = video_exts if require_video else video_exts | image_exts
@@ -60,10 +60,12 @@ def _verify_scene_batch(
             f"⚠️ {provider} QA blocked: got {len(clips)} clips for "
             f"{len(target_scenes)} scene(s)."
         )
-        return False
+        return list(range(len(clips)))
 
     gate = VisualQualityGate()
     gate.strict = True
+    unapproved: List[int] = []
+
     for index, (raw_clip, scene) in enumerate(zip(clips, target_scenes)):
         clip = Path(raw_clip)
         if (
@@ -75,7 +77,8 @@ def _verify_scene_batch(
             print_warning(
                 f"⚠️ {provider} QA blocked invalid {media_requirement} for Scene {index + 1}: {clip}"
             )
-            return False
+            unapproved.append(index)
+            continue
 
         subject = str(
             _scene_value(scene, "visual_subject", "")
@@ -112,10 +115,31 @@ def _verify_scene_batch(
                 f"⚠️ {provider} QA rejected Scene {index + 1}: "
                 f"{result.get('reason', 'frame QA did not approve this clip')}."
             )
-            return False
+            unapproved.append(index)
 
-    print_success(f"✅ {provider} strict frame QA passed for all {len(clips)} scene(s).")
-    return True
+    if not unapproved:
+        print_success(f"✅ {provider} strict frame QA passed for all {len(clips)} scene(s).")
+    return unapproved
+
+
+def _verify_scene_batch(
+    clips: List[Path],
+    scenes: List[Any],
+    topic: str,
+    provider: str,
+    script: Any = None,
+    require_video: bool = True,
+) -> bool:
+    """Fail closed unless every returned scene asset passes frame QA for its narration."""
+    unapproved = _find_unapproved_scene_indices(
+        clips=clips,
+        scenes=scenes,
+        topic=topic,
+        provider=provider,
+        script=script,
+        require_video=require_video,
+    )
+    return len(unapproved) == 0
 from autotube.utils.console import (
     print_error,
     print_info,
@@ -548,8 +572,30 @@ def acquire_scene_visuals_waterfall(
                     skip_multi_stock=True,
                 )
                 if fetched and fetched.exists() and fetched not in used_paths:
-                    used_paths.add(fetched)
-                    slot_assets[missing_idx] = fetched
+                    gate = VisualQualityGate()
+                    gate.strict = True
+                    s_plan = {
+                        "subject": subj,
+                        "action": str(_scene_value(missing_scene, "visual_action", "") or ""),
+                        "environment": str(_scene_value(missing_scene, "visual_environment", "") or ""),
+                        "must_show": [subj],
+                        "avoid": _as_text_list(_scene_value(missing_scene, "avoid", [])),
+                    }
+                    qa_res = gate.verify(fetched, narr or subj, s_plan)
+                    if qa_res.get("accepted"):
+                        used_paths.add(fetched)
+                        slot_assets[missing_idx] = fetched
+                        print_success(f"🎬 Secondary motion fetcher clip for Scene {missing_idx+1} approved by Frame QA!")
+                    else:
+                        print_warning(
+                            f"⚠️ Secondary motion clip for Scene {missing_idx+1} ('{subj}') rejected by Frame QA: "
+                            f"{qa_res.get('reason', 'visual mismatch')}. Discarding to allow Tier 3.5 AI Motion recovery."
+                        )
+                        try:
+                            fetched.unlink(missing_ok=True)
+                        except Exception:
+                            pass
+                        slot_assets[missing_idx] = None
             except Exception as f_err:
                 print_warning(f"Secondary motion fetcher could not acquire scene {missing_idx+1} ('{subj}'): {f_err}")
 
@@ -688,18 +734,80 @@ def acquire_scene_visuals_waterfall(
                 "Scene footage repetition is strictly disallowed."
             )
 
-    if not _verify_scene_batch(
+    unapproved_indices = _find_unapproved_scene_indices(
         [Path(a) for a in scene_assets],
         scenes[:max_scenes],
         getattr(script, "topic", "scene"),
         "StockFetcher fallback",
         script,
         require_video=is_motion_preferred,
-    ):
-        raise RuntimeError(
-            "Visual Pipeline Fail-Closed: one or more fallback scenes failed strict narration-to-frame QA. "
-            "Unsafe visual assets will not be rendered or uploaded."
+    )
+    if unapproved_indices:
+        print_warning(
+            f"⚠️ Visual Quality Gate identified {len(unapproved_indices)} fallback scene(s) requiring alignment. "
+            f"Initiating dynamic 4K Photorealistic AI + Ken Burns Motion self-healing..."
         )
+        try:
+            from autotube.media.ai_visuals import VisualGenerator
+            ai_vis = VisualGenerator()
+            target_w = 1080 if orientation == "portrait" else 1920
+            target_h = 1920 if orientation == "portrait" else 1080
+            target_scenes = scenes[:max_scenes] if scenes else []
+
+            for u_idx in unapproved_indices:
+                old_asset = scene_assets[u_idx]
+                try:
+                    old_asset.unlink(missing_ok=True)
+                except Exception:
+                    pass
+
+                u_scene = target_scenes[u_idx] if (target_scenes and u_idx < len(target_scenes)) else None
+                subj = getattr(u_scene, "visual_subject", None) or (fallback_queries[u_idx] if u_idx < len(fallback_queries) else getattr(script, "topic", "scene"))
+                desc = getattr(u_scene, "visual_description", None) or subj
+                narr = getattr(u_scene, "narration", None) or ""
+                ai_prompt = (
+                    f"{subj}, {desc}, {narr}. "
+                    "Photorealistic 8k, cinematic documentary photography, dramatic atmospheric lighting, National Geographic style, extreme detail."
+                )
+                img_out = output_dir / f"{slug}_ai4k_healed_scene_{u_idx+1:02d}.jpg"
+                gen_img = ai_vis.generate_image(
+                    prompt=ai_prompt,
+                    output_path=img_out,
+                    width=target_w,
+                    height=target_h,
+                    style="3d_cinematic",
+                )
+                if gen_img and gen_img.exists():
+                    motion_out = output_dir / f"{slug}_motion_healed_scene_{u_idx+1:02d}.mp4"
+                    motion_clip = _image_to_motion_clip(
+                        image_path=gen_img,
+                        output_path=motion_out,
+                        duration=6.5,
+                        width=target_w,
+                        height=target_h,
+                        motion_type=u_idx,
+                    )
+                    if motion_clip and motion_clip.exists():
+                        scene_assets[u_idx] = motion_clip
+                        if 'slot_assets' in locals() and u_idx < len(slot_assets):
+                            slot_assets[u_idx] = motion_clip
+                        print_success(f"🎬 Scene {u_idx+1} successfully self-healed into 4K photorealistic motion clip!")
+        except Exception as heal_err:
+            print_warning(f"Self-healing AI scene generation notice: {heal_err}")
+
+        # Final verification after self-healing
+        if not _verify_scene_batch(
+            [Path(a) for a in scene_assets],
+            scenes[:max_scenes],
+            getattr(script, "topic", "scene"),
+            "Self-Healed AI fallback",
+            script,
+            require_video=is_motion_preferred,
+        ):
+            raise RuntimeError(
+                "Visual Pipeline Fail-Closed: one or more fallback scenes failed strict narration-to-frame QA even after 4K AI self-healing. "
+                "Unsafe visual assets will not be rendered or uploaded."
+            )
 
     print_success(f"🎬 Acquired {len(scene_assets)} synchronized, frame-QA-approved visual assets!")
     return scene_assets

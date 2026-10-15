@@ -188,7 +188,9 @@ def test_visual_waterfall_portrait_fail_closed_on_static_asset(tmp_path):
 
     mock_assets = [file1, file2]
     with patch("autotube.media.multi_stock_aggregator.MultiStockAggregator.get_best_scene_asset", side_effect=mock_assets), \
-         patch("autotube.media.stock_fetcher.StockFetcher.fetch_scene_visual_assets", return_value=mock_assets):
+         patch("autotube.media.stock_fetcher.StockFetcher.fetch_best_visual_for_scene", return_value=file2), \
+         patch("autotube.media.stock_fetcher.StockFetcher.fetch_scene_visual_assets", return_value=mock_assets), \
+         patch("autotube.media.ai_visuals.VisualGenerator.generate_image", return_value=None):
 
         with pytest.raises(RuntimeError) as exc_info:
             acquire_scene_visuals_waterfall(
