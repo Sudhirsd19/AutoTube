@@ -385,15 +385,18 @@ CRITICAL RULES:
         is_hindi = lang_lower in ("hi", "hindi")
         is_hinglish = lang_lower in ("hinglish", "hi-en")
 
-        # Smart Language Guard: If input is pure English (no Devanagari characters)
-        # but language was passed as 'hi', do not force Hindi translation and Hindi titles!
+        # If the input is already a complete, multi-sentence pre-written English script (>=15 words, full sentences),
+        # preserve English narration so an existing English script is not forced into Hindi.
+        # Short ideas, topics, and concepts (e.g. "chemical reaction of piranha solution", "amazon jungle ke secrets")
+        # will always generate in the user's requested language.
         combined_input = (raw_input or "") + " " + (topic or "")
         has_devanagari = any("\u0900" <= ch <= "\u097f" for ch in combined_input)
-        if not has_devanagari and is_hindi and len(raw_input.strip().split()) >= 4:
+        if not has_devanagari and is_hindi and len(raw_input.strip().split()) >= 15:
             lower_input = raw_input.lower()
             en_words = {"the", "is", "this", "in", "and", "of", "to", "it", "that", "you", "are", "for", "with", "on", "as", "at"}
-            if any(w in en_words for w in lower_input.split()) or all(ord(c) < 128 for c in raw_input[:100] if c.isalpha()):
-                print_info("Smart Language Engine: Detected English input text. Auto-switching language mandate to English.")
+            matches = sum(1 for w in lower_input.split() if w in en_words)
+            if matches >= 3 and ("." in raw_input or "!" in raw_input):
+                print_info("Smart Language Engine: Detected pre-written English script. Preserving English language.")
                 is_hindi = False
                 is_hinglish = False
                 lang_lower = "en"

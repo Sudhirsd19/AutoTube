@@ -3039,20 +3039,6 @@
       wordCountEl.textContent = words;
       estDurEl.textContent = estSec + 's';
 
-      // Smart Language Detection: Auto-align studio language if text is provided
-      if (words >= 6) {
-        const hasDevanagari = /[\u0900-\u097F]/.test(text);
-        if (hasDevanagari && studioLanguage !== 'hi') {
-          selectStudioLang('hi');
-        } else if (!hasDevanagari && studioLanguage === 'hi') {
-          const lower = text.toLowerCase();
-          const enMarkers = ['the ', 'is ', 'this ', 'in ', 'and ', 'of ', 'to ', 'it ', 'that ', 'you ', 'are ', 'for ', 'with '];
-          if (enMarkers.some(m => lower.includes(m))) {
-            selectStudioLang('en');
-          }
-        }
-      }
-
       if (studioVideoFormat === 'short') {
         if (words > 145 || estSec > 58) {
           wordCountEl.className = 'text-red-400 font-bold';
@@ -3198,17 +3184,8 @@
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 15000);
 
-      // Auto-detect language if user provided English text or channel is English
-      let targetLang = studioLanguage;
-      const hasDev = /[\u0900-\u097F]/.test(rawText);
-      if (!hasDev && (targetLang === 'hi' || currentYouTubeChannel === 'english')) {
-        const lower = rawText.toLowerCase();
-        const enMarkers = ['the ', 'is ', 'this ', 'in ', 'and ', 'of ', 'to ', 'it ', 'that ', 'you ', 'are ', 'for ', 'with '];
-        if (enMarkers.some(m => lower.includes(m)) || currentYouTubeChannel === 'english') {
-          targetLang = 'en';
-          selectStudioLang('en');
-        }
-      }
+      // Target language is strictly what the user selected in the studio (hi / hinglish / en)
+      let targetLang = studioLanguage || 'hi';
 
       try {
         const res = await fetch('/api/director/enhance_script', {
@@ -3289,17 +3266,8 @@
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 15000);
 
-      // Auto-detect language if user provided English text or channel is English
-      let targetLang = studioLanguage;
-      const hasDev = /[\u0900-\u097F]/.test(rawText);
-      if (!hasDev && (targetLang === 'hi' || currentYouTubeChannel === 'english')) {
-        const lower = rawText.toLowerCase();
-        const enMarkers = ['the ', 'is ', 'this ', 'in ', 'and ', 'of ', 'to ', 'it ', 'that ', 'you ', 'are ', 'for ', 'with '];
-        if (enMarkers.some(m => lower.includes(m)) || currentYouTubeChannel === 'english') {
-          targetLang = 'en';
-          selectStudioLang('en');
-        }
-      }
+      // Target language is strictly what the user selected in the studio (hi / hinglish / en)
+      let targetLang = studioLanguage || 'hi';
 
       try {
         const res = await fetch('/api/director/enhance_script', {
