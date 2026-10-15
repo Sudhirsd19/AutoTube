@@ -1212,6 +1212,21 @@ Output STRICT JSON with:
                 continue
 
             qa = self.visual_quality_gate.verify(downloaded, scene_text, scene_plan)
+            # Resilient fallback: if Gemini Vision API suffered a transient 503/unavailable error,
+            # don't drop a high-scoring candidate (confidence >= 75% & coverage >= 60%) into an infinite rejection loop.
+            if not qa.get("accepted") and qa.get("mode") == "frame_qa_transient_error":
+                ai_conf = int(cand.get("ai_confidence") or 0)
+                cov = int(cand.get("visual_coverage_pct") or 0)
+                if ai_conf >= 75 and cov >= 60:
+                    print_warning(
+                        f"   ⚡ [Frame QA Fallback] Scene {scene_index+1}: Gemini vision service unavailable (503/timeout). "
+                        f"Approving high-relevance clip '{cand.get('title', '')[:45]}' via Semantic Ranker (Confidence: {ai_conf}%, Coverage: {cov}%)."
+                    )
+                    qa["accepted"] = True
+                    qa["confidence"] = ai_conf
+                    qa["coverage"] = cov
+                    qa["reason"] = f"Approved via semantic ranker fallback (Gemini vision 503 blip, Confidence: {ai_conf}%, Coverage: {cov}%)"
+
             if qa.get("accepted"):
                 cand["frame_qa"] = qa
                 print_success(

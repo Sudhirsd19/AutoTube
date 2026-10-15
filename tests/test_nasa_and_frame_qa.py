@@ -99,3 +99,73 @@ def test_multi_stock_hash_guard_tracks_external_video(tmp_path):
 
     assert aggregator._record_asset_fingerprint(asset, label="test") is True
     assert aggregator._record_asset_fingerprint(asset, label="test") is False
+
+
+def test_frame_gate_transient_503_error(tmp_path, monkeypatch):
+    monkeypatch.setenv("GEMINI_API_KEY", "fake_key_test")
+    monkeypatch.setenv("AUTOTUBE_FRAME_QA_STRICT", "1")
+
+    class _FailingModels:
+        def generate_content(self, *args, **kwargs):
+            raise RuntimeError("ServerError: 503 UNAVAILABLE. The service is currently unavailable.")
+
+    class _FakeClient:
+        models = _FailingModels()
+
+    gate = VisualQualityGate()
+    gate._client = _FakeClient()
+    gate._extract_frames = lambda path, count=4: [tmp_path / "f1.jpg"]
+    (tmp_path / "f1.jpg").write_bytes(b"frame-bytes-data")
+
+    asset = tmp_path / "clip.mp4"
+    asset.write_bytes(b"x" * 6000)
+
+    result = gate.verify(asset, "A cheetah sprinting across the savanna.")
+    assert result["accepted"] is False
+    assert result["mode"] == "frame_qa_transient_error"
+    assert "503" in result["reason"] or "transient" in result["reason"]
+
+
+def test_multi_stock_transient_qa_fallback_accepts_high_confidence(tmp_path):
+    aggregator = object.__new__(MultiStockAggregator)
+    aggregator.session_used_ids = set()
+    aggregator.persistent_used_ids = set()
+    aggregator.persistent_used_hashes = set()
+    aggregator._is_used = lambda cid: False
+    aggregator.plan_visual_scene = lambda *args: {"search_queries": ["cheetah running"], "subject": "cheetah"}
+    aggregator.generate_smart_queries = lambda *args: {"primary_query": "cheetah", "alternative_query": "", "mood_query": "", "scene_plan": {}}
+    aggregator.gather_candidates = lambda *args, **kwargs: [{
+        "id": "pixabay_307555",
+        "title": "cheetah sprint running",
+        "tags": ["cheetah", "sprint"],
+        "score": 100.0,
+        "ai_confidence": 95,
+        "visual_coverage_pct": 100,
+    }]
+    aggregator.rank_and_select = lambda candidates, *args, **kwargs: candidates[0]
+
+    test_clip = tmp_path / "cheetah.mp4"
+    test_clip.write_bytes(b"x" * 60000)
+    aggregator.download_candidate = lambda *args, **kwargs: test_clip
+
+    class _MockGate:
+        strict = True
+        def verify(self, *args, **kwargs):
+            return {
+                "accepted": False,
+                "confidence": None,
+                "coverage": None,
+                "reason": "Gemini vision service transiently unavailable (ServerError).",
+                "mode": "frame_qa_transient_error",
+            }
+
+    aggregator.visual_quality_gate = _MockGate()
+
+    result = aggregator.get_best_scene_asset(
+        scene_text="Cheetah sprinting fast.",
+        title="Cheetah Speed",
+        scene_index=0,
+        orientation="portrait",
+    )
+    assert result == test_clip
+

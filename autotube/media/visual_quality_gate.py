@@ -8,6 +8,7 @@ import subprocess
 import tempfile
 import shutil
 import re
+import time
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -20,7 +21,13 @@ GEMINI_HTTP_TIMEOUT_MS = int(os.getenv("AUTOTUBE_GEMINI_HTTP_TIMEOUT_MS", "60000
 class VisualQualityGate:
     """Final frame-level QA. Uses Gemini when GEMINI_API_KEY is present."""
 
-    MODELS = ("gemini-3.5-flash-lite", "gemini-flash-lite-latest", "gemini-3.1-flash-lite-preview", "gemini-3.1-flash-lite", "gemini-3-flash-preview")
+    MODELS = (
+        "gemini-3.5-flash-lite",
+        "gemini-flash-lite-latest",
+        "gemini-3.8-flash",
+        "gemini-3.5-flash",
+        "gemini-3-flash-preview",
+    )
 
     def __init__(self, min_confidence: int = 75, min_coverage: int = 70) -> None:
         self.min_confidence = min_confidence
@@ -41,7 +48,7 @@ class VisualQualityGate:
                 api_key=key,
                 http_options=types.HttpOptions(
                     timeout=GEMINI_HTTP_TIMEOUT_MS,
-                    retry_options=types.HttpRetryOptions(attempts=1),
+                    retry_options=types.HttpRetryOptions(attempts=3),
                 ),
             )
         except Exception as exc:
@@ -122,6 +129,8 @@ Accept when confidence >= {self.min_confidence}, coverage >= {self.min_coverage}
             ]
             contents.append(prompt)
 
+            last_err: Optional[Exception] = None
+            is_transient_error = False
             for model in self.MODELS:
                 try:
                     response = client.models.generate_content(
@@ -157,7 +166,12 @@ Accept when confidence >= {self.min_confidence}, coverage >= {self.min_coverage}
                         "model": model,
                     }
                 except Exception as exc:
+                    last_err = exc
+                    err_str = str(exc).lower()
+                    if any(k in err_str for k in ("503", "unavailable", "timeout", "timed out", "429", "resource_exhausted", "quota")):
+                        is_transient_error = True
                     print(f"[FrameQA] Gemini model {model} failed: {type(exc).__name__}: {exc}")
+                    time.sleep(1.0)
                     continue
         finally:
             # A still image is an input asset and must never be removed by QA cleanup.
@@ -173,11 +187,20 @@ Accept when confidence >= {self.min_confidence}, coverage >= {self.min_coverage}
                     except Exception:
                         pass
 
+        if is_transient_error:
+            return {
+                "accepted": not self.strict,
+                "confidence": None,
+                "coverage": None,
+                "reason": f"Gemini vision service transiently unavailable ({type(last_err).__name__ if last_err else '503/timeout'}).",
+                "mode": "frame_qa_transient_error",
+            }
+
         return {
             "accepted": not self.strict,
             "confidence": None,
             "coverage": None,
-            "reason": "Frame QA failed.",
+            "reason": f"Frame QA failed: {type(last_err).__name__ if last_err else 'unknown'}",
             "mode": "frame_qa_error",
         }
 
