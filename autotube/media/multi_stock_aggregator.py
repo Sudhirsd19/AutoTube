@@ -1089,6 +1089,7 @@ Output STRICT JSON with:
         allow_archival_fallback: bool = False,
         scene_plan: Optional[Dict[str, Any]] = None,
         allow_ai_fallback: bool = False,
+        progress_callback: Optional[Any] = None,
     ) -> Optional[Path]:
         """Acquire the best motion visual, returning None when motion footage is unavailable.
 
@@ -1217,6 +1218,14 @@ Output STRICT JSON with:
                     f"   🎬 [Frame QA Approved] Scene {scene_index+1}: "
                     f"'{cand.get('title', '')[:55]}' (Confidence: {qa.get('confidence')}%, Coverage: {qa.get('coverage')}%) - {qa.get('reason', '')}"
                 )
+                if progress_callback:
+                    try:
+                        progress_callback(
+                            55 + int((scene_index / 6) * 18),
+                            f"🎬 [Frame QA Approved] Scene {scene_index+1}: '{cand.get('title', '')[:40]}' (Score: {qa.get('confidence')}%)",
+                        )
+                    except Exception:
+                        pass
                 return downloaded
 
             viol_str = f" [Violations: {', '.join(qa.get('violations', []))}]" if qa.get("violations") else ""
@@ -1224,6 +1233,14 @@ Output STRICT JSON with:
                 f"   ⚠️ [Frame QA Rejected] Scene {scene_index+1}: "
                 f"'{cand.get('title', '')[:55]}' -> {qa.get('reason', 'visual mismatch')}{viol_str}"
             )
+            if progress_callback:
+                try:
+                    progress_callback(
+                        55 + int((scene_index / 6) * 18),
+                        f"⚠️ [Frame QA Rejected] Scene {scene_index+1}: '{cand.get('title', '')[:35]}' ({qa.get('reason', 'visual mismatch')[:45]})",
+                    )
+                except Exception:
+                    pass
 
         # Step E: Authentic archival proof is opt-in and scene-indexed.
         if allow_archival_fallback and archival_pool and scene_index < len(archival_pool):

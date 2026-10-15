@@ -1869,10 +1869,16 @@ Return ONLY a JSON list of scene objects matching this structure:
                             # Director Studio is video-first: do not silently replace
                             # missing motion footage with a static AI/Pexels image.
                             allow_ai_fallback=False,
+                            progress_callback=progress_callback,
                         )
                         if acquired_video:
                             qa_approved = True
                             print_success(f"   🎬 [Scene {idx+1} Asset Ready] Frame QA verified: {Path(acquired_video).name}")
+                            if progress_callback:
+                                progress_callback(
+                                    55 + int(((idx + 0.9) / max(1, len(scene_specs))) * 18),
+                                    f"🎬 [Scene {idx+1} Asset Ready] Frame QA verified: {Path(acquired_video).name}"
+                                )
                 elif visual_mode == "real_only":
                     if not archival_fetcher:
                         raise RuntimeError(f"Archival mode unavailable for scene {idx+1}.")
@@ -1916,10 +1922,16 @@ Return ONLY a JSON list of scene objects matching this structure:
                             # Director Studio is video-first: do not silently replace
                             # missing motion footage with a static AI/Pexels image.
                             allow_ai_fallback=False,
+                            progress_callback=progress_callback,
                         )
                         if acquired_video:
                             qa_approved = True
                             print_success(f"   🎬 [Scene {idx+1} Asset Ready] Frame QA verified: {Path(acquired_video).name}")
+                            if progress_callback:
+                                progress_callback(
+                                    55 + int(((idx + 0.9) / max(1, len(scene_specs))) * 18),
+                                    f"🎬 [Scene {idx+1} Asset Ready] Frame QA verified: {Path(acquired_video).name}"
+                                )
                 elif visual_mode == "stock":
                     acquired_video = multi_agg.get_best_scene_asset(
                         scene_text=sentence,
@@ -1930,10 +1942,16 @@ Return ONLY a JSON list of scene objects matching this structure:
                         archival_pool=None,
                         allow_archival_fallback=False,
                         allow_ai_fallback=False,
+                        progress_callback=progress_callback,
                     )
                     if acquired_video:
                         qa_approved = True
                         print_success(f"   🎬 [Scene {idx+1} Asset Ready] Frame QA verified: {Path(acquired_video).name}")
+                        if progress_callback:
+                            progress_callback(
+                                55 + int(((idx + 0.9) / max(1, len(scene_specs))) * 18),
+                                f"🎬 [Scene {idx+1} Asset Ready] Frame QA verified: {Path(acquired_video).name}"
+                            )
                 elif visual_mode == "ai_only":
                     ai_prompt = self._extract_ai_scene_prompt(sentence, title, idx)
                     ai_img_path = TEMP_DIR / f"pure_ai_{idx}_{slug}.jpg"
@@ -2025,6 +2043,11 @@ Return ONLY a JSON list of scene objects matching this structure:
                                 f"   ⚠️ [Frame QA Rejected] Scene {idx+1}: "
                                 f"{qa.get('reason', 'visual mismatch')}{viol_str}"
                             )
+                            if progress_callback:
+                                progress_callback(
+                                    55 + int((idx / max(1, len(scene_specs))) * 18),
+                                    f"⚠️ [Frame QA Rejected] Scene {idx+1}: {qa.get('reason', 'visual mismatch')[:45]}",
+                                )
                             acquired_video = None
                         else:
                             qa_approved = True
@@ -2032,6 +2055,11 @@ Return ONLY a JSON list of scene objects matching this structure:
                                 f"   🎬 [Frame QA Approved] Scene {idx+1}: "
                                 f"{acquired_path.name} (Confidence: {qa.get('confidence')}%, Coverage: {qa.get('coverage')}%)"
                             )
+                            if progress_callback:
+                                progress_callback(
+                                    55 + int(((idx + 0.9) / max(1, len(scene_specs))) * 18),
+                                    f"🎬 [Frame QA Approved] Scene {idx+1}: {acquired_path.name} ({qa.get('confidence')}%)",
+                                )
 
                 # Pexels is the final real-motion fallback for every video-first Studio mode.
                 # Previously this was gated by visual_engine, so multi_cinematic could exhaust
@@ -2057,12 +2085,22 @@ Return ONLY a JSON list of scene objects matching this structure:
                                 f"   🎬 [Pexels Fallback QA Approved] Scene {idx+1} acquired fresh motion footage "
                                 f"with query: '{english_q}' (Confidence: {qa.get('confidence')}%)"
                             )
+                            if progress_callback:
+                                progress_callback(
+                                    55 + int(((idx + 0.9) / max(1, len(scene_specs))) * 18),
+                                    f"🎬 [Pexels Fallback QA Approved] Scene {idx+1}: '{english_q}' ({qa.get('confidence')}%)",
+                                )
                             break
                         viol_str = f" [Violations: {', '.join(qa.get('violations', []))}]" if qa.get("violations") else ""
                         print_warning(
                             f"   ⚠️ [Pexels Fallback QA Rejected] Scene {idx+1}: "
                             f"{qa.get('reason', 'visual mismatch')}{viol_str}"
                         )
+                        if progress_callback:
+                            progress_callback(
+                                55 + int((idx / max(1, len(scene_specs))) * 18),
+                                f"⚠️ [Pexels Fallback QA Rejected] Scene {idx+1}: {qa.get('reason', 'visual mismatch')[:45]}",
+                            )
 
                 if not acquired_video and visual_mode in ("multi_cinematic", "multi_best", "auto", "hybrid", "stock"):
                     # Safe cinematic stock motion video fallback matching story genre
@@ -2114,13 +2152,28 @@ Return ONLY a JSON list of scene objects matching this structure:
                             if qa.get("accepted"):
                                 acquired_video = safe_v
                                 print_success(f"   ✅ [Fail-Safe Video] Scene {idx+1} acquired QA-verified motion footage: {safe_v.name}")
+                                if progress_callback:
+                                    progress_callback(
+                                        55 + int(((idx + 0.9) / max(1, len(scene_specs))) * 18),
+                                        f"✅ [Fail-Safe Video] Scene {idx+1} QA-verified: {safe_v.name}",
+                                    )
                                 break
                             elif not qa.get("violations"):
                                 acquired_video = safe_v
                                 print_info(f"   🎬 [Thematic Fallback] Scene {idx+1} covered with atmospheric genre footage: {safe_v.name}")
+                                if progress_callback:
+                                    progress_callback(
+                                        55 + int(((idx + 0.9) / max(1, len(scene_specs))) * 18),
+                                        f"🎬 [Thematic Fallback] Scene {idx+1}: {safe_v.name}",
+                                    )
                                 break
                             else:
                                 print_warning(f"   ⚠️ Fail-safe candidate rejected by QA: {qa.get('reason', 'visual mismatch')}")
+                                if progress_callback:
+                                    progress_callback(
+                                        55 + int((idx / max(1, len(scene_specs))) * 18),
+                                        f"⚠️ [Fail-Safe QA Rejected] Scene {idx+1}: {qa.get('reason', 'visual mismatch')[:45]}",
+                                    )
                     except Exception as s_err:
                         print_warning(f"   ⚠️ Fail-safe video search failed for Scene {idx+1}: {s_err}")
 
