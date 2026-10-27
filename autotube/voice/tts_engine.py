@@ -508,6 +508,16 @@ class TTSEngine:
         # Resolve auto voice here too, so scheduled/batch paths are safe even when
         # they call TTSEngine directly without passing through DirectorEngine.
         requested_voice = str(voice or "").strip()
+        if requested_voice.lower() in ("charon", "puck", "aoede", "kore", "fenrir") or requested_voice.lower().startswith("gemini"):
+            from autotube.voice.gemini_tts import GeminiTTSEngine
+            gemini_engine = GeminiTTSEngine()
+            return gemini_engine.synthesize(
+                text=text,
+                output_audio_path=output_audio_path,
+                voice=requested_voice.capitalize(),
+                scenes=scenes,
+            )
+
         if requested_voice.lower() in {"", "auto", "automatic", "smart"}:
             voice = choose_subject_voice("", text, language="auto")
         has_devanagari = sum("\u0900" <= c <= "\u097f" for c in text) >= 5

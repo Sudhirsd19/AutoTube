@@ -148,14 +148,37 @@ def resolve_voice_for_content(
 
 
 def is_voice_language_compatible(voice_id: str, language: str) -> bool:
-    """Check catalog-style voice IDs without importing catalog data."""
-    key = (voice_id or "").lower()
+    """Check if voice ID is compatible with target language without spurious overrides."""
+    key = (voice_id or "").lower().strip()
     lang = detect_language("", language)
+
+    # Gemini 3.8 Flash TTS personas are fully multilingual (Hindi & English supported natively)
+    if key in {"charon", "puck", "aoede", "kore", "fenrir"} or key.startswith("gemini"):
+        return True
+
+    from autotube.voice.voices import get_voice_profile
+    profile = get_voice_profile(key)
+    if profile:
+        prof_lang = (profile.language or "").lower()
+        if lang == "hi" and prof_lang in ("hindi", "hi"):
+            return True
+        if lang == "en" and prof_lang in ("english", "en"):
+            return True
+
     if lang == "hi":
-        return key.startswith("hi_") or key in {"madhur", "swara", "akashvani"}
-    return key.startswith("en_") or key in {
-        "adam", "christopher", "guy", "aria", "andrew", "ryan", "en",
-    }
+        return (
+            key.startswith("hi_")
+            or key.startswith("hi-")
+            or "hindi" in key
+            or key in {"madhur", "swara", "akashvani", "thanos"}
+        )
+
+    return (
+        key.startswith("en_")
+        or key.startswith("en-")
+        or "english" in key
+        or key in {"adam", "christopher", "guy", "aria", "andrew", "ryan", "en", "thanos"}
+    )
 
 
 def voice_family(voice_id: str) -> str:

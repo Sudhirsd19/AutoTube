@@ -143,6 +143,11 @@ class PublishLocalVideoRequest(BaseModel):
     content_type: Optional[str] = "standard"
 
 
+class MediaMetadataPreviewRequest(BaseModel):
+    filename: str
+    channel: Optional[str] = "english"
+
+
 class HarvestJobRequest(BaseModel):
     title: str
     prompt: str
@@ -160,6 +165,7 @@ class ScriptEnhanceRequest(BaseModel):
     topic: Optional[str] = None
     language: str = "hi"
     video_format: Optional[str] = "short"
+    target_platform: Optional[str] = "youtube"
 
 
 class ScriptCondenseRequest(BaseModel):
@@ -178,7 +184,7 @@ class DirectorRenderRequest(BaseModel):
     voice: str = "hi_astro_vibes_male"
     voice_speed: float = 1.05
     bgm_filename: Optional[str] = "auto"
-    bgm_volume: float = 0.16
+    bgm_volume: float = 0.03
     subtitle_style: str = "hormozi"
     enable_classified_badge: bool = False
     visual_engine: str = "auto"
@@ -188,6 +194,8 @@ class DirectorRenderRequest(BaseModel):
     visual_mode: Optional[str] = "multi_cinematic"
     auto_viral_hook: bool = True
     scenes: Optional[List[Dict[str, Any]]] = None
+    target_platform: Optional[str] = "youtube"
+    render_engine: Optional[str] = "openmontage"
 
     @field_validator("visual_mode", mode="before")
     @classmethod
@@ -207,6 +215,18 @@ class DirectorPublishRequest(BaseModel):
     channel: Optional[str] = "english"
     content_type: Optional[str] = "standard"
     thumbnail_filename: Optional[str] = None
+
+
+class FacebookCredentialsRequest(BaseModel):
+    page_id: str
+    access_token: str
+
+
+class FacebookPublishRequest(BaseModel):
+    filename: str
+    title: str
+    description: Optional[str] = None
+    tags: Optional[List[str]] = None
 
 
 class ThumbnailGenerateRequest(BaseModel):
@@ -305,6 +325,51 @@ def get_youtube_service(channel: str = "english"):
         return None
 
 
+_CHANNEL_INFO_CACHE = {"timestamp": 0.0, "channels": {}, "yt_en": False, "yt_hi": False}
+
+def _get_cached_channel_data():
+    now = time.time()
+    if now - _CHANNEL_INFO_CACHE["timestamp"] < 60.0 and _CHANNEL_INFO_CACHE["channels"]:
+        return _CHANNEL_INFO_CACHE["channels"], _CHANNEL_INFO_CACHE["yt_en"], _CHANNEL_INFO_CACHE["yt_hi"]
+
+    try:
+        yt_en = get_youtube_service("english")
+        yt_hi = get_youtube_service("hindi")
+        ch_cfg = _load_channels_config().get("channels", {})
+        en_info = YouTubeAuth(channel="english").get_channel_info() if yt_en else None
+        hi_info = YouTubeAuth(channel="hindi").get_channel_info() if yt_hi else None
+
+        channels_data = {
+            "english": {
+                "id": "english",
+                "name": ch_cfg.get("english", {}).get("name", "English Shorts Channel"),
+                "connected": bool(yt_en is not None),
+                "authenticated": bool(yt_en is not None),
+                "is_authenticated": bool(yt_en is not None),
+                "token_exists": YouTubeAuth(channel="english").token_file.exists(),
+                "has_token_file": YouTubeAuth(channel="english").token_file.exists(),
+                "info": en_info,
+            },
+            "hindi": {
+                "id": "hindi",
+                "name": ch_cfg.get("hindi", {}).get("name", "Hindi Shorts Channel"),
+                "connected": bool(yt_hi is not None),
+                "authenticated": bool(yt_hi is not None),
+                "is_authenticated": bool(yt_hi is not None),
+                "token_exists": YouTubeAuth(channel="hindi").token_file.exists(),
+                "has_token_file": YouTubeAuth(channel="hindi").token_file.exists(),
+                "info": hi_info,
+            },
+        }
+        _CHANNEL_INFO_CACHE["timestamp"] = now
+        _CHANNEL_INFO_CACHE["channels"] = channels_data
+        _CHANNEL_INFO_CACHE["yt_en"] = bool(yt_en is not None)
+        _CHANNEL_INFO_CACHE["yt_hi"] = bool(yt_hi is not None)
+        return channels_data, bool(yt_en is not None), bool(yt_hi is not None)
+    except Exception:
+        return _CHANNEL_INFO_CACHE.get("channels", {}), _CHANNEL_INFO_CACHE.get("yt_en", False), _CHANNEL_INFO_CACHE.get("yt_hi", False)
+
+
 # -------------------------------------------------------------
 # API ROUTES: SYSTEM STATUS & HEALTH
 # -------------------------------------------------------------
@@ -329,12 +394,8 @@ async def get_status():
         except Exception:
             pass
 
-    # Check YouTube connections for all channels
-    yt_en = get_youtube_service("english")
-    yt_hi = get_youtube_service("hindi")
-    ch_cfg = _load_channels_config().get("channels", {})
-    en_info = YouTubeAuth(channel="english").get_channel_info() if yt_en else None
-    hi_info = YouTubeAuth(channel="hindi").get_channel_info() if yt_hi else None
+    # Cached YouTube connections for ultra-fast dashboard response
+    channels_data, yt_en_ok, yt_hi_ok = _get_cached_channel_data()
 
     # System disk usage
     try:
@@ -355,29 +416,8 @@ async def get_status():
         "daily_upload_limit": 10,
         "is_generating": GENERATION_STATUS["is_running"],
         "current_task": GENERATION_STATUS["current_task"],
-        "youtube_connected": bool(yt_en is not None or yt_hi is not None),
-        "channels": {
-            "english": {
-                "id": "english",
-                "name": ch_cfg.get("english", {}).get("name", "English Shorts Channel"),
-                "connected": bool(yt_en is not None),
-                "authenticated": bool(yt_en is not None),
-                "is_authenticated": bool(yt_en is not None),
-                "token_exists": YouTubeAuth(channel="english").token_file.exists(),
-                "has_token_file": YouTubeAuth(channel="english").token_file.exists(),
-                "info": en_info,
-            },
-            "hindi": {
-                "id": "hindi",
-                "name": ch_cfg.get("hindi", {}).get("name", "Hindi Shorts Channel"),
-                "connected": bool(yt_hi is not None),
-                "authenticated": bool(yt_hi is not None),
-                "is_authenticated": bool(yt_hi is not None),
-                "token_exists": YouTubeAuth(channel="hindi").token_file.exists(),
-                "has_token_file": YouTubeAuth(channel="hindi").token_file.exists(),
-                "info": hi_info,
-            },
-        },
+        "youtube_connected": bool(yt_en_ok or yt_hi_ok),
+        "channels": channels_data,
         "disk_free_gb": free_gb,
         "disk_used_pct": used_pct,
     }
@@ -390,7 +430,7 @@ async def get_auth_status(channel: Optional[str] = None):
     for ch_key in ("english", "hindi"):
         auth_mgr = YouTubeAuth(channel=ch_key)
         creds = auth_mgr.get_credentials(interactive=False)
-        has_token = auth_mgr.token_file.exists()
+        has_token = auth_mgr.token_file.exists() and auth_mgr.token_file.stat().st_size > 0
         is_valid = bool(creds and creds.valid)
         ch_info = auth_mgr.get_channel_info() if is_valid else None
         res[ch_key] = {
@@ -457,17 +497,22 @@ async def exchange_auth_code(req: ExchangeCodeRequest):
 
         raw_input = req.code.strip()
         code = raw_input
+        extracted_redirect = None
         # Support if user pasted the full redirected URL
         if "code=" in raw_input:
             parsed = urllib.parse.urlparse(raw_input)
             params = urllib.parse.parse_qs(parsed.query)
             if "code" in params:
                 code = params["code"][0]
+            if parsed.scheme and parsed.netloc:
+                extracted_redirect = f"{parsed.scheme}://{parsed.netloc}/"
         elif "approvalCode=" in raw_input:
             parsed = urllib.parse.urlparse(raw_input)
             params = urllib.parse.parse_qs(parsed.query)
             if "approvalCode" in params:
                 code = params["approvalCode"][0]
+            if parsed.scheme and parsed.netloc:
+                extracted_redirect = f"{parsed.scheme}://{parsed.netloc}/"
 
         # Unquote URL encoding if needed (e.g. 4%2F...)
         code = urllib.parse.unquote(code).strip()
@@ -480,6 +525,8 @@ async def exchange_auth_code(req: ExchangeCodeRequest):
         redirect_file = PROJECT_ROOT / "config" / f"oauth_redirect_{target_ch}.txt"
         if redirect_file.exists():
             flow.redirect_uri = redirect_file.read_text(encoding="utf-8").strip()
+        elif extracted_redirect:
+            flow.redirect_uri = extracted_redirect
         else:
             flow.redirect_uri = "urn:ietf:wg:oauth:2.0:oob"
 
@@ -550,10 +597,18 @@ async def save_token_payload(req: SaveTokenRequest):
 # -------------------------------------------------------------
 # API ROUTES: YOUTUBE VIDEO & SCHEDULE MANAGER
 # -------------------------------------------------------------
+_VIDEOS_CACHE = {}
+
+
 @app.get("/api/videos")
 async def list_videos(channel: str = "english"):
     try:
         target_ch = (channel or "english").lower().strip()
+        now = time.time()
+        cached = _VIDEOS_CACHE.get(target_ch)
+        if cached and (now - cached.get("timestamp", 0) < 30.0):
+            return cached["data"]
+
         yt = get_youtube_service(target_ch)
         ch_cfg = _load_channels_config().get("channels", {})
         available_channels = [
@@ -674,12 +729,14 @@ async def list_videos(channel: str = "english"):
                 "url": f"https://youtu.be/{vid_id}",
             })
 
-        return {
+        res_payload = {
             "videos": video_list,
             "channel": channel_info,
             "current_channel": target_ch,
             "available_channels": available_channels,
         }
+        _VIDEOS_CACHE[target_ch] = {"timestamp": now, "data": res_payload}
+        return res_payload
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -716,6 +773,7 @@ async def reschedule_video(req: RescheduleRequest):
             },
         ).execute()
 
+        _VIDEOS_CACHE.clear()
         log_event(f"Successfully rescheduled video {req.video_id} to {req_time} on {target_ch.title()} channel")
         return {"success": True, "message": f"Video {req.video_id} rescheduled to {req_time}"}
     except Exception as e:
@@ -741,6 +799,7 @@ async def make_video_public(req: PublishNowRequest):
             },
         ).execute()
 
+        _VIDEOS_CACHE.clear()
         log_event(f"Video {req.video_id} is now LIVE & PUBLIC!")
         return {"success": True, "message": f"Video {req.video_id} is now PUBLIC!"}
     except Exception as e:
@@ -1056,7 +1115,11 @@ async def list_media_files():
     return {"files": files}
 
 
-@app.get("/api/media/stream/{filename}")
+class FastVideoFileResponse(FileResponse):
+    chunk_size = 512 * 1024  # 512KB chunks for high-throughput video streaming over WAN
+
+
+@app.api_route("/api/media/stream/{filename}", methods=["GET", "HEAD"])
 async def stream_media(filename: str):
     search_dirs = [
         PROJECT_ROOT / "output" / "shorts",
@@ -1066,7 +1129,14 @@ async def stream_media(filename: str):
     for d in search_dirs:
         p = d / filename
         if p.exists():
-            return FileResponse(p, media_type="video/mp4")
+            return FastVideoFileResponse(
+                p,
+                media_type="video/mp4",
+                headers={
+                    "Accept-Ranges": "bytes",
+                    "Cache-Control": "public, max-age=86400, stale-while-revalidate=3600"
+                }
+            )
     raise HTTPException(status_code=404, detail="Video file not found")
 
 
@@ -1333,8 +1403,22 @@ async def preview_voice(voice_name: str):
     # If not yet generated, attempt synthesis
     try:
         preview_dir.mkdir(parents=True, exist_ok=True)
+        is_hi = v.startswith("hi") or "hindi" in v or v in ("akashvani", "akashwani", "madhur", "swara", "charon")
+        
+        # Check if Gemini 3.8 Flash TTS voice
+        if v in ("charon", "puck", "aoede", "kore", "fenrir"):
+            from autotube.voice.gemini_tts import GeminiTTSEngine
+            gemini_tts = GeminiTTSEngine()
+            sample_text = (
+                "कैलाश पर्वत के दिव्य और अनसुलझे रहस्यों में आपका स्वागत है। यहाँ समय भी रुक जाता है।"
+                if is_hi
+                else "Welcome to the deepest mysteries of the universe. Beyond the event horizon, time stands still."
+            )
+            gemini_tts.synthesize(text=sample_text, output_audio_path=target, voice=voice_name.capitalize())
+            if target.exists():
+                return FileResponse(target, media_type="audio/mpeg")
+
         from autotube.voice.tts_engine import TTSEngine
-        is_hi = v.startswith("hi") or "hindi" in v or v in ("akashvani", "akashwani", "madhur", "swara")
         sample_text = "ब्रह्मांड के अनंत रहस्यों में आपका स्वागत है। ब्लैक होल के अंदर वक्त ठहर जाता है।" if is_hi else "Welcome to the edge of the universe. Beyond the event horizon, time stands still."
         engine = TTSEngine(default_voice=v)
         engine.synthesize(text=sample_text, output_audio_path=target, voice=v)
@@ -1377,7 +1461,28 @@ async def preview_bgm(category: str):
 
 @app.get("/api/logs")
 async def get_logs():
-    logs = GENERATION_STATUS["logs"]
+    logs = list(GENERATION_STATUS.get("logs", []))
+
+    # Priority 1: Check active background run logs
+    active_log_candidates = [
+        PROJECT_ROOT / "speed_of_light_run.log",
+        PROJECT_ROOT / "fb_reel_run.log",
+        LOGS_FILE,
+    ]
+    for cand in active_log_candidates:
+        if cand.exists():
+            try:
+                # If modified within the last 2 hours, prioritize it
+                if time.time() - cand.stat().st_mtime < 7200:
+                    with open(cand, "r", encoding="utf-8", errors="ignore") as f:
+                        lines = f.readlines()
+                        file_logs = [line.strip() for line in lines[-80:] if line.strip()]
+                        if file_logs:
+                            logs = file_logs
+                            break
+            except Exception:
+                pass
+
     if not logs and LOGS_FILE.exists():
         try:
             with open(LOGS_FILE, "r", encoding="utf-8", errors="ignore") as f:
@@ -1385,9 +1490,24 @@ async def get_logs():
                 logs = [line.strip() for line in lines[-50:] if line.strip()]
         except Exception:
             pass
+
+    is_running = GENERATION_STATUS.get("is_running", False)
+    current_task = GENERATION_STATUS.get("current_task", "Idle")
+
+    # Detect active Remotion or Reel generator background process on Linux
+    if os.name == "posix":
+        try:
+            p_check = subprocess.run(["pgrep", "-f", "remotion|create_viral"], capture_output=True, text=True)
+            if p_check.returncode == 0 and p_check.stdout.strip():
+                is_running = True
+                if current_task == "Idle":
+                    current_task = "OpenMontage Remotion Rendering (Live)"
+        except Exception:
+            pass
+
     return {
-        "is_running": GENERATION_STATUS["is_running"],
-        "current_task": GENERATION_STATUS["current_task"],
+        "is_running": is_running,
+        "current_task": current_task,
         "logs": logs[-60:],
     }
 
@@ -1455,6 +1575,7 @@ async def enhance_script(req: ScriptEnhanceRequest):
         topic=req.topic,
         language=req.language,
         video_format=req.video_format or "short",
+        target_platform=getattr(req, "target_platform", "youtube") or "youtube",
     )
     return res
 
@@ -1521,7 +1642,7 @@ async def stream_director_bgm_file(filename: str):
 
 
 def run_director_render_task(req_data: dict):
-    """Background task worker for rendering custom Director video."""
+    """Background task worker for rendering custom Director video (OpenMontage or Classic)."""
     global LAST_DIRECTOR_RESULT
     LAST_DIRECTOR_RESULT = {}
     GENERATION_STATUS["is_running"] = True
@@ -1529,10 +1650,15 @@ def run_director_render_task(req_data: dict):
     raw_v_mode = str(req_data.get("visual_mode") or "").strip()
     clean_v_mode = raw_v_mode if raw_v_mode else "multi_cinematic"
     is_vedic = clean_v_mode in ("vedic_granth_ai", "vedic_storyboard", "vedic_ai")
-    if is_vedic:
+    render_engine = str(req_data.get("render_engine") or "openmontage").strip().lower()
+
+    if render_engine in ("openmontage", "remotion") and not is_vedic:
+        fmt_tag = "OpenMontage Remotion 9:16 Reel" if v_fmt == "short" else "OpenMontage Remotion 16:9 Video"
+    elif is_vedic:
         fmt_tag = "Vedic Sacred Video"
     else:
         fmt_tag = "16:9 Long Video" if v_fmt == "landscape_long" else "9:16 Short"
+
     GENERATION_STATUS["current_task"] = f"AI Studio ({fmt_tag}): {req_data.get('title', 'Custom Video')[:22]}"
     log_event(f"🎬 Starting AI Video Studio Render ({fmt_tag}): '{req_data.get('title')}'...")
 
@@ -1541,6 +1667,94 @@ def run_director_render_task(req_data: dict):
         log_event(f"Studio: {msg}")
 
     try:
+        # 1. Check if OpenMontage Remotion Engine is selected
+        if render_engine in ("openmontage", "remotion") and not is_vedic:
+            try:
+                from autotube.video.remotion_bridge import RemotionBridge
+                bridge = RemotionBridge()
+
+                # Voice selection: preserve user's chosen voice, default to Charon (Hindi) / Puck (English)
+                v = req_data.get("voice", "Charon")
+                if not v or v in ("auto", "default"):
+                    v = "Charon" if req_data.get("language", "hi") in ("hi", "hindi") else "Puck"
+
+                # Map BGM track
+                bgm_cat = req_data.get("bgm_filename", "auto")
+                bgm_path = None
+                if bgm_cat and bgm_cat != "none":
+                    audio_dir = PROJECT_ROOT / "assets" / "audio"
+                    cat_map = {
+                        "psychology": audio_dir / "psychology" / "anxiety.mp3",
+                        "spiritual": audio_dir / "spiritual" / "spiritual_meditation_ambience.mp3",
+                        "space": audio_dir / "space" / "lightless_dawn.mp3",
+                        "history": audio_dir / "history" / "heroic_age.mp3",
+                        "mystery": audio_dir / "mystery" / "curse_of_the_scarab.mp3",
+                        "alien": audio_dir / "alien" / "roswell_mystery_calm.mp3",
+                        "auto": audio_dir / "spiritual" / "spiritual_meditation_ambience.mp3",
+                    }
+                    bgm_path = cat_map.get(bgm_cat)
+                    if not bgm_path or not bgm_path.exists():
+                        avail = list(audio_dir.glob("**/*.mp3"))
+                        if avail:
+                            bgm_path = avail[0]
+
+                final_video_path = bridge.render_reel(
+                    title=req_data["title"],
+                    script_text=req_data["script_text"],
+                    voice=v,
+                    scenes=req_data.get("scenes"),
+                    bgm_path=bgm_path,
+                    bgm_volume=float(req_data.get("bgm_volume", 0.14)),
+                    output_format="vertical_9x16" if v_fmt == "short" else "landscape_16x9",
+                    hook_text=req_data.get("hook_text") or req_data.get("title"),
+                    enable_subscribe_cta=bool(req_data.get("auto_viral_hook", True)),
+                    target_platform=req_data.get("target_platform", "youtube"),
+                    progress_callback=update_progress,
+                )
+
+                from autotube.utils.ffmpeg_helper import get_media_duration
+                duration = get_media_duration(final_video_path)
+                size_mb = round(final_video_path.stat().st_size / (1024 * 1024), 1)
+
+                # Thumbnail creation
+                thumb_path = None
+                try:
+                    from autotube.video.thumbnail import ThumbnailGenerator
+                    thumb_dest = final_video_path.parent / f"{final_video_path.stem}_thumb.jpg"
+                    thumb_path = ThumbnailGenerator().create_thumbnail(
+                        title=req_data["title"],
+                        output_path=thumb_dest,
+                        video_path=final_video_path,
+                        script_text=req_data["script_text"][:300],
+                        language=req_data.get("language", "hi"),
+                        topic_category="auto",
+                    )
+                except Exception as th_err:
+                    log_event(f"Thumbnail generation notice: {th_err}")
+
+                LAST_DIRECTOR_RESULT = {
+                    "success": True,
+                    "video_filename": final_video_path.name,
+                    "video_path": str(final_video_path),
+                    "stream_url": f"/api/media/stream/{final_video_path.name}",
+                    "thumbnail_filename": thumb_path.name if thumb_path and thumb_path.exists() else None,
+                    "thumbnail_path": str(thumb_path) if thumb_path and thumb_path.exists() else None,
+                    "thumbnail_url": f"/api/media/stream/{thumb_path.name}" if thumb_path and thumb_path.exists() else None,
+                    "size_mb": size_mb,
+                    "duration": duration,
+                    "title": req_data["title"],
+                    "format": v_fmt,
+                    "is_long": v_fmt == "landscape_long",
+                    "engine": "openmontage",
+                }
+                log_event(f"✅ OpenMontage Remotion Reel successfully completed: {final_video_path.name} ({duration:.1f}s, {size_mb} MB)!")
+                return
+            except Exception as om_err:
+                import traceback
+                print_error(f"Remotion render notice: {om_err}\n{traceback.format_exc()}")
+                log_event(f"⚠️ OpenMontage render notice ({om_err}); falling back to Classic Director Engine...")
+
+        # 2. Classic Director Engine (FFmpeg fallback / non-openmontage)
         from autotube.media.director_engine import DirectorEngine
         director = DirectorEngine()
         if v_fmt == "short" and not req_data.get("scenes") and not is_vedic:
@@ -1554,10 +1768,10 @@ def run_director_render_task(req_data: dict):
         result = director.render_custom_video(
             script_text=req_data["script_text"],
             title=req_data["title"],
-            voice=req_data.get("voice", "hi_astro_vibes_male"),
+            voice=req_data.get("voice") or v,
             voice_speed=float(req_data.get("voice_speed", 1.05)),
             bgm_filename=req_data.get("bgm_filename", "auto"),
-            bgm_volume=float(req_data.get("bgm_volume", 0.16)),
+            bgm_volume=float(req_data.get("bgm_volume", 0.03)),
             subtitle_style_id=req_data.get("subtitle_style", "hormozi"),
             enable_classified_badge=bool(req_data.get("enable_classified_badge", False)),
             visual_engine=req_data.get("visual_engine", "auto"),
@@ -1568,6 +1782,7 @@ def run_director_render_task(req_data: dict):
             auto_viral_hook=bool(req_data.get("auto_viral_hook", True)),
             scenes=req_data.get("scenes"),
             progress_callback=update_progress,
+            target_platform=req_data.get("target_platform", "youtube"),
         )
 
         LAST_DIRECTOR_RESULT = result
@@ -1638,7 +1853,7 @@ async def publish_director_video(req: DirectorPublishRequest):
         privacy_status=req.privacy or "public",
         pinned_comment=req.pinned_comment,
         channel=target_ch,
-        content_type=getattr(req, "content_type", "standard") or "standard",
+        content_type=getattr(req, "content_type", None) or "custom_studio",
     )
 
     if not video_url:
@@ -1657,6 +1872,82 @@ async def publish_director_video(req: DirectorPublishRequest):
 
     log_event(f"Director Short successfully published to YouTube: {video_url}!")
     return {"success": True, "url": video_url}
+
+
+# -------------------------------------------------------------
+# API ROUTES: FACEBOOK PAGE & REELS INTEGRATION
+# -------------------------------------------------------------
+@app.get("/api/facebook/status")
+async def get_facebook_status():
+    """Get Facebook Page connection and credential status."""
+    from autotube.uploader.facebook_upload import FacebookReelsUploader
+    fb = FacebookReelsUploader()
+    if not fb.is_configured():
+        return {"configured": False, "page_name": None, "page_id": None}
+    info = fb.verify_credentials()
+    if info.get("success"):
+        return {
+            "configured": True,
+            "page_name": info.get("page_name"),
+            "page_id": info.get("page_id"),
+            "page_picture": info.get("page_picture"),
+            "page_link": info.get("page_link"),
+        }
+    return {
+        "configured": False,
+        "error": info.get("error", "Failed to verify Facebook Page"),
+        "page_id": fb.load_credentials().get("page_id"),
+    }
+
+
+@app.post("/api/facebook/save-credentials")
+async def save_facebook_credentials_endpoint(req: FacebookCredentialsRequest):
+    """Save and verify Facebook Page ID and Page Access Token."""
+    from autotube.uploader.facebook_upload import FacebookReelsUploader
+    fb = FacebookReelsUploader()
+    res = fb.save_credentials(page_id=req.page_id, access_token=req.access_token)
+    if not res.get("success"):
+        raise HTTPException(status_code=400, detail=res.get("error", "Invalid Facebook credentials"))
+    return res
+
+
+@app.post("/api/facebook/publish-reel")
+async def publish_facebook_reel_endpoint(req: FacebookPublishRequest):
+    """Publish a rendered video to the connected Facebook Page as a Reel."""
+    from autotube.uploader.facebook_upload import FacebookReelsUploader
+    fb = FacebookReelsUploader()
+    if not fb.is_configured():
+        raise HTTPException(status_code=400, detail="Facebook Page credentials are not configured. Please set them in Settings.")
+
+    video_path = PROJECT_ROOT / "output" / "shorts" / req.filename
+    if not video_path.exists():
+        video_path = PROJECT_ROOT / "output" / "longform" / req.filename
+    if not video_path.exists():
+        video_path = PROJECT_ROOT / "output" / "director" / req.filename
+    if not video_path.exists():
+        video_path = PROJECT_ROOT / "output" / req.filename
+    if not video_path.exists():
+        raise HTTPException(status_code=404, detail=f"Video file '{req.filename}' not found.")
+
+    res = fb.upload_reel(
+        video_path=video_path,
+        title=req.title,
+        description=req.description,
+        tags=req.tags,
+    )
+    if not res.get("success"):
+        raise HTTPException(status_code=500, detail=res.get("error", "Facebook Reel upload failed."))
+
+    log_event(f"Facebook Reel successfully published: {res.get('reel_url')}!")
+    return res
+
+
+@app.get("/api/facebook/history")
+async def get_facebook_history_endpoint():
+    """Get history of published Facebook Reels."""
+    from autotube.uploader.facebook_upload import FacebookReelsUploader
+    fb = FacebookReelsUploader()
+    return {"success": True, "history": fb.get_published_history()}
 
 
 # -------------------------------------------------------------
@@ -1782,7 +2073,14 @@ async def stream_character_clip(filename: str):
     p = CANONICAL_VIDEOS_DIR / filename
     if not p.exists():
         raise HTTPException(status_code=404, detail="Character motion clip not found")
-    return FileResponse(p, media_type="video/mp4")
+    return FastVideoFileResponse(
+        p,
+        media_type="video/mp4",
+        headers={
+            "Accept-Ranges": "bytes",
+            "Cache-Control": "public, max-age=86400, stale-while-revalidate=3600"
+        }
+    )
 
 
 def run_motion_clip_task(asset_name: str, custom_prompt: Optional[str]):
@@ -1964,6 +2262,8 @@ async def publish_local_video(req: PublishLocalVideoRequest, bg_tasks: Backgroun
     if not video_path.exists():
         video_path = PROJECT_ROOT / "output" / "longform" / req.filename
     if not video_path.exists():
+        video_path = PROJECT_ROOT / "output" / "videos" / req.filename
+    if not video_path.exists():
         video_path = PROJECT_ROOT / "output" / req.filename
     if not video_path.exists():
         raise HTTPException(status_code=404, detail=f"Video file '{req.filename}' not found in output/")
@@ -2000,6 +2300,187 @@ async def publish_local_video(req: PublishLocalVideoRequest, bg_tasks: Backgroun
     return {"success": True, "message": f"Publishing '{req.filename}' to YouTube ({(req.channel or 'english').title()} Channel) in background..."}
 
 
+def generate_smart_ai_tags(title: str, narration: str, channel: str = "english") -> List[str]:
+    """100% dynamic hashtag generation via Gemini AI with smart NLP entity fallback."""
+    gemini_key = os.getenv("GEMINI_API_KEY", "") or getattr(get_config(), "gemini_api_key", "")
+    if gemini_key:
+        try:
+            from google import genai
+            client = genai.Client(api_key=gemini_key)
+            prompt = (
+                f"You are a master YouTube SEO strategist. Generate 6-8 trending, high-ranking, highly relevant "
+                f"YouTube hashtags strictly for this specific video. "
+                f"Video Title: {title}. "
+                f"Video Narration/Topic: {narration[:800]}. "
+                f"Return ONLY the hashtags on a single line separated by spaces (e.g. #Tag1 #Tag2 #Tag3):"
+            )
+            resp = client.models.generate_content(model="gemini-flash-latest", contents=prompt)
+            raw = resp.text.strip()
+            tags = [re.sub(r"[^a-zA-Z0-9_\u0900-\u097f]", "", t) for t in raw.split() if t.startswith("#") or "#" in t]
+            clean = [t for t in tags if len(t) > 2]
+            if len(clean) >= 4:
+                return clean[:8]
+        except Exception:
+            pass
+
+    # Dynamic NLP Keyword & Entity Fallback (No hardcoding)
+    combined = f"{title} {narration}"
+    words = re.findall(r"[A-Z][a-zA-Z0-9]+|[\u0900-\u097f]{3,}", combined)
+    stop = {"Video", "Shorts", "Hindi", "Full", "Pehle", "Karein", "Gaye", "Hote", "Rahe", "Wali", "Apne", "Mere", "Saat", "Saal"}
+    cand = [w for w in words if w not in stop]
+    uniq = list(dict.fromkeys(cand))
+    if len(uniq) >= 4:
+        return uniq[:6] + ["Shorts", "Viral"]
+    return ["Shorts", "Viral", "Trending", "Mysteries"]
+
+
+def generate_dynamic_video_metadata(
+    video_path: Path,
+    title: Optional[str] = None,
+    description: Optional[str] = None,
+    tags: Optional[List[str]] = None,
+    channel: str = "english",
+) -> Dict[str, Any]:
+    """Dynamically generate unique, SEO-optimized title, description, and tags from video script / manifest."""
+    stem = video_path.stem
+    clean_stem = re.sub(r"_\d{9,12}$", "", stem)
+    clean_stem = re.sub(r"_shorts$", "", clean_stem, flags=re.IGNORECASE)
+    clean_title = clean_stem.replace("_", " ").strip()
+
+    # 1. Resolve Title
+    if not title or title.strip() in ("Custom Video", "Vedic Short", "Shorts"):
+        if any("\u0900" <= ch <= "\u097f" for ch in clean_title):
+            final_title = f"{clean_title} #Shorts"
+        elif "alien_interview" in stem:
+            part_num = ""
+            for seg in stem.split("_"):
+                if seg.isdigit():
+                    part_num = seg
+                    break
+            lang = "Hindi" if stem.endswith("_hi") else "English"
+            final_title = (
+                f"78 Years Secret: Roswell Alien's First Words Shocked the US Military 😱 (Part {part_num or 1}) #Shorts"
+                if lang == "English"
+                else f"78 साल का राज: रोसवेल एलियन के पहले शब्दों ने सेना को हिला दिया 😱 (Part {part_num or 1}) #Shorts"
+            )
+        else:
+            final_title = f"{clean_title.title()} #Shorts"
+    else:
+        final_title = title.strip()
+        if "#Shorts" not in final_title and (video_path.parent.name == "shorts" or "short" in stem.lower()):
+            final_title = f"{final_title} #Shorts"
+
+    # 2. Extract storyline / narration from manifest or script files
+    full_narration = ""
+    manifest_candidates = [
+        video_path.with_suffix(".manifest.json"),
+        video_path.parent / f"{video_path.stem}.manifest.json",
+        video_path.parent / f"{clean_stem}.manifest.json",
+        PROJECT_ROOT / "output" / "shorts" / f"{video_path.stem}.manifest.json",
+        PROJECT_ROOT / "output" / "shorts" / f"{clean_stem}.manifest.json",
+        PROJECT_ROOT / "output" / f"{video_path.stem}.manifest.json",
+        PROJECT_ROOT / "output" / f"{clean_stem}.manifest.json",
+    ]
+    found_manifest = None
+    for cand in manifest_candidates:
+        if cand.exists():
+            found_manifest = cand
+            break
+
+    if not found_manifest:
+        search_dirs = [video_path.parent, PROJECT_ROOT / "output" / "shorts", PROJECT_ROOT / "output", PROJECT_ROOT / "output" / "videos"]
+        for sdir in search_dirs:
+            if sdir.exists():
+                for m_file in sdir.glob("*.manifest.json"):
+                    if clean_stem[:15].lower() in m_file.stem.lower():
+                        found_manifest = m_file
+                        break
+            if found_manifest:
+                break
+
+    if found_manifest:
+        try:
+            m_data = json.loads(found_manifest.read_text(encoding="utf-8"))
+            if isinstance(m_data, list):
+                narrations = [str(s.get("narration") or "").strip() for s in m_data if isinstance(s, dict)]
+                full_narration = " ".join(n for n in narrations if n)
+            elif isinstance(m_data, dict) and "scenes" in m_data:
+                narrations = [str(s.get("narration") or "").strip() for s in m_data["scenes"] if isinstance(s, dict)]
+                full_narration = " ".join(n for n in narrations if n)
+        except Exception:
+            pass
+
+    combined_text = f"{final_title} {clean_title} {full_narration}".lower()
+
+    # 3. Dynamic AI / NLP Tag Generation (100% dynamic, NO hardcoded topic lists)
+    final_tags = tags if (tags and len(tags) > 0) else generate_smart_ai_tags(title=final_title, narration=full_narration, channel=channel)
+
+    # 4. Generate Unique Rich Description
+    is_old_generic_desc = description and (
+        "Watch until the end! Like, share and subscribe" in description
+        or "पूरा वीडियो अंत तक देखें! ऐसे ही रोचक और रहस्यमयी तथ्यों के लिए" in description
+    )
+    if description and description.strip() and not is_old_generic_desc:
+        final_description = description.strip()
+    else:
+        desc_parts = [final_title, ""]
+        if full_narration:
+            sentences = [s.strip() for s in re.split(r"[।\.\!\?]", full_narration) if len(s.strip()) > 10]
+            summary_block = "। ".join(sentences[:4]) + ("।" if sentences else "")
+            desc_parts.append(summary_block)
+            desc_parts.append("")
+        else:
+            if any("\u0900" <= ch <= "\u097f" for ch in final_title):
+                desc_parts.append(f"जानिए {clean_title} के पीछे का चौंकाने वाला सच और अनसुना रहस्य। क्या यह प्राचीन शास्त्रों की भविष्यवाणी थी या आधुनिक विज्ञान से परे का कोई सच?")
+            else:
+                desc_parts.append(f"Discover the mind-bending reality behind {clean_title}. Uncover the ancient secrets, hidden truths, and cosmic connections!")
+            desc_parts.append("")
+
+        if any("\u0900" <= ch <= "\u097f" for ch in combined_text) or channel == "hindi":
+            desc_parts.append("💬 इस रहस्य के बारे में आपकी क्या राय है? कमेंट्स में ज़रूर बताएं!")
+            desc_parts.append("⚡ चैनल को सब्सक्राइब करें, वीडियो को लाइक करें और अपने मित्रों व परिजनों के साथ शेयर करें!")
+        else:
+            desc_parts.append("💬 What do you think is the real truth behind this mystery? Drop your thoughts in the comments!")
+            desc_parts.append("⚡ Like, share and subscribe for daily mind-blowing facts and deep cosmic stories!")
+        desc_parts.append("")
+
+        tag_str = " ".join(f"#{t}" if not t.startswith("#") else t for t in final_tags[:8])
+        desc_parts.append(tag_str)
+        final_description = "\n".join(desc_parts).strip()
+
+    return {
+        "title": final_title,
+        "description": final_description,
+        "tags": final_tags,
+    }
+
+
+@app.post("/api/media/metadata/preview")
+async def preview_media_metadata(req: MediaMetadataPreviewRequest):
+    """Generate dynamic preview of Title, Description, and Tags for a local video."""
+    video_path = PROJECT_ROOT / "output" / "shorts" / req.filename
+    if not video_path.exists():
+        video_path = PROJECT_ROOT / "output" / "longform" / req.filename
+    if not video_path.exists():
+        video_path = PROJECT_ROOT / "output" / "videos" / req.filename
+    if not video_path.exists():
+        video_path = PROJECT_ROOT / "output" / req.filename
+    if not video_path.exists():
+        raise HTTPException(status_code=404, detail=f"Video file '{req.filename}' not found")
+
+    meta = generate_dynamic_video_metadata(
+        video_path=video_path,
+        channel=req.channel or "english",
+    )
+    return {
+        "success": True,
+        "title": meta["title"],
+        "description": meta["description"],
+        "tags": meta["tags"],
+        "tags_string": ", ".join(meta["tags"]),
+    }
+
+
 def run_publish_task(
     filename: str,
     video_path: Path,
@@ -2011,7 +2492,7 @@ def run_publish_task(
     thumbnail_filename: Optional[str] = None,
     content_type: str = "standard",
 ):
-    """Background task to upload a local video to YouTube."""
+    """Background task to upload a local video to YouTube with dynamic SEO metadata."""
     global LAST_PUBLISH_RESULT
     target_ch = (channel or "english").lower().strip()
     GENERATION_STATUS["is_running"] = True
@@ -2023,63 +2504,17 @@ def run_publish_task(
 
         uploader = YouTubeUploader(channel=target_ch)
 
-        # Auto-generate title from filename if not provided
-        if not title:
-            stem = video_path.stem
-            clean_stem = re.sub(r"_\d{9,12}$", "", stem)
-            clean_stem = re.sub(r"_shorts$", "", clean_stem, flags=re.IGNORECASE)
-            clean_title = clean_stem.replace("_", " ").strip()
-            if any("\u0900" <= ch <= "\u097f" for ch in clean_title):
-                title = f"{clean_title} #Shorts"
-            elif "alien_interview" in stem:
-                part_num = ""
-                for seg in stem.split("_"):
-                    if seg.isdigit():
-                        part_num = seg
-                        break
-                lang = "Hindi" if stem.endswith("_hi") else "English"
-                title = f"78 Years Secret: Roswell Alien's First Words Shocked the US Military 😱 (Part {part_num or 1}) #Shorts" if lang == "English" else f"78 साल का राज: रोसवेल एलियन के पहले शब्दों ने सेना को हिला दिया 😱 (Part {part_num or 1}) #Shorts"
-            else:
-                title = f"{clean_title.title()} #Shorts"
-
-        if not description:
-            if "alien_interview" in video_path.stem:
-                description = (
-                    f"{title}\n\n"
-                    "Based on 'Alien Interview' by Lawrence Spencer - The classified transcripts "
-                    "of Nurse Matilda O'Donnell MacElroy's telepathic sessions with the alien being "
-                    "known as 'Airl' at Roswell, 1947.\n\n"
-                    "#AlienInterview #Roswell1947 #TopSecret #Shorts"
-                )
-            elif any("\u0900" <= ch <= "\u097f" for ch in title):
-                description = (
-                    f"{title}\n\n"
-                    "पूरा वीडियो अंत तक देखें! ऐसे ही रोचक और रहस्यमयी तथ्यों के लिए चैनल को लाइक और सब्सक्राइब करें!\n\n"
-                    "#Shorts #HindiFacts #Viral #Trending"
-                )
-            else:
-                description = (
-                    f"{title}\n\n"
-                    "Watch until the end! Like, share and subscribe for daily mind-blowing facts and stories!\n\n"
-                    "#Shorts #Viral #Trending #Facts"
-                )
-
-        if not tags:
-            if "alien_interview" in video_path.stem:
-                tags = [
-                    "Alien Interview", "Roswell 1947", "Airl", "Top Secret",
-                    "UFO", "Extraterrestrial", "Mystery", "Shorts",
-                ]
-            elif any("\u0900" <= ch <= "\u097f" for ch in title):
-                tags = [
-                    "Shorts", "YouTube Shorts", "Hindi Facts", "Rahasya",
-                    "Trending", "Viral", "Amazing Facts",
-                ]
-            else:
-                tags = [
-                    "Shorts", "YouTube Shorts", "Viral", "Trending",
-                    "Mind Blowing Facts", "Mysteries",
-                ]
+        # Dynamic SEO Metadata Generation (Titles, Narrative Descriptions, Contextual Tags)
+        meta = generate_dynamic_video_metadata(
+            video_path=video_path,
+            title=title,
+            description=description,
+            tags=tags,
+            channel=target_ch,
+        )
+        title = meta["title"]
+        description = meta["description"]
+        tags = meta["tags"]
 
         # Resolve thumbnail for publishing
         thumb_path = None
@@ -2158,8 +2593,7 @@ async def api_generate_thumbnail(req: ThumbnailGenerateRequest):
 
 
 # -------------------------------------------------------------
-# FRONTEND DASHBOARD
-
+# FRONTEND DASHBOARD & PUBLIC GUEST PORTAL
 # -------------------------------------------------------------
 @app.get("/", response_class=HTMLResponse)
 async def serve_dashboard():
@@ -2168,3 +2602,187 @@ async def serve_dashboard():
         return HTMLResponse("<h1>AutoTube Dashboard Template Not Found</h1>", status_code=500)
     with open(index_file, "r", encoding="utf-8") as f:
         return HTMLResponse(f.read())
+
+
+@app.get("/portal", response_class=HTMLResponse)
+async def serve_guest_portal():
+    """Serve public guest video generator portal with 2-video daily quota."""
+    portal_file = TEMPLATES_DIR / "portal.html"
+    if not portal_file.exists():
+        return HTMLResponse("<h1>AutoTube Portal Template Not Found</h1>", status_code=500)
+    with open(portal_file, "r", encoding="utf-8") as f:
+        return HTMLResponse(f.read())
+
+
+# -------------------------------------------------------------
+# PUBLIC GUEST API WITH 2-VIDEOS/DAY RATE LIMITER
+# -------------------------------------------------------------
+class GuestGenerateRequest(BaseModel):
+    topic: str
+    format: str = "short"
+    language: str = "hi"
+    voice: str = "madhur"
+    visual_mode: str = "multi_cinematic"
+
+
+GUEST_STATUS: Dict[str, Any] = {
+    "is_running": False,
+    "current_task": "Idle",
+    "progress": 0,
+    "last_log": "Ready",
+    "last_result": None,
+}
+
+
+@app.get("/api/guest/quota")
+async def api_guest_quota(request: Request):
+    """Retrieve daily quota status for the requesting guest."""
+    from autotube.web.guest_limiter import get_client_fingerprint, get_guest_quota
+    client_id = get_client_fingerprint(request)
+    return get_guest_quota(client_id)
+
+
+def run_guest_generation_task(req_data: dict, client_id: str):
+    """Background task to generate video for guest without uploading to admin's channel."""
+    global GUEST_STATUS
+    GUEST_STATUS["is_running"] = True
+    GUEST_STATUS["progress"] = 10
+    GUEST_STATUS["current_task"] = "Writing AI Script..."
+    GUEST_STATUS["last_log"] = f"Crafting viral script for: {req_data['topic'][:30]}..."
+    GUEST_STATUS["last_result"] = None
+
+    try:
+        from autotube.scripting.generator import ScriptGenerator
+        from autotube.media.director_engine import DirectorEngine
+        from autotube.web.guest_limiter import record_guest_generation
+
+        sg = ScriptGenerator()
+        lang = req_data.get("language", "hi")
+        topic = req_data.get("topic", "Top Trending Facts")
+        v_format = req_data.get("format", "short")
+
+        # 1. Generate Script
+        GUEST_STATUS["progress"] = 25
+        GUEST_STATUS["current_task"] = "Generating Script..."
+        GUEST_STATUS["last_log"] = "Generating script with Gemini AI..."
+        script = sg.generate_short_script(topic=topic, language=lang)
+
+        # 2. Setup Progress Callback
+        def guest_progress(pct: int, msg: str):
+            GUEST_STATUS["progress"] = pct
+            GUEST_STATUS["current_task"] = "Rendering Video..."
+            GUEST_STATUS["last_log"] = msg
+
+        # 3. Render Custom Video (Without Uploading)
+        director = DirectorEngine()
+        voice = req_data.get("voice", "madhur")
+        if voice == "madhur":
+            voice = "hi_astro_vibes_male"
+        elif voice == "christopher":
+            voice = "christopher"
+        elif voice == "swara":
+            voice = "swara"
+
+        result = director.render_custom_video(
+            script_text=script.narration,
+            title=script.title,
+            voice=voice,
+            video_format=v_format,
+            language=lang,
+            visual_mode=req_data.get("visual_mode", "multi_cinematic"),
+            progress_callback=guest_progress,
+        )
+
+        if result.get("success", False) or result.get("video_filename"):
+            record_guest_generation(client_id, result["video_filename"])
+            GUEST_STATUS["progress"] = 100
+            GUEST_STATUS["current_task"] = "Complete!"
+            GUEST_STATUS["last_log"] = "Video ready to preview and download!"
+            GUEST_STATUS["last_result"] = {
+                "success": True,
+                "video_filename": result["video_filename"],
+                "title": script.title,
+                "description": script.narration,
+                "duration": result.get("duration", 55),
+            }
+        else:
+            GUEST_STATUS["last_result"] = {
+                "success": False,
+                "error": result.get("error", "Failed to render video"),
+            }
+
+    except Exception as e:
+        GUEST_STATUS["last_result"] = {"success": False, "error": str(e)}
+        GUEST_STATUS["last_log"] = f"Error: {e}"
+    finally:
+        GUEST_STATUS["is_running"] = False
+
+
+@app.post("/api/guest/generate")
+async def api_guest_generate(req: GuestGenerateRequest, request: Request, bg_tasks: BackgroundTasks):
+    """Initiate guest video generation if within 2-video daily limit."""
+    from autotube.web.guest_limiter import get_client_fingerprint, get_guest_quota
+    client_id = get_client_fingerprint(request)
+    quota = get_guest_quota(client_id)
+
+    if not quota["can_generate"]:
+        return JSONResponse(
+            status_code=429,
+            content={
+                "success": False,
+                "error": "DAILY_LIMIT_EXCEEDED",
+                "detail": quota["upgrade_message"],
+                "resets_in": quota["resets_in"],
+            },
+        )
+
+    if GUEST_STATUS["is_running"]:
+        return JSONResponse(
+            status_code=409,
+            content={
+                "success": False,
+                "error": "SERVER_BUSY",
+                "detail": "Another video is currently rendering. Please try again in 30 seconds!",
+            },
+        )
+
+    bg_tasks.add_task(run_guest_generation_task, req.dict(), client_id)
+    return {
+        "success": True,
+        "message": "AI Video generation started!",
+        "remaining_today": quota["remaining_today"],
+    }
+
+
+@app.get("/api/guest/status")
+async def api_guest_status():
+    """Retrieve realtime generation status for guest portal."""
+    return GUEST_STATUS
+
+
+@app.get("/api/guest/stream/{filename}")
+async def stream_guest_video(filename: str):
+    """Stream generated guest video in browser."""
+    clean_name = Path(filename).name
+    p = PROJECT_ROOT / "output" / "shorts" / clean_name
+    if not p.exists():
+        p = PROJECT_ROOT / "output" / "longform" / clean_name
+    if not p.exists():
+        p = PROJECT_ROOT / "output" / clean_name
+    if not p.exists():
+        raise HTTPException(status_code=404, detail="Video file not found")
+    return FileResponse(p, media_type="video/mp4")
+
+
+@app.get("/api/guest/download/{filename}")
+async def download_guest_video(filename: str):
+    """Direct MP4 attachment download for guests."""
+    clean_name = Path(filename).name
+    p = PROJECT_ROOT / "output" / "shorts" / clean_name
+    if not p.exists():
+        p = PROJECT_ROOT / "output" / "longform" / clean_name
+    if not p.exists():
+        p = PROJECT_ROOT / "output" / clean_name
+    if not p.exists():
+        raise HTTPException(status_code=404, detail="Video file not found")
+    return FileResponse(p, media_type="video/mp4", filename=clean_name)
