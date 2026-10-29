@@ -130,6 +130,7 @@ class FacebookReelsUploader:
         description: Optional[str] = None,
         tags: Optional[List[str]] = None,
         progress_callback: Optional[Callable[[int, str], None]] = None,
+        language: Optional[str] = None,
     ) -> Dict[str, Any]:
         """Upload a vertical 9:16 video to the connected Facebook Page as a Reel.
 
@@ -152,6 +153,19 @@ class FacebookReelsUploader:
 
         if not page_id or not access_token:
             return {"success": False, "error": "Facebook Page credentials missing. Configure them in Settings."}
+
+        # Strict Hindi Content Guard: Facebook Page is strictly reserved for Hindi Reels
+        is_hindi = (
+            (language and str(language).lower().startswith("hi"))
+            or any("\u0900" <= c <= "\u097F" for c in (title or ""))
+            or any("\u0900" <= c <= "\u097F" for c in (description or ""))
+            or any("\u0900" <= c <= "\u097F" for c in video_path.name)
+        )
+        if not is_hindi:
+            page_name = creds.get("page_name", "CosmoCronicle")
+            msg = f"Facebook Page '{page_name}' is strictly reserved for Hindi Reels. Video '{video_path.name}' is English and was blocked from Facebook upload."
+            print_warning(f"⛔ [Facebook Reels Guard] {msg}")
+            return {"success": False, "skipped": True, "error": msg}
 
         # Build Reel Caption (Description + Viral Reel Hashtags)
         caption = self._build_reel_caption(title=title, description=description, tags=tags)
@@ -302,13 +316,25 @@ class FacebookReelsUploader:
         if clean_title:
             parts.append(clean_title)
 
+        import re
         if body_desc and body_desc != clean_title:
+            # Strip YouTube-specific subscribe appeals from Facebook Reel body
+            cleaned_desc = re.sub(
+                r"(चैनल को सब्सक्राइब|चैनल को subscribe|subscribe to (the )?channel|subscribe करें)[^.!?\n]*[.!?]?",
+                "",
+                body_desc,
+                flags=re.IGNORECASE,
+            ).strip()
             # If description has multiple paragraphs, keep it concise for Reel
-            short_desc = body_desc[:300].strip()
-            parts.append(f"\n{short_desc}")
+            short_desc = cleaned_desc[:350].strip()
+            if short_desc:
+                parts.append(f"\n{short_desc}")
 
-        # Facebook follow CTA
-        parts.append("\n👉 ऐसी ही और दिलचस्प जानकारियों के लिए हमारे पेज को अभी FOLLOW करें! ✨")
+        # Facebook follow CTA (Guaranteed Ending Follow Hook)
+        p_name = self.load_credentials().get("page_name", "CosmoCronicle")
+        follow_hook = f"👉 ऐसे ही रोंगटे खड़े कर देने वाले रहस्यों और अनसुने तथ्यों के लिए अभी @{p_name} पेज को FOLLOW करें! 🔔✨"
+        if not any("FOLLOW" in p or "फॉलो करें" in p for p in parts):
+            parts.append(f"\n{follow_hook}")
 
         # Tags line
         tags_line = " ".join(clean_tags[:10])

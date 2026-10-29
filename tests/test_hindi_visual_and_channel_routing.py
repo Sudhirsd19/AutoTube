@@ -202,3 +202,60 @@ def test_autopilot_slug_naming_separation():
     assert slug_en != slug_hi
     assert slug_en.endswith("_en")
     assert slug_hi.endswith("_hi")
+
+
+def test_facebook_upload_blocks_purely_english_video(tmp_path):
+    """Verify FacebookReelsUploader strictly blocks English videos."""
+    from autotube.uploader.facebook_upload import FacebookReelsUploader
+    
+    # Create dummy video file
+    dummy_video = tmp_path / "speed_of_light_mystery.mp4"
+    dummy_video.write_bytes(b"dummy_video_bytes")
+    
+    fb = FacebookReelsUploader()
+    # Mock credentials so it passes configured check
+    orig_load = fb.load_credentials
+    fb.load_credentials = lambda: {"page_id": "12345", "access_token": "test_tok", "page_name": "CosmoCronicle"}
+    try:
+        res = fb.upload_reel(
+            video_path=dummy_video,
+            title="The Mystery of Light Speed Paradox",
+            description="Scientists discovered an impossible quantum speed glitch in vacuum.",
+            language="en"
+        )
+        assert res["success"] is False
+        assert res.get("skipped") is True
+        assert "strictly reserved for Hindi Reels" in res["error"]
+    finally:
+        fb.load_credentials = orig_load
+
+
+def test_facebook_upload_caption_follow_hook_and_youtube_cleanup():
+    """Verify Facebook Reel caption appends page follow hook and strips YouTube channel subscribe calls."""
+    from autotube.uploader.facebook_upload import FacebookReelsUploader
+    fb = FacebookReelsUploader()
+    
+    raw_desc = "क्या आप जानते हैं कि प्रकाश की गति स्थिर क्यों है? हमारे चैनल को सब्सक्राइब करें और वीडियो लाइक करें।"
+    caption = fb._build_reel_caption(
+        title="प्रकाश की गति का रहस्य",
+        description=raw_desc,
+        tags=["#Shorts", "#HindiFacts"]
+    )
+    
+    assert "FOLLOW करें" in caption or "फॉलो करें" in caption
+    assert "चैनल को सब्सक्राइब करें" not in caption
+    assert "#FacebookReels" in caption
+
+
+def test_generator_hindi_outro_has_follow_hook():
+    """Verify ScriptGenerator's Hindi subject outro includes like and follow hook."""
+    from autotube.scripting.generator import get_subject_outro_text
+    
+    outro_space = get_subject_outro_text("Space Black Holes", language="hi")
+    assert "फॉलो करें" in outro_space
+    
+    outro_gita = get_subject_outro_text("Bhagavad Gita Karma", language="hi")
+    assert "फॉलो करें" in outro_gita
+    
+    outro_mandir = get_subject_outro_text("Kailasa Temple Mystery", language="hi")
+    assert "फॉलो करें" in outro_mandir

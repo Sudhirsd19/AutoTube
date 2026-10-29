@@ -62,55 +62,55 @@ def get_subject_outro_text(topic: str, language: str = "en") -> str:
     is_spiritual = is_gita_granth_motivation_topic(topic)
     if not is_spiritual and any(k in t_lower for k in ("space", "antariksh", "galaxy", "black hole", "cosmic", "universe", "planet", "astronomy", "nasa")):
         if is_hindi:
-            return "ऐसे ही अंतरिक्ष और ब्रह्मांड के रहस्यमयी इंफॉर्मेटिव वीडियोज़ के लिए हमें लाइक और सब्सक्राइब करें और सपोर्ट करें।"
+            return "ऐसे ही अंतरिक्ष और ब्रह्मांड के रहस्यमयी इंफॉर्मेटिव वीडियोज़ के लिए हमें अभी लाइक और फॉलो करें और सपोर्ट करें!"
         else:
             return "For more mind-bending cosmic mysteries and informative space videos, make sure to like, subscribe, and support our channel!"
 
     elif is_spiritual:
         if is_hindi:
-            return "ऐसे ही श्रीमद्भगवद्गीता और सनातन ज्ञान के प्रेरणादायक वीडियोज़ के लिए हमें लाइक और सब्सक्राइब करें और सपोर्ट करें।"
+            return "ऐसे ही श्रीमद्भगवद्गीता और सनातन ज्ञान के प्रेरणादायक वीडियोज़ के लिए हमें अभी लाइक और फॉलो करें और सपोर्ट करें!"
         else:
             return "For more life-changing wisdom from the Bhagavad Gita and ancient scriptures, please like, subscribe, and support our channel!"
 
     elif any(k in t_lower for k in ("bharat", "temple", "mandir", "ancient india", "vedic", "kailasa", "dwarka", "history", "itihas", "empire", "archaeology")):
         if is_hindi:
-            return "ऐसे ही प्राचीन भारत और इतिहास के अनसुलझे रहस्यों के इंफॉर्मेटिव वीडियोज़ के लिए हमें लाइक और सब्सक्राइब करें और सपोर्ट करें।"
+            return "ऐसे ही प्राचीन भारत और इतिहास के अनसुलझे रहस्यों के इंफॉर्मेटिव वीडियोज़ के लिए हमें अभी लाइक और फॉलो करें और सपोर्ट करें!"
         else:
             return "For more untold historical facts and ancient mysteries, please like, subscribe, and support our channel!"
 
     elif any(k in t_lower for k in ("psychology", "brain", "mind", "dimag", "human behavior", "subconscious", "manipulation", "glitch in")):
         if is_hindi:
-            return "ऐसे ही दिमाग हिला देने वाले साइकोलॉजिकल फैक्ट्स और माइंड हैक्स के इंफॉर्मेटिव वीडियोज़ के लिए हमें लाइक और सब्सक्राइब करें और सपोर्ट करें।"
+            return "ऐसे ही दिमाग हिला देने वाले साइकोलॉजिकल फैक्ट्स और माइंड हैक्स के इंफॉर्मेटिव वीडियोज़ के लिए हमें अभी लाइक और फॉलो करें और सपोर्ट करें!"
         else:
             return "For more fascinating psychology hacks and human mind mysteries, please like, subscribe, and support our channel!"
 
     elif any(k in t_lower for k in ("science", "physics", "quantum", "paradox", "dilation", "atom", "biology")):
         if is_hindi:
-            return "ऐसे ही हैरान कर देने वाले साइंस फैक्ट्स और पैराडॉक्स के इंफॉर्मेटिव वीडियोज़ के लिए हमें लाइक और सब्सक्राइब करें और सपोर्ट करें।"
+            return "ऐसे ही हैरान कर देने वाले साइंस फैक्ट्स और पैराडॉक्स के इंफॉर्मेटिव वीडियोज़ के लिए हमें अभी लाइक और फॉलो करें और सपोर्ट करें!"
         else:
             return "For more incredible science facts and mind-blowing paradoxes, hit like, subscribe, and support our channel!"
 
     elif any(k in t_lower for k in ("matrix", "simulation", "mandela", "time slip", "dimension")):
         if is_hindi:
-            return "ऐसे ही सिमुलेशन प्रूफ्स और मैट्रिक्स ग्लिच के इंफॉर्मेटिव वीडियोज़ के लिए हमें लाइक और सब्सक्राइब करें और सपोर्ट करें।"
+            return "ऐसे ही सिमुलेशन प्रूफ्स और मैट्रिक्स ग्लिच के इंफॉर्मेटिव वीडियोज़ के लिए हमें अभी लाइक और फॉलो करें और सपोर्ट करें!"
         else:
             return "For more reality glitches and simulation evidence videos, remember to like, subscribe, and support our channel!"
 
     elif any(k in t_lower for k in ("ocean", "sea", "trench", "samundar", "marianas", "water")):
         if is_hindi:
-            return "ऐसे ही गहरे समंदर और दुनिया के अनसुलझे रहस्यों के इंफॉर्मेटिव वीडियोज़ के लिए हमें लाइक और सब्सक्राइब करें और सपोर्ट करें।"
+            return "ऐसे ही गहरे समंदर और दुनिया के अनसुलझे रहस्यों के इंफॉर्मेटिव वीडियोज़ के लिए हमें अभी लाइक और फॉलो करें और सपोर्ट करें!"
         else:
             return "For more deep ocean terrors and mysterious secrets, make sure to like, subscribe, and support our channel!"
 
     elif any(k in t_lower for k in ("alien", "ufo", "roswell", "extraterrestrial")):
         if is_hindi:
-            return "ऐसे ही डीक्लासिफाइड एलियन फाइल्स और रहस्यमयी इंफॉर्मेटिव वीडियोज़ के लिए हमें लाइक और सब्सक्राइब करें और सपोर्ट करें।"
+            return "ऐसे ही डीक्लासिफाइड एलियन फाइल्स और रहस्यमयी इंफॉर्मेटिव वीडियोज़ के लिए हमें अभी लाइक और फॉलो करें और सपोर्ट करें!"
         else:
             return "For more declassified extraterrestrial files and informative documentaries, please like, subscribe, and support our channel!"
 
     else:
         if is_hindi:
-            return "ऐसे ही रहस्यमयी और ज्ञानवर्धक इंफॉर्मेटिव वीडियोज़ के लिए हमें लाइक और सब्सक्राइब करें और सपोर्ट करें।"
+            return "ऐसे ही रहस्यमयी और ज्ञानवर्धक इंफॉर्मेटिव वीडियोज़ के लिए हमें अभी लाइक और फॉलो करें और सपोर्ट करें!"
         else:
             return "For more exciting and informative deep-dive videos like this, please like, subscribe, and support our channel!"
 

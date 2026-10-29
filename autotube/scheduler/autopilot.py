@@ -663,32 +663,58 @@ class AutoPilot:
                             f"Rendered video is safely preserved at: {output_video_path.name if output_video_path else 'unknown'}"
                         )
 
-                    # Step F: Auto-publish to Facebook Page (CosmoChronicle) for vertical reels
+                    # Step F: Auto-publish to Facebook Page (CosmoChronicle) strictly for Hindi vertical reels
+                    is_hindi_video = (
+                        str(item_lang).lower().startswith("hi")
+                        or item_channel == "hindi"
+                        or any("\u0900" <= c <= "\u097F" for c in (script.narration or ""))
+                        or any("\u0900" <= c <= "\u097F" for c in (script.title or ""))
+                    )
+
                     if not is_landscape and final_video and final_video.exists():
-                        try:
-                            from autotube.uploader.facebook_upload import FacebookReelsUploader
-                            fb_uploader = FacebookReelsUploader()
-                            if fb_uploader.is_configured():
-                                print_info(f"📤 Auto-publishing Reel to Facebook Page '{fb_uploader.load_credentials().get('page_name', 'CosmoChronicle')}'...")
-                                fb_caption = (
-                                    f"{v_title}\n\n"
-                                    f"{script.narration}\n\n"
-                                    f"फॉलो करें @CosmoChronicle ऐसे ही अविश्वसनीय रहस्यों और रोचक तथ्यों के लिए! ✨\n\n"
-                                    f"{' '.join(script.tags)}"
-                                )
-                                fb_res = fb_uploader.upload_reel(
-                                    video_path=final_video,
-                                    title=v_title,
-                                    description=fb_caption,
-                                    tags=[t.replace('#', '') for t in script.tags],
-                                )
-                                if fb_res.get("success"):
-                                    fb_id = fb_res.get("video_id") or fb_res.get("id")
-                                    print_success(f"🎉 Facebook Reel published successfully to CosmoChronicle! ID: {fb_id}")
-                                else:
-                                    print_warning(f"Facebook Reel upload notice: {fb_res.get('error')}")
-                        except Exception as fb_err:
-                            print_warning(f"Facebook Reels publishing notice: {fb_err}")
+                        if not is_hindi_video:
+                            print_info(
+                                f"⏭️ Skipping Facebook Reel auto-publish: Video is English ('{topic}'). "
+                                "Facebook Page is strictly reserved for Hindi Reels."
+                            )
+                        else:
+                            try:
+                                from autotube.uploader.facebook_upload import FacebookReelsUploader
+                                fb_uploader = FacebookReelsUploader()
+                                if fb_uploader.is_configured():
+                                    fb_creds = fb_uploader.load_credentials()
+                                    page_name = fb_creds.get('page_name', 'CosmoChronicle')
+                                    print_info(f"📤 Auto-publishing Hindi Reel to Facebook Page '{page_name}'...")
+
+                                    import re
+                                    # Clean YouTube-specific channel phrases from Facebook caption
+                                    clean_narration = re.sub(
+                                        r"(चैनल को सब्सक्राइब|चैनल को subscribe|subscribe to (the )?channel|subscribe करें)[^.!?\n]*[.!?]?",
+                                        "",
+                                        script.narration,
+                                        flags=re.IGNORECASE
+                                    ).strip()
+
+                                    fb_caption = (
+                                        f"{v_title}\n\n"
+                                        f"{clean_narration}\n\n"
+                                        f"👉 ऐसे ही रोंगटे खड़े कर देने वाले रहस्यों और अनसुने तथ्यों के लिए अभी @{page_name} पेज को फॉलो करें! 🔔✨\n\n"
+                                        f"{' '.join(script.tags)}"
+                                    )
+                                    fb_res = fb_uploader.upload_reel(
+                                        video_path=final_video,
+                                        title=v_title,
+                                        description=fb_caption,
+                                        tags=[t.replace('#', '') for t in script.tags],
+                                        language="hi",
+                                    )
+                                    if fb_res.get("success"):
+                                        fb_id = fb_res.get("video_id") or fb_res.get("id")
+                                        print_success(f"🎉 Facebook Reel published successfully to {page_name}! ID: {fb_id}")
+                                    else:
+                                        print_warning(f"Facebook Reel upload notice: {fb_res.get('error')}")
+                            except Exception as fb_err:
+                                print_warning(f"Facebook Reels publishing notice: {fb_err}")
                 else:
                     self.trend_finder.record_topic(topic)
 
