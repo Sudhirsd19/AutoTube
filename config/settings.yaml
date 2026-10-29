@@ -52,7 +52,7 @@ voice:
 media:
   stock_provider: "pexels"            # pexels, pixabay, or local
   image_provider: "pollinations"      # pollinations, local
-  background_music_volume: 0.12       # Subtle, calm, mysterious ambient score
+  background_music_volume: 0.03       # Ultra-subtle, gentle ambient score (voice is always crisp & dominant)
 
 youtube:
   client_secrets_file: "config/client_secrets.json"

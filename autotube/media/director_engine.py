@@ -57,6 +57,13 @@ class DirectorEngine:
         """Return available voices, BGM audio tracks, and subtitle styles."""
         # Top-quality Voices
         voices = [
+            # 🌟 OPENMONTAGE GEMINI 3.8 FLASH TTS VOICES (ULTRA-REALISTIC)
+            {"id": "Charon", "name": "🎙️ Charon — Deep, Epic, Natural Human Voice (Gemini 3.8 Flash TTS) ⭐ #1 RECOMMENDED", "lang": "Hindi/English", "gender": "Male", "is_hindi": True, "speed": "1.00x"},
+            {"id": "Puck", "name": "🎙️ Puck — Energetic & Engaging Viral Narrator (Gemini 3.8 Flash TTS)", "lang": "Hindi/English", "gender": "Male", "is_hindi": False, "speed": "1.00x"},
+            {"id": "Aoede", "name": "🎙️ Aoede — Rich, Cinematic Female Voice (Gemini 3.8 Flash TTS)", "lang": "Hindi/English", "gender": "Female", "is_hindi": False, "speed": "1.00x"},
+            {"id": "Kore", "name": "🎙️ Kore — Soothing, Elegant Storyteller Female (Gemini 3.8 Flash TTS)", "lang": "Hindi/English", "gender": "Female", "is_hindi": False, "speed": "1.00x"},
+            {"id": "Fenrir", "name": "🎙️ Fenrir — Authoritative, Intense & Mysterious Male (Gemini 3.8 Flash TTS)", "lang": "Hindi/English", "gender": "Male", "is_hindi": False, "speed": "1.00x"},
+
             # 🇮🇳 HINDI VOICES — SPACE / MYSTERY / SCIENCE
             {"id": "hi_deep_cinematic_male", "name": "🎙️ Deep Cinematic Male Hindi (Space, Universe, Black Holes) ⭐ BEST", "lang": "Hindi", "gender": "Male", "is_hindi": True, "speed": "0.92x"},
             {"id": "hi_calm_male", "name": "🎙️ Calm Male Hindi (Science Explanations, Astronomy, Planet Facts)", "lang": "Hindi", "gender": "Male", "is_hindi": True, "speed": "0.94x"},
@@ -213,13 +220,35 @@ CRITICAL RULES:
         topic: Optional[str] = None,
         language: str = "hi",
         is_long: bool = False,
+        target_platform: str = "youtube",
     ) -> Dict[str, Any]:
         """Generate an authentic, deeply thrilling 100-word story with complete scenes, titles, and hooks when AI API is unavailable."""
         t_clean = (topic or raw_input).strip()
         t_lower = t_clean.lower()
         raw_lower = raw_input.lower()
         combined_lower = f"{t_lower} {raw_lower}"
-        suffix = " #Shorts" if not is_long else ""
+
+        is_fb = (target_platform or "").lower() in ("facebook", "facebook_reels", "fb", "reels")
+        is_universal = (target_platform or "").lower() in ("universal", "all", "omni")
+
+        if is_fb:
+            suffix = " #Reels #FacebookReels" if not is_long else ""
+            sub_hi = "पेज को अभी FOLLOW करें!"
+            sub_hien = "page ko abhi FOLLOW karein!"
+            sub_en = "FOLLOW our page right now!"
+            default_tags = ["#Reels", "#FacebookReels", "#ViralReels", "#Trending", "#Facts"]
+        elif is_universal:
+            suffix = " #Shorts #Reels" if not is_long else ""
+            sub_hi = "हमें अभी FOLLOW और SUBSCRIBE करें!"
+            sub_hien = "humein abhi FOLLOW karein!"
+            sub_en = "FOLLOW us right now!"
+            default_tags = ["#Shorts", "#Reels", "#Viral", "#Trending", "#Facts"]
+        else:
+            suffix = " #Shorts" if not is_long else ""
+            sub_hi = "चैनल को अभी SUBSCRIBE करें!"
+            sub_hien = "channel ko abhi SUBSCRIBE karein!"
+            sub_en = "SUBSCRIBE right now!"
+            default_tags = ["#Shorts", "#Mystery", "#Viral", "#Facts"]
 
         lang_lower = (language or "hi").lower()
         is_hindi = lang_lower in ("hi", "hindi")
@@ -236,120 +265,120 @@ CRITICAL RULES:
             if is_amazon:
                 hook = "अगर आपको लगता है कि अमेज़न का जंगल सिर्फ पेड़ों से भरा है, तो अगले 40 सेकंड्स आपकी रूह कंपा देंगे!"
                 body = "इस रहस्यमयी वर्षावन की ज़मीन तक सूरज की धूप कभी नहीं पहुँचती। यहाँ बुलेट चींटी के एक डंक का दर्द गोली लगने जैसा होता है! इतना ही नहीं, 2 इंच का पॉइज़न डार्ट मेंढक 10 लोगों की जान ले सकता है, और गहरे दलदलों में छुपा 30 फीट का ग्रीन एनाकोंडा पलक झपकते ही शिकार को निगल जाता है।"
-                cliffhanger = "क्या आप इस जानलेवा जंगल में 1 रात अकेले बिताने का साहस रखते हैं? अपनी राय कमेंट में ज़रूर बताएं, वीडियो को LIKE करें और ऐसी ही हैरान कर देने वाली सच्ची कहानियों के लिए चैनल को अभी SUBSCRIBE करें!"
+                cliffhanger = f"क्या आप इस जानलेवा जंगल में 1 रात अकेले बिताने का साहस रखते हैं? अपनी राय कमेंट में ज़रूर बताएं, वीडियो को LIKE करें और ऐसी ही हैरान कर देने वाली सच्ची कहानियों के लिए {sub_hi}"
                 titles = [
                     f"अमेज़न जंगल के 3 सबसे ख़ौफ़नाक जीव! 😱{suffix}",
                     f"यहाँ 1 गलती और खेल खत्म! ⚠️ अमेज़न के खतरनाक रहस्य{suffix}",
                     f"The Terrifying Creatures of Amazon Rainforest 🐍{suffix}",
                 ]
                 pinned = "क्या आप अमेज़न जंगल में जाने की हिम्मत कर सकते हैं? कमेंट में 'हाँ' या 'ना' लिखें! 👇"
-                tags = ["#AmazonRainforest", "#DangerousAnimals", "#WildMysteries", "#HindiFacts", "#Shorts"]
+                tags = ["#AmazonRainforest", "#DangerousAnimals", "#WildMysteries", "#HindiFacts"] + default_tags[:2]
             elif is_rebirth:
                 hook = "1935 में दिल्ली की एक 4 साल की बच्ची ने एक ऐसा खौफनाक सच खोला जिसने पूरी दुनिया के वैज्ञानिकों को हिला दिया!"
                 body = "उसने दावा किया कि उसका असली नाम लुगदी देवी है और उसका घर मथुरा में है। जब महात्मा गांधी द्वारा बनाई गई 15 सदस्यों की जांच समिति उसे मथुरा ले गई, तो उसने अपने पिछले जन्म के पति, मकान और गुप्त रूप से छुपाए पैसों का सटीक पता बता दिया! आधुनिक विज्ञान आज तक इस पुनर्जन्म का कोई तार्किक जवाब नहीं दे पाया।"
-                cliffhanger = "क्या यह पुनर्जन्म का अकाट्य सबूत था या कोई अनसुलझा रहस्य? कमेंट में अपनी राय बताएं, वीडियो को LIKE करें और ऐसी ही रोंगटे खड़े करने वाली सच्ची घटनाओं के लिए चैनल को अभी SUBSCRIBE करें!"
+                cliffhanger = f"क्या यह पुनर्जन्म का अकाट्य सबूत था या कोई अनसुलझा रहस्य? कमेंट में अपनी राय बताएं, वीडियो को LIKE करें और ऐसी ही रोंगटे खड़े करने वाली सच्ची घटनाओं के लिए {sub_hi}"
                 titles = [
                     f"पुनर्जन्म का वो सच जिसे गांधीजी भी झुठला नहीं पाए! 😱{suffix}",
                     f"1935 की वो बच्ची जिसने विज्ञान को चुनौती दी! ⚠️{suffix}",
-                    f"Real Documented Proof of Reincarnation #Shorts",
+                    f"Real Documented Proof of Reincarnation {suffix}".strip(),
                 ]
                 pinned = "क्या आपको लगता है कि पुनर्जन्म सच में होता है? कमेंट में 'हाँ' या 'ना' लिखें! 👇"
-                tags = ["#Punarjanam", "#ReincarnationProof", "#RealIncident", "#MysteryFacts", "#Shorts"]
+                tags = ["#Punarjanam", "#ReincarnationProof", "#RealIncident", "#MysteryFacts"] + default_tags[:2]
             elif is_bermuda:
                 hook = "समुद्र का एक ऐसा शैतानी कोना जहाँ आज तक 50 से ज़्यादा जहाज़ और 20 विमान हवा में ही गायब हो चुके हैं!"
                 body = "फ्लोरिडा, प्यूर्टो रिको और बरमूडा के बीच का यह त्रिकोण कंपास और रडार को पूरी तरह अंधा कर देता है। 1945 में अमेरिकी नौसेना के 5 बॉम्बर विमान यहाँ रहस्यमयी ढंग से गायब हो गए, और उनकी आखिरी रेडियो रिकॉर्डिंग में पायलट ने कहा था: 'समुद्र अजीब दिख रहा है, हम नहीं जानते हम कहाँ हैं!' आज तक उनका 1 भी मलबा नहीं मिला।"
-                cliffhanger = "क्या यह चुंबकीय भंवर है या कोई परग्रही पोर्टल? कमेंट में अपनी राय बताएं, वीडियो को LIKE करें और अनसुलझे रहस्यों के लिए चैनल को अभी SUBSCRIBE करें!"
+                cliffhanger = f"क्या यह चुंबकीय भंवर है या कोई परग्रही पोर्टल? कमेंट में अपनी राय बताएं, वीडियो को LIKE करें और अनसुलझे रहस्यों के लिए {sub_hi}"
                 titles = [
                     f"बरमूडा ट्रायंगल का सबसे भयानक सच! 😱{suffix}",
                     f"जहाँ विज्ञान भी हथियार डाल देता है! ⚠️ Bermuda Triangle{suffix}",
                     f"The Dark Mystery of Flight 19 in Bermuda{suffix}",
                 ]
                 pinned = "आपके हिसाब से बरमूडा ट्रायंगल में क्या छुपा है? कमेंट में बताएं! 👇"
-                tags = ["#BermudaTriangle", "#OceanMystery", "#Flight19", "#UnsolvedMysteries", "#Shorts"]
+                tags = ["#BermudaTriangle", "#OceanMystery", "#Flight19", "#UnsolvedMysteries"] + default_tags[:2]
             elif is_vedic:
                 hook = "जब कुरुक्षेत्र के मैदान में अर्जुन के कांपते हाथों से गांडीव धनुष छूट गया, तब श्रीकृष्ण ने एक ऐसा ब्रह्मांडीय सत्य बोला जिसने इतिहास बदल दिया!"
                 body = "भगवान कृष्ण ने कहा—'नैनं छिन्दन्ति शस्त्राणि नैनं दहति पावकः'। आत्मा अमर है, केवल यह शरीर एक वस्त्र मात्र है। कर्म करो लेकिन फल की चिंता छोड़ दो। जिस सत्य को 5000 साल पहले महाभारत में उद्घोष किया गया था, आज आधुनिक क्वांटम फिजिक्स भी उसी चेतना और अमर ऊर्जा के सिद्धांत को नतमस्तक होकर स्वीकार कर रही है!"
-                cliffhanger = "क्या आप भी मानते हैं कि गीता में हर समस्या और उलझन का समाधान है? कमेंट में 'जय श्री कृष्ण' लिखें, वीडियो को LIKE करें और सनातन ज्ञान के लिए चैनल को अभी SUBSCRIBE करें!"
+                cliffhanger = f"क्या आप भी मानते हैं कि गीता में हर समस्या और उलझन का समाधान है? कमेंट में 'जय श्री कृष्ण' लिखें, वीडियो को LIKE करें और सनातन ज्ञान के लिए {sub_hi}"
                 titles = [
                     f"कुरुक्षेत्र में कृष्ण का वो 1 गुप्त उपदेश! 🕉️{suffix}",
                     f"जब अर्जुन अंदर से टूट गए थे... श्रीकृष्ण की वाणी! ⚡{suffix}",
                     f"Bhagavad Gita's Ultimate Truth Revealed{suffix}",
                 ]
                 pinned = "क्या आप गीता के उपदेश अपने जीवन में उतारते हैं? कमेंट में 'जय श्री कृष्ण' लिखें! 👇"
-                tags = ["#BhagavadGita", "#ShriKrishna", "#Mahabharata", "#SanatanDharma", "#Shorts"]
+                tags = ["#BhagavadGita", "#ShriKrishna", "#Mahabharata", "#SanatanDharma"] + default_tags[:2]
             elif is_space:
                 hook = "अंतरिक्ष का एक ऐसा भयानक दानव जिसके सामने समय और प्रकाश भी पूरी तरह झुक जाते हैं!"
                 body = "ब्लैक होल की सीमा, जिसे इवेंट होराइजन कहते हैं, वहाँ पहुँचते ही गुरुत्वाकर्षण आपको स्पेगेटी की तरह खींच देता है। वैज्ञानिक कहते हैं कि हमारे ब्रह्मांड में करोड़ों ब्लैक होल चुपचाप भटक रहे हैं, और अगर एक भी हमारे सौरमंडल के पास आया, तो पृथ्वी को निगलने में इसे 1 सेकंड भी नहीं लगेगा!"
-                cliffhanger = "क्या ब्लैक होल किसी दूसरी दुनिया का दरवाज़ा है? अपनी राय कमेंट में ज़रूर बताएं, वीडियो को LIKE करें और स्पेस के अनसुलझे रहस्यों के लिए चैनल को अभी SUBSCRIBE करें!"
+                cliffhanger = f"क्या ब्लैक होल किसी दूसरी दुनिया का दरवाज़ा है? अपनी राय कमेंट में ज़रूर बताएं, वीडियो को LIKE करें और स्पेस के अनसुलझे रहस्यों के लिए {sub_hi}"
                 titles = [
                     f"ब्लैक होल के अंदर क्या होता है? 😱{suffix}",
                     f"अगर ब्लैक होल पृथ्वी के पास आ जाए तो क्या होगा? ⚠️{suffix}",
                     f"The Terrifying Monster of Deep Space{suffix}",
                 ]
                 pinned = "क्या ब्लैक होल में गिरकर इंसान बच सकता है? कमेंट में बताएं! 👇"
-                tags = ["#BlackHole", "#SpaceMystery", "#UniverseFacts", "#NASA", "#Shorts"]
+                tags = ["#BlackHole", "#SpaceMystery", "#UniverseFacts", "#NASA"] + default_tags[:2]
             else:
                 clean_name = re.sub(r"[^a-zA-Z0-9\u0900-\u097F\s]", "", t_clean)[:35].strip() or "इस रहस्य"
                 hook = f"अगर आपको लगता है कि {clean_name} के बारे में आप सब कुछ जानते हैं, तो अगले 40 सेकंड्स आपकी सोच पूरी तरह बदल देंगे!"
                 body = f"इतिहास और वैज्ञानिक शोध में {clean_name} से जुड़े कई ऐसे चौंकाने वाले तथ्य सामने आए हैं जिन पर आम इंसान यकीन नहीं कर पाता। गुप्त फाइलों और प्रत्यक्षदर्शियों के खुलासों से यह साबित हुआ है कि जो सच दुनिया को दिखाया गया था, पर्दे के पीछे की कहानी उससे कहीं ज़्यादा खौफनाक और रहस्यमयी थी!"
-                cliffhanger = f"आपके हिसाब से इसका असली सच क्या हो सकता है? अपनी राय कमेंट में ज़रूर बताएं, वीडियो को LIKE करें और ऐसी ही अनसुलझी कहानियों के लिए चैनल को अभी SUBSCRIBE करें!"
+                cliffhanger = f"आपके हिसाब से इसका असली सच क्या हो सकता है? अपनी राय कमेंट में ज़रूर बताएं, वीडियो को LIKE करें और ऐसी ही अनसुलझी कहानियों के लिए {sub_hi}"
                 titles = [
                     f"{clean_name} का सबसे बड़ा अनसुलझा रहस्य! 😱{suffix}",
                     f"99% लोग इसका सच नहीं जानते! ⚠️ {clean_name}{suffix}",
                     f"The Shocking Secret of {clean_name}{suffix}",
                 ]
                 pinned = f"क्या आप {clean_name} के सच पर यकीन करते हैं? कमेंट में अपनी राय बताएं! 👇"
-                tags = ["#MysteryFacts", "#ShockingTruth", "#HindiFacts", "#TrendingShorts", "#Shorts"]
+                tags = ["#MysteryFacts", "#ShockingTruth", "#HindiFacts"] + default_tags[:2]
 
         elif is_hinglish:
             if is_amazon:
                 hook = "Agar aapko lagta hai ki Amazon jungle sirf ped-paudho se bhara hai, toh agle 40 seconds aapki rooh kampa denge!"
                 body = "Is rahasyamayi jungle ki zameen tak dhoop kabhi nahi pahunchti. Yahan bullet ant ke ek dank ka dard goli lagne jaisa hota hai! 2 inch ka poison dart frog 10 logo ki jaan le sakta hai, aur gehre daldal me chhipa 30 feet lamba green anaconda palak jhapakte hi shikar ko nigal leta hai."
-                cliffhanger = "Kya aap is jungle me 1 raat bitane ki himmat rakhte hain? Comment karein, video ko LIKE karein aur aisi hi hairatangez sachhi kahaniyo ke liye channel ko abhi SUBSCRIBE karein!"
+                cliffhanger = f"Kya aap is jungle me 1 raat bitane ki himmat rakhte hain? Comment karein, video ko LIKE karein aur aisi hi hairatangez sachhi kahaniyo ke liye {sub_hien}"
                 titles = [
                     f"Amazon Jungle Ke 3 Sabse Khatarnak Jeev! 😱{suffix}",
                     f"1 Galti Aur Maut Pakki! ⚠️ Amazon Rainforest Mystery{suffix}",
                     f"Terrifying Creatures of the Amazon Revealed{suffix}",
                 ]
                 pinned = "Kya aap Amazon jungle me jaane ki himmat kar sakte hain? Comment YES ya NO 👇"
-                tags = ["#AmazonJungle", "#DangerousCreatures", "#WildMysteries", "#MindBlown", "#Shorts"]
+                tags = ["#AmazonJungle", "#DangerousCreatures", "#WildMysteries", "#MindBlown"] + default_tags[:2]
             else:
                 clean_name = re.sub(r"[^a-zA-Z0-9\s]", "", t_clean)[:35].strip() or "Is Mystery"
                 hook = f"Agar aapko lagta hai ki {clean_name} ke baare me aap sab jaante hain, toh agle 40 seconds aapke hosh uda denge!"
                 body = f"Itihaas aur secret records me {clean_name} se jude aise hairatangez facts saamne aaye hain jinke baare me 99% log anjaan hain. Classified files ke hisaab se jo sach public ko bataya gaya tha, asal ghatna usse kahin zyada hairan kar dene wali thi!"
-                cliffhanger = f"Aapke hisaab se iska asli sach kya hai? Comment me batayein, video ko LIKE karein aur aisi hi thrilling stories ke liye channel ko abhi SUBSCRIBE karein!"
+                cliffhanger = f"Aapke hisaab se iska asli sach kya hai? Comment me batayein, video ko LIKE karein aur aisi hi thrilling stories ke liye {sub_hien}"
                 titles = [
                     f"{clean_name} Ka Sabse Bada Rahasya! 😱{suffix}",
                     f"99% Log Iska Sach Nahi Jante! ⚠️ {clean_name}{suffix}",
                     f"The Shocking Truth of {clean_name}{suffix}",
                 ]
                 pinned = "Aapka is baare me kya sochna hai? Comment karein 👇"
-                tags = ["#MysteryFacts", "#HinglishFacts", "#MindBlowing", "#ViralShorts", "#Shorts"]
+                tags = ["#MysteryFacts", "#HinglishFacts", "#MindBlowing"] + default_tags[:2]
 
         else:
             if is_amazon:
                 hook = "If you think the Amazon rainforest is just trees and rivers, the next 40 seconds will terrify you!"
                 body = "Sunlight never even reaches the jungle floor. A single sting from the bullet ant feels like a gunshot wound! The two-inch poison dart frog carries enough venom to kill ten adults, while thirty-foot green anacondas swallow entire prey whole in seconds."
-                cliffhanger = "Would you dare spend one night alone in the Amazon? Comment below, LIKE this video, and SUBSCRIBE right now for more spine-chilling real stories!"
+                cliffhanger = f"Would you dare spend one night alone in the Amazon? Comment below, LIKE this video, and {sub_en} for more spine-chilling real stories!"
                 titles = [
                     f"3 Most Terrifying Creatures in the Amazon! 😱{suffix}",
                     f"One Mistake and You Are Gone! ⚠️ Amazon Rainforest{suffix}",
                     f"The Dark Mysteries of the Amazon Jungle{suffix}",
                 ]
                 pinned = "Would you dare enter the Amazon rainforest? Comment below! 👇"
-                tags = ["#AmazonRainforest", "#WildlifeMysteries", "#DangerousAnimals", "#NatureFacts", "#Shorts"]
+                tags = ["#AmazonRainforest", "#WildlifeMysteries", "#DangerousAnimals", "#NatureFacts"] + default_tags[:2]
             else:
                 clean_name = re.sub(r"[^a-zA-Z0-9\s]", "", t_clean)[:35].strip() or "This Mystery"
                 hook = f"If you think you know the real story behind {clean_name}, the next 40 seconds will shatter your reality!"
                 body = f"Classified records and investigative eyewitness accounts reveal astonishing details about {clean_name} that mainstream history hid for decades. The official explanation barely scratches the surface of what truly happened behind closed doors."
-                cliffhanger = f"What do you think really happened? Tell us in the comments below, LIKE this video, and hit SUBSCRIBE right now to unlock more unsolved mysteries!"
+                cliffhanger = f"What do you think really happened? Tell us in the comments below, LIKE this video, and {sub_en} to unlock more unsolved mysteries!"
                 titles = [
                     f"The Unsolved Secret of {clean_name}! 😱{suffix}",
                     f"99% of People Have No Idea! ⚠️ {clean_name}{suffix}",
                     f"The Shocking Classified Truth Revealed{suffix}",
                 ]
                 pinned = "What do you think is the real truth? Let us know below! 👇"
-                tags = ["#UnsolvedMysteries", "#ShockingFacts", "#ClassifiedHistory", "#Shorts"]
+                tags = ["#UnsolvedMysteries", "#ShockingFacts", "#ClassifiedHistory"] + default_tags[:2]
 
         full_narration = f"{hook} {body} {cliffhanger}"
         if not is_long and len(full_narration.split()) > 148:
@@ -379,11 +408,15 @@ CRITICAL RULES:
         topic: Optional[str] = None,
         language: str = "hi",
         video_format: str = "short",
+        target_platform: str = "youtube",
     ) -> Dict[str, Any]:
         """Enhance user's script or 1-line concept into a viral script formatted for Short or Long video."""
         lang_lower = (language or "hi").lower()
         is_hindi = lang_lower in ("hi", "hindi")
         is_hinglish = lang_lower in ("hinglish", "hi-en")
+
+        is_fb = (target_platform or "").lower() in ("facebook", "facebook_reels", "fb", "reels")
+        is_universal = (target_platform or "").lower() in ("universal", "all", "omni")
 
         # If the input is already a complete, multi-sentence pre-written English script (>=15 words, full sentences),
         # preserve English narration so an existing English script is not forced into Hindi.
@@ -400,12 +433,13 @@ CRITICAL RULES:
                 is_hindi = False
                 is_hinglish = False
                 lang_lower = "en"
+                language = "en"
 
         is_long = (video_format == "landscape_long")
         gemini_key = os.getenv("GEMINI_API_KEY", "") or getattr(self.cfg, "gemini_api_key", "")
 
-        target_words = "350 to 500 words (3.0 to 4.5 minutes documentary length)" if is_long else "135 to 148 words (strictly 55 to 58 seconds, YouTube Shorts sweet spot under 59s)"
-        format_desc = "16:9 Landscape Documentary Video" if is_long else "9:16 Vertical YouTube Short"
+        target_words = "350 to 500 words (3.0 to 4.5 minutes documentary length)" if is_long else "135 to 148 words (strictly 55 to 58 seconds, optimal sweet spot under 59s)"
+        format_desc = "16:9 Landscape Documentary Video" if is_long else ("9:16 Vertical Facebook Reel" if is_fb else "9:16 Vertical YouTube Short")
 
         if gemini_key:
             try:
@@ -425,12 +459,23 @@ CRITICAL RULES:
      * Sacred Vedic / High Stakes: "क्या ज़िंदगी की जंग लड़ते-लड़ते तुम अंदर से टूट चुके हो? जब कुरुक्षेत्र में अर्जुन के कांपते हाथों से गांडीव छूट गया, तब कृष्ण ने 1 ऐसा सत्य बोला जिसने पूरा इतिहास बदल दिया!"
 """
 
-                    outro_examples = """     A. Mind-Bending Question / Open Loop: Leave a provocative question ringing in their head (e.g. "क्या यह पुनर्जन्म का सच्चा सबूत था, या विज्ञान का सबसे बड़ा अनसुलझा रहस्य?").
+                    if is_fb:
+                        outro_examples = """     A. Mind-Bending Question / Open Loop: Leave a provocative question ringing in their head (e.g. "क्या यह पुनर्जन्म का सच्चा सबूत था, या विज्ञान का सबसे बड़ा अनसुलझा रहस्य?").
+     B. Polarized Comment Debate Trigger: Challenge the viewer to comment their answer (e.g. "अगर आपको इसका सच पता है तो कमेंट में 'हाँ' या 'ना' लिखकर बताएं!").
+     C. High-Conversion Identity & Part 2 Follow Trigger: Compel them to follow the Facebook page based on identity and exclusive revelations (e.g. "अगर आप भी उन 1% लोगों में हैं जो सच जानने का साहस रखते हैं, तो पेज को अभी FOLLOW करें—क्योंकि पार्ट 2 इससे 10 गुना ज़्यादा रोंगटे खड़े कर देने वाला है!")."""
+                        default_titles = [f"{topic or 'रहस्य'} का चौंकाने वाला सच {'#Reels #FacebookReels' if not is_long else ''}"]
+                    elif is_universal:
+                        outro_examples = """     A. Mind-Bending Question / Open Loop: Leave a provocative question ringing in their head.
+     B. Polarized Comment Debate Trigger: Challenge the viewer to comment their answer.
+     C. High-Conversion Identity & Follow/Subscribe Trigger: (e.g. "अगर आप भी उन 1% लोगों में हैं जो सच जानने का साहस रखते हैं, तो हमें अभी FOLLOW और SUBSCRIBE करें—क्योंकि पार्ट 2 इससे 10 गुना ज़्यादा रोंगटे खड़े कर देने वाला है!")."""
+                        default_titles = [f"{topic or 'रहस्य'} का चौंकाने वाला सच {'#Shorts #Reels' if not is_long else ''}"]
+                    else:
+                        outro_examples = """     A. Mind-Bending Question / Open Loop: Leave a provocative question ringing in their head (e.g. "क्या यह पुनर्जन्म का सच्चा सबूत था, या विज्ञान का सबसे बड़ा अनसुलझा रहस्य?").
      B. Polarized Comment Debate Trigger: Challenge the viewer to comment their answer (e.g. "अगर आपको इसका सच पता है तो कमेंट में 'हाँ' या 'ना' लिखकर बताएं!").
      C. High-Conversion Identity & Part 2 Subscribe Trigger: Compel them to subscribe based on identity and exclusive revelations (e.g. "अगर आप भी उन 1% लोगों में हैं जो सच जानने का साहस रखते हैं, तो चैनल को अभी SUBSCRIBE करें—क्योंकि पार्ट 2 इससे 10 गुना ज़्यादा रोंगटे खड़े कर देने वाला है!")."""
+                        default_titles = [f"{topic or 'रहस्य'} का चौंकाने वाला सच {'#Shorts' if not is_long else ''}"]
 
                     default_pinned = "क्या आपको लगता है कि यह सच हो सकता है? अपनी राय कमेंट में ज़रूर बताएं! 👇"
-                    default_titles = [f"{topic or 'रहस्य'} का चौंकाने वाला सच {'#Shorts' if not is_long else ''}"]
 
                 elif is_hinglish:
                     lang_mandate = """LANGUAGE MANDATE: CONVERSATIONAL HINGLISH (ROMAN SCRIPT)
@@ -443,9 +488,16 @@ CRITICAL RULES:
      * The 99% Rule: "99% log nahi jante ki is ghatna ko sarkar ne 50 saalon tak top-secret kyu rakha tha!"
 """
 
-                    outro_examples = """     A. Mind-Bending Question / Open Loop: Leave a provocative question ringing in their head (e.g. "Kya ye sach me punarjanam ka saboot tha, ya science ka sabse bada anjaana rahasya?").
+                    if is_fb:
+                        outro_examples = """     A. Mind-Bending Question / Open Loop: Leave a provocative question ringing in their head (e.g. "Kya ye sach me punarjanam ka saboot tha, ya science ka sabse bada anjaana rahasya?").
+     B. Polarized Comment Debate Trigger: Challenge the viewer to comment their answer (e.g. "Agar aapko iska sach pata hai toh comment me 'YES' ya 'NO' likhkar batao!").
+     C. High-Conversion Identity & Part 2 Follow Trigger: Compel them to follow the page based on identity and exclusive revelations (e.g. "Agar aap bhi un 1% logo me hain jo unfiltered sach dekhna chahte hain, toh page ko abhi FOLLOW karein—kyunki Part 2 isse 10 guna zyada hairatangez hone wala hai!")."""
+                        default_titles = [f"{topic or 'Mystery'} Revealed {'#Reels #FacebookReels' if not is_long else ''}"]
+                    else:
+                        outro_examples = """     A. Mind-Bending Question / Open Loop: Leave a provocative question ringing in their head (e.g. "Kya ye sach me punarjanam ka saboot tha, ya science ka sabse bada anjaana rahasya?").
      B. Polarized Comment Debate Trigger: Challenge the viewer to comment their answer (e.g. "Agar aapko iska sach pata hai toh comment me 'YES' ya 'NO' likhkar batao!").
      C. High-Conversion Identity & Part 2 Subscribe Trigger: Compel them to subscribe based on identity and exclusive revelations (e.g. "Agar aap bhi un 1% logo me hain jo unfiltered sach dekhna chahte hain, toh channel ko abhi SUBSCRIBE karein—kyunki Part 2 isse 10 guna zyada hairatangez hone wala hai!")."""
+                        default_titles = [f"{topic or 'Mystery'} Revealed {'#Shorts' if not is_long else ''}"]
 
                     default_pinned = "Aapka is baare me kya sochna hai? Comment karein 👇"
                     default_titles = [f"{topic or 'Mystery'} Revealed {'#Shorts' if not is_long else ''}"]
@@ -460,26 +512,32 @@ CRITICAL RULES:
      * The 99% Rule: "99% of people have no idea why world governments kept this incident top-secret for over 50 years!"
 """
 
-                    outro_examples = """     A. Mind-Bending Question / Open Loop: Leave a provocative question ringing in their head (e.g. "Was this real documented proof of the impossible, or science's greatest unsolved mystery?").
+                    if is_fb:
+                        outro_examples = """     A. Mind-Bending Question / Open Loop: Leave a provocative question ringing in their head (e.g. "Was this real documented proof of the impossible, or science's greatest unsolved mystery?").
+     B. Polarized Comment Debate Trigger: Challenge the viewer to comment their answer (e.g. "If you believe this is real, type 'YES' or 'NO' in the comments!").
+     C. High-Conversion Identity & Part 2 Follow Trigger: Compel them to follow your Facebook page based on identity and exclusive revelations (e.g. "If you are among the 1% who demand the unfiltered truth, hit FOLLOW on this page right now so you never miss Part 2!")."""
+                        default_titles = [f"{topic or 'Mystery'} Revealed {'#Reels #FacebookReels' if not is_long else ''}"]
+                    else:
+                        outro_examples = """     A. Mind-Bending Question / Open Loop: Leave a provocative question ringing in their head (e.g. "Was this real documented proof of the impossible, or science's greatest unsolved mystery?").
      B. Polarized Comment Debate Trigger: Challenge the viewer to comment their answer (e.g. "If you believe this is real, type 'YES' or 'NO' in the comments!").
      C. High-Conversion Identity & Part 2 Subscribe Trigger: Compel them to subscribe based on identity and exclusive revelations (e.g. "If you are among the 1% who demand the unfiltered truth, hit SUBSCRIBE right now so you never miss Part 2!")."""
+                        default_titles = [f"{topic or 'Mystery'} Revealed {'#Shorts' if not is_long else ''}"]
 
                     default_pinned = "What do you think really happened? Comment below 👇"
-                    default_titles = [f"{topic or 'Mystery'} Revealed {'#Shorts' if not is_long else ''}"]
 
                 if is_long:
                     duration_mandate = """CRITICAL DOCUMENTARY DURATION MANDATE:
 - For 16:9 Long Video, the script narration should be 350 to 500 words (3.0 to 4.5 minutes spoken audio).
 - Deliver deep investigative depth, rich historical context, and comprehensive storytelling."""
                 else:
-                    duration_mandate = """CRITICAL YOUTUBE SHORTS DURATION MANDATE (TARGET: 55 TO 58 SECONDS, STRICT LIMIT <59.0s):
-- For YouTube Shorts, the script narration MUST BE 55 TO 58 SECONDS (Optimal YouTube Shorts watch-time, retention & algorithm sweet spot).
-- YouTube Shorts feed HARD CUTOFF is 60.0 seconds! The video must strictly remain under 59.0s.
+                    duration_mandate = f"""CRITICAL DURATION MANDATE (TARGET: 55 TO 58 SECONDS, STRICT LIMIT <59.0s):
+- For {'Facebook Reels' if is_fb else 'YouTube Shorts'}, the script narration MUST BE 55 TO 58 SECONDS (Optimal watch-time, retention & algorithm sweet spot).
+- Feed HARD CUTOFF is 60.0 seconds! The video must strictly remain under 59.0s.
 - At standard natural speaking pace (~2.45-2.55 words/second), the script MUST BE STRICTLY 135 TO 148 WORDS TOTAL (ABSOLUTE CEILING: 148 words).
-- Word Budget: Hook = 18-24 words, Body = 95-102 words (5-6 intense story beats), Outro + Subscribe CTA = 20-24 words.
+- Word Budget: Hook = 18-24 words, Body = 95-102 words (5-6 intense story beats), Outro CTA = 20-24 words.
 - TARGET RANGE: 135 to 148 words. DO NOT WRITE LESS THAN 135 WORDS OR MORE THAN 148 WORDS!"""
 
-                prompt = f"""You are a top-tier viral YouTube Short & Documentary scriptwriter who crafts scripts that retain 80%+ audience retention and drive massive subscriber conversion.
+                prompt = f"""You are a top-tier viral {'Facebook Reel' if is_fb else 'YouTube Short'} & Documentary scriptwriter who crafts scripts that retain 80%+ audience retention and drive massive follower/subscriber conversion.
 
 Task: Transform this user idea/topic/script into a high-retention, thrilling narration script for a {format_desc}.
 Target word count: {target_words}.
@@ -496,7 +554,7 @@ IMPORTANT CREATIVE INSTRUCTION:
 
 {duration_mandate}
 
-STRICT RETENTION & SUBSCRIBER GROWTH BLUEPRINT:
+STRICT RETENTION & GROWTH BLUEPRINT:
 1. THE 3-SECOND SCROLL-STOPPER OPENING HOOK (CRUCIAL):
    - ABSOLUTELY NO greetings, intros, or generic pleasantries (Never say "Hello dosto", "Aaj hum baat karenge", "Ek baar ki baat hai").
    - The opening MUST punch the viewer immediately with an Impossible Paradox, High-Stakes Warning, or Shocking Truth in the first 10-15 words.
@@ -507,17 +565,17 @@ STRICT RETENTION & SUBSCRIBER GROWTH BLUEPRINT:
    - At the 15-20 second mark, introduce an unexpected contradiction, twist, or classified revelation that locks the viewer in until the final second.
    - Present intriguing evidence, twists, or real eyewitness facts without unnecessary fluff.
 
-3. THE ENGAGEMENT & SUBSCRIBER CONVERSION OUTRO (MANDATORY):
+3. THE ENGAGEMENT & OUTRO CTA (MANDATORY):
    - The ending MUST NOT just stop. It must include 3 distinct psychological elements:
 {outro_examples}
-   - STRICT RULE: NEVER use weak begging phrases ("like karein aur support karein" is 100% prohibited). Frame subscribing as joining an elite group or unlocking the upcoming revelation!
+   - STRICT RULE: NEVER use weak begging phrases ("like karein aur support karein" is 100% prohibited). Frame following/subscribing as joining an elite group or unlocking the upcoming revelation!
 
 Output STRICT JSON with these keys:
 - "hook": The explosive opening 1-2 sentences (the 3-second hook).
 - "body": The main high-tension story scenes.
-- "cliffhanger": The closing question + comment debate trigger + Like & Subscribe CTA.
+- "cliffhanger": The closing question + comment debate trigger + Like & {'Follow' if is_fb else 'Subscribe'} CTA.
 - "full_narration": Complete continuous script combining hook + body + cliffhanger seamlessly (without any scene headings or bracketed labels).
-- "titles": Array of 3 viral, high-CTR YouTube video titles (include relevant emojis, and {'#Shorts' if not is_long else ''}).
+- "titles": Array of 3 viral, high-CTR {'Facebook Reel' if is_fb else 'YouTube video'} titles (include relevant emojis, and {'#Reels #FacebookReels' if (is_fb and not is_long) else ('#Shorts' if not is_long else '')}).
 - "pinned_comment": Provocative debate question for pinned comments to drive 100+ replies.
 - "tags": Array of 6 relevant tags / hashtags.
 """
@@ -553,11 +611,14 @@ Output STRICT JSON with these keys:
                 if data:
                     narration = data.get("full_narration", raw_input)
                     if not is_long and len(narration.split()) > 150:
-                        print_info(f"Generated narration has {len(narration.split())} words. Auto-condensing for 56-58s Shorts limit...")
+                        print_info(f"Generated narration has {len(narration.split())} words. Auto-condensing for 56-58s limit...")
                         narration = self._condense_rule_based(narration, max_words=145)
 
                     word_count = len(narration.split())
                     est_seconds = round(word_count / 2.6, 1)
+
+                    fb_tags = ["#Reels", "#FacebookReels", "#ViralReels", "#Trending", "#Facts"]
+                    yt_tags = ["#Shorts", "#Mystery", "#Viral"] if not is_long else ["#Documentary", "#Mystery", "#History", "#Facts"]
 
                     return {
                         "success": True,
@@ -567,34 +628,66 @@ Output STRICT JSON with these keys:
                         "cliffhanger": data.get("cliffhanger", ""),
                         "titles": data.get("titles", default_titles),
                         "pinned_comment": data.get("pinned_comment", default_pinned),
-                        "tags": data.get("tags", ["#Shorts", "#Mystery", "#Viral"] if not is_long else ["#Documentary", "#Mystery", "#History", "#Facts"]),
+                        "tags": data.get("tags", fb_tags if is_fb else yt_tags),
                         "word_count": word_count,
                         "est_seconds": est_seconds,
                         "is_long": is_long,
-                        "scenes": self._split_script_into_scenes(narration, 35 if is_long else 6),
+                        "target_platform": target_platform,
+                        "scenes": self._split_script_into_scenes(narration, 35 if is_long else 15),
                     }
             except Exception as e:
                 print_warning(f"AI script enhancer error: {e}. Switching to instant smart story fallback...")
 
         # Instant Smart Story Fallback (0ms, 100% complete story)
-        return self._generate_smart_fallback_story(raw_input, topic=topic, language=language, is_long=is_long)
+        return self._generate_smart_fallback_story(raw_input, topic=topic, language=language, is_long=is_long, target_platform=target_platform)
 
     def generate_voice_audition(self, voice_id: str, sample_text: Optional[str] = None) -> Path:
         """Generate a 3-second audio sample for the user to audition in browser."""
+        v_clean = (voice_id or "").strip()
+        output_file = TEMP_DIR / f"audition_{v_clean}_{int(time.time())}.mp3"
+        TEMP_DIR.mkdir(parents=True, exist_ok=True)
+
+        if v_clean.lower() in ("charon", "puck", "aoede", "kore", "fenrir"):
+            from autotube.voice.gemini_tts import GeminiTTSEngine
+            gemini_tts = GeminiTTSEngine()
+            sample = sample_text or "ब्रह्मांड के दिव्य और अनसुलझे रहस्यों में आपका स्वागत है।"
+            res = gemini_tts.synthesize(text=sample, output_audio_path=output_file, voice=v_clean.capitalize())
+            return output_file
+
         text = sample_text or "This is a live preview of your selected AI narrator voice."
-        output_file = TEMP_DIR / f"audition_{voice_id}_{int(time.time())}.mp3"
         tts = TTSEngine(default_voice=voice_id)
         res = tts.synthesize(text=text, output_audio_path=output_file, voice=voice_id)
         return res.audio_path
 
     def _extract_visual_search_query(self, sentence: str, topic: str, scene_idx: int) -> str:
         """Extract a clean, high-relevance English visual query for stock or AI video engines."""
+        try:
+            from autotube.media.hindi_visual_extractor import extract_english_visual_queries
+            extracted = extract_english_visual_queries(sentence, topic=topic, scene_idx=scene_idx)
+            if extracted and extracted.get("search_queries"):
+                return extracted["search_queries"][0]
+            if extracted and extracted.get("subject"):
+                return extracted["subject"]
+        except Exception:
+            pass
+
         s_lower = sentence.lower()
         t_lower = topic.lower()
 
         # Keyword mapping from common Hindi/English concepts to visual keywords
+        # Specific celestial bodies and physics concepts must precede generic 'planet'/'earth'
         mappings = [
+            (("jupiter", "जुपिटर", "बृहस्पति", "great red spot", "gas giant"), "jupiter gas giant planet space"),
+            (("saturn", "शनि", "planetary rings", "ringed planet"), "saturn planet rings deep space"),
+            (("mars", "मंगल", "लाल ग्रह", "red planet"), "mars planet red surface space"),
+            (("venus", "शुक्र", "morning star"), "venus planet thick atmosphere volcanic space"),
+            (("sun", "सूरज", "सूर्य", "solar flare", "solar corona"), "sun solar flare corona deep space"),
+            (("moon", "चांद", "चंद्रमा", "चंदा", "lunar"), "moon lunar surface craters deep space"),
             (("black hole", "blackhole", "ब्लैक होल", "singularity", "event horizon", "accretion", "spaghetti"), "black hole space"),
+            (("asteroid", "comet", "meteor", "उल्का", "उल्कापिंड", "धूमकेतु", "meteorite"), "asteroid comet flying deep space"),
+            (("gravity", "गुरुत्वाकर्षण", "gravitational", "गुरुत्व"), "extreme gravitational distortion cosmic space"),
+            (("atmosphere", "वायुमंडल", "वातावरण", "hawa", "हवा", "clouds", "बादल", "gas", "गैस"), "turbulent planetary atmosphere storm clouds space"),
+            (("storm", "तूफान", "cyclone", "बवंडर", "vortex", "tornado"), "colossal cosmic storm vortex space"),
             (("space", "antariksh", "अंतरिक्ष", "brahmand", "ब्रह्मांड", "galaxy", "सौर मंडल", "solar system", "universe", "cosmos", "stars", "तारे"), "deep space galaxy"),
             (("earth", "dharati", "धरती", "पृथ्वी", "planet", "ग्रह", "neela grah"), "planet earth space"),
             (("ocean", "samundar", "समुद्र", "सागर", "sea", "underwater", "trench"), "dark deep ocean abyss"),
@@ -684,8 +777,44 @@ Output STRICT JSON with these keys:
         ]
         return general_fallbacks[scene_idx % len(general_fallbacks)]
 
+    def _generate_dynamic_visual_prompt(self, sentence: str, topic: str) -> Optional[str]:
+        """Use Gemini to dynamically analyze the exact sentence narration and generate a 100% matched 3D visual scene."""
+        gemini_key = os.getenv("GEMINI_API_KEY", "") or getattr(self.cfg, "gemini_api_key", "")
+        if not gemini_key or len(sentence.strip()) < 8:
+            return None
+        try:
+            from google import genai
+            client = genai.Client(api_key=gemini_key)
+            prompt_instruction = (
+                f"You are a master Hollywood 3D cinematic director and visual prompt engineer.\n"
+                f"Narration sentence: \"{sentence.strip()}\"\n"
+                f"Video Topic: \"{topic}\"\n"
+                f"Generate a single, highly-detailed 3D photorealistic image prompt in English that EXACTLY visually portrays the action and emotion of this sentence.\n"
+                f"Rules:\n"
+                f"1. Name the exact character, their posture, facial expression, and action.\n"
+                f"2. Describe environment, 3D lighting, camera angle, and physical props.\n"
+                f"3. Style: Unreal Engine 5.4 3D hyperrealistic CGI, Octane Render 8k, Panavision 70mm, volumetric lighting.\n"
+                f"4. Maximum 35 words. Return ONLY the plain prompt text, no quotes, no labels."
+            )
+            for m in ("gemini-3.5-flash-lite", "gemini-flash-lite-latest", "gemini-3.1-flash-lite"):
+                try:
+                    resp = client.models.generate_content(model=m, contents=prompt_instruction)
+                    if resp and resp.text and len(resp.text.strip()) > 15:
+                        clean = resp.text.strip().replace('"', '').replace('\n', ' ')
+                        return clean
+                except Exception:
+                    continue
+        except Exception:
+            pass
+        return None
+
     def _extract_ai_scene_prompt(self, sentence: str, topic: str, scene_idx: int) -> str:
-        """Generate high-aesthetic cinematic visual prompt matching the exact topic genre."""
+        """Generate high-aesthetic cinematic visual prompt matching the exact topic genre and sentence."""
+        # 1. Attempt dynamic Gemini scene generation for 100% script-visual matching
+        dynamic_p = self._generate_dynamic_visual_prompt(sentence, topic)
+        if dynamic_p:
+            return dynamic_p
+
         s_lower = sentence.lower()
         t_lower = topic.lower()
 
@@ -706,23 +835,34 @@ Output STRICT JSON with these keys:
         if any(k in s_lower for k in ("space", "antariksh", "brahmand", "galaxy", "universe", "solar system", "stars", "cosmos")):
             return "masterpiece deep space cosmic view, luminous stellar nebulae, Panavision 70mm IMAX astronomy movie still, 8k"
 
-        # Check for Gita / Vedic / Sanatan / Scripture topics
-        if any(k in s_lower or k in t_lower for k in ("krishna", "कृष्ण", "gita", "गीता", "arjun", "अर्जुन", "kurukshetra", "कुरुक्षेत्र", "chariot", "rath", "रथ", "vishwaroop", "विश्वरूप")):
-            gita_prompts = [
-                "Cinematic masterpiece, shot on ARRI Alexa 65, 35mm anamorphic lens, Lord Krishna standing majestically on golden chariot with warrior Arjuna in Kurukshetra battlefield at dramatic golden sunset, divine radiant aura, volumetric god rays, hyperrealistic 8k",
-                "Cinematic masterpiece, shot on ARRI Alexa 65, Lord Krishna revealing cosmic divine form Vishwaroopam, celestial golden cosmic light, infinite radiant universe, sacred Vedic epic cinema, hyperrealistic 8k",
-                "Cinematic masterpiece, shot on ARRI Alexa 65, 35mm anamorphic lens, warrior Arjuna bowing respectfully with Gandiva bow before Lord Krishna, golden hour dusty epic battlefield, dramatic chiaroscuro lighting, 8k",
-                "Cinematic masterpiece, shot on ARRI Alexa 65, Lord Krishna with peacock feather crown blowing divine Panchajanya conch, sacred golden aura, volumetric atmospheric lighting, 8k",
-                "Cinematic masterpiece, shot on ARRI Alexa 65, 35mm anamorphic lens, sacred ancient Bhagavad Gita Sanskrit manuscript glowing with divine golden energy in serene Vedic ashram, dramatic chiaroscuro lighting, 8k",
-                "Cinematic masterpiece, shot on ARRI Alexa 65, 35mm anamorphic lens, ancient warrior standing on epic Kurukshetra battlefield amidst mist and embers, holding divine bow, cinematic dramatic atmosphere, 8k",
-            ]
-            return gita_prompts[scene_idx % len(gita_prompts)]
+        # Check for fine-grained Gita / Vedic / Sanatan / Scripture sentence actions
+        is_vedic_topic = any(k in s_lower or k in t_lower for k in ("krishna", "कृष्ण", "gita", "गीता", "arjun", "अर्जुन", "kurukshetra", "कुरुक्षेत्र", "chariot", "rath", "रथ", "vishwaroop", "विश्वरूप", "karma", "कर्म", "sanatan", "सनातन", "vedic", "वेद", "dharma", "धर्म"))
+        if is_vedic_topic:
+            if any(k in s_lower for k in ("धनुष", "गांडीव", "तीर", "bow", "arrow", "gandiva", "कांप", "अश्रु", "रो", "weep", "tears", "दुख", "despair", "त्याग")):
+                return "3D hyperrealistic CGI render, warrior Arjuna kneeling in deep emotional despair inside golden war chariot, placing Gandiva bow down on floor, tears of sorrow, sunset Kurukshetra, Unreal Engine 5.4, 8k"
+            elif any(k in s_lower for k in ("विश्वरूप", "विराट", "ब्रह्मांड", "अनंत", "cosmic", "vishwaroop", "infinite", "galaxies")):
+                return "3D hyperrealistic CGI render, Lord Krishna revealing glorious cosmic Vishwaroopam, billions of stars and celestial galaxies shining from divine form, transcendent golden light, Octane Render 8k"
+            elif any(k in s_lower for k in ("मुस्कुरा", "हंस", "smile", "ज्ञान", "उपदेश", "सत्य", "wisdom", "speak", "बोले", "कहा")):
+                return "3D hyperrealistic CGI portrait, Lord Krishna with gentle compassionate divine smile, golden peacock feather crown, glowing blue and gold aura, Gyan Mudra blessing gesture, cinematic 8k"
+            elif any(k in s_lower for k in ("शंख", "conch", "सेना", "army", "युद्ध", "war", "battle", "मैदान", "कुरुक्षेत्र")):
+                return "3D hyperrealistic epic shot, vast ancient Indian battlefield Kurukshetra, thousands of warriors and golden war chariots lined up under dramatic stormy clouds, cinematic 8k"
+            elif any(k in s_lower for k in ("आत्मा", "शरीर", "मृत्यु", "वस्त्र", "soul", "body", "death", "immortal", "अमर")):
+                return "3D mystical cinematic scene, luminous immortal golden soul peacefully leaving temporary physical earthly body, ethereal glowing sacred light, Vedic philosophy, 8k"
+            elif any(k in s_lower for k in ("कर्म", "फल", "कर्तव्य", "karma", "duty", "action", "आगे", "लड़")):
+                return "3D cinematic hero shot, ancient Indian warrior standing resolute with unyielding determination amidst battlefield dust and golden sunlight, performing righteous duty, 8k"
+            elif any(k in s_lower for k in ("ध्यान", "साधना", "शांत", "मन", "meditation", "mind", "peace", "sage", "ऋषि")):
+                return "3D cinematic render, ancient enlightened Vedic sage meditating under sacred banyan tree in misty Himalayas, golden aura glowing at third eye, Octane Render 8k"
+            else:
+                return "3D cinematic masterpiece, Lord Krishna standing majestically on golden chariot beside warrior Arjuna in Kurukshetra battlefield at dramatic golden sunset, divine radiant aura, Unreal Engine 5.4, 8k"
+
         if any(k in s_lower or k in t_lower for k in ("chanakya", "चाणक्य", "niti", "नीति")):
-            return "Cinematic masterpiece, shot on ARRI Alexa 65, 35mm anamorphic lens, Acharya Chanakya wise ancient Indian philosopher standing in historic Takshashila royal court, warm candlelight, deep contemplation, dramatic chiaroscuro lighting, 8k"
+            return "Cinematic masterpiece 3D render, Acharya Chanakya wise ancient Indian philosopher standing in historic Takshashila royal court, warm candlelight, deep contemplation, dramatic chiaroscuro lighting, 8k"
         if any(k in s_lower or k in t_lower for k in ("ramayan", "रामायण", "ram", "राम")):
-            return "Cinematic masterpiece, shot on ARRI Alexa 65, 35mm anamorphic lens, Lord Rama standing serenely with divine Kodanda bow in lush ancient Dandakaranya forest, radiant golden divine aura, volumetric sunbeams, 8k"
-        if any(k in s_lower or k in t_lower for k in ("karma", "कर्म", "sanatan", "सनातन", "vedic", "वेद", "upanishad", "उपनिषद")):
-            return "Cinematic masterpiece, shot on ARRI Alexa 65, 35mm anamorphic lens, ancient Vedic sage meditating in deep Himalayas under sacred banyan tree, cosmic energy and golden spiritual aura, volumetric lighting, 8k"
+            return "Cinematic masterpiece 3D render, Lord Rama standing serenely with divine Kodanda bow in lush ancient Dandakaranya forest, radiant golden divine aura, volumetric sunbeams, 8k"
+        if any(k in s_lower or k in t_lower for k in ("shiva", "शिव", "mahadev", "महादेव", "kailash", "कैलाश")):
+            return "Cinematic masterpiece 3D render, Lord Shiva in deep meditation on snowy Mount Kailash, crescent moon in matted hair, serene cosmic divine aura, Unreal Engine 5.4, 8k"
+        if any(k in s_lower or k in t_lower for k in ("hanuman", "हनुमान", "bajrangbali", "बजरंगबली")):
+            return "Cinematic masterpiece 3D render, Lord Hanuman standing in deep devotion with folded hands, radiant golden muscular form, glowing divine aura, epic 8k"
 
         # Check for historical mysteries
         if "bose" in t_lower or "netaji" in t_lower:
@@ -754,19 +894,27 @@ Output STRICT JSON with these keys:
     def _extract_vedic_pexels_query(self, sentence: str, subject: Optional[str], scene_idx: int) -> str:
         """Extract a unique atmospheric English stock search query for sacred/Vedic scenes."""
         s_lower = f"{sentence} {subject or ''}".lower()
+        if any(k in s_lower for k in ("dhruva", "balak", "बालक", "child", "boy", "kid", "son", "prince", "रोते", "आंसू")):
+            return ["indian boy praying forest", "young boy meditating sacred nature", "indian child looking at starry night sky"][scene_idx % 3]
+        if any(k in s_lower for k in ("tapasya", "तपस्या", "meditation", "dhyana", "penance", "sadhu", "yogi", "साधना")):
+            return ["sadhu meditating himalayas morning", "spiritual dhyana forest golden sunlight", "ancient yogi meditation cave"][scene_idx % 3]
+        if any(k in s_lower for k in ("vishnu", "विष्णु", "narayan", "नारायण", "bhagwan", "भगवान", "god", "divine", "blessing", "आशीर्वाद", "दर्शन")):
+            return ["golden divine light rays ancient temple", "divine golden light rays sacred sky", "celestial golden glowing horizon rays"][scene_idx % 3]
+        if any(k in s_lower for k in ("star", "tara", "तारा", "dhruva star", "ध्रुव तारा", "sky", "night", "आकाश")):
+            return ["shining north star night sky time lapse", "milky way galaxy night sky", "starry night sky cosmic wonder"][scene_idx % 3]
         if any(k in s_lower for k in ("samudra", "ocean", "sea", "bridge", "setu", "ram setu", "water", "stone")):
             return ["ancient ocean floating stones sunrise", "dramatic sea waves rocky coastline", "ancient stone bridge sea morning"][scene_idx % 3]
         if any(k in s_lower for k in ("krishna", "chariot", "rath", "kurukshetra", "battle", "war")):
             return ["ancient chariot golden sunset battlefield", "ancient warrior silhouette mist", "epic golden hour dusty horizon"][scene_idx % 3]
-        if any(k in s_lower for k in ("fire", "yajna", "homa", "havan", "flame", "aarti")):
+        if any(k in s_lower for k in ("fire", "yajna", "homa", "havan", "flame", "aarti", "आरती", "हवन", "दीया")):
             return ["sacred holy fire ritual yajna", "burning holy flame temple embers", "sacred brass lamps temple aarti"][scene_idx % 3]
-        if any(k in s_lower for k in ("mountain", "himalaya", "meditation", "dhyana", "shiva", "tapasya")):
+        if any(k in s_lower for k in ("mountain", "himalaya", "कैलाश", "shiva", "महादेव", "रुद्र")):
             return ["himalayan snow peaks sunrise golden light", "ancient holy cave incense morning light", "misty sacred mountain summit dawn"][scene_idx % 3]
-        if any(k in s_lower for k in ("ganga", "river", "holy river", "varanasi", "ghat")):
+        if any(k in s_lower for k in ("ganga", "गंगा", "river", "holy river", "varanasi", "ghat", "काशी")):
             return ["ganges river varanasi morning sunrise", "sacred river boat dawn holy water", "sacred river misty morning india"][scene_idx % 3]
-        if any(k in s_lower for k in ("temple", "mandir", "shrine", "puja", "worship")):
+        if any(k in s_lower for k in ("temple", "mandir", "मंदिर", "shrine", "puja", "पूजा", "worship")):
             return ["ancient stone temple india sun rays", "carved temple pillars dramatic lighting", "ancient hindu temple golden dawn"][scene_idx % 3]
-        if any(k in s_lower for k in ("cosmic", "universe", "vishwaroop", "stars", "galaxy", "celestial")):
+        if any(k in s_lower for k in ("cosmic", "universe", "vishwaroop", "stars", "galaxy", "celestial", "ब्रह्मांड")):
             return ["cosmic galaxy nebula golden universe", "celestial deep space milky way golden stars", "cosmic nebulae sacred starry night"][scene_idx % 3]
 
         defaults = [
@@ -870,7 +1018,7 @@ Output STRICT JSON with these keys:
                         "visual_environment": str(raw.get("visual_environment") or raw.get("environment") or "").strip(),
                         "must_show": list(raw.get("must_show") or []),
                         "avoid": list(raw.get("avoid") or []),
-                        "custom_image_path": str(raw.get("custom_image_path") or raw.get("image_path") or "").strip(),
+                        "custom_image_path": str(raw.get("custom_image_path") or raw.get("custom_image") or raw.get("image_path") or "").strip(),
                         "visual_prompt": str(raw.get("visual_prompt") or raw.get("prompt") or "").strip(),
                         "vedic_mood": str(raw.get("vedic_mood") or "auto"),
                     }
@@ -881,14 +1029,49 @@ Output STRICT JSON with these keys:
 
             # Preserve structured scene plan if narration matches the script, OR if explicit custom image uploads are attached
             if candidates and (candidate_script == normalized_script or has_custom_images):
+                try:
+                    from autotube.media.hindi_visual_extractor import is_hindi_text, extract_english_visual_queries
+                    for idx, sc in enumerate(candidates):
+                        subj = str(sc.get("visual_subject") or "").strip()
+                        kws = sc.get("search_keywords") or []
+                        if not subj or is_hindi_text(subj) or not kws or all(is_hindi_text(str(k)) for k in kws):
+                            res = extract_english_visual_queries(sc["narration"], topic=title, scene_idx=idx)
+                            if not subj or is_hindi_text(subj):
+                                sc["visual_subject"] = res["subject"]
+                            if not kws or all(is_hindi_text(str(k)) for k in kws):
+                                sc["search_keywords"] = res["search_queries"]
+                            if not sc.get("must_show"):
+                                sc["must_show"] = res.get("must_show", [])
+                            if not sc.get("avoid"):
+                                sc["avoid"] = res.get("avoid", [])
+                except Exception:
+                    pass
                 return candidates[:max(len(candidates), max_scenes)]
 
         split_scenes = self._split_script_into_scenes(script_text, max_scenes)
-        for idx, scene in enumerate(split_scenes):
-            if not scene.get("visual_subject"):
-                q = self._extract_visual_search_query(scene["narration"], title, idx)
-                scene["visual_subject"] = q
-                scene["search_keywords"] = [q]
+        try:
+            from autotube.media.hindi_visual_extractor import is_hindi_text, extract_english_visual_queries
+            for idx, scene in enumerate(split_scenes):
+                subj = str(scene.get("visual_subject") or "").strip()
+                kws = scene.get("search_keywords") or []
+                if not subj or is_hindi_text(subj) or not kws or all(is_hindi_text(str(k)) for k in kws):
+                    res = extract_english_visual_queries(scene["narration"], topic=title, scene_idx=idx)
+                    scene["visual_subject"] = res["subject"]
+                    scene["search_keywords"] = res["search_queries"]
+                    if not scene.get("must_show"):
+                        scene["must_show"] = res.get("must_show", [])
+                    if not scene.get("avoid"):
+                        scene["avoid"] = res.get("avoid", [])
+                elif not scene.get("visual_subject"):
+                    q = self._extract_visual_search_query(scene["narration"], title, idx)
+                    scene["visual_subject"] = q
+                    scene["search_keywords"] = [q]
+        except Exception:
+            for idx, scene in enumerate(split_scenes):
+                if not scene.get("visual_subject"):
+                    q = self._extract_visual_search_query(scene["narration"], title, idx)
+                    scene["visual_subject"] = q
+                    scene["search_keywords"] = [q]
 
         return split_scenes
 
@@ -1407,7 +1590,7 @@ Return ONLY a JSON list of scene objects matching this structure:
         voice: str = "hi_astro_vibes_male",
         voice_speed: float = 1.05,
         bgm_filename: Optional[str] = None,
-        bgm_volume: float = 0.16,
+        bgm_volume: float = 0.03,
         subtitle_style_id: str = "hormozi",
         enable_classified_badge: bool = False,
         visual_engine: str = "auto",
@@ -1418,14 +1601,16 @@ Return ONLY a JSON list of scene objects matching this structure:
         auto_viral_hook: bool = True,
         scenes: Optional[List[Dict[str, Any]]] = None,
         progress_callback = None,
+        target_platform: str = "youtube",
     ) -> Dict[str, Any]:
         """Render complete custom Short (9:16) or Long (16:9) video matching user script, voice, BGM, and visual choices."""
         slug = sanitize_filename(title or "custom_video")
         is_long = (video_format == "landscape_long")
+        is_fb = (target_platform or "").lower() in ("facebook", "facebook_reels", "fb", "reels")
         target_width = 1920 if is_long else 1080
         target_height = 1080 if is_long else 1920
         orientation = "landscape" if is_long else "portrait"
-        format_label = "16:9 Landscape Long Video" if is_long else "9:16 Vertical Short"
+        format_label = "16:9 Landscape Long Video" if is_long else ("9:16 Vertical Facebook Reel" if is_fb else "9:16 Vertical Short")
 
         VALID_VISUAL_MODES = {
             "multi_cinematic", "multi_best", "auto", "hybrid", "real_only",
@@ -1504,7 +1689,7 @@ Return ONLY a JSON list of scene objects matching this structure:
             if condensed:
                 active_script = condensed
 
-        max_scene_count = 50 if (is_long or is_vedic_granth_mode) else (max(len(scenes), 8) if has_user_scenes else 6)
+        max_scene_count = 50 if (is_long or is_vedic_granth_mode) else (max(len(scenes), 10) if has_user_scenes else 10)
         scene_specs = self._prepare_scene_specs(
             script_text=active_script,
             title=title,
@@ -1595,13 +1780,13 @@ Return ONLY a JSON list of scene objects matching this structure:
             voice=selected_voice,
             rate=rate_str,
             scenes=scene_specs,
-            allow_unconstrained_duration=(is_long or is_vedic_granth_mode),
+            allow_unconstrained_duration=(is_long or is_vedic_granth_mode or is_fb),
         )
         total_duration = tts_res.duration_seconds
 
         # Universal Shorts Duration Clamp: Guarantee final video strictly complies with <60s YouTube Shorts feed cutoff
-        # (Disabled for Vedic & Granth Studio to allow full, unconstrained sacred storytelling)
-        if not is_long and not is_vedic_granth_mode:
+        # (Disabled for Vedic & Granth Studio and Facebook Reels to allow full, unconstrained storytelling)
+        if not is_long and not is_vedic_granth_mode and not is_fb:
             tts_res = tts.clamp_duration(
                 tts_res=tts_res,
                 max_seconds=58.5,
@@ -1610,6 +1795,8 @@ Return ONLY a JSON list of scene objects matching this structure:
                 height=target_height,
             )
             total_duration = tts_res.duration_seconds
+        elif is_fb:
+            print_info(f"📱 [Facebook Reels Duration Guard] Preserving full multi-minute speech duration ({total_duration:.1f}s, {len(scene_specs)} scenes).")
         elif is_vedic_granth_mode:
             print_info(f"🕉️ [Vedic Studio Duration Guard] Unconstrained duration active: Preserving full speech duration ({total_duration:.1f}s, {len(scene_specs)} scenes).")
 
@@ -1687,7 +1874,7 @@ Return ONLY a JSON list of scene objects matching this structure:
 
             try:
                 # 0. User-provided custom/uploaded image takes HIGHEST precedence
-                custom_img_str = str(scene.get("custom_image_path") or scene.get("image_path") or "").strip()
+                custom_img_str = str(scene.get("custom_image_path") or scene.get("custom_image") or scene.get("image_path") or "").strip()
                 if custom_img_str:
                     custom_img_p = Path(custom_img_str)
                     if custom_img_p.exists() and custom_img_p.stat().st_size > 5000:
@@ -1729,118 +1916,104 @@ Return ONLY a JSON list of scene objects matching this structure:
                 if acquired_video:
                     pass
                 elif is_vedic_granth_mode:
-                    if progress_callback:
-                        progress_callback(55 + int((idx / max(1, len(scene_specs))) * 18), f"🎨 Scene {idx+1}/{len(scene_specs)}: Generating 4K/8K divine AI photorealistic visual...")
-
-                    explicit_prompt = str(scene.get("visual_prompt") or "").strip()
-                    if explicit_prompt:
-                        ai_prompt = explicit_prompt
-                    else:
-                        v_desc = str(scene.get("visual_description", "")).strip()
-                        v_subj = str(scene.get("visual_subject", "")).strip()
-                        if not v_desc and scene_plan:
-                            v_desc = str(scene_plan.get("environment", "") or scene_plan.get("action", "")).strip()
-                        if not v_subj and scene_plan:
-                            v_subj = str(scene_plan.get("subject", "")).strip()
-
-                        # High-aesthetic 4K/8K prompt construction
-                        if v_desc and len(v_desc) > 15:
-                            prompt_parts = []
-                            if v_subj and v_subj.lower() not in v_desc.lower():
-                                prompt_parts.append(v_subj)
-                            prompt_parts.append(v_desc)
-                            core_prompt = ", ".join(prompt_parts)
-                        else:
-                            core_prompt = self._extract_ai_scene_prompt(sentence, title, idx)
-
-                        ai_prompt = f"8k photorealistic ultra-detailed cinematic divine art, {core_prompt}, golden divine aura, sacred majestic lighting, 8k resolution, cinematic composition, hyperrealistic sacred epic art"
-
-                    ai_img_path = TEMP_DIR / f"gita_ai_{idx}_{slug}.jpg"
-                    print_info(f"   🕉️ [Gita/Granth Visual Engine] Scene {idx+1}: Generating 4K/8K AI visual: '{ai_prompt[:75]}...'")
-
                     is_vert = target_height > target_width
-                    source_w = 2160 if is_vert else 3840
-                    source_h = 3840 if is_vert else 2160
-                    poll_key = os.getenv("POLLINATIONS_API_KEY", "").strip()
-
-                    # Inter-scene delay to keep below free AI burst rate-limit
-                    if idx > 0:
-                        time.sleep(2.0)
-
-                    ai_img = vg.generate_image(
-                        prompt=ai_prompt,
-                        output_path=ai_img_path,
-                        width=source_w,
-                        height=source_h,
-                        style="spiritual_photorealistic",
-                        require_native_resolution=bool(poll_key),
-                        allow_photo_fallback=False,
-                    )
-                    if not ai_img or not ai_img.exists() or ai_img.stat().st_size <= 5000:
-                        fallback_subj = scene.get("visual_subject") or "Lord Krishna divine wisdom in Kurukshetra"
-                        time.sleep(2.5)
-                        ai_img = vg.generate_image(
-                            prompt=f"8k photorealistic divine cinematic art, {fallback_subj}, golden aura, epic sacred masterpiece, 8k",
-                            output_path=ai_img_path,
-                            width=source_w,
-                            height=source_h,
-                            style="spiritual_photorealistic",
-                            require_native_resolution=bool(poll_key),
-                            allow_photo_fallback=False,
+                    pex_q = self._extract_vedic_pexels_query(sentence, scene.get("visual_subject"), idx)
+                    if progress_callback:
+                        progress_callback(
+                            55 + int((idx / max(1, len(scene_specs))) * 18),
+                            f"🕉️ Scene {idx+1}/{len(scene_specs)}: Acquiring authentic sacred 4K footage for '{pex_q}'..."
                         )
 
-                    # Multi-Tier Fail-Safe for Vedic scenes: Never fail closed or crash the render
-                    if not ai_img or not ai_img.exists() or ai_img.stat().st_size <= 5000:
-                        print_warning(f"   ⚠️ [Vedic Engine] Scene {idx+1}: AI generation throttled/busy. Activating authentic sacred visual fail-safe...")
-                        # Tier 1: High-res authentic Indian spiritual stock photo from Pexels
+                    # Tier 1: Authentic 4K Real Stock Video (Pexels / Multi-Stock)
+                    # Guaranteed 100% realistic spiritual footage: Ganga aarti, temple lamps, sadhus, Himalayas
+                    try:
+                        from autotube.media.pexels_video import PexelsVideoFetcher, PEXELS_CACHE_DIR
+                        pv = PexelsVideoFetcher()
+                        if pv.is_configured():
+                            orientation_pref = "portrait" if is_vert else "landscape"
+                            vids = pv.search_videos(query=pex_q, orientation=orientation_pref, per_page=15)
+                            if len(vids) < 2 and is_vert:
+                                vids.extend(pv.search_videos(query=pex_q, orientation="", per_page=15))
+
+                            already_used_files = {p.name for p in scene_assets_by_scene.values() if p}
+                            for pick in vids:
+                                query_hash = hashlib.md5(f"{pex_q}_{pick['id']}".encode()).hexdigest()[:10]
+                                safe_name = re.sub(r'[^a-zA-Z0-9_]', '', pex_q.lower().replace(" ", "_"))[:30]
+                                cache_path = PEXELS_CACHE_DIR / f"vedic_{safe_name}_{idx}_{query_hash}.mp4"
+                                if cache_path.name in already_used_files:
+                                    continue
+                                downloaded_vid = pv.download_video(pick["download_url"], cache_path)
+                                if downloaded_vid and downloaded_vid.exists() and downloaded_vid.stat().st_size > 50000:
+                                    acquired_video = downloaded_vid
+                                    print_success(f"   🕉️ [Authentic 4K Video] Scene {idx+1} matched sacred stock video: '{pex_q}' ({downloaded_vid.name})")
+                                    break
+                    except Exception as vid_err:
+                        print_warning(f"   [Vedic Stock Video Notice] {vid_err}")
+
+                    # Tier 2: Authentic High-Resolution Spiritual Photo from Pexels + Vedic Ken Burns & Sacred Lighting
+                    if not acquired_video:
+                        photo_asset = None
                         try:
-                            from autotube.media.pexels_video import PexelsVideoFetcher
+                            from autotube.media.pexels_video import PexelsVideoFetcher, PEXELS_CACHE_DIR
                             pv = PexelsVideoFetcher()
                             if pv.is_configured():
-                                pex_q = self._extract_vedic_pexels_query(sentence, scene.get("visual_subject"), idx)
-                                photo_path = pv.get_scene_photo(pex_q, orientation="portrait" if is_vert else "landscape")
-                                if photo_path and photo_path.exists() and photo_path.stat().st_size > 10000:
-                                    shutil.copy(photo_path, ai_img_path)
-                                    ai_img = ai_img_path
-                                    print_success(f"   🕉️ [Sacred Fail-Safe] High-res authentic spiritual photo acquired for Scene {idx+1}: '{pex_q}'")
+                                photo_results = pv.search_photos(query=pex_q, orientation="portrait" if is_vert else "landscape", per_page=10)
+                                already_used_files = {p.name for p in scene_assets_by_scene.values() if p}
+                                for p_cand in photo_results:
+                                    p_hash = hashlib.md5(f"{pex_q}_{p_cand['id']}".encode()).hexdigest()[:10]
+                                    safe_name = re.sub(r'[^a-zA-Z0-9_]', '', pex_q.lower().replace(" ", "_"))[:30]
+                                    p_cache = PEXELS_CACHE_DIR / f"vedic_{safe_name}_{idx}_{p_hash}.jpg"
+                                    if p_cache.name in already_used_files:
+                                        continue
+                                    try:
+                                        resp = requests.get(p_cand["download_url"], timeout=20)
+                                        if resp.status_code == 200 and len(resp.content) > 10000:
+                                            with open(p_cache, "wb") as f:
+                                                f.write(resp.content)
+                                            photo_asset = p_cache
+                                            print_success(f"   🕉️ [Authentic Spiritual Photo] Acquired for Scene {idx+1}: '{pex_q}'")
+                                            break
+                                    except Exception:
+                                        pass
                         except Exception as pex_err:
-                            print_warning(f"   [Vedic Photo Fallback] Notice: {pex_err}")
+                            print_warning(f"   [Vedic Photo Fallback Notice] {pex_err}")
 
-                    # Tier 2: Bespoke Procedural Sacred Cinematic Backdrop ($0, 100% reliable, uniquely seeded)
-                    if not ai_img or not ai_img.exists() or ai_img.stat().st_size <= 5000:
-                        print_info(f"   🕉️ [Sacred Engine] Generating bespoke sacred cinematic backdrop for Scene {idx+1}...")
-                        ai_img = vg.create_sacred_vedic_fallback(
-                            prompt=core_prompt,
-                            output_path=ai_img_path,
-                            width=target_width,
-                            height=target_height,
-                            seed=idx * 997 + random.randint(100, 999),
-                            mood=str(scene.get("vedic_mood") or "auto"),
-                        )
+                        # Tier 3: Pure Procedural Sacred Cinematic Backdrop ($0, 100% clean, holy aura, no aliens/monsters)
+                        if not photo_asset or not photo_asset.exists() or photo_asset.stat().st_size <= 5000:
+                            print_info(f"   🕉️ [Sacred Engine] Generating bespoke sacred backdrop for Scene {idx+1}...")
+                            ai_img_path = TEMP_DIR / f"gita_fallback_{idx}_{slug}.jpg"
+                            photo_asset = vg.create_sacred_vedic_fallback(
+                                prompt=pex_q,
+                                output_path=ai_img_path,
+                                width=target_width,
+                                height=target_height,
+                                seed=idx * 997 + random.randint(100, 999),
+                                mood=str(scene.get("vedic_mood") or "auto"),
+                            )
 
-                    if ai_img and ai_img.exists() and ai_img.stat().st_size > 5000:
-                        from autotube.media.vedic_cinematics import render_vedic_cinematic_clip
-                        motion_clip = render_vedic_cinematic_clip(
-                            image_path=ai_img,
-                            output_path=scene_target,
-                            duration=scene_dur,
-                            fps=30,
-                            width=target_width,
-                            height=target_height,
-                            scene_idx=idx,
-                            total_scenes=len(scene_specs),
-                            narration=sentence,
-                            visual_prompt=str(scene.get("visual_prompt") or ai_prompt),
-                            visual_subject=str(scene.get("visual_subject") or ""),
-                            explicit_mood=str(scene.get("vedic_mood") or "auto"),
-                        )
-                        if motion_clip and motion_clip.exists() and motion_clip.stat().st_size > 10000:
-                            acquired_video = motion_clip
-                            print_success(f"   🎬 [Gita AI Motion Clip] Scene {idx+1} successfully converted to cinematic motion clip ({scene_dur:.1f}s)!")
+                        if photo_asset and photo_asset.exists() and photo_asset.stat().st_size > 5000:
+                            from autotube.media.vedic_cinematics import render_vedic_cinematic_clip
+                            motion_clip = render_vedic_cinematic_clip(
+                                image_path=photo_asset,
+                                output_path=scene_target,
+                                duration=scene_dur,
+                                fps=30,
+                                width=target_width,
+                                height=target_height,
+                                scene_idx=idx,
+                                total_scenes=len(scene_specs),
+                                narration=sentence,
+                                visual_prompt=pex_q,
+                                visual_subject=str(scene.get("visual_subject") or ""),
+                                explicit_mood=str(scene.get("vedic_mood") or "auto"),
+                            )
+                            if motion_clip and motion_clip.exists() and motion_clip.stat().st_size > 10000:
+                                acquired_video = motion_clip
+                                print_success(f"   🎬 [Vedic Motion Clip] Scene {idx+1} converted to cinematic motion clip ({scene_dur:.1f}s)!")
+                            else:
+                                raise RuntimeError(f"Motion video conversion failed for Vedic scene {idx+1}.")
                         else:
-                            raise RuntimeError(f"Motion video conversion failed for Gita/Granth scene {idx+1}.")
-                    else:
-                        raise RuntimeError(f"Visual asset acquisition failed for Gita/Granth scene {idx+1}.")
+                            raise RuntimeError(f"Visual asset acquisition failed for Vedic scene {idx+1}.")
                 elif visual_mode in ("multi_cinematic", "multi_best", "auto"):
                     historical = any(
                         k in sentence.lower()
@@ -2197,12 +2370,12 @@ Return ONLY a JSON list of scene objects matching this structure:
                     except Exception as s_err:
                         print_warning(f"   ⚠️ Fail-safe video search failed for Scene {idx+1}: {s_err}")
 
-                if not acquired_video and visual_mode == "ai_only":
-                    # Bespoke AI Image only in explicit ai_only mode
+                if not acquired_video:
+                    # User-directed fallback: when multi-stock footage is unavailable or rejected, acquire 8K AI visual with smooth 3D motion
                     try:
                         ai_prompt = self._extract_ai_scene_prompt(sentence, title, idx)
                         ai_target = TEMP_DIR / f"ai_failsafe_{idx}_{slug}.jpg"
-                        print_info(f"   🎨 [Fail-Safe AI Visual] Generating bespoke 8K visual for Scene {idx+1}...")
+                        print_info(f"   🎨 [Fail-Safe 8K AI Visual] Generating bespoke 8K visual for Scene {idx+1}: '{ai_prompt[:45]}...'")
                         ai_asset = vg.generate_image(
                             prompt=ai_prompt,
                             output_path=ai_target,
@@ -2211,8 +2384,22 @@ Return ONLY a JSON list of scene objects matching this structure:
                             style="cinematic",
                         )
                         if ai_asset and ai_asset.exists() and ai_asset.stat().st_size > 5000:
-                            acquired_video = ai_asset
-                            print_success(f"   ✅ [Fail-Safe AI Visual] Scene {idx+1} covered with 8K visual: {ai_asset.name}")
+                            motion_target = TEMP_DIR / f"ai_motion_{idx}_{slug}.mp4"
+                            motion_clip = _image_to_motion_clip(
+                                image_path=ai_asset,
+                                output_path=motion_target,
+                                duration=scene_dur,
+                                fps=30,
+                                width=target_width,
+                                height=target_height,
+                                motion_type=idx,
+                            )
+                            if motion_clip and motion_clip.exists():
+                                acquired_video = motion_clip
+                                print_success(f"   ✅ [Fail-Safe 8K AI Motion] Scene {idx+1} covered with motion video: {motion_clip.name}")
+                            else:
+                                acquired_video = ai_asset
+                                print_success(f"   ✅ [Fail-Safe 8K AI Visual] Scene {idx+1} covered with 8K visual: {ai_asset.name}")
                     except Exception as ai_err:
                         print_warning(f"   ⚠️ Fail-safe AI generation failed for Scene {idx+1}: {ai_err}")
 
@@ -2223,13 +2410,27 @@ Return ONLY a JSON list of scene objects matching this structure:
                 if not acquired_path.exists() or acquired_path.stat().st_size < 5000:
                     raise RuntimeError(f"Visual asset for scene {idx+1} is missing or too small.")
 
-                # In motion video modes, strictly disallow static image files
+                # If static image was returned, convert it to 30fps motion video
                 if visual_mode in ("multi_cinematic", "multi_best", "auto", "hybrid", "stock"):
                     if acquired_path.suffix.lower() not in {".mp4", ".mov", ".webm", ".mkv"}:
-                        raise RuntimeError(
-                            f"Render blocked: Scene {idx+1} acquired static image ({acquired_path.suffix}) "
-                            f"in motion-only mode '{visual_mode}'."
+                        conv_target = TEMP_DIR / f"converted_motion_{idx}_{slug}.mp4"
+                        motion_conv = _image_to_motion_clip(
+                            image_path=acquired_path,
+                            output_path=conv_target,
+                            duration=scene_dur,
+                            fps=30,
+                            width=target_width,
+                            height=target_height,
+                            motion_type=idx,
                         )
+                        if motion_conv and motion_conv.exists():
+                            acquired_video = motion_conv
+                            acquired_path = motion_conv
+                        else:
+                            raise RuntimeError(
+                                f"Render blocked: Scene {idx+1} acquired static image ({acquired_path.suffix}) "
+                                "and motion conversion failed."
+                            )
 
                 scene_assets_by_scene[idx] = acquired_path
             except Exception as exc:
@@ -2297,37 +2498,82 @@ Return ONLY a JSON list of scene objects matching this structure:
                 scene_videos=scene_videos,
                 scene_durations=scene_durations,
                 subtitles_file=None,
+                music_path="none",
                 width=target_width,
                 height=target_height,
-                enforce_shorts_duration_limit=not (is_long or is_vedic_granth_mode),
+                enforce_shorts_duration_limit=not (is_long or is_vedic_granth_mode or is_fb),
             )
             if not build_result or not unsubtitled_video.exists():
                 raise RuntimeError("Video compositor rejected or failed the scene mapping; render blocked.")
 
             if progress_callback: progress_callback(88, "Applying styled subtitles and audio polish...")
 
-            # 5. Burn Custom Subtitles
-            if subtitle_style_id == "none":
+            vedic_metadata = None
+            if is_vedic_granth_mode:
+                vedic_metadata = self.generate_vedic_metadata(
+                    script_text=active_script,
+                    custom_title=title,
+                )
+
+            final_ret_title = (vedic_metadata["title"] if (vedic_metadata and (not title or title in ("Bhagavad Gita Motivation", "Custom Video", "Vedic Short"))) else title)
+            topic_cat = "vedic" if is_vedic_granth_mode else ("mystery" if real_incident_mode else "auto")
+
+            # 5. Burn Custom Subtitles & Sticky Top Hook Header
+            from autotube.media.visual_hook import VisualHookManager
+            visual_hook_mgr = VisualHookManager()
+            hook_text = visual_hook_mgr.generate_hook_text(
+                title=final_ret_title,
+                script_text=active_script,
+                language=language,
+                topic_category=topic_cat,
+            )
+
+            top_hook_banner = None
+            try:
+                top_hook_banner = visual_hook_mgr.create_top_hook_banner(
+                    hook_text=hook_text,
+                    video_width=target_width,
+                    video_height=target_height,
+                    topic_category=topic_cat,
+                )
+            except Exception as bh_err:
+                print_warning(f"Could not generate top hook banner: {bh_err}")
+
+            if subtitle_style_id == "none" and not top_hook_banner:
                 shutil.copy(unsubtitled_video, final_video_path)
             else:
+                is_hindi_video = (language.lower() in ("hi", "hindi") or any("\u0900" <= c <= "\u097F" for c in active_script))
+                sub_font = "Poppins" if is_hindi_video else "Arial Black"
+                sub_font_cine = "Poppins" if is_hindi_video else "Arial"
+
                 if target_height > target_width:
                     # 9:16 Vertical format (Shorts & Vertical Vedic Stories)
+                    f_size = 48 if is_hindi_video else 32
+                    f_size_cine = 42 if is_hindi_video else 28
                     style_map = {
-                        "hormozi": "FontName=Arial Black,FontSize=28,PrimaryColour=&H0000FFFF,OutlineColour=&H00000000,BorderStyle=1,Outline=3,Shadow=2,Alignment=2,MarginV=250",
-                        "cinematic": "FontName=Arial,FontSize=24,PrimaryColour=&H00FFFFFF,OutlineColour=&H00000000,BorderStyle=1,Outline=2,Shadow=1,Alignment=2,MarginV=240",
+                        "hormozi": f"FontName={sub_font},FontSize={f_size},PrimaryColour=&H0000FFFF,OutlineColour=&H00000000,BorderStyle=1,Outline=4,Shadow=2,Alignment=2,MarginV=300",
+                        "cinematic": f"FontName={sub_font_cine},FontSize={f_size_cine},PrimaryColour=&H00FFFFFF,OutlineColour=&H00000000,BorderStyle=1,Outline=3,Shadow=1.5,Alignment=2,MarginV=290",
                     }
                 else:
                     # 16:9 Landscape format
+                    f_size = 32 if is_hindi_video else 24
+                    f_size_cine = 28 if is_hindi_video else 22
                     style_map = {
-                        "hormozi": "FontName=Arial Black,FontSize=22,PrimaryColour=&H0000FFFF,OutlineColour=&H00000000,BorderStyle=1,Outline=2.5,Shadow=1.5,Alignment=2,MarginV=55",
-                        "cinematic": "FontName=Arial,FontSize=20,PrimaryColour=&H00FFFFFF,OutlineColour=&H00000000,BorderStyle=1,Outline=2,Shadow=1,Alignment=2,MarginV=50",
+                        "hormozi": f"FontName={sub_font},FontSize={f_size},PrimaryColour=&H0000FFFF,OutlineColour=&H00000000,BorderStyle=1,Outline=3,Shadow=2,Alignment=2,MarginV=65",
+                        "cinematic": f"FontName={sub_font_cine},FontSize={f_size_cine},PrimaryColour=&H00FFFFFF,OutlineColour=&H00000000,BorderStyle=1,Outline=2.5,Shadow=1.5,Alignment=2,MarginV=60",
                     }
                 chosen_style = style_map.get(subtitle_style_id, style_map["hormozi"])
 
-                hook_badge = (PROJECT_ROOT / "assets" / "hook_badge.png") if (auto_viral_hook and not is_long and not is_vedic_granth_mode) else None
+                hook_badge = (PROJECT_ROOT / "assets" / "hook_badge.png") if (auto_viral_hook and not is_long and not is_vedic_granth_mode and not top_hook_banner) else None
                 if enable_classified_badge and (PROJECT_ROOT / "assets" / "classified_badge.png").exists():
                     hook_badge = PROJECT_ROOT / "assets" / "classified_badge.png"
-                sub_badge = (PROJECT_ROOT / "assets" / "like_subscribe_bell_banner.png") if auto_viral_hook else None
+                is_fb_platform = (target_platform or "").lower() in ("facebook", "facebook_reels", "fb", "reels")
+                if is_fb_platform:
+                    fb_banner = PROJECT_ROOT / "assets" / "fb_follow_like_banner.png"
+                    sub_badge = fb_banner if fb_banner.exists() else None
+                else:
+                    yt_banner = PROJECT_ROOT / "assets" / "like_subscribe_bell_banner.png"
+                    sub_badge = yt_banner if (auto_viral_hook and yt_banner.exists()) else None
 
                 burn_subtitles(
                     input_video=unsubtitled_video,
@@ -2337,9 +2583,12 @@ Return ONLY a JSON list of scene objects matching this structure:
                     hook_badge=hook_badge,
                     subscribe_badge=sub_badge,
                     duration=total_duration,
+                    top_hook_banner=top_hook_banner,
+                    enable_classified_badge=enable_classified_badge,
+                    target_platform=target_platform,
                 )
 
-            if not is_long and not is_vedic_granth_mode and final_video_path.exists():
+            if not is_long and not is_vedic_granth_mode and not is_fb and final_video_path.exists():
                 final_media_dur = get_media_duration(final_video_path)
                 if final_media_dur >= 59.5:
                     try:
@@ -2380,26 +2629,17 @@ Return ONLY a JSON list of scene objects matching this structure:
         except Exception as exc:
             print_warning(f"Could not write scene manifest: {exc}")
 
-        vedic_metadata = None
-        if is_vedic_granth_mode:
-            vedic_metadata = self.generate_vedic_metadata(
-                script_text=active_script,
-                custom_title=title,
-            )
-
-        final_ret_title = (vedic_metadata["title"] if (vedic_metadata and (not title or title in ("Bhagavad Gita Motivation", "Custom Video", "Vedic Short"))) else title)
-
-        # Automatically generate high-CTR thumbnail for the rendered video
+        # Automatically generate high-CTR thumbnail for the rendered video (synchronized with top hook)
         thumb_path = final_video_path.parent / f"{final_video_path.stem}_thumb.jpg"
         try:
             from autotube.video.thumbnail import ThumbnailGenerator
             thumb_gen = ThumbnailGenerator()
-            topic_cat = "vedic" if is_vedic_granth_mode else ("mystery" if real_incident_mode else "auto")
             thumb_gen.generate_high_ctr_thumbnail(
                 title=final_ret_title,
                 output_path=thumb_path,
                 script_text=active_script,
                 video_path=final_video_path,
+                custom_hook_text=hook_text,
                 language=language,
                 topic_category=topic_cat,
             )

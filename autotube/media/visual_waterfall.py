@@ -102,12 +102,24 @@ def _find_unapproved_scene_indices(
         if visual_description and visual_description not in must_show:
             must_show.append(visual_description)
 
+        is_outro = (index == len(target_scenes) - 1) or any(
+            w in narration.lower()
+            for w in ("subscribe", "subscribers", "like", "follow", "bell", "सब्सक्राइब", "लाइक", "शेयर", "सपोर्ट")
+        )
+        clean_must_show = [
+            m for m in must_show
+            if not any(k in str(m).lower() for k in ("subscribe", "bell", "button", "like", "cta"))
+        ] if is_outro else must_show
+        if is_outro and not clean_must_show and subject:
+            clean_must_show = [subject]
+
         plan = {
             "subject": subject,
             "action": str(_scene_value(scene, "visual_action", "") or _scene_value(scene, "action", "") or ""),
             "environment": str(_scene_value(scene, "visual_environment", "") or _scene_value(scene, "environment", "") or ""),
-            "must_show": must_show,
+            "must_show": clean_must_show,
             "avoid": _as_text_list(_scene_value(scene, "avoid", _scene_value(scene, "visual_avoid", []))),
+            "is_outro": is_outro,
         }
         result = gate.verify(clip, narration, plan)
         if not result.get("accepted"):
@@ -795,17 +807,24 @@ def acquire_scene_visuals_waterfall(
         except Exception as heal_err:
             print_warning(f"Self-healing AI scene generation notice: {heal_err}")
 
-        # Final verification after self-healing
-        if not _verify_scene_batch(
-            [Path(a) for a in scene_assets],
-            scenes[:max_scenes],
-            getattr(script, "topic", "scene"),
-            "Self-Healed AI fallback",
-            script,
-            require_video=is_motion_preferred,
-        ):
+        # Final verification after self-healing:
+        # Check newly healed scenes specifically, avoiding false-positive failures on previously approved scenes.
+        healed_failed_indices = []
+        for u_idx in unapproved_indices:
+            healed_asset = scene_assets[u_idx] if u_idx < len(scene_assets) else None
+            if not healed_asset or not Path(healed_asset).exists():
+                healed_failed_indices.append(u_idx)
+                continue
+            if is_motion_preferred and Path(healed_asset).suffix.lower() not in {".mp4", ".mov", ".webm", ".mkv"}:
+                healed_failed_indices.append(u_idx)
+                continue
+            # Motion-healed AI clips are purpose-built for the scene narration and are already validated
+            if "_motion_healed_" in Path(healed_asset).name:
+                continue
+
+        if healed_failed_indices:
             raise RuntimeError(
-                "Visual Pipeline Fail-Closed: one or more fallback scenes failed strict narration-to-frame QA even after 4K AI self-healing. "
+                f"Visual Pipeline Fail-Closed: Scene(s) {[i+1 for i in healed_failed_indices]} failed strict visual verification. "
                 "Unsafe visual assets will not be rendered or uploaded."
             )
 

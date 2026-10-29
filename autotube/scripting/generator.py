@@ -183,28 +183,33 @@ def ensure_subject_outro_cta(script: ShortScript, topic: str, language: str) -> 
         else:
             last_scene.narration = f"{last_text}. {outro_text}"
 
-        # Preserve the original thematic visual subject if already present and valid;
-        # otherwise assign a genre-specific grand cinematic finale visual.
-        t_low = topic.lower()
-        if not getattr(last_scene, "visual_subject", "").strip() or any(k in getattr(last_scene, "visual_subject", "").lower() for k in ("subscribe", "bell", "button")):
-            if any(k in t_low for k in ("space", "antariksh", "galaxy", "black hole", "cosmic", "universe", "planet")):
-                last_scene.visual_subject = "deep space galaxy cosmic finale"
-                last_scene.search_keywords = ["deep space galaxy", "outer space cosmos"]
-            elif any(k in t_low for k in ("gita", "गीता", "krishna", "कृष्ण", "karma", "कर्म", "chanakya", "bhagwat", "bhagavad")):
-                last_scene.visual_subject = "ancient sacred temple divine sunset grand finale"
-                last_scene.search_keywords = ["ancient sacred temple", "hindu temple sunset"]
-            elif any(k in t_low for k in ("bharat", "temple", "mandir", "ancient", "prachin", "vedic", "kailasa", "history", "itihas", "vastu")):
-                last_scene.visual_subject = "ancient Indian stone temple sunset grand finale"
-                last_scene.search_keywords = ["ancient indian temple", "stone temple sunset"]
-            elif any(k in t_low for k in ("ocean", "samundar", "sea", "trench", "underwater")):
-                last_scene.visual_subject = "deep ocean underwater abyss finale"
-                last_scene.search_keywords = ["deep ocean trench", "mysterious underwater abyss"]
-            elif any(k in t_low for k in ("brain", "dimag", "psychology", "mind")):
-                last_scene.visual_subject = "human brain neural networks glowing finale"
-                last_scene.search_keywords = ["glowing brain neural network", "human brain neurons"]
-            else:
-                last_scene.visual_subject = "cinematic dramatic atmosphere finale"
-                last_scene.search_keywords = ["cinematic dramatic atmosphere", "dark moody cinematic"]
+    # ALWAYS ensure the final scene has a rich, genre-specific grand cinematic finale visual.
+    # It must NEVER have an empty visual_subject or mention 'subscribe'/'bell'/'button'/'like'.
+    t_low = topic.lower()
+    cur_subj = getattr(last_scene, "visual_subject", "").strip()
+    if not cur_subj or any(k in cur_subj.lower() for k in ("subscribe", "bell", "button", "like")):
+        if any(k in t_low for k in ("space", "antariksh", "galaxy", "black hole", "cosmic", "universe", "planet")):
+            last_scene.visual_subject = "deep space galaxy cosmic finale"
+            last_scene.search_keywords = ["deep space galaxy", "outer space cosmos"]
+        elif any(k in t_low for k in ("gita", "गीता", "krishna", "कृष्ण", "karma", "कर्म", "chanakya", "bhagwat", "bhagavad")):
+            last_scene.visual_subject = "ancient sacred temple divine sunset grand finale"
+            last_scene.search_keywords = ["ancient sacred temple", "hindu temple sunset"]
+        elif any(k in t_low for k in ("bharat", "temple", "mandir", "ancient", "prachin", "vedic", "kailasa", "history", "itihas", "vastu", "wootz", "steel", "sword", "pillar", "metallurgy")):
+            last_scene.visual_subject = "ancient Indian stone temple sunset grand finale"
+            last_scene.search_keywords = ["ancient indian temple", "stone temple sunset"]
+        elif any(k in t_low for k in ("ocean", "samundar", "sea", "trench", "underwater")):
+            last_scene.visual_subject = "deep ocean underwater abyss finale"
+            last_scene.search_keywords = ["deep ocean trench", "mysterious underwater abyss"]
+        elif any(k in t_low for k in ("brain", "dimag", "psychology", "mind")):
+            last_scene.visual_subject = "human brain neural networks glowing finale"
+            last_scene.search_keywords = ["glowing brain neural network", "human brain neurons"]
+        else:
+            last_scene.visual_subject = "cinematic dramatic atmosphere finale"
+            last_scene.search_keywords = ["cinematic dramatic atmosphere", "dark moody cinematic"]
+
+    cur_desc = getattr(last_scene, "visual_description", "").strip()
+    if not cur_desc or any(k in cur_desc.lower() for k in ("subscribe", "bell", "button", "like")):
+        last_scene.visual_description = f"Grand cinematic finale of {last_scene.visual_subject} with dramatic atmospheric lighting"
 
     script.narration = " ".join(s.narration.strip() for s in script.scenes if s.narration.strip())
     script.call_to_action = outro_text
@@ -339,7 +344,7 @@ class ScriptGenerator:
             )
             if is_gita_spiritual and target_duration < 90:
                 return self._generate_spiritual_fallback(topic, target_duration, language)
-            return self._generate_fallback_short(topic, target_duration)
+            return self._generate_fallback_short(topic, target_duration, language=language)
 
         if is_gita_spiritual and target_duration < 90:
             sys_prompt = HINDI_GITA_MOTIVATION_PROMPT if is_hindi else ENGLISH_GITA_MOTIVATION_PROMPT
@@ -432,7 +437,7 @@ MANDATORY STRUCTURAL REQUIREMENTS:
         print_error("All Gemini models busy or failed. Falling back to template.")
         if is_gita_spiritual and target_duration < 90:
             return self._generate_spiritual_fallback(topic, target_duration, language)
-        return self._generate_fallback_short(topic, target_duration)
+        return self._generate_fallback_short(topic, target_duration, language=language)
 
     def generate_cartoon_script(
         self, topic: str, target_duration: int = 45
@@ -648,51 +653,89 @@ Provide title, description, tags, and each scene with spoken narration and visua
         return self._generate_fallback_long(topic, num_scenes)
 
     def _generate_fallback_short(
-        self, topic: str, target_duration: int
+        self, topic: str, target_duration: int, language: str = "en"
     ) -> ShortScript:
-        """Smart fallback short script when API key is not yet set - uses topic-specific scenes."""
+        """Smart fallback short script when API key is not yet set - uses topic-specific scenes in target language."""
         clean_topic = topic.strip().capitalize()
         # Extract core subject words for search (remove common filler)
         topic_words = [w for w in topic.lower().split() if len(w) > 2 and w not in {'the', 'and', 'for', 'how', 'why', 'what', 'when', 'about'}]
         search_term = ' '.join(topic_words[:3]) if topic_words else clean_topic.lower()
 
-        hook = f"Nobody talks about the hidden truth behind {clean_topic}!"
-        scenes = [
-            ShortScene(
-                scene_number=1,
-                narration=f"Nobody talks about the hidden truth behind {clean_topic}!",
-                visual_subject=search_term,
-                visual_description=f"Dramatic reveal shot related to {clean_topic}",
-                search_keywords=[search_term, topic_words[0] if topic_words else clean_topic.lower()],
-            ),
-            ShortScene(
-                scene_number=2,
-                narration=f"Most people think they understand {clean_topic}, but what was recently uncovered completely changes everything we thought we knew.",
-                visual_subject=f"{search_term} closeup",
-                visual_description=f"Detailed close-up view related to {clean_topic}",
-                search_keywords=[f"{topic_words[0] if topic_words else clean_topic.lower()} detail",
-                                 topic_words[1] if len(topic_words) > 1 else search_term],
-            ),
-            ShortScene(
-                scene_number=3,
-                narration=f"Hidden deep within {clean_topic} lies a secret that even experts are afraid to talk about publicly.",
-                visual_subject=f"{search_term} mystery",
-                visual_description=f"Mysterious and dramatic perspective of {clean_topic}",
-                search_keywords=[f"{search_term} secret",
-                                 topic_words[-1] if topic_words else clean_topic.lower()],
-            ),
-            ShortScene(
-                scene_number=4,
-                narration=f"What do you think about this? Drop your thoughts below and subscribe right now because part 2 reveals the most shocking detail!",
-                visual_subject=f"{search_term} dramatic",
-                visual_description=f"Epic dramatic perspective of {clean_topic} for the finale",
-                search_keywords=[search_term, f"{search_term} dramatic"],
-            ),
-        ]
+        is_hi = str(language).lower().startswith("hi") or any('\u0900' <= c <= '\u097f' for c in topic)
+        if is_hi:
+            hook = f"{clean_topic} के पीछे का चौंकाने वाला सच कोई नहीं जानता!"
+            scenes = [
+                ShortScene(
+                    scene_number=1,
+                    narration=f"{clean_topic} के बारे में यह चौंकाने वाला सच कोई नहीं जानता!",
+                    visual_subject=search_term,
+                    visual_description=f"Dramatic reveal shot related to {clean_topic}",
+                    search_keywords=[search_term, topic_words[0] if topic_words else clean_topic.lower()],
+                ),
+                ShortScene(
+                    scene_number=2,
+                    narration=f"लोग मानते हैं कि वे {clean_topic} को समझते हैं, लेकिन हाल ही में सामने आए सबूतों ने सबको हैरान कर दिया है।",
+                    visual_subject=f"{search_term} closeup",
+                    visual_description=f"Detailed close-up view related to {clean_topic}",
+                    search_keywords=[f"{topic_words[0] if topic_words else clean_topic.lower()} detail",
+                                     topic_words[1] if len(topic_words) > 1 else search_term],
+                ),
+                ShortScene(
+                    scene_number=3,
+                    narration=f"इसके भीतर एक ऐसा गहरा रहस्य छिपा है, जिसके बारे में विशेषज्ञ भी खुलकर बात करने से कतराते हैं।",
+                    visual_subject=f"{search_term} mystery",
+                    visual_description=f"Mysterious and dramatic perspective of {clean_topic}",
+                    search_keywords=[f"{search_term} secret",
+                                     topic_words[-1] if topic_words else clean_topic.lower()],
+                ),
+                ShortScene(
+                    scene_number=4,
+                    narration=f"आप इस रहस्य के बारे में क्या सोचते हैं? कमेंट्स में बताएं और अभी सब्सक्राइब करें क्योंकि अगला भाग होश उड़ाने वाला है!",
+                    visual_subject=f"{search_term} dramatic",
+                    visual_description=f"Epic dramatic perspective of {clean_topic} for the finale",
+                    search_keywords=[search_term, f"{search_term} dramatic"],
+                ),
+            ]
+            title = f"{clean_topic} का चौंकाने वाला सच! #Shorts"
+        else:
+            hook = f"Nobody talks about the hidden truth behind {clean_topic}!"
+            scenes = [
+                ShortScene(
+                    scene_number=1,
+                    narration=f"Nobody talks about the hidden truth behind {clean_topic}!",
+                    visual_subject=search_term,
+                    visual_description=f"Dramatic reveal shot related to {clean_topic}",
+                    search_keywords=[search_term, topic_words[0] if topic_words else clean_topic.lower()],
+                ),
+                ShortScene(
+                    scene_number=2,
+                    narration=f"Most people think they understand {clean_topic}, but what was recently uncovered completely changes everything we thought we knew.",
+                    visual_subject=f"{search_term} closeup",
+                    visual_description=f"Detailed close-up view related to {clean_topic}",
+                    search_keywords=[f"{topic_words[0] if topic_words else clean_topic.lower()} detail",
+                                     topic_words[1] if len(topic_words) > 1 else search_term],
+                ),
+                ShortScene(
+                    scene_number=3,
+                    narration=f"Hidden deep within {clean_topic} lies a secret that even experts are afraid to talk about publicly.",
+                    visual_subject=f"{search_term} mystery",
+                    visual_description=f"Mysterious and dramatic perspective of {clean_topic}",
+                    search_keywords=[f"{search_term} secret",
+                                     topic_words[-1] if topic_words else clean_topic.lower()],
+                ),
+                ShortScene(
+                    scene_number=4,
+                    narration=f"What do you think about this? Drop your thoughts below and subscribe right now because part 2 reveals the most shocking detail!",
+                    visual_subject=f"{search_term} dramatic",
+                    visual_description=f"Epic dramatic perspective of {clean_topic} for the finale",
+                    search_keywords=[search_term, f"{search_term} dramatic"],
+                ),
+            ]
+            title = f"The Hidden Truth About {clean_topic}! #Shorts"
+
         narration = " ".join(s.narration for s in scenes)
-        is_hi = any('\u0900' <= c <= '\u097f' for c in topic)
         fb_script = ShortScript(
-            title=f"The Hidden Truth About {clean_topic}! #Shorts",
+            title=title,
             topic=topic,
             hook=hook,
             scenes=scenes,

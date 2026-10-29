@@ -29,9 +29,12 @@ def burn_subtitles(
     hook_badge: Optional[Path] = None,
     subscribe_badge: Optional[Path] = None,
     duration: Optional[float] = None,
+    top_hook_banner: Optional[Path] = None,
+    enable_classified_badge: bool = False,
+    target_platform: Optional[str] = None,
 ) -> bool:
-    """Burn subtitles (ASS or SRT) onto video along with optional viral hook and subscribe badges."""
-    from autotube.utils.ffmpeg_helper import get_media_duration
+    """Burn subtitles (ASS or SRT) onto video along with optional viral hook, top hook header, and platform-specific CTA banner (YouTube Subscribe vs Facebook Follow)."""
+    from autotube.utils.ffmpeg_helper import get_media_duration, get_media_dimensions
 
     inputs = ["-i", str(input_video)]
     filter_steps = []
@@ -53,7 +56,21 @@ def burn_subtitles(
 
     vid_dur = duration or get_media_duration(input_video)
 
-    # 2. Hook badge overlay (First 2.8 seconds)
+    # 2. Top Hook Header Banner (Sticky curiosity hook across video for maximum scroll-stopping CTR & retention)
+    if top_hook_banner and top_hook_banner.exists():
+        inputs.extend(["-i", str(top_hook_banner)])
+        top_hook_idx = (len(inputs) // 2) - 1
+        try:
+            w_val, h_val = get_media_dimensions(input_video)
+            top_y = 150 if h_val > w_val else 45
+        except Exception:
+            top_y = 150
+        filter_steps.append(
+            f"{current_v}[{top_hook_idx}:v]overlay=(W-w)/2:{top_y}:enable='between(t,0,{vid_dur:.1f})'[v_top_hook]"
+        )
+        current_v = "[v_top_hook]"
+
+    # 3. Hook badge overlay (First 2.8 seconds)
     if hook_badge and hook_badge.exists():
         inputs.extend(["-i", str(hook_badge)])
         hook_idx = (len(inputs) // 2) - 1
@@ -62,30 +79,32 @@ def burn_subtitles(
         )
         current_v = "[v_hook]"
 
-    # 3. Like, Subscribe & Bell outro banner (Appears during last 6.5s during spoken Outro CTA)
-    bell_banner = Path("assets/like_subscribe_bell_banner.png")
-    if bell_banner.exists():
-        inputs.extend(["-i", str(bell_banner)])
-        bell_idx = (len(inputs) // 2) - 1
+    # 3. Outro CTA Banner (Facebook Follow vs YouTube Subscribe)
+    is_fb_platform = (target_platform or "").lower() in ("facebook", "facebook_reels", "fb", "reels")
+    cta_banner = subscribe_badge
+    if not cta_banner:
+        if is_fb_platform:
+            fb_candidate = Path("assets/fb_follow_like_banner.png")
+            if fb_candidate.exists():
+                cta_banner = fb_candidate
+        else:
+            yt_candidate = Path("assets/like_subscribe_bell_banner.png")
+            if yt_candidate.exists():
+                cta_banner = yt_candidate
+
+    if cta_banner and cta_banner.exists():
+        inputs.extend(["-i", str(cta_banner)])
+        cta_idx = (len(inputs) // 2) - 1
         outro_start = max(1.0, vid_dur - 6.5)
         outro_end = max(1.5, vid_dur - 0.2)
         filter_steps.append(
-            f"{current_v}[{bell_idx}:v]overlay=(W-w)/2:H-h-180:enable='between(t,{outro_start:.1f},{outro_end:.1f})'[v_sub_cta]"
-        )
-        current_v = "[v_sub_cta]"
-    elif subscribe_badge and subscribe_badge.exists():
-        inputs.extend(["-i", str(subscribe_badge)])
-        sub_idx = (len(inputs) // 2) - 1
-        sub_start = max(4.0, vid_dur * 0.60)
-        sub_end = min(vid_dur - 0.5, sub_start + 7.0)
-        filter_steps.append(
-            f"{current_v}[{sub_idx}:v]overlay=(W-w)/2:1320:enable='between(t,{sub_start:.1f},{sub_end:.1f})'[v_sub_cta]"
+            f"{current_v}[{cta_idx}:v]overlay=(W-w)/2:H-h-180:enable='between(t,{outro_start:.1f},{outro_end:.1f})'[v_sub_cta]"
         )
         current_v = "[v_sub_cta]"
 
-    # 4. Classified TOP SECRET stamp badge overlay (Appears from t=0.5 to t=4.0 for intense hook retention)
+    # 4. Classified TOP SECRET stamp badge overlay (Appears from t=0.5 to t=4.0 for intense hook retention ONLY when explicitly requested)
     classified_badge = Path("assets/classified_badge.png")
-    if classified_badge.exists():
+    if enable_classified_badge and classified_badge.exists():
         inputs.extend(["-i", str(classified_badge)])
         class_idx = (len(inputs) // 2) - 1
         filter_steps.append(

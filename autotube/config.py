@@ -80,7 +80,7 @@ class VoiceConfig(BaseModel):
 class MediaConfig(BaseModel):
     stock_provider: str = "pexels"
     image_provider: str = "pollinations"
-    background_music_volume: float = 0.24
+    background_music_volume: float = 0.06
 
 
 class YouTubeConfig(BaseModel):

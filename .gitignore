@@ -39,3 +39,12 @@ scratch/
 
 # Runtime scheduler state
 config/slot_execution_tracker.json
+# Facebook & Other credentials
+config/facebook_credentials.json
+config/facebook_published_history.json
+
+# Test renders and scratch media
+/test_*.*
+*.mp3
+*.wav
+content/

@@ -1,7 +1,16 @@
 """YouTube OAuth2 Authentication Manager with robust Windows browser launching."""
 
+import socket
 import os
 import sys
+
+# Force IPv4 resolution on Windows to prevent WinError 10060 hangs on unrouted IPv6 networks
+_orig_getaddrinfo = socket.getaddrinfo
+def _ipv4_getaddrinfo(host, port, family=0, type=0, proto=0, flags=0):
+    if family == 0 or family == socket.AF_UNSPEC:
+        family = socket.AF_INET
+    return _orig_getaddrinfo(host, port, family, type, proto, flags)
+socket.getaddrinfo = _ipv4_getaddrinfo
 import webbrowser
 import wsgiref.simple_server
 from pathlib import Path
@@ -51,23 +60,34 @@ class YouTubeAuth:
         """Resolve the appropriate token file for a channel with legacy fallback."""
         ch = (channel or "english").lower().strip()
         ch_token = PROJECT_ROOT / "config" / f"token_{ch}.json"
-        if ch_token.exists():
+        if ch_token.exists() and ch_token.stat().st_size > 0:
             return ch_token
         legacy_token = PROJECT_ROOT / "config" / "token.json"
-        if ch == "english" and legacy_token.exists():
+        if ch == "english" and legacy_token.exists() and legacy_token.stat().st_size > 0:
             return legacy_token
         return ch_token
 
     def get_credentials(self, interactive: bool = True) -> Optional[Credentials]:
         """Obtain valid user credentials from storage or run OAuth flow."""
         creds = None
-        if self.token_file.exists():
+        if self.token_file.exists() and self.token_file.stat().st_size > 0:
             try:
                 creds = Credentials.from_authorized_user_file(
                     str(self.token_file), YOUTUBE_SCOPES
                 )
             except Exception as e:
                 print_warning(f"Existing token for '{self.channel}' could not be loaded: {e}")
+
+        # English legacy fallback if primary token failed to load or is invalid
+        if (not creds or not creds.valid) and self.channel == "english":
+            legacy = PROJECT_ROOT / "config" / "token.json"
+            if legacy.exists() and legacy != self.token_file and legacy.stat().st_size > 0:
+                try:
+                    creds = Credentials.from_authorized_user_file(
+                        str(legacy), YOUTUBE_SCOPES
+                    )
+                except Exception:
+                    pass
 
         # If credentials exist and are valid, return them immediately
         if creds and creds.valid:

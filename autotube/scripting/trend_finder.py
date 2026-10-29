@@ -63,6 +63,21 @@ NICHE_KEYWORD_MAPPINGS = {
     "beast": "animal_secrets",
     "जानवर": "animal_secrets",
     "जीव": "animal_secrets",
+    "ancient engineering": "ancient_engineering",
+    "ancient tech": "ancient_engineering",
+    "megalith": "ancient_engineering",
+    "pyramid": "ancient_engineering",
+    "gobekli": "ancient_engineering",
+    "kailasa": "ancient_engineering",
+    "quantum matrix": "quantum_matrix",
+    "quantum paradox": "quantum_matrix",
+    "simulation bug": "quantum_matrix",
+    "simulation glitch": "quantum_matrix",
+    "time dilation": "quantum_matrix",
+    "daily mirror": "daily_mirror",
+    "daily_mirror": "daily_mirror",
+    "daily theme": "daily_mirror",
+    "daily_theme": "daily_mirror",
 }
 
 GITA_MOTIVATION_FALLBACK_FOCUS = (
@@ -87,7 +102,61 @@ VIRAL_NICHES = {
     "conspiracy": "Declassified FBI & CIA files, Project Stargate remote viewing, Guy Hottel UFO memos, Area 51 secret reverse engineering, Svalbard seed vault mysteries",
     "cartoon": "Funny 3D Pixar animated animal adventures, quirky pets with secret superhero lives, hilarious baby dinosaur mishaps, funny mischievous robot fails, adorable comedy cartoon stories",
     "animal_secrets": "Mind-blowing animal secrets, insane biological superpowers, animal speed & flight comparisons (Peregrine falcon 390 km/h dive vs cheetah, bite forces of apex predators), immortal jellyfish, pistol shrimp thermal shockwave, honey badger venom immunity, bizarre deep sea creatures, electric eel shock voltage",
+    "ancient_engineering": "Impossible Ancient Engineering & Megaliths: Kailasa Temple Ellora monolithic rock carving from top down, Great Pyramids Giza acoustic & thermal anomalies, Göbekli Tepe 12,000-year megaliths, Antikythera Mechanism 2,000-year analog computer, Puma Punku precision stones, submerged Dwarka megaliths, Machu Picchu earthquake-proof masonry",
+    "quantum_matrix": "Quantum Paradoxes & Simulation Reality: The Quantum Zeno effect freezing atoms under observation, Time dilation traps where your head ages faster than your feet, Boltzmann brain paradox, vacuum decay cosmic bubble, double slit experiment observer effect, simulation hypothesis physical proofs",
 }
+
+# 7-Day Universal Content Schedule (Mirror Paired: English & Hindi)
+DAY_WISE_NICHES = {
+    0: {  # Monday
+        "niche": "space",
+        "name": "Cosmic Extremes & Universe Horrors",
+        "bgm": "space",
+        "description": "Mind-bending cosmic mysteries, black holes, rogue planets, cosmic radiation, universe boundaries, quantum vacuum decay, James Webb space telescope discoveries",
+    },
+    1: {  # Tuesday
+        "niche": "ancient_engineering",
+        "name": "Impossible Ancient Engineering & Megaliths",
+        "bgm": "history",
+        "description": "Impossible Ancient Engineering & Megaliths: Kailasa Temple Ellora monolithic rock carving from top down, Great Pyramids Giza acoustic & thermal anomalies, Göbekli Tepe 12,000-year megaliths, Antikythera Mechanism 2,000-year analog computer, Puma Punku precision stones, submerged Dwarka megaliths, Machu Picchu earthquake-proof masonry",
+    },
+    2: {  # Wednesday
+        "niche": "psychology",
+        "name": "Dark Psychology & Brain Glitches",
+        "bgm": "auto",
+        "description": "Dark psychology, human mind tricks, subconscious cognitive biases, body language micro-expressions, semantic satiation glitch, Mandela effect, manipulation defense",
+    },
+    3: {  # Thursday
+        "niche": "ocean",
+        "name": "Deep Ocean Terrors & Earth Secrets",
+        "bgm": "space",
+        "description": "Deep sea abyssal horrors, Mariana Trench sonar anomalies, Point Nemo spacecraft graveyard, giant colossal squids, glowing ocean milky seas, deep underwater toxic brine pools",
+    },
+    4: {  # Friday
+        "niche": "quantum_matrix",
+        "name": "Quantum Paradoxes & Simulation Bugs",
+        "bgm": "space",
+        "description": "Quantum Paradoxes & Simulation Reality: The Quantum Zeno effect freezing atoms under observation, Time dilation traps where your head ages faster than your feet, Boltzmann brain paradox, vacuum decay cosmic bubble, double slit experiment observer effect, simulation hypothesis physical proofs",
+    },
+    5: {  # Saturday
+        "niche": "conspiracy",
+        "name": "Declassified Secrets & Historical Enigmas",
+        "bgm": "history",
+        "description": "Declassified FBI & CIA files, Project Stargate remote viewing, Voynich manuscript unbreakable cipher, 1954 Man from Taured, 1518 dancing plague, Area 51, Svalbard seed vault mysteries, bizarre historical time slips",
+    },
+    6: {  # Sunday
+        "niche": "animal_secrets",
+        "name": "Extreme Nature & Biological Superpowers",
+        "bgm": "auto",
+        "description": "Mind-blowing animal secrets, insane biological superpowers, immortal jellyfish Turritopsis dohrnii reversing age, pistol shrimp punch creating sun surface temperature, tardigrades space vacuum survival, zombie cordyceps fungi, electric eel shock voltage",
+    },
+}
+
+def get_day_wise_niche(weekday=None) -> dict:
+    import datetime
+    if weekday is None:
+        weekday = datetime.datetime.now().weekday()
+    return DAY_WISE_NICHES.get(weekday % 7, DAY_WISE_NICHES[0])
 
 # Bilingual stop words for accurate semantic normalization
 STOPWORDS: Set[str] = {
@@ -421,6 +490,46 @@ NICHE_FALLBACKS = {
         "The Cuttlefish Hypnotic Skin Strobe: Flashing Lights That Freeze Prey In Place",
         "The Inland Taipan Neurotoxin: The World's Deadliest Snake Venom Explained",
     ],
+    "ancient_engineering": [
+        "The 1200-Year-Old Kailasa Temple Carved Completely Out Of A Single Mountain From Top Down",
+        "The 2000-Year-Old Antikythera Mechanism: Why An Ancient Analog Computer Shocked Modern Science",
+        "The 12000-Year-Old Megalithic Site Of Gobekli Tepe That Rewrote Human History",
+        "The Bizarre Thermal Anomaly Inside The Great Pyramid Of Giza Scientists Cannot Explain",
+        "Puma Punku's Impossible Precision Cut Granite Blocks That Modern Tools Cannot Replicate",
+        "The Underground Megacity Of Derinkuyu Built 18 Floors Deep To Escape An Unknown Threat",
+        "The Submerged 9000-Year-Old Ruins Of Dwarka Found Off The Coast Of Gujarat",
+        "The 1600-Year-Old Iron Pillar Of Delhi That Defies Rust And Modern Metallurgy",
+        "The Acoustic Gravity Secrets Behind The 80-Ton Granite Dome Of Brihadeeswarar Temple",
+        "The Lepakshi Hanging Pillar That Floats Millimeters Above The Stone Floor Without Support",
+        "The 20000-Year-Old Yonaguni Submarine Monument That Defies Natural Geology",
+        "The Impossible Polygonal Stone Masonry In Peru That Withstands Massive Earthquakes",
+        "The Ancient Unmeltable Crystal Skulls Carved Against The Natural Grain Of Quartz",
+        "The Padmanabhaswamy Temple Vault B Sealed With Ancient Acoustic Snake Frequencies",
+        "The 500-Year-Old Piri Reis Map That Depicts An Ice-Free Antarctica Coastline",
+        "The Mysterious Sonic Levitating Stone Legends Behind Ancient Monolithic Temples",
+        "The Secret Under-Sphinx Chamber Blocked By Water And Classified Egyptian Permits",
+        "The Mohenjo-Daro Vitrified Ruins And Ancient Radioactive Anomalies",
+    ],
+    "quantum_matrix": [
+        "The Quantum Zeno Effect: Why An Atom Literally Freezes In Time When You Watch It",
+        "The Time Dilation Trap: Why Your Head Is Technically Older Than Your Own Feet",
+        "The Boltzmann Brain Paradox: Why You Might Just Be A Spontaneous Hallucination In The Void",
+        "Vacuum Decay: The Cosmic Bubble Expanding At Light Speed That Deletes The Universe",
+        "The Double-Slit Experiment Anomaly: Physical Matter Behaving Differently When Observed",
+        "The Delayed-Choice Quantum Eraser That Proves Your Present Decision Changes The Past",
+        "Why All Solid Matter Around You Is Actually 99.9999 Percent Completely Empty Space",
+        "The Mandela Effect Patch Notes: Physical Proofs The Reality OS Was Updated",
+        "The Man From Taured: The Traveler Who Landed With A Passport From A Non-Existent Nation",
+        "The Quantum Immortality Paradox: Why Your Consciousness Might Never Experience Death",
+        "Pan American Flight 914: The 1955 Plane That Landed In Caracas 37 Years Later",
+        "The Semantic Satiation Glitch: How The Human Brain Forgets A Word Meaning In 30 Seconds",
+        "The Truman Show Delusion: Why Thousands Believe Their Lives Are A Secret Global Broadcast",
+        "The Simulation Boundary: Why The Speed Of Light Is The Processor Clock Limit Of Reality",
+        "The Fast Radio Burst From Deep Space Repeating On An Exact Mathematical Clockwork Cycle",
+        "The Quantum Entanglement Spooky Action: Two Particles Telepathically Linked Across Galaxies",
+        "The 1989 Sky Glitch Where An Entire City Experienced A Sudden 2-Minute Time Slip",
+        "Why Physicists Suspect We Are Living Inside The Inner Event Horizon Of A Black Hole",
+    ],
 }
 
 
@@ -469,6 +578,10 @@ class TrendFinder:
     def resolve_niche(self, raw_niche: str) -> Tuple[str, str]:
         """Map any free-form slot niche string to a canonical key and rich prompt description."""
         raw_lower = raw_niche.lower().strip()
+        # Daily Mirror & Day-Wise automatic theme rotation
+        if raw_lower in ("daily_mirror", "daily_theme", "day_wise", "daily_schedule", "auto_day", "daily"):
+            day_data = get_day_wise_niche()
+            return day_data["niche"], day_data["description"]
         # Explicit scripture-topic routing comes before the broad substring map.
         # Latin terms use word boundaries so "gita" does not accidentally match "digital".
         sacred_terms = (

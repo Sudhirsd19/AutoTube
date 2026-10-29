@@ -1,6 +1,7 @@
 """YouTube video upload manager using YouTube Data API v3."""
 
 import json
+import re
 from datetime import datetime
 from pathlib import Path
 from typing import List, Optional
@@ -42,7 +43,46 @@ class YouTubeUploader:
             return None
 
         active_channel = (channel or self.channel or "english").lower().strip()
-        active_auth = YouTubeAuth(channel=active_channel) if channel else self.auth
+
+        # Content-channel safety guard: prevent uploading English video to Hindi channel or vice-versa
+        is_devanagari = any("\u0900" <= c <= "\u097f" for c in f"{title} {description or ''}")
+        stem_lower = video_path.stem.lower()
+        is_stem_hi = stem_lower.endswith("_hi") or "_hindi" in stem_lower
+        is_stem_en = stem_lower.endswith("_en") or "_english" in stem_lower
+
+        if active_channel == "hindi":
+            words = re.findall(r"[a-zA-Z]+", f"{title} {description or ''}")
+            if not is_devanagari and not is_stem_hi and (is_stem_en or len(words) >= 6):
+                en_auth = YouTubeAuth(channel="english")
+                if en_auth.is_authenticated():
+                    print_warning(
+                        f"🛡️ SAFETY GUARD: Content is in English. Automatically rerouting upload from 'hindi' "
+                        f"to 'english' channel (@cosmochro) to prevent cross-channel upload bug."
+                    )
+                    active_channel = "english"
+                else:
+                    print_error(
+                        f"🛡️ SAFETY GUARD: Blocked upload! Content is in English but target channel is 'hindi'. "
+                        f"Refusing to upload English video to Hindi channel without English authentication."
+                    )
+                    return None
+        elif active_channel == "english":
+            if is_devanagari or is_stem_hi:
+                hi_auth = YouTubeAuth(channel="hindi")
+                if hi_auth.is_authenticated():
+                    print_warning(
+                        f"🛡️ SAFETY GUARD: Content is in Hindi/Devanagari. Automatically rerouting upload from 'english' "
+                        f"to 'hindi' channel (@bgyanmantra) to prevent cross-channel upload bug."
+                    )
+                    active_channel = "hindi"
+                else:
+                    print_error(
+                        f"🛡️ SAFETY GUARD: Blocked upload! Content is in Hindi (Devanagari) but target channel is 'english'. "
+                        f"Refusing to upload Hindi video to English channel without Hindi authentication."
+                    )
+                    return None
+
+        active_auth = YouTubeAuth(channel=active_channel)
         creds = active_auth.get_credentials()
         if not creds:
             print_error(f"Cannot upload: YouTube authentication credentials missing for channel '{active_channel}'.")
@@ -102,26 +142,28 @@ class YouTubeUploader:
             ]
         clean_tags = list(dict.fromkeys((tags or []) + base_viral_tags))
 
-        # Check latest longform documentary for Shorts-to-Long Funnel cross-promotion
-        latest_long = None
-        latest_long_file = Path("config/latest_longform_video.json")
-        if latest_long_file.exists():
-            try:
-                latest_long = json.loads(latest_long_file.read_text(encoding="utf-8"))
-            except Exception:
-                pass
-
+        # Automatic Shorts-to-Long Funnel cross-promotion is ONLY enabled if explicitly
+        # requested (content_type == "funnel") and a valid documentary is provided.
+        # It is NEVER blindly injected into custom studio videos or standard uploads.
         funnel_desc = ""
         funnel_pin = ""
-        if content_type != "vedic" and is_short and latest_long and latest_long.get("video_url"):
-            l_url = latest_long["video_url"]
-            l_title = latest_long.get("title", "Full Documentary")
-            funnel_desc = (
-                f"\n🎬 MUST WATCH FULL 16:9 DOCUMENTARY:\n"
-                f"👉 {l_title}\n"
-                f"🔗 {l_url}\n"
-            )
-            funnel_pin = f"\n\n🎬 Watch Full 16:9 Documentary: {l_url}"
+        if content_type == "funnel" and is_short:
+            latest_long = None
+            latest_long_file = Path("config/latest_longform_video.json")
+            if latest_long_file.exists():
+                try:
+                    latest_long = json.loads(latest_long_file.read_text(encoding="utf-8"))
+                except Exception:
+                    pass
+            if latest_long and latest_long.get("video_url") and latest_long.get("title"):
+                l_url = latest_long["video_url"]
+                l_title = latest_long["title"]
+                funnel_desc = (
+                    f"\n🎬 MUST WATCH FULL 16:9 DOCUMENTARY:\n"
+                    f"👉 {l_title}\n"
+                    f"🔗 {l_url}\n"
+                )
+                funnel_pin = f"\n\n🎬 Watch Full 16:9 Documentary: {l_url}"
 
         # Automatic Interactive YouTube Chapters for Long Videos
         chapters_block = ""
@@ -132,9 +174,13 @@ class YouTubeUploader:
                 chapter_lines.append(f"{m:02d}:{s:02d} - {ch_name}")
             chapters_block = "\n".join(chapter_lines) + "\n"
 
+        # Detect Hindi/Devanagari content to ensure correct language CTA and channel identity
+        is_devanagari = any("\u0900" <= c <= "\u097f" for c in f"{title} {description or ''}")
+        is_hindi = active_channel == "hindi" or is_devanagari
+
         # Resolve channel handle from config or channel identity
         ch_cfg_file = Path("config/channels_config.json")
-        channel_handle = "@bgyanmantra" if active_channel == "hindi" else "@cosmochro"
+        channel_handle = "@bgyanmantra" if is_hindi else "@cosmochro"
         if ch_cfg_file.exists():
             try:
                 ch_raw = json.loads(ch_cfg_file.read_text(encoding="utf-8"))
@@ -145,8 +191,12 @@ class YouTubeUploader:
                 pass
 
         sub_link = f"https://www.youtube.com/{channel_handle}?sub_confirmation=1"
+        dynamic_tags_line = " ".join(t if t.startswith("#") else f"#{t}" for t in clean_tags[:8])
+        if not dynamic_tags_line:
+            dynamic_tags_line = "#Shorts #Viral #Trending"
+
         if content_type == "vedic":
-            vedic_tag_line = " ".join(t if t.startswith("#") else f"#{t}" for t in clean_tags[:8])
+            vedic_tag_line = dynamic_tags_line
             sub_cta_block = (
                 "\n\n"
                 + chapters_block
@@ -166,16 +216,16 @@ class YouTubeUploader:
                     "🚩 सनातन धर्म और प्राचीन शास्त्रों की अमर सीख के लिए सब्सक्राइब करें! 🙏\n"
                     f"👉 {channel_handle}:\n{sub_link}"
                 )
-        elif active_channel == "hindi":
+        elif is_hindi:
             sub_cta_block = (
                 "\n\n"
                 + chapters_block
                 + funnel_desc
-                + "🔔 रोज़ाना रहस्य, विज्ञान और प्राचीन भारत के अद्भुत तथ्यों के लिए सब्सक्राइब करें:\n"
+                + "🔔 रोज़ाना रहस्य, विज्ञान और अद्भुत तथ्यों के लिए सब्सक्राइब करें:\n"
                 f"👉 {sub_link}\n\n"
                 "💬 इस रहस्य के बारे में आपकी क्या राय है? कमेंट में ज़रूर बताएं!\n"
                 "⚡ अपने दोस्तों के साथ भी शेयर करें!\n\n"
-                f"{'#Shorts ' if is_short else ''}#HindiFacts #Rahasya #Bharat #Vigyan #Itihas #Shorts #Viral"
+                f"{dynamic_tags_line}"
             )
             if pinned_comment:
                 if "sub_confirmation=1" not in pinned_comment:
@@ -184,7 +234,7 @@ class YouTubeUploader:
                     effective_pinned_comment = f"{pinned_comment.strip()}{funnel_pin}"
             else:
                 effective_pinned_comment = (
-                    "🔥 आपको क्या लगता है सच क्या है? नीचे 1 या 2 कमेंट करें! 👇\n"
+                    "🔥 आपको क्या लगता है सच क्या है? नीचे कमेंट में बताएं! 👇\n"
                     f"{funnel_pin}\n"
                     f"👉 रोज़ाना रहस्य और अद्भुत तथ्यों के लिए सब्सक्राइब करें {channel_handle}:\n{sub_link}"
                 )
@@ -197,7 +247,7 @@ class YouTubeUploader:
                 f"👉 {sub_link}\n\n"
                 "💬 Which revelation shocked you the most? Drop your comment below!\n"
                 "⚡ Share this video with a friend who loves science & mysteries!\n\n"
-                f"{'#Shorts ' if is_short else ''}#AlienInterview #Documentary #SpaceMysteries #Trending #Viral"
+                f"{dynamic_tags_line}"
             )
             if pinned_comment:
                 if "sub_confirmation=1" not in pinned_comment:
@@ -206,15 +256,39 @@ class YouTubeUploader:
                     effective_pinned_comment = f"{pinned_comment.strip()}{funnel_pin}"
             else:
                 effective_pinned_comment = (
-                    "🔥 What do you think is the real truth? Type 1 or Type 2 below! 👇\n"
+                    "🔥 What do you think is the real truth? Drop your comment below! 👇\n"
                     f"{funnel_pin}\n"
                     f"👉 Subscribe to {channel_handle} for more deep mysteries:\n{sub_link}"
                 )
 
-        if "sub_confirmation=1" not in description:
-            full_description = (description.rstrip() + sub_cta_block)[:5000]
+        # Smart description building: NEVER duplicate hashtags or CTA if already present
+        clean_desc = (description or "").strip()
+        has_sub_link = "sub_confirmation=1" in clean_desc or "youtube.com/@" in clean_desc
+        has_cta = "💬" in clean_desc or "⚡" in clean_desc
+
+        if content_type == "custom_studio":
+            # For Custom Story Studio, respect user-provided description 100%
+            if not has_sub_link:
+                sub_msg = (
+                    f"\n\n🔔 रोज़ाना अद्भुत तथ्यों और कहानियों के लिए सब्सक्राइब करें:\n👉 {sub_link}"
+                    if is_hindi else
+                    f"\n\n🔔 Subscribe to {channel_handle} for daily deep stories and mysteries:\n👉 {sub_link}"
+                )
+                full_description = (clean_desc + sub_msg)[:5000]
+            else:
+                full_description = clean_desc[:5000]
+        elif has_sub_link:
+            full_description = clean_desc[:5000]
+        elif has_cta:
+            # Already has engagement questions and tags from dynamic metadata generator; only add subscribe CTA
+            sub_msg = (
+                f"\n\n🔔 रोज़ाना रहस्य और अद्भुत ज्ञान के लिए सब्सक्राइब करें:\n👉 {sub_link}"
+                if is_hindi else
+                f"\n\n🔔 Subscribe to {channel_handle} for more:\n👉 {sub_link}"
+            )
+            full_description = (clean_desc + sub_msg)[:5000]
         else:
-            full_description = description[:5000]
+            full_description = (clean_desc + sub_cta_block)[:5000]
 
         # If scheduling release, privacy status must be 'private'
         if publish_at:
@@ -280,8 +354,8 @@ class YouTubeUploader:
             if effective_pinned_comment:
                 self.post_comment(video_id=video_id, comment_text=effective_pinned_comment, channel=active_channel)
 
-            # Record latest longform video for future Shorts funnel cross-promotion
-            if not is_short and video_id:
+            # Record genuine multi-chapter 16:9 long documentary only when explicitly specified
+            if not is_short and chapters and len(chapters) > 1 and content_type == "documentary" and video_id:
                 try:
                     latest_long_file = Path("config/latest_longform_video.json")
                     latest_long_file.parent.mkdir(parents=True, exist_ok=True)
@@ -298,9 +372,9 @@ class YouTubeUploader:
                         ),
                         encoding="utf-8",
                     )
-                    print_info(f"Recorded latest longform video for Shorts funnel: {video_id}")
+                    print_info(f"Recorded genuine longform documentary: {video_id}")
                 except Exception as se:
-                    print_warning(f"Could not save latest longform video info: {se}")
+                    print_warning(f"Could not save longform video info: {se}")
 
             return video_url
 

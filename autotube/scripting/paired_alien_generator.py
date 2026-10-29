@@ -518,6 +518,7 @@ Return valid JSON matching the PairedAlienScript schema.
                     privacy_status=privacy_en,
                     publish_at=sched_time_en,
                     pinned_comment=paired_script.pinned_comment_en,
+                    channel="english",
                 )
                 results["en_url"] = url_en
                 if url_en:
@@ -543,6 +544,7 @@ Return valid JSON matching the PairedAlienScript schema.
                     tags=paired_script.tags + ["alien interview hindi", "roswell 1947", "airl in hindi"],
                     privacy_status=privacy_hi,
                     pinned_comment=paired_script.pinned_comment_hi,
+                    channel="hindi",
                 )
                 results["hi_url"] = url_hi
                 if url_hi:

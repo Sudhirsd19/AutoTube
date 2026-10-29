@@ -231,6 +231,17 @@ class MultiStockAggregator:
         fallback_avoid = ["cartoon", "smiling", "modern office", "smartphone", "laptop", "talking head", "carving", "pumpkin", "face mask", "helmet", "blue sky", "daylight beach"]
         fallback_queries = ["cinematic dramatic mystery", "atmospheric suspense cinematic", "dark moody cinematic"]
 
+        try:
+            from autotube.media.hindi_visual_extractor import extract_english_visual_queries
+            sem = extract_english_visual_queries(scene_text, topic=title, scene_idx=idx)
+            if sem and sem.get("search_queries"):
+                fallback_subject = sem.get("subject", fallback_subject)
+                fallback_must_show = sem.get("must_show", fallback_must_show)
+                fallback_avoid = sem.get("avoid", fallback_avoid)
+                fallback_queries = sem.get("search_queries", fallback_queries)
+        except Exception:
+            pass
+
         # Story topic sets the genre, but the CURRENT SENTENCE owns the visual subject.
         # Never let a title such as "Black Hole Sound" force every scene to use the
         # same black-hole query; that was the root cause of repeated footage.
@@ -246,13 +257,51 @@ class MultiStockAggregator:
             "space", "antariksh", "brahmand", "galaxy", "universe", "planet", "stars",
             "cosmos", "solar system"
         ))
+        scene_is_earth_subject = any(k in s_lower for k in (
+            "ocean", "samundar", "sea", "trench", "underwater", "abyss", "lake", "river", "waterfall", "झील", "नदी", "समुद्र", "सागर",
+            "temple", "mandir", "मंदिर", "archaeol", "excavat", "khudai", "खुदाई", "avshesh", "अवशेष",
+            "animal", "lion", "tiger", "snake", "serpent", "jungle", "forest", "tree", "plant", "human", "brain", "dimag"
+        ))
+        if scene_is_earth_subject and not (scene_is_bh or scene_is_space):
+            story_is_space = False
         is_space_or_black_hole = scene_is_bh or scene_is_space or story_is_space
+
+        scene_is_jupiter = any(k in s_lower for k in ("jupiter", "जुपिटर", "बृहस्पति", "great red spot", "gas giant")) or any(k in t_lower for k in ("jupiter", "जुपिटर", "बृहस्पति"))
+        scene_is_saturn = any(k in s_lower for k in ("saturn", "शनि", "planetary rings")) or any(k in t_lower for k in ("saturn", "शनि"))
+        scene_is_mars = any(k in s_lower for k in ("mars", "मंगल", "red planet"))
+        scene_is_sun = any(k in s_lower for k in ("sun", "सूरज", "सूर्य", "solar flare"))
+        scene_is_moon = any(k in s_lower for k in ("moon", "चांद", "चंद्रमा", "lunar"))
 
         if scene_is_bh:
             fallback_subject = "black hole cosmic singularity"
             fallback_must_show = ["black hole", "cosmic vortex", "deep space", "singularity"]
             fallback_avoid += ["generic galaxy", "earth daytime", "blue sky", "nature", "sunny", "phone", "office", "helmet", "face mask", "clouds"]
             fallback_queries = ["black hole", "black hole space", "cosmic vortex", "planet earth space"]
+        elif scene_is_jupiter:
+            fallback_subject = "planet Jupiter gas giant and turbulent atmosphere"
+            fallback_must_show = ["Jupiter planet", "gas giant storm", "deep space", "cosmic atmosphere"]
+            fallback_avoid += ["earth daytime", "people", "office", "city", "sunny beach", "blue sky", "green grass"]
+            fallback_queries = ["jupiter planet space", "jupiter atmosphere storm", "jupiter great red spot", "gas giant space"]
+        elif scene_is_saturn:
+            fallback_subject = "planet Saturn and planetary rings"
+            fallback_must_show = ["Saturn planet", "planetary rings", "deep space"]
+            fallback_avoid += ["earth daytime", "people", "office", "city"]
+            fallback_queries = ["saturn planet rings space", "saturn rings deep space", "saturn planet cosmos"]
+        elif scene_is_mars:
+            fallback_subject = "planet Mars red surface and craters"
+            fallback_must_show = ["Mars red planet", "Martian landscape", "craters"]
+            fallback_avoid += ["green trees", "ocean", "city", "people"]
+            fallback_queries = ["mars planet red surface space", "planet mars space", "martian landscape surface"]
+        elif scene_is_sun:
+            fallback_subject = "Sun solar flare and glowing corona"
+            fallback_must_show = ["Sun surface", "solar flares", "glowing corona"]
+            fallback_avoid += ["earth daytime", "clouds", "people", "city"]
+            fallback_queries = ["sun solar flare space", "sun surface solar corona", "sun glowing deep space"]
+        elif scene_is_moon:
+            fallback_subject = "Moon lunar surface and craters"
+            fallback_must_show = ["Moon surface", "craters", "deep space"]
+            fallback_avoid += ["earth city", "people", "trees", "blue sky"]
+            fallback_queries = ["moon surface craters space", "moon in deep space", "lunar surface dark space"]
         elif any(k in s_lower for k in ("nasa", "chandra", "perseus", "galaxy cluster")):
             fallback_subject = "Perseus galaxy cluster pressure waves"
             fallback_must_show = ["Perseus galaxy cluster", "concentric pressure ripples", "hot intracluster gas"]
@@ -295,7 +344,7 @@ class MultiStockAggregator:
             fallback_must_show = ["glowing neural network", "brain synapses firing", "abstract thought flow"]
             fallback_avoid += ["hospital surgery", "doctor", "cartoon"]
             fallback_queries = ["glowing brain neural network", "human brain neurons firing", "abstract subconscious mind"]
-        elif any(k in s_lower or k in t_lower for k in ("ocean", "samundar", "sea", "trench", "underwater", "abyss")):
+        elif any(k in s_lower or k in t_lower for k in ("ocean", "samundar", "समुद्र", "सागर", "sea", "trench", "underwater", "abyss")):
             fallback_subject = "deep ocean abyss"
             fallback_must_show = ["deep underwater abyss", "ocean trench dark", "underwater vortex"]
             fallback_avoid += ["sunny beach", "swimming pool", "resort", "smiling diver"]
@@ -490,9 +539,25 @@ Return STRICT JSON with keys:
     # -------------------------------------------------------------
     # 2. SOURCE SEARCH ENGINES (Mixkit, Coverr, Pexels, Pixabay)
     # -------------------------------------------------------------
+    def _sanitize_query(self, query: str) -> str:
+        """Sanitize query into clean English search keywords, translating Hindi if present."""
+        if not query:
+            return ""
+        try:
+            from autotube.media.hindi_visual_extractor import is_hindi_text, extract_english_visual_queries
+            if is_hindi_text(str(query)):
+                res = extract_english_visual_queries(str(query))
+                if res and res.get("search_queries"):
+                    query = res["search_queries"][0]
+                elif res and res.get("subject"):
+                    query = res["subject"]
+        except Exception:
+            pass
+        return re.sub(r"[^a-zA-Z0-9\s]", " ", str(query)).strip().lower()
+
     def search_mixkit(self, query: str, limit: int = 8) -> List[Dict[str, Any]]:
         """Search Mixkit free stock videos with real slug extraction and clean title parsing."""
-        clean_q = re.sub(r"[^a-zA-Z0-9\s]", " ", query).strip().lower()
+        clean_q = self._sanitize_query(query)
         if not clean_q:
             return []
 
@@ -571,7 +636,7 @@ Return STRICT JSON with keys:
 
     def search_coverr(self, query: str, orientation: str = "portrait", limit: int = 6) -> List[Dict[str, Any]]:
         """Search Coverr free stock videos with strict query relevance verification."""
-        clean_q = re.sub(r"[^a-zA-Z0-9\s]", " ", query).strip().lower()
+        clean_q = self._sanitize_query(query)
         if not clean_q:
             return []
 
@@ -619,7 +684,7 @@ Return STRICT JSON with keys:
         if not self.pexels_fetcher.is_configured():
             return []
 
-        clean_q = re.sub(r"[^a-zA-Z0-9\s]", " ", query).strip().lower()
+        clean_q = self._sanitize_query(query)
         if not clean_q:
             return []
 
@@ -731,7 +796,7 @@ Return STRICT JSON with keys:
         if not api_key:
             return []
 
-        clean_q = re.sub(r"[^a-zA-Z0-9\s]", " ", query).strip().lower()
+        clean_q = self._sanitize_query(query)
         if not clean_q:
             return []
 

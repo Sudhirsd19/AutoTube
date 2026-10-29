@@ -162,7 +162,19 @@ class StockFetcher:
     @staticmethod
     def clean_query(query: str) -> str:
         """Strip filler words, numbers, and buzzwords, keeping core subject terms."""
-        clean = re.sub(r"[^a-zA-Z\s]", " ", query).lower().strip()
+        if not query:
+            return ""
+        try:
+            from autotube.media.hindi_visual_extractor import is_hindi_text, extract_english_visual_queries
+            if is_hindi_text(str(query)):
+                res = extract_english_visual_queries(str(query))
+                if res and res.get("search_queries"):
+                    query = res["search_queries"][0]
+                elif res and res.get("subject"):
+                    query = res["subject"]
+        except Exception:
+            pass
+        clean = re.sub(r"[^a-zA-Z\s]", " ", str(query)).lower().strip()
         words = [w for w in clean.split() if len(w) > 1 and w not in STOP_WORDS]
         if not words:
             return clean[:30]
@@ -712,6 +724,10 @@ class StockFetcher:
             if not subject and hasattr(scene, "visual_query"):
                 subject = getattr(scene, "visual_query", "")
 
+            if not subject:
+                subject = description or (f"cinematic scene {idx+1} {narration[:30]}")
+            if any(k in subject.lower() for k in ("subscribe", "bell", "button", "like")):
+                subject = f"cinematic grand finale {description or narration[:30]}"
             print_info(f"Acquiring Scene {idx+1}/{len(scenes)} Visual for subject: '{subject}' (Footage required: {require_video})...")
             asset = self.fetch_best_visual_for_scene(
                 subject=subject,

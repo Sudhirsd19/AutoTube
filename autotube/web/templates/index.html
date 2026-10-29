@@ -171,7 +171,10 @@
 
         <div class="flex items-center gap-2.5">
           <button onclick="openTokenModal()" class="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-bold text-slate-200 hover:text-white transition flex items-center gap-2 shadow">
-            <i class="fa-brands fa-google text-red-400"></i> Manage Channels OAuth
+            <i class="fa-brands fa-google text-red-400"></i> YouTube OAuth
+          </button>
+          <button onclick="openFacebookModal()" class="px-3.5 py-2 rounded-xl bg-blue-950/60 hover:bg-blue-900/80 border border-blue-600/50 text-xs font-bold text-blue-200 hover:text-white transition flex items-center gap-2 shadow">
+            <i class="fa-brands fa-facebook text-blue-400"></i> Facebook Page Setup
           </button>
         </div>
       </div>
@@ -278,7 +281,14 @@
             <div class="flex items-center gap-1.5 bg-slate-900 px-2 py-1 rounded-lg border border-slate-800">
               <span class="text-[11px] text-slate-400">Voice:</span>
               <select id="quick-voice-select" class="bg-transparent text-white font-medium text-xs focus:outline-none cursor-pointer">
-                <optgroup label="🇮🇳 HINDI VOICES — SPACE / MYSTERY / SCIENCE" class="bg-slate-900 text-slate-200">
+                <optgroup label="🌟 OPENMONTAGE GEMINI 3.8 FLASH TTS" class="bg-slate-900 text-slate-200">
+                  <option value="Charon" selected>🎙️ Charon — Deep, Epic Human Voice (Gemini TTS) ⭐ #1 RECOMMENDED</option>
+                  <option value="Puck">🎙️ Puck — Energetic Viral Narrator (Gemini TTS)</option>
+                  <option value="Aoede">🎙️ Aoede — Cinematic Female Voice (Gemini TTS)</option>
+                  <option value="Kore">🎙️ Kore — Soothing Storyteller Female (Gemini TTS)</option>
+                  <option value="Fenrir">🎙️ Fenrir — Intense & Mysterious Male (Gemini TTS)</option>
+                </optgroup>
+                <optgroup label="🇮🇳 HINDI VOICES (EDGE-TTS)" class="bg-slate-900 text-slate-200">
                   <option value="hi_astro_vibes_male" selected>🎙️ Astro Vibes Male Hindi (Space & Science Facts) ⭐ DEFAULT</option>
                   <option value="hi_deep_cinematic_male">🎙️ Deep Cinematic Male Hindi ⭐ BEST</option>
                   <option value="hi_calm_male">🎙️ Calm Male Hindi (Science Explanations)</option>
@@ -409,7 +419,7 @@
             <span id="player-title" class="text-xs text-brand-cyan truncate max-w-[180px]">Select a video</span>
           </h3>
           <div class="w-[270px] h-[380px] bg-black rounded-xl overflow-hidden shadow-2xl border border-slate-800 flex items-center justify-center">
-            <video id="html5-player" controls class="w-full h-full object-cover">
+            <video id="html5-player" controls preload="metadata" playsinline class="w-full h-full object-cover">
               Your browser does not support the video tag.
             </video>
           </div>
@@ -418,19 +428,23 @@
             <div id="publish-status-badge" class="text-center"></div>
             <div class="flex items-center gap-2">
               <button id="btn-publish" onclick="publishCurrentVideo()"
-                class="flex-1 px-4 py-2.5 rounded-xl bg-gradient-to-r from-red-600 to-red-500 hover:from-red-500 hover:to-red-400 text-white text-sm font-bold transition-all flex items-center justify-center gap-2 shadow-lg neon-glow-red">
-                <i class="fa-brands fa-youtube"></i> Publish to YouTube
+                class="flex-1 px-3 py-2.5 rounded-xl bg-gradient-to-r from-red-600 to-red-500 hover:from-red-500 hover:to-red-400 text-white text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-lg neon-glow-red">
+                <i class="fa-brands fa-youtube"></i> To YouTube
+              </button>
+              <button id="btn-publish-fb" onclick="publishCurrentVideoToFacebook()"
+                class="flex-1 px-3 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-lg">
+                <i class="fa-brands fa-facebook"></i> To FB Reel
               </button>
               <button id="btn-delete-active-video" onclick="deleteCurrentActiveVideo()"
-                class="px-4 py-2.5 rounded-xl bg-rose-950/80 hover:bg-rose-900 text-rose-300 border border-rose-700/50 text-xs font-bold transition flex items-center justify-center gap-1.5 shadow" title="Delete this video file">
-                <i class="fa-solid fa-trash"></i> Delete
+                class="px-3 py-2.5 rounded-xl bg-rose-950/80 hover:bg-rose-900 text-rose-300 border border-rose-700/50 text-xs font-bold transition flex items-center justify-center gap-1 shadow" title="Delete this video file">
+                <i class="fa-solid fa-trash"></i>
               </button>
             </div>
             <div id="publish-options" class="space-y-2">
               <div class="grid grid-cols-2 gap-2">
-                <select id="publish-channel" class="w-full px-3 py-1.5 rounded-lg bg-slate-800 border border-slate-700 text-xs text-white" title="Target YouTube Channel">
+                <select id="publish-channel" onchange="loadMediaMetadataPreview()" class="w-full px-3 py-1.5 rounded-lg bg-slate-800 border border-slate-700 text-xs text-white" title="Target YouTube Channel">
                   <option value="english">🇬🇧 English Channel</option>
-                  <option value="hindi" selected>🇮🇳 Hindi Channel</option>
+                  <option value="hindi">🇮🇳 Hindi Channel</option>
                 </select>
                 <select id="publish-privacy" class="w-full px-3 py-1.5 rounded-lg bg-slate-800 border border-slate-700 text-xs text-white" title="YouTube Privacy">
                   <option value="public">Public (Live Immediately)</option>
@@ -438,6 +452,28 @@
                   <option value="private">Private (Hidden)</option>
                 </select>
               </div>
+
+              <!-- Collapsible Dynamic YouTube SEO Details Preview & Edit -->
+              <details class="group bg-slate-900/80 rounded-xl p-2.5 border border-slate-800">
+                <summary class="text-xs font-semibold text-brand-cyan cursor-pointer select-none flex items-center justify-between">
+                  <span class="flex items-center gap-1.5"><i class="fa-solid fa-wand-magic-sparkles text-amber-400"></i> Video SEO Details (Auto-Generated)</span>
+                  <span class="text-[10px] text-slate-400 group-open:rotate-180 transition-transform">▼</span>
+                </summary>
+                <div class="space-y-2 pt-2.5">
+                  <div>
+                    <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Title</label>
+                    <input type="text" id="publish-custom-title" class="w-full px-2.5 py-1.5 rounded-lg bg-slate-950 border border-slate-700 text-xs text-white focus:outline-none focus:border-brand-cyan" placeholder="Auto-generated title">
+                  </div>
+                  <div>
+                    <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Description (Unique Story & Script)</label>
+                    <textarea id="publish-custom-desc" rows="3" class="w-full px-2.5 py-1.5 rounded-lg bg-slate-950 border border-slate-700 text-xs text-white focus:outline-none focus:border-brand-cyan" placeholder="Auto-generated description based on video script"></textarea>
+                  </div>
+                  <div>
+                    <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Tags (Comma-separated)</label>
+                    <input type="text" id="publish-custom-tags" class="w-full px-2.5 py-1.5 rounded-lg bg-slate-950 border border-slate-700 text-xs text-white focus:outline-none focus:border-brand-cyan" placeholder="Topic tags">
+                  </div>
+                </div>
+              </details>
             </div>
           </div>
         </div>
@@ -500,6 +536,19 @@
               </button>
               <button type="button" onclick="selectStudioLang('en')" id="btn-lang-en" class="px-3 py-1.5 rounded-lg text-xs font-bold transition text-slate-400 hover:text-white">
                 🇺🇸 English
+              </button>
+            </div>
+
+            <!-- Platform Target Selector (Controls Outro CTA: Subscribe vs Follow) -->
+            <div class="flex items-center bg-slate-900/90 p-1 rounded-xl border border-slate-700" title="Target Platform: Automatically adjusts outro CTA to Subscribe or Follow">
+              <button type="button" onclick="selectStudioPlatform('youtube')" id="btn-platform-youtube" class="px-3 py-1.5 rounded-lg text-xs font-bold transition bg-red-600 text-white shadow-md flex items-center gap-1.5">
+                <i class="fa-brands fa-youtube"></i> YouTube
+              </button>
+              <button type="button" onclick="selectStudioPlatform('facebook')" id="btn-platform-facebook" class="px-3 py-1.5 rounded-lg text-xs font-bold transition text-slate-400 hover:text-white flex items-center gap-1.5">
+                <i class="fa-brands fa-facebook"></i> Facebook Reel
+              </button>
+              <button type="button" onclick="selectStudioPlatform('universal')" id="btn-platform-universal" class="px-3 py-1.5 rounded-lg text-xs font-bold transition text-slate-400 hover:text-white flex items-center gap-1.5">
+                <i class="fa-solid fa-arrows-split-up-and-left"></i> Both
               </button>
             </div>
           </div>
@@ -611,9 +660,15 @@
             </div>
             
             <select id="director-select-voice" class="w-full glass bg-slate-900 px-3 py-2 rounded-lg border border-slate-700 text-xs text-white focus:outline-none focus:border-brand-cyan">
-              <option value="hi_astro_vibes_male" selected>🎙️ Astro Vibes Male Hindi (Space & Science Facts - 95% Match) ⭐ DEFAULT</option>
+              <optgroup label="🌟 OPENMONTAGE GEMINI 3.8 FLASH TTS (ULTRA-REALISTIC HUMAN VOICES)">
+                <option value="Charon" selected>🎙️ Charon — Deep, Epic, Ultra-Realistic Human Voice ⭐ #1 RECOMMENDED</option>
+                <option value="Puck">🎙️ Puck — Energetic, Youthful & Engaging Viral Narrator</option>
+                <option value="Aoede">🎙️ Aoede — Rich, Cinematic Female Narrator</option>
+                <option value="Kore">🎙️ Kore — Soothing, Elegant Storyteller Female</option>
+                <option value="Fenrir">🎙️ Fenrir — Authoritative, Intense & Mysterious Male</option>
+              </optgroup>
               <option value="auto">🤖 Auto — Subject + Language Matched Voice</option>
-              <optgroup label="🇮🇳 HINDI VOICES — SPACE / MYSTERY / SCIENCE">
+              <optgroup label="🇮🇳 HINDI VOICES (EDGE-TTS)">
                 <option value="hi_astro_vibes_male">🎙️ Astro Vibes Male Hindi (Space & Science Facts - 95% Match) ⭐ VIRAL</option>
                 <option value="hi_deep_cinematic_male">🎙️ Deep Cinematic Male Hindi (Space, Universe, Black Holes)</option>
                 <option value="hi_calm_male">🎙️ Calm Male Hindi (Science Explanations, Astronomy, Planet Facts)</option>
@@ -693,7 +748,18 @@
           </h3>
         </div>
 
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1.5 flex items-center justify-between">
+              <span class="flex items-center gap-1.5"><i class="fa-solid fa-layer-group text-purple-400"></i> Render Engine</span>
+              <span class="text-[10px] bg-purple-500/20 text-purple-300 px-1.5 py-0.2 rounded border border-purple-500/30">Remotion vs Classic</span>
+            </label>
+            <select id="director-render-engine" class="w-full glass bg-slate-900 px-3 py-2 rounded-lg border border-purple-500/60 text-xs text-white focus:outline-none focus:border-brand-cyan font-bold">
+              <option value="openmontage" selected>🌟 OpenMontage (Remotion 9:16 + Gemini TTS) ⭐ RECOMMENDED</option>
+              <option value="classic">🎬 Classic Studio (FFmpeg Subtitles + Ducking)</option>
+            </select>
+          </div>
+
           <div>
             <label class="block text-xs font-semibold text-slate-300 mb-1.5">Karaoke Subtitle Style</label>
             <select id="director-select-subtitle-style" class="w-full glass bg-slate-900 px-3 py-2 rounded-lg border border-slate-700 text-xs text-white focus:outline-none focus:border-brand-cyan">
@@ -705,11 +771,11 @@
 
           <div>
             <label class="block text-xs font-semibold text-slate-300 mb-1.5 flex items-center gap-1.5">
-              <span>Visual Engine Mode</span>
-              <span class="text-[10px] bg-cyan-500/20 text-cyan-400 px-2 py-0.5 rounded-full border border-cyan-500/30">AI Multi-Source</span>
+              <span>Visual Media Sourcing</span>
+              <span class="text-[10px] bg-cyan-500/20 text-cyan-400 px-1.5 py-0.2 rounded border border-cyan-500/30">Pexels/Pixabay</span>
             </label>
             <select id="director-visual-mode" class="w-full glass bg-slate-900 px-3 py-2 rounded-lg border border-slate-700 text-xs text-white focus:outline-none focus:border-brand-cyan">
-              <option value="multi_cinematic" selected>🎬 Multi-Source AI Best Match (Mixkit + Coverr + Pexels + Archival)</option>
+              <option value="multi_cinematic" selected>🎬 Exact-Matched Stock (Pexels, Pixabay, Mixkit)</option>
               <option value="hybrid">🌟 Hybrid Mode: Asli Archive Proofs + AI Incident Scenes</option>
               <option value="real_only">📜 100% Real Historical Photos & Scanned Documents Only</option>
               <option value="ai_only">🎨 100% Photorealistic AI Generated Incident Scenes Only</option>
@@ -838,7 +904,7 @@
                 <label class="block text-xs font-semibold text-slate-300 mb-1">Target Channel</label>
                 <select id="director-pub-channel" class="w-full glass bg-slate-950 px-3 py-2 rounded-lg border border-slate-700 text-xs text-white focus:outline-none focus:border-brand-cyan">
                   <option value="english">🇬🇧 English Channel</option>
-                  <option value="hindi" selected>🇮🇳 Hindi Channel</option>
+                  <option value="hindi">🇮🇳 Hindi Channel</option>
                 </select>
               </div>
               <div>
@@ -860,9 +926,12 @@
               <textarea id="director-pub-pinned" rows="2" class="w-full glass bg-slate-950 px-3 py-2 rounded-lg border border-slate-700 text-xs text-white focus:outline-none focus:border-brand-cyan"></textarea>
             </div>
 
-            <div class="pt-2">
+            <div class="pt-2 grid grid-cols-1 sm:grid-cols-2 gap-3">
               <button onclick="publishDirectorVideoNow()" id="btn-director-publish" class="w-full py-3 rounded-xl bg-gradient-to-r from-red-600 via-rose-600 to-red-700 hover:from-red-500 hover:to-rose-500 text-white text-xs font-extrabold transition flex items-center justify-center gap-2 shadow-xl">
-                <i class="fa-brands fa-youtube text-base"></i> 🚀 Upload to YouTube Now
+                <i class="fa-brands fa-youtube text-base"></i> 🚀 Upload to YouTube
+              </button>
+              <button onclick="publishDirectorVideoToFacebook()" id="btn-director-publish-fb" class="w-full py-3 rounded-xl bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 hover:from-blue-500 hover:to-indigo-500 text-white text-xs font-extrabold transition flex items-center justify-center gap-2 shadow-xl">
+                <i class="fa-brands fa-facebook text-base"></i> 🚀 Upload to Facebook Reel
               </button>
             </div>
 
@@ -942,10 +1011,10 @@
           <div class="flex items-center gap-2">
             <span class="w-6 h-6 rounded-full bg-amber-500/20 text-amber-400 font-bold text-xs flex items-center justify-center border border-amber-500/40">2</span>
             <h3 class="text-base font-bold text-white flex items-center gap-2">
-              <i class="fa-solid fa-images text-amber-400"></i> स्टोरीबोर्ड: 8K AI प्रॉम्प्ट्स &amp; 4K इमेज अपलोड
+              <i class="fa-solid fa-film text-amber-400"></i> स्टोरीबोर्ड: 100% ऑटोमैटिक 4K विज़ुअल्स &amp; कस्टमाइज़ेशन
             </h3>
             <span class="text-[11px] text-amber-400 bg-amber-950/60 px-2.5 py-0.5 rounded-full border border-amber-500/30">
-              प्रत्येक सीन का 8K प्रॉम्प्ट कॉपी करें ➔ Midjourney/Flux/ChatGPT से इमेज बनाएं ➔ यहां अपलोड करें (या AI को जनरेट करने दें)
+              ⚡ 100% ऑटोमैटिक 4K रियल विज़ुअल्स (गंगा आरती, मंदिर, दीया, साधु, हिमालय) • कोई मैन्युअल काम नहीं! (वैकल्पिक: कस्टम इमेज अपलोड)
             </span>
           </div>
           <div class="flex items-center gap-2">
@@ -983,6 +1052,7 @@
               <span>🎙️</span> AI Narrator Voice:
             </label>
             <select id="vedic-select-voice" class="w-full glass bg-slate-900/90 px-3 py-2 rounded-xl border border-slate-700 text-xs text-white focus:border-amber-400 focus:outline-none">
+              <option value="Charon">🎙️ Charon (Gemini 3.8 Flash TTS — Deep, Natural Epic Voice) ⭐ VIRAL</option>
               <option value="akashvani" selected>🎙️ आकाशवाणी (Cosmic Echo Devavani - Divine Echo) ⭐ Default</option>
               <option value="hi_deep_cinematic_male">🎙️ Deep Cinematic Male Hindi (Solemn Baritone) ⭐ Recommended</option>
               <option value="madhur">🎙️ Madhur (Natural Hindi Documentary Narrator)</option>
@@ -1435,6 +1505,74 @@
 
       <div class="flex justify-end pt-2">
         <button onclick="closeTokenModal()" class="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-300">
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================================================================= -->
+  <!-- FACEBOOK PAGE & REELS SETUP MODAL -->
+  <!-- ================================================================= -->
+  <div id="facebook-page-modal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="glass-card max-w-xl w-full p-6 rounded-2xl border border-brand-border space-y-5 shadow-2xl">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <h3 class="font-bold text-lg text-white flex items-center gap-2">
+          <i class="fa-brands fa-facebook text-blue-500"></i> Facebook Page & Reels Integration
+        </h3>
+        <button onclick="closeFacebookModal()" class="text-slate-400 hover:text-white transition">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <!-- Connection Status Card -->
+      <div id="fb-status-card" class="p-4 rounded-xl bg-slate-900/90 border border-slate-800 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div id="fb-avatar-box" class="w-12 h-12 rounded-xl bg-blue-950 flex items-center justify-center text-blue-400 font-bold border border-blue-800/50 overflow-hidden">
+            <i class="fa-brands fa-facebook text-2xl"></i>
+          </div>
+          <div>
+            <div id="fb-page-name" class="font-bold text-white text-sm">Checking status...</div>
+            <div id="fb-page-id-display" class="text-xs text-slate-400 font-mono">Page ID: --</div>
+          </div>
+        </div>
+        <span id="fb-status-badge" class="px-2.5 py-1 text-xs font-bold rounded-full bg-slate-800 text-slate-400">Loading...</span>
+      </div>
+
+      <!-- Credential Form -->
+      <div class="space-y-4">
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1">Facebook Page ID <span class="text-rose-400">*</span></label>
+          <input type="text" id="fb-input-page-id" placeholder="e.g. 104829104839201" class="w-full glass bg-slate-950 px-3.5 py-2.5 rounded-xl border border-slate-700 text-xs text-white focus:outline-none focus:border-blue-500">
+          <p class="text-[11px] text-slate-400 mt-1">Apne Facebook Page ke 'About' section me jakar Page ID copy karein.</p>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1">Page Access Token <span class="text-rose-400">*</span></label>
+          <textarea id="fb-input-token" rows="3" placeholder="EAAB... (Never-expiring or long-lived Page Access Token)" class="w-full glass bg-slate-950 px-3.5 py-2.5 rounded-xl border border-slate-700 text-xs text-white font-mono focus:outline-none focus:border-blue-500"></textarea>
+          <p class="text-[11px] text-slate-400 mt-1">Meta for Developers (<a href="https://developers.facebook.com/tools/explorer/" target="_blank" class="text-blue-400 underline">Graph API Explorer</a>) se Page Access Token generate karein.</p>
+        </div>
+
+        <button onclick="saveFacebookCredentials()" id="btn-save-fb-creds" class="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white text-xs font-bold transition flex items-center justify-center gap-2 shadow-lg">
+          <i class="fa-solid fa-floppy-disk"></i> Save & Test Facebook Connection
+        </button>
+      </div>
+
+      <!-- Quick Setup Guide -->
+      <div class="p-3.5 rounded-xl bg-blue-950/20 border border-blue-500/30 text-xs text-blue-200 space-y-1.5">
+        <div class="font-bold flex items-center gap-1.5 text-blue-300">
+          <i class="fa-solid fa-circle-info"></i> Token Kaise Banayein (2 Minutes):
+        </div>
+        <ol class="list-decimal list-inside space-y-1 text-[11px] text-slate-300">
+          <li><a href="https://developers.facebook.com/tools/explorer/" target="_blank" class="text-blue-400 underline font-semibold">Graph API Explorer</a> kholein.</li>
+          <li>"User or Page" dropdown me apna Facebook Page select karein.</li>
+          <li>Permissions me <code class="bg-blue-900/60 px-1 py-0.5 rounded text-cyan-300">pages_show_list</code>, <code class="bg-blue-900/60 px-1 py-0.5 rounded text-cyan-300">pages_read_engagement</code>, aur <code class="bg-blue-900/60 px-1 py-0.5 rounded text-cyan-300">pages_manage_posts</code> select karein.</li>
+          <li>"Generate Access Token" par click karein aur upar Token paste kar dein!</li>
+        </ol>
+      </div>
+
+      <div class="flex justify-end pt-2 border-t border-slate-800">
+        <button onclick="closeFacebookModal()" class="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-300">
           Close
         </button>
       </div>
@@ -2121,6 +2259,13 @@
               <select id="slot-voice-${slot.id}" onchange="updateSlotField('${slot.id}', 'voice', this.value); markSlotsUnsaved();" 
                 class="w-full bg-slate-950 border border-slate-800 text-slate-200 text-xs px-2 py-1.5 rounded-lg focus:outline-none focus:border-brand-cyan cursor-pointer truncate">
                 <option value="auto" ${slotVoice === 'auto' ? 'selected' : ''}>🤖 Auto — Subject + Language Matched</option>
+                <optgroup label="🌟 OPENMONTAGE GEMINI 3.8 FLASH TTS (ULTRA-REALISTIC)">
+                  <option value="Charon" ${slotVoice === 'charon' ? 'selected' : ''}>🎙️ Charon — Deep, Epic Human Voice ⭐ #1 RECOMMENDED</option>
+                  <option value="Puck" ${slotVoice === 'puck' ? 'selected' : ''}>🎙️ Puck — Energetic Viral Narrator</option>
+                  <option value="Aoede" ${slotVoice === 'aoede' ? 'selected' : ''}>🎙️ Aoede — Rich Cinematic Female</option>
+                  <option value="Kore" ${slotVoice === 'kore' ? 'selected' : ''}>🎙️ Kore — Soothing Storyteller Female</option>
+                  <option value="Fenrir" ${slotVoice === 'fenrir' ? 'selected' : ''}>🎙️ Fenrir — Intense & Mysterious Male</option>
+                </optgroup>
                 <optgroup label="🇮🇳 HINDI VOICES — SPACE / MYSTERY / SCIENCE">
                   <option value="hi_astro_vibes_male" ${slotVoice === 'hi_astro_vibes_male' ? 'selected' : ''}>🎙️ Astro Vibes Male Hindi (Space & Science Facts) ⭐ DEFAULT</option>
                   <option value="hi_deep_cinematic_male" ${slotVoice === 'hi_deep_cinematic_male' ? 'selected' : ''}>🎙️ Deep Cinematic Male Hindi (Space, Universe, Black Holes) ⭐ BEST</option>
@@ -2624,9 +2769,9 @@
           `;
           list.appendChild(item);
 
-          // Auto-play first video on load
+          // Preload metadata of first video on load without auto-playing heavy stream
           if (idx === 0 && !document.getElementById('html5-player').src) {
-            playMedia(f.filename, f.stream_url);
+            playMedia(f.filename, f.stream_url, false);
           }
         });
       } catch (err) {
@@ -2634,12 +2779,24 @@
       }
     }
 
-    function playMedia(filename, url) {
+    function playMedia(filename, url, autoPlay = true) {
       currentMediaFilename = filename;
       document.getElementById('player-title').textContent = filename;
       const player = document.getElementById('html5-player');
-      player.src = url;
-      player.play().catch(e => console.log('Autoplay blocked:', e));
+      if (player.src !== url && !player.src.endsWith(url)) {
+        player.src = url;
+        player.load();
+      }
+      if (autoPlay) {
+        player.play().catch(e => console.log('Autoplay blocked:', e));
+      }
+
+      // Auto-detect matching channel based on filename convention
+      const isHi = filename.toLowerCase().endsWith('_hi.mp4') || filename.toLowerCase().includes('_hindi') || filename.toLowerCase().includes('vedic');
+      const pubCh = document.getElementById('publish-channel');
+      if (pubCh) {
+        pubCh.value = isHi ? 'hindi' : 'english';
+      }
 
       // Update publish controls
       const controls = document.getElementById('publish-controls');
@@ -2667,6 +2824,35 @@
           </div>`;
         btnPublish.classList.remove('hidden');
         pubOptions.classList.remove('hidden');
+        loadMediaMetadataPreview(filename);
+      }
+    }
+
+    async function loadMediaMetadataPreview(filename) {
+      const fn = filename || currentMediaFilename;
+      if (!fn) return;
+      const channel = document.getElementById('publish-channel') ? document.getElementById('publish-channel').value : 'hindi';
+      try {
+        const res = await fetch('/api/media/metadata/preview', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ filename: fn, channel: channel })
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.detected_channel) {
+            const pubChSelect = document.getElementById('publish-channel');
+            if (pubChSelect) pubChSelect.value = data.detected_channel;
+          }
+          const titleInput = document.getElementById('publish-custom-title');
+          const descInput = document.getElementById('publish-custom-desc');
+          const tagsInput = document.getElementById('publish-custom-tags');
+          if (titleInput) titleInput.value = data.title || '';
+          if (descInput) descInput.value = data.description || '';
+          if (tagsInput) tagsInput.value = (data.tags || []).join(', ');
+        }
+      } catch (e) {
+        console.warn('Failed to preview metadata:', e);
       }
     }
 
@@ -2680,6 +2866,10 @@
 
       const privacy = document.getElementById('publish-privacy').value;
       const channel = document.getElementById('publish-channel') ? document.getElementById('publish-channel').value : 'english';
+      const titleVal = document.getElementById('publish-custom-title') ? document.getElementById('publish-custom-title').value.trim() : null;
+      const descVal = document.getElementById('publish-custom-desc') ? document.getElementById('publish-custom-desc').value.trim() : null;
+      const tagsRaw = document.getElementById('publish-custom-tags') ? document.getElementById('publish-custom-tags').value.trim() : null;
+      const tagsList = tagsRaw ? tagsRaw.split(',').map(t => t.trim().replace(/^#/, '')).filter(Boolean) : null;
 
       if (!confirm(`Publish "${currentMediaFilename}" to YouTube [${channel.toUpperCase()} Channel] as ${privacy.toUpperCase()}?`)) return;
 
@@ -2691,7 +2881,14 @@
         const res = await fetch('/api/media/publish', {
           method: 'POST',
           headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({ filename: currentMediaFilename, privacy: privacy, channel: channel })
+          body: JSON.stringify({
+            filename: currentMediaFilename,
+            title: titleVal,
+            description: descVal,
+            tags: tagsList,
+            privacy: privacy,
+            channel: channel
+          })
         });
         const data = await res.json();
 
@@ -2740,6 +2937,64 @@
         alert('Network error: ' + err.message);
         btn.disabled = false;
         btn.innerHTML = '<i class="fa-brands fa-youtube"></i> Publish to YouTube';
+      }
+    }
+
+    async function publishCurrentVideoToFacebook() {
+      if (!currentMediaFilename) return alert('No video selected!');
+
+      // Check Facebook status
+      try {
+        const stRes = await fetch('/api/facebook/status');
+        const stData = await stRes.json();
+        if (!stData.configured) {
+          showToast('Pehle Facebook Page connect kijiye!', true);
+          openFacebookModal();
+          return;
+        }
+
+        const titleVal = document.getElementById('publish-custom-title') ? document.getElementById('publish-custom-title').value.trim() : null;
+        const descVal = document.getElementById('publish-custom-desc') ? document.getElementById('publish-custom-desc').value.trim() : null;
+        const tagsRaw = document.getElementById('publish-custom-tags') ? document.getElementById('publish-custom-tags').value.trim() : null;
+        const tagsList = tagsRaw ? tagsRaw.split(',').map(t => t.trim().replace(/^#/, '')).filter(Boolean) : null;
+        const title = titleVal || currentMediaFilename.replace(/\.[^/.]+$/, '').replace(/_/g, ' ');
+
+        if (!confirm(`"${title}" ko Facebook Page [${stData.page_name}] par Reel ke roop me upload karein?`)) return;
+
+        const btn = document.getElementById('btn-publish-fb');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Uploading Reel...';
+
+        const res = await fetch('/api/facebook/publish-reel', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({
+            filename: currentMediaFilename,
+            title: title,
+            description: descVal,
+            tags: tagsList
+          })
+        });
+
+        const data = await res.json();
+        if (data.success) {
+          showToast('🎉 Facebook Reel Published Successfully!');
+          alert(`🎉 Facebook Reel Published Successfully!\n\nReel URL: ${data.reel_url}`);
+          btn.innerHTML = '<i class="fa-solid fa-circle-check"></i> Published to FB!';
+          btn.classList.remove('from-blue-600', 'to-indigo-600');
+          btn.classList.add('from-emerald-600', 'to-emerald-500');
+        } else {
+          alert('❌ Facebook Reel Upload Failed: ' + (data.detail || data.error || 'Unknown error'));
+          btn.disabled = false;
+          btn.innerHTML = '<i class="fa-brands fa-facebook"></i> To FB Reel';
+        }
+      } catch (err) {
+        alert('❌ Facebook Upload Error: ' + err.message);
+        const btn = document.getElementById('btn-publish-fb');
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = '<i class="fa-brands fa-facebook"></i> To FB Reel';
+        }
       }
     }
 
@@ -2970,11 +3225,36 @@
     // =================================================================
     let studioVideoFormat = 'short'; // 'short' (9:16) or 'landscape_long' (16:9)
     let studioLanguage = 'hi'; // 'hi', 'hinglish', 'en'
+    let studioTargetPlatform = 'youtube'; // 'youtube', 'facebook', 'universal'
     let currentAuditionAudio = null;
     let currentBgmAudio = null;
     let directorPollTimer = null;
     let currentRenderedFilename = null;
     let studioScenePlan = null;
+
+    function selectStudioPlatform(platform) {
+      studioTargetPlatform = platform;
+      const btnYt = document.getElementById('btn-platform-youtube');
+      const btnFb = document.getElementById('btn-platform-facebook');
+      const btnUni = document.getElementById('btn-platform-universal');
+      const hint = document.getElementById('script-format-hint');
+
+      [btnYt, btnFb, btnUni].forEach(b => {
+        if (!b) return;
+        b.className = 'px-3 py-1.5 rounded-lg text-xs font-bold transition text-slate-400 hover:text-white flex items-center gap-1.5';
+      });
+
+      if (platform === 'facebook' && btnFb) {
+        btnFb.className = 'px-3 py-1.5 rounded-lg text-xs font-bold transition bg-blue-600 text-white shadow-md flex items-center gap-1.5';
+        if (hint) hint.textContent = 'Target for Facebook Reels: 135-145 words (~55-58s, Follow Page Outro CTA)';
+      } else if (platform === 'universal' && btnUni) {
+        btnUni.className = 'px-3 py-1.5 rounded-lg text-xs font-bold transition bg-indigo-600 text-white shadow-md flex items-center gap-1.5';
+        if (hint) hint.textContent = 'Target for Multi-Platform: 135-145 words (Follow & Subscribe Outro CTA)';
+      } else if (btnYt) {
+        btnYt.className = 'px-3 py-1.5 rounded-lg text-xs font-bold transition bg-red-600 text-white shadow-md flex items-center gap-1.5';
+        if (hint) hint.textContent = 'Target for Shorts: 135-148 words (~55-58s, Subscribe Channel Outro CTA)';
+      }
+    }
 
     function selectStudioFormat(fmt) {
       studioVideoFormat = fmt;
@@ -3013,15 +3293,15 @@
       if (lang === 'hi' && btnHi) {
         btnHi.className = 'px-3 py-1.5 rounded-lg text-xs font-bold transition bg-purple-600 text-white shadow-md';
         if (pubChSelect) pubChSelect.value = 'hindi';
-        if (voiceSelect && (voiceSelect.value.startsWith('en_') || voiceSelect.value === 'auto')) voiceSelect.value = 'hi_astro_vibes_male';
+        if (voiceSelect && (voiceSelect.value.startsWith('en_') || voiceSelect.value === 'auto' || voiceSelect.value === 'hi_astro_vibes_male')) voiceSelect.value = 'Charon';
       } else if (lang === 'hinglish' && btnHinglish) {
         btnHinglish.className = 'px-3 py-1.5 rounded-lg text-xs font-bold transition bg-purple-600 text-white shadow-md';
         if (pubChSelect) pubChSelect.value = 'hindi';
-        if (voiceSelect && (voiceSelect.value.startsWith('en_') || voiceSelect.value === 'auto')) voiceSelect.value = 'hi_astro_vibes_male';
+        if (voiceSelect && (voiceSelect.value.startsWith('en_') || voiceSelect.value === 'auto' || voiceSelect.value === 'hi_astro_vibes_male')) voiceSelect.value = 'Charon';
       } else if (lang === 'en' && btnEn) {
         btnEn.className = 'px-3 py-1.5 rounded-lg text-xs font-bold transition bg-purple-600 text-white shadow-md';
         if (pubChSelect) pubChSelect.value = 'english';
-        if (voiceSelect && (voiceSelect.value.startsWith('hi_') || voiceSelect.value === 'auto')) voiceSelect.value = 'en_deep_cinematic_male';
+        if (voiceSelect && (voiceSelect.value.startsWith('hi_') || voiceSelect.value === 'auto' || voiceSelect.value === 'Charon')) voiceSelect.value = 'Puck';
       }
     }
 
@@ -3195,7 +3475,8 @@
             raw_script: rawText,
             topic: titleInput.value.trim() || null,
             language: targetLang,
-            video_format: studioVideoFormat
+            video_format: studioVideoFormat,
+            target_platform: studioTargetPlatform || 'youtube'
           }),
           signal: controller.signal
         });
@@ -3277,7 +3558,8 @@
             raw_script: rawText,
             topic: titleInput.value.trim() || null,
             language: targetLang,
-            video_format: studioVideoFormat
+            video_format: studioVideoFormat,
+            target_platform: studioTargetPlatform || 'youtube'
           }),
           signal: controller.signal
         });
@@ -3399,6 +3681,7 @@
       }
 
       const voice = document.getElementById('director-select-voice').value;
+      const renderEngine = document.getElementById('director-render-engine') ? document.getElementById('director-render-engine').value : 'openmontage';
       const speed = parseFloat(document.getElementById('slider-voice-speed').value || 1.05);
       const bgm = document.getElementById('director-select-bgm').value;
       const volume = parseFloat(document.getElementById('slider-bgm-volume').value || 0.16);
@@ -3411,7 +3694,7 @@
       btn.disabled = true;
       btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Compositing Video...';
       if (statusDiv) statusDiv.classList.remove('hidden');
-      if (statusText) statusText.textContent = `Rendering ${studioVideoFormat === 'short' ? '9:16 Short' : '16:9 Long Video'} in background...`;
+      if (statusText) statusText.textContent = `Rendering ${renderEngine === 'openmontage' ? 'OpenMontage' : 'Classic'} ${studioVideoFormat === 'short' ? '9:16 Short' : '16:9 Long Video'} in background...`;
 
       try {
         const res = await fetch('/api/director/render', {
@@ -3421,6 +3704,7 @@
             script_text: script,
             title: title,
             voice: voice,
+            render_engine: renderEngine,
             voice_speed: speed,
             bgm_filename: bgm,
             bgm_volume: volume,
@@ -3430,7 +3714,8 @@
             real_incident_mode: document.getElementById('director-real-incident-mode') ? document.getElementById('director-real-incident-mode').checked : false,
             visual_mode: (document.getElementById('director-visual-mode') && document.getElementById('director-visual-mode').value && document.getElementById('director-visual-mode').value.trim()) ? document.getElementById('director-visual-mode').value.trim() : 'multi_cinematic',
             auto_viral_hook: document.getElementById('director-auto-viral-hook') ? document.getElementById('director-auto-viral-hook').checked : true,
-            scenes: studioScenePlan
+            scenes: studioScenePlan,
+            target_platform: studioTargetPlatform || 'youtube'
           })
         });
         const data = await res.json();
@@ -3495,7 +3780,13 @@
             
             const pubDesc = document.getElementById('director-pub-desc');
             if (pubDesc) {
-              pubDesc.value = (data.title || '') + "\n\n" + document.getElementById('director-script-input').value.substring(0, 180) + "...\n\n#AutoTube #Viral";
+              const scriptExcerpt = (document.getElementById('director-script-input').value || '').trim();
+              const storyExcerpt = scriptExcerpt.length > 250 ? scriptExcerpt.substring(0, 250) + "..." : scriptExcerpt;
+              const titleText = data.title || document.getElementById('director-video-title').value || '';
+              const cleanWords = (titleText + " " + scriptExcerpt).match(/[\u0900-\u097f]{4,}|[A-Z][a-zA-Z]{3,}/g) || [];
+              const uniqWords = [...new Set(cleanWords)].slice(0, 5);
+              const tagList = uniqWords.length ? uniqWords.map(w => '#' + w).join(' ') + ' #Shorts #Viral' : '#Shorts #Viral #Trending';
+              pubDesc.value = (titleText ? titleText + "\n\n" : '') + storyExcerpt + "\n\n" + tagList;
             }
 
             const pinnedPreview = document.getElementById('director-pinned-preview');
@@ -3619,7 +3910,154 @@
         showToast(err.message, true);
       } finally {
         btn.disabled = false;
-        btn.innerHTML = '<i class="fa-brands fa-youtube text-base"></i> 🚀 Upload to YouTube Now';
+        btn.innerHTML = '<i class="fa-brands fa-youtube text-base"></i> 🚀 Upload to YouTube';
+      }
+    }
+
+    async function publishDirectorVideoToFacebook() {
+      if (!currentRenderedFilename) return showToast('Pehle video render kijiye!', true);
+
+      // Check if Facebook is configured
+      try {
+        const stRes = await fetch('/api/facebook/status');
+        const stData = await stRes.json();
+        if (!stData.configured) {
+          showToast('Pehle Facebook Page connect kijiye!', true);
+          openFacebookModal();
+          return;
+        }
+
+        const title = document.getElementById('director-pub-title').value.trim();
+        const desc = document.getElementById('director-pub-desc').value.trim();
+        const tagsRaw = document.getElementById('director-pub-tags').value.trim();
+        const btn = document.getElementById('btn-director-publish-fb');
+        const feedback = document.getElementById('director-pub-feedback');
+
+        if (!confirm(`"${title}" ko Facebook Page [${stData.page_name || 'Facebook'}] par Reel ke roop me upload karein?`)) return;
+
+        const tags = tagsRaw.split(',').map(t => t.trim()).filter(Boolean);
+
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Uploading Reel to Facebook...';
+        feedback.classList.remove('hidden');
+        feedback.className = 'text-xs text-blue-400 py-2 rounded-lg bg-black/40';
+        feedback.textContent = `Video Facebook Page [${stData.page_name}] par Reel ban kar upload ho raha hai... Please wait...`;
+
+        const res = await fetch('/api/facebook/publish-reel', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({
+            filename: currentRenderedFilename,
+            title: title,
+            description: desc || null,
+            tags: tags.length ? tags : null,
+          })
+        });
+
+        const data = await res.json();
+        if (data.success) {
+          feedback.className = 'text-xs text-emerald-400 py-2 rounded-lg bg-emerald-950/40 border border-emerald-500/30 font-bold';
+          feedback.innerHTML = `🎉 Facebook Reel Published Successfully! <a href="${data.reel_url}" target="_blank" class="underline text-blue-400 font-extrabold ml-1">Reel Dekhein ↗</a>`;
+          showToast('🎉 Facebook Reel Published Successfully!');
+        } else {
+          throw new Error(data.error || data.detail || 'Upload failed');
+        }
+      } catch (e) {
+        feedback.className = 'text-xs text-rose-400 py-2 rounded-lg bg-rose-950/40 border border-rose-500/30 font-bold';
+        feedback.textContent = '❌ Facebook Reel Upload Error: ' + e.message;
+        showToast('Facebook Upload Error: ' + e.message, true);
+      } finally {
+        const btn = document.getElementById('btn-director-publish-fb');
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = '<i class="fa-brands fa-facebook text-base"></i> 🚀 Upload to Facebook Reel';
+        }
+      }
+    }
+
+    async function openFacebookModal() {
+      const modal = document.getElementById('facebook-page-modal');
+      if (!modal) return;
+      modal.classList.remove('hidden');
+      await checkFacebookStatus();
+    }
+
+    function closeFacebookModal() {
+      const modal = document.getElementById('facebook-page-modal');
+      if (modal) modal.classList.add('hidden');
+    }
+
+    async function checkFacebookStatus() {
+      const badge = document.getElementById('fb-status-badge');
+      const nameEl = document.getElementById('fb-page-name');
+      const idEl = document.getElementById('fb-page-id-display');
+      const avatarBox = document.getElementById('fb-avatar-box');
+      const inputPageId = document.getElementById('fb-input-page-id');
+
+      badge.textContent = 'Checking...';
+      badge.className = 'px-2.5 py-1 text-xs font-bold rounded-full bg-slate-800 text-slate-400';
+
+      try {
+        const res = await fetch('/api/facebook/status');
+        const data = await res.json();
+        if (data.configured) {
+          badge.textContent = 'CONNECTED';
+          badge.className = 'px-2.5 py-1 text-xs font-bold rounded-full bg-emerald-950 text-emerald-400 border border-emerald-500/30';
+          nameEl.textContent = data.page_name || 'Facebook Page';
+          idEl.textContent = 'Page ID: ' + (data.page_id || '--');
+          if (inputPageId && data.page_id) inputPageId.value = data.page_id;
+
+          if (data.page_picture) {
+            avatarBox.innerHTML = `<img src="${data.page_picture}" class="w-full h-full object-cover">`;
+          } else {
+            avatarBox.innerHTML = '<i class="fa-brands fa-facebook text-2xl"></i>';
+          }
+        } else {
+          badge.textContent = 'NOT CONNECTED';
+          badge.className = 'px-2.5 py-1 text-xs font-bold rounded-full bg-amber-950 text-amber-400 border border-amber-500/30';
+          nameEl.textContent = 'Not Configured';
+          idEl.textContent = data.error ? data.error : 'Enter Page ID & Access Token below';
+          avatarBox.innerHTML = '<i class="fa-brands fa-facebook text-2xl"></i>';
+        }
+      } catch (e) {
+        badge.textContent = 'ERROR';
+        badge.className = 'px-2.5 py-1 text-xs font-bold rounded-full bg-rose-950 text-rose-400';
+        nameEl.textContent = 'Error checking status';
+        idEl.textContent = e.message;
+      }
+    }
+
+    async function saveFacebookCredentials() {
+      const pageId = document.getElementById('fb-input-page-id').value.trim();
+      const token = document.getElementById('fb-input-token').value.trim();
+      const btn = document.getElementById('btn-save-fb-creds');
+
+      if (!pageId || !token) {
+        return showToast('Page ID aur Access Token dono bharne zaroori hain!', true);
+      }
+
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Verifying with Facebook Graph API...';
+
+      try {
+        const res = await fetch('/api/facebook/save-credentials', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ page_id: pageId, access_token: token })
+        });
+        const data = await res.json();
+        if (data.success) {
+          showToast(`🎉 Facebook Page '${data.page_name}' connected successfully!`);
+          document.getElementById('fb-input-token').value = '';
+          await checkFacebookStatus();
+        } else {
+          showToast(data.detail || data.error || 'Failed to connect Facebook Page', true);
+        }
+      } catch (e) {
+        showToast('Error: ' + e.message, true);
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Save & Test Facebook Connection';
       }
     }
 

@@ -89,16 +89,64 @@ class VisualQualityGate:
             }
 
         plan = scene_plan or {}
+        is_cta_or_outro = False
+        lower_narr = narration.lower()
+        plan_subj = str(plan.get("subject", "")).lower()
+        if (
+            any(
+                w in lower_narr
+                for w in (
+                    "subscribe",
+                    "subscribers",
+                    "like",
+                    "follow",
+                    "bell icon",
+                    "bell button",
+                    "comment below",
+                    "support our channel",
+                    "support the channel",
+                    "like, subscribe",
+                    "like and subscribe",
+                    "सब्सक्राइब",
+                    "लाइक",
+                    "शेयर",
+                    "कमेंट",
+                    "सपोर्ट",
+                    "घंटी",
+                )
+            )
+            or bool(plan.get("is_outro"))
+            or any(w in plan_subj for w in ("outro", "finale", "grand finale", "cta"))
+        ):
+            is_cta_or_outro = True
+
+        must_show_list = plan.get("must_show", [])
+        if is_cta_or_outro and isinstance(must_show_list, list):
+            must_show_list = [
+                m for m in must_show_list
+                if not any(k in str(m).lower() for k in ("subscribe", "bell", "button", "like", "सब्सक्राइब", "लाइक", "cta"))
+            ]
+            if not must_show_list and plan.get("subject"):
+                clean_subj = str(plan.get("subject"))
+                if not any(k in clean_subj.lower() for k in ("subscribe", "bell", "button", "like")):
+                    must_show_list = [clean_subj]
+
         prompt = f"""You are visual QA for a YouTube video scene.
 EXACT NARRATION: {narration}
 TARGET SUBJECT: {plan.get("subject", "")}
-MUST SHOW: {json.dumps(plan.get("must_show", []), ensure_ascii=False)}
+MUST SHOW: {json.dumps(must_show_list, ensure_ascii=False)}
 MUST AVOID: {json.dumps(plan.get("avoid", []), ensure_ascii=False)}
 
 Judge ONLY the supplied video frames or the supplied still image.
 Guidelines:
 - Visuals MUST genuinely depict or directly support the scene narration and TARGET SUBJECT.
 - If narration is in Hindi or non-English, understand the spoken sentence in context with TARGET SUBJECT.
+- CRITICAL RULE FOR CALL-TO-ACTION (CTA) / OUTRO SCENES:
+  If the scene narration or context is an outro or call-to-action (e.g., asking viewers to like, subscribe, follow, share, comment, or support the channel):
+  * The raw video footage is NEVER expected to show an animated subscribe button, bell icon, or mouse cursor. Digital graphic overlays and stickers are rendered on top by the video editor.
+  * The footage MUST be evaluated as an atmospheric, majestic, or thematic grand finale (e.g. ancient architecture, temple, fort, sunset, deep space, nature landscape, ancient ruins) that fits the overarching theme of the video.
+  * DO NOT reject or penalize footage for lacking a subscribe button or bell icon.
+  * Accept high-quality thematic finale visuals that fit the topic or historical setting.
 - Check MUST SHOW and MUST AVOID elements reasonably:
   * For astronomy, space, black hole, star, or cosmos topics: footage MUST show authentic cosmic phenomena (deep space, nebulae, stars, planets, galaxies, black hole simulations, celestial motion). DO NOT accept human faces, helmets, visors, modern offices, or terrestrial daytime scenes!
   * For history, mythology, temple, or archaeology topics: footage of ancient stone ruins, temple architecture, archaeological excavations, ancient artifacts, or historical landscapes ARE VALID ACCEPTABLE EVIDENCE for the subject.
@@ -148,6 +196,18 @@ Accept when confidence >= {self.min_confidence}, coverage >= {self.min_coverage}
                     confidence = int(data.get("confidence", 0))
                     coverage = int(data.get("coverage", 0))
                     violations = data.get("violations") or []
+                    if is_cta_or_outro:
+                        if violations:
+                            violations = [
+                                v for v in violations
+                                if not any(k in str(v).lower() for k in ("subscribe", "bell", "button", "like", "cta", "call to action", "icon"))
+                            ]
+                        reason_low = str(data.get("reason", "")).lower()
+                        if not bool(data.get("accepted", False)) and any(
+                            k in reason_low for k in ("subscribe", "bell", "button", "like", "cta", "call to action")
+                        ):
+                            if not violations and confidence >= 60:
+                                data["accepted"] = True
                     # Strictly require meeting thresholds and absence of violations
                     accepted = (
                         bool(data.get("accepted", False))

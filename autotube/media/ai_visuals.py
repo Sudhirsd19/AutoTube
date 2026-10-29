@@ -103,20 +103,20 @@ class VisualGenerator:
             style_suffix = "3D Pixar Disney animation style, cute expressive 3D character, Unreal Engine 5 render, cinematic volumetric lighting, high detail, masterpiece"
         elif style.lower() in ("3d_cinematic", "cinematic_3d", "realistic_3d", "3d_realistic", "3d", "cinematic"):
             style_suffix = "masterpiece 3D cinematic hyperrealistic CGI, Unreal Engine 5.4, Octane Render, 8k resolution, hardware ray tracing, global illumination, volumetric atmospheric fog and dust motes, photorealistic micro-surface textures, dramatic cinematic depth of field, Panavision 70mm IMAX cinematography, hyper-detailed lighting"
-        elif style.lower() in ("spiritual_photorealistic", "divine_photorealistic", "gita_4k"):
+        elif style.lower() in ("spiritual_photorealistic", "divine_photorealistic", "gita_4k", "vedic_ai", "vedic"):
             style_suffix = (
-                "shot on ARRI Alexa 65, 35mm anamorphic lens, f/1.8 shallow depth of field, "
-                "respectful photorealistic Indian spiritual cinema, natural skin and raw silk fabric textures, "
-                "historically grounded Indian environments, realistic weathered stone, glowing brass oil lamps, "
-                "subtle gold leaf and palm-leaf textures, dramatic volumetric god rays, chiaroscuro lighting, "
-                "true photographic realism, no cartoon, no anime, no toy-like CGI, no logo, no watermark, no written text"
+                "masterpiece 3D cinematic hyperrealistic epic art, shot on 70mm IMAX camera, 35mm anamorphic prime lens, "
+                "Unreal Engine 5.4 render, Octane Render 8k, raytracing global illumination, volumetric divine golden god rays, "
+                "subtle floating divine particles, highly detailed realistic skin pores, intricate ancient golden jewelry, "
+                "authentic Indian Vedic atmosphere, dramatic chiaroscuro lighting, emotional depth, true photographic realism, "
+                "no 2D cartoon, no anime, no low quality, no deformed fingers, no blurry face, no plastic skin, no watermark"
             )
         elif style.lower() in ("anime", "ghibli"):
             style_suffix = "Studio Ghibli modern anime animation style, lush aesthetic, vibrant colorful, beautiful anime digital art"
         elif style.lower() in ("comic", "2d"):
             style_suffix = "funny 2D cartoon illustration, bold comic ink outlines, saturated colors, modern cartoon network aesthetic"
         else:
-            style_suffix = "masterpiece, 8k resolution, shot on ARRI Alexa 65 with 35mm anamorphic lens, shallow depth of field, photorealistic, dramatic chiaroscuro lighting, volumetric atmosphere, hyper-detailed micro textures, award-winning cinematography"
+            style_suffix = "masterpiece 8k resolution, Unreal Engine 5.4 3D cinematic render, shot on ARRI Alexa 65 with 35mm anamorphic lens, shallow depth of field, photorealistic, dramatic chiaroscuro lighting, volumetric atmosphere, hyper-detailed micro textures, award-winning cinematography, no cartoon, no anime"
 
         enhanced_prompt = f"{prompt}, {style_suffix}"
         encoded = requests.utils.quote(enhanced_prompt)
@@ -140,7 +140,7 @@ class VisualGenerator:
                     "stock-photo fallback is disabled for these scenes."
                 )
                 return False
-            models = ("flux", "zimage", "sana")
+            models = ("flux", "flux-realism", "flux-3d")
             endpoints = [
                 f"https://gen.pollinations.ai/image/{encoded}?model={model}&width={width}&height={height}&nologo=true&seed={seed}&enhance=true"
                 for model in models
@@ -148,14 +148,14 @@ class VisualGenerator:
             gen_w, gen_h = width, height
             attempt_count = 1
         else:
-            # Fast legacy/default mode retains lighter request sizes with model fallback
-            gen_w = 768 if is_vertical else 1344
-            gen_h = 1344 if is_vertical else 768
+            # Full HD / 8K Aspect Ratio powered by state-of-the-art FLUX.1 & FLUX-Realism
+            gen_w = 1080 if is_vertical else 1920
+            gen_h = 1920 if is_vertical else 1080
             endpoints = [
-                f"https://image.pollinations.ai/prompt/{encoded}?model=sana&width={gen_w}&height={gen_h}&nologo=true&seed={seed}",
+                f"https://image.pollinations.ai/prompt/{encoded}?model=flux&width={gen_w}&height={gen_h}&nologo=true&seed={seed}&enhance=true",
+                f"https://image.pollinations.ai/prompt/{encoded}?model=flux-realism&width={gen_w}&height={gen_h}&nologo=true&seed={seed}&enhance=true",
+                f"https://image.pollinations.ai/prompt/{encoded}?model=flux&width={gen_w}&height={gen_h}&nologo=true&seed={random.randint(100, 99999)}",
                 f"https://image.pollinations.ai/prompt/{encoded}?width={gen_w}&height={gen_h}&nologo=true&seed={seed}",
-                f"https://image.pollinations.ai/prompt/{encoded}?model=sana&width={gen_w}&height={gen_h}&nologo=true&seed={random.randint(100, 99999)}",
-                f"https://image.pollinations.ai/prompt/{encoded}?width={gen_w}&height={gen_h}&nologo=true",
             ]
             attempt_count = 2
 

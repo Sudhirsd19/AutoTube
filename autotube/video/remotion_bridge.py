@@ -158,13 +158,39 @@ class RemotionBridge:
             sentence = str(sc.get("narration") or sc.get("text") or "").strip()
             print_info(f"   🎬 [Scene {idx+1}/{len(scenes)}] Searching multi-stock footage for: '{sentence[:45]}...'")
 
+            # Extract or retrieve English visual keywords from Hindi/Devanagari narration
+            subject = str(sc.get("visual_subject") or "").strip()
+            keywords = [str(k) for k in (sc.get("search_keywords") or []) if str(k).strip()]
+            must_show = list(sc.get("must_show") or [])
+            avoid = list(sc.get("avoid") or [])
+
+            try:
+                from autotube.media.hindi_visual_extractor import is_hindi_text, extract_english_visual_queries
+                if not subject or is_hindi_text(subject) or not keywords or all(is_hindi_text(str(k)) for k in keywords):
+                    extracted = extract_english_visual_queries(sentence, topic=title, scene_idx=idx)
+                    subject = extracted["subject"]
+                    keywords = extracted["search_queries"]
+                    must_show = extracted.get("must_show", [])
+                    avoid = extracted.get("avoid", [])
+            except Exception:
+                pass
+
+            scene_plan_dict = {
+                "narration": sentence,
+                "scene_number": idx + 1,
+                "subject": subject,
+                "search_queries": keywords,
+                "must_show": must_show,
+                "avoid": avoid,
+            }
+
             # Query multi-stock aggregator
             candidate = self.multi_stock.get_best_scene_asset(
                 scene_text=sentence,
                 title=title,
                 scene_index=idx,
                 orientation=orientation,
-                scene_plan={"narration": sentence, "scene_number": idx + 1},
+                scene_plan=scene_plan_dict,
                 allow_archival_fallback=False,
                 allow_ai_fallback=False,
             )
@@ -172,8 +198,9 @@ class RemotionBridge:
             # Fallback to direct Pexels query if aggregator returned None
             if not candidate or not Path(candidate).exists():
                 print_warning(f"   ⚠️ MultiStock fallback triggered for Scene {idx+1}...")
+                fallback_query = keywords[0] if keywords else (subject or "cinematic mystery")
                 pexels_cand = self.multi_stock.pexels_fetcher.get_scene_video(
-                    search_query=sentence[:40],
+                    search_query=fallback_query,
                     orientation=orientation,
                     scene_index=idx,
                 )

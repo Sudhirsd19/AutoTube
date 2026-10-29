@@ -21,7 +21,7 @@ echo "🔍 [4/5] Verifying AutoTube setup..."
 
 echo "⏰ [5/5] Setting up automated daily Cron Job (Runs daily at 08:00 AM IST / 02:30 UTC)..."
 AUTOTUBE_DIR=$(pwd)
-CRON_CMD="30 2 * * * cd $AUTOTUBE_DIR && $AUTOTUBE_DIR/.venv/bin/python run.py autopilot --count 2 --niche space --lang en --upload --schedule >> $AUTOTUBE_DIR/output/cron.log 2>&1"
+CRON_CMD="30 2 * * * cd $AUTOTUBE_DIR && $AUTOTUBE_DIR/.venv/bin/python run.py autopilot --upload --schedule >> $AUTOTUBE_DIR/output/cron.log 2>&1"
 
 # Add cron job if not already present
 (crontab -l 2>/dev/null | grep -F "$AUTOTUBE_DIR" ) || (crontab -l 2>/dev/null; echo "$CRON_CMD") | crontab -

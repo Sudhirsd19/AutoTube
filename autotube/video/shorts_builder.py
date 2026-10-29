@@ -33,6 +33,8 @@ class ShortsBuilder:
         width: Optional[int] = None,
         height: Optional[int] = None,
         enforce_shorts_duration_limit: bool = True,
+        top_hook_banner: Optional[Path] = None,
+        hook_text: Optional[str] = None,
     ) -> Optional[Path]:
         """Compose audio, background visuals, and animated subtitles into a final Short or Landscape Video."""
         v_width = width or self.width
@@ -75,17 +77,21 @@ class ShortsBuilder:
                 curr_elapsed += dur_p
                 cut_timestamps.append(round(curr_elapsed, 3))
 
-        # Auto-mix narration speech with calm mysterious background music and micro-cut whooshes
-        bgm_mgr = BackgroundMusicManager()
-        mixed_audio_path = temp_dir / f"master_audio_{output_path.stem}.mp3"
-        master_audio = bgm_mgr.mix_voice_and_music(
-            voice_path=audio_path,
-            output_mixed_path=mixed_audio_path,
-            music_path=music_path,
-            include_whoosh=False,
-            topic=output_path.stem,
-            cut_timestamps=cut_timestamps,
-        )
+        # Auto-mix narration speech with calm ambient BGM (Skip if already mixed or music_path is 'none')
+        is_already_mixed = "mixed" in audio_path.name.lower() or "master" in audio_path.name.lower()
+        if str(music_path).lower() in ("none", "false", "off") or is_already_mixed:
+            master_audio = audio_path
+        else:
+            bgm_mgr = BackgroundMusicManager()
+            mixed_audio_path = temp_dir / f"master_audio_{output_path.stem}.mp3"
+            master_audio = bgm_mgr.mix_voice_and_music(
+                voice_path=audio_path,
+                output_mixed_path=mixed_audio_path,
+                music_path=music_path,
+                include_whoosh=False,
+                topic=output_path.stem,
+                cut_timestamps=cut_timestamps,
+            )
 
         raw_video_path = temp_dir / f"raw_{output_path.stem}.mp4"
         success = False
@@ -362,14 +368,28 @@ class ShortsBuilder:
         hook_badge = self.cfg.paths.assets_dir / "hook_badge.png"
         subscribe_badge = self.cfg.paths.assets_dir / "subscribe_badge.png"
 
+        # Generate top hook banner if hook_text provided and banner not supplied
+        active_top_banner = top_hook_banner
+        if not active_top_banner and hook_text:
+            try:
+                from autotube.media.visual_hook import VisualHookManager
+                active_top_banner = VisualHookManager().create_top_hook_banner(
+                    hook_text=hook_text,
+                    video_width=v_width,
+                    video_height=v_height,
+                )
+            except Exception as bh_err:
+                print_warning(f"Could not generate top hook banner: {bh_err}")
+
         print_info("Burning high-retention subtitles & viral overlay badges...")
         burn_success = burn_subtitles(
             input_video=raw_video_path,
             subtitles_file=subtitles_file if subtitles_file and subtitles_file.exists() else None,
             output_video=output_path,
-            hook_badge=hook_badge if hook_badge.exists() else None,
+            hook_badge=hook_badge if (hook_badge.exists() and not active_top_banner) else None,
             subscribe_badge=subscribe_badge if subscribe_badge.exists() else None,
             duration=duration,
+            top_hook_banner=active_top_banner,
         )
         res_video = None
         if burn_success and output_path.exists() and output_path.stat().st_size > 1000:

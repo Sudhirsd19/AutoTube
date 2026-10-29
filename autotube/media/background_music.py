@@ -89,11 +89,13 @@ class BackgroundMusicManager:
         """Mix speech voiceover with background music, hook SFX, and micro-transition cut whooshes."""
         import random
 
-        # Calm, subtle, mysterious volume (0.12)
-        volume = music_volume if music_volume is not None else (self.music_volume or 0.12)
+        # Calm, subtle, voice-friendly ambient volume (default: 0.03 - guarantees crystal clear speech)
+        volume = music_volume if music_volume is not None else (self.music_volume or 0.03)
+        if volume > 0.045:
+            volume = 0.03  # Strict safety clamp to prevent voice drowning
 
         # If explicit 'none', skip BGM. Otherwise if no music specified, pick subject-matched BGM
-        if str(music_path).lower() == "none" or (isinstance(music_path, Path) and music_path.name.lower() == "none"):
+        if str(music_path).lower() in ("none", "false", "off") or (isinstance(music_path, Path) and music_path.name.lower() == "none"):
             music_path = None
         elif not music_path:
             music_path = self.get_music_for_subject(niche=niche, topic=topic)
@@ -113,15 +115,16 @@ class BackgroundMusicManager:
 
         codec = "libmp3lame" if output_mixed_path.suffix.lower() == ".mp3" else "aac"
 
-        # Voice clarity filter for crisp archival broadcast
+        # Voice clarity filter: pre-normalize voice to studio broadcast standard (-14 LUFS) + presence boost
         voice_filter = (
-            "equalizer=f=80:width_type=o:width=1.5:g=3,"
-            "equalizer=f=3000:width_type=o:width=1.2:g=2"
+            "loudnorm=I=-14:TP=-1.0:LRA=7,"
+            "highpass=f=85,"
+            "equalizer=f=2800:width_type=o:width=1.2:g=3.5"
         )
 
-        # Lowpass at 3500Hz removes high harsh frequencies, creating a warm, calm, mysterious ambient atmosphere
+        # Ambient BGM filter: lowpass at 2600Hz + deep vocal pocket notches (-9dB at 1200Hz, -6dB at 2800Hz)
         bgm_filter = (
-            f"aloop=loop=-1:size=2e+09,lowpass=f=3500,volume={volume},"
+            f"aloop=loop=-1:size=2e+09,lowpass=f=2600,equalizer=f=1200:width_type=o:width=2.0:g=-9,equalizer=f=2800:width_type=o:width=1.5:g=-6,volume={volume},"
             f"afade=t=in:st=0:d=1.5,afade=t=out:st={fade_out_start:.2f}:d=2.0"
         )
 
@@ -175,7 +178,7 @@ class BackgroundMusicManager:
             return voice_path
 
         filter_parts.append(f"{''.join(mix_inputs)}amix=inputs={num_inputs}:duration=first:dropout_transition=2:normalize=0[mix]")
-        filter_parts.append("[mix]loudnorm=I=-14:TP=-1.0:LRA=7[out]")
+        filter_parts.append("[mix]alimiter=limit=0.95[out]")
 
         filter_complex = ";".join(filter_parts)
         args = inputs + [

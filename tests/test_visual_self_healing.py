@@ -98,3 +98,56 @@ def test_find_unapproved_scene_indices(tmp_path):
             provider="TestProvider",
             require_video=True,
         ) is False
+
+
+def test_outro_cta_frame_qa_and_self_healing_acceptance(tmp_path):
+    """Verify that Outro / CTA scenes are not rejected for missing subscribe buttons,
+    and that ensure_subject_outro_cta always populates a grand finale visual subject."""
+    from autotube.media.visual_quality_gate import VisualQualityGate
+    from autotube.scripting.generator import ensure_subject_outro_cta
+    from autotube.scripting.models import ShortScript, ShortScene
+
+    # 1. Test ensure_subject_outro_cta always sets a valid visual_subject
+    dummy_script = ShortScript(
+        title="Wootz Steel Nanotechnology",
+        hook="Did you know ancient Indian Wootz steel had carbon nanotubes?",
+        topic="Ancient India Wootz Steel Nanotechnology",
+        narration="Test narration",
+        scenes=[
+            ShortScene(scene_number=1, narration="Scene 1", visual_subject="ancient forge"),
+            ShortScene(
+                scene_number=2,
+                narration="Hamare channel ko subscribe aur like zaroor karein!",
+                visual_subject="",  # empty subject returned by model
+            ),
+        ],
+        scenes_count=2,
+        duration_seconds=55,
+    )
+    processed = ensure_subject_outro_cta(dummy_script, "Ancient India Wootz Steel Nanotechnology", "hi")
+    last_sc = processed.scenes[-1]
+    assert last_sc.visual_subject != ""
+    assert "subscribe" not in last_sc.visual_subject.lower()
+    assert "ancient" in last_sc.visual_subject.lower() or "temple" in last_sc.visual_subject.lower() or "finale" in last_sc.visual_subject.lower()
+
+    # 2. Test VisualQualityGate outro CTA tolerance
+    gate = VisualQualityGate()
+    gate.strict = True
+    test_clip = tmp_path / "temple_sunset.mp4"
+    test_clip.write_bytes(b"dummy video data" * 1000)
+
+    # Mock Gemini client returning a response that complains about missing subscribe button
+    mock_client = MagicMock()
+    mock_response = MagicMock()
+    mock_response.text = '{"confidence": 85, "coverage": 80, "accepted": false, "reason": "The frames show a historical fort at sunset, but completely lacks the required animated subscribe bell button", "violations": ["missing animated subscribe bell button"]}'
+    mock_client.models.generate_content.return_value = mock_response
+
+    gate._client = mock_client
+    with patch.object(gate, "_extract_frames", return_value=[tmp_path / "frame.jpg"]):
+        (tmp_path / "frame.jpg").write_bytes(b"frame data" * 500)
+        res = gate.verify(
+            test_clip,
+            narration="Aise hi rochak tathyo ke liye channel ko subscribe karein aur video ko like karein!",
+            scene_plan={"subject": "ancient Indian stone temple sunset grand finale", "is_outro": True},
+        )
+        assert res.get("accepted") is True

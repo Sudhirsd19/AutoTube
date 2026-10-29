@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="hi" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AutoTube AI - Instant AI Video Generator</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800&family=Noto+Sans+Devanagari:wght@400;600;700&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Outfit', 'Noto Sans Devanagari', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              50: '#fdf4ff',
+              500: '#a855f7',
+              600: '#9333ea',
+              700: '#7e22ce',
+              red: '#ef4444',
+              gold: '#f59e0b',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body {
+      background: radial-gradient(circle at 50% 0%, #1e112a 0%, #090510 100%);
+      color: #f1f5f9;
+      min-height: 100vh;
+    }
+    .glass-card {
+      background: rgba(22, 14, 35, 0.75);
+      backdrop-filter: blur(16px);
+      border: 1px solid rgba(168, 85, 247, 0.2);
+    }
+    .glow-border:focus-within {
+      box-shadow: 0 0 25px rgba(168, 85, 247, 0.4);
+      border-color: #a855f7;
+    }
+    .neon-btn {
+      background: linear-gradient(135deg, #a855f7 0%, #ec4899 100%);
+      transition: all 0.25s ease;
+    }
+    .neon-btn:hover {
+      box-shadow: 0 0 25px rgba(236, 72, 153, 0.6);
+      transform: translateY(-1px);
+    }
+  </style>
+</head>
+<body class="p-3 sm:p-6 flex flex-col items-center">
+
+  <!-- TOP HEADER / BRANDING -->
+  <header class="w-full max-w-xl flex items-center justify-between py-4 mb-3">
+    <div class="flex items-center gap-2">
+      <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-purple-600 to-pink-500 flex items-center justify-center shadow-lg shadow-purple-500/30">
+        <span class="text-xl">⚡</span>
+      </div>
+      <div>
+        <h1 class="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-pink-400">AutoTube AI</h1>
+        <p class="text-xs text-purple-300/70">Autonomous Video Creator</p>
+      </div>
+    </div>
+    
+    <!-- DAILY QUOTA PILL -->
+    <div id="quota-pill" class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-purple-950/80 border border-purple-500/30 text-xs font-semibold text-purple-200">
+      <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+      <span id="quota-text">Loading credits...</span>
+    </div>
+  </header>
+
+  <!-- MAIN GENERATOR CARD -->
+  <main class="w-full max-w-xl glass-card rounded-3xl p-5 sm:p-7 shadow-2xl relative overflow-hidden">
+    
+    <!-- HEADER INTRO -->
+    <div class="mb-5 text-center">
+      <h2 class="text-2xl font-extrabold text-white tracking-tight">Create Viral Video in 1-Click</h2>
+      <p class="text-xs sm:text-sm text-slate-400 mt-1">Topic daalo, AI Script + Voiceover + 4K Visuals + Subtitles khud banayega!</p>
+    </div>
+
+    <!-- FORM INPUTS -->
+    <div class="space-y-4">
+      
+      <!-- TOPIC INPUT -->
+      <div class="glow-border rounded-2xl border border-slate-700/60 bg-slate-900/60 p-3">
+        <label class="block text-xs font-semibold uppercase text-purple-400 tracking-wider mb-1">
+          💡 Video Ka Topic / Idea
+        </label>
+        <textarea id="topic-input" rows="2" 
+          placeholder="e.g. Bhagavad Gita: How to control negative thoughts or Space: What if Moon disappeared?" 
+          class="w-full bg-transparent text-white placeholder-slate-500 text-sm focus:outline-none resize-none"></textarea>
+      </div>
+
+      <!-- QUICK SUGGESTIONS -->
+      <div class="flex flex-wrap gap-1.5 text-xs">
+        <span class="text-slate-400 self-center text-[11px]">Popular:</span>
+        <button onclick="setTopic('Mystery of Bermuda Triangle: Kya sach me jahaz gayab hote hain?')" class="px-2 py-1 rounded-lg bg-slate-800/80 hover:bg-purple-900/50 text-slate-300 border border-slate-700/50 text-[11px]">🌊 Bermuda Triangle</button>
+        <button onclick="setTopic('Gita Wisdom: Karm karo fal ki chinta mat karo ka asli arth')" class="px-2 py-1 rounded-lg bg-slate-800/80 hover:bg-purple-900/50 text-slate-300 border border-slate-700/50 text-[11px]">🕉️ Gita Motivation</button>
+        <button onclick="setTopic('Space Shock: Agar Suraj 1 second ke liye gayab ho jaye')" class="px-2 py-1 rounded-lg bg-slate-800/80 hover:bg-purple-900/50 text-slate-300 border border-slate-700/50 text-[11px]">🌌 Sun Disappears</button>
+      </div>
+
+      <!-- OPTIONS ROW (Language & Format) -->
+      <div class="grid grid-cols-2 gap-3 pt-1">
+        
+        <!-- LANGUAGE -->
+        <div class="rounded-xl border border-slate-700/60 bg-slate-900/60 p-2.5">
+          <label class="block text-[11px] font-semibold text-slate-400 uppercase mb-1">Bhasha / Language</label>
+          <select id="lang-select" class="w-full bg-slate-800 text-white text-xs rounded-lg p-2 focus:outline-none border border-slate-700">
+            <option value="hi" selected>🇮🇳 Hindi (हिंदी)</option>
+            <option value="en">🇺🇸 English</option>
+            <option value="hi-en">🇮🇳 Hinglish</option>
+          </select>
+        </div>
+
+        <!-- FORMAT -->
+        <div class="rounded-xl border border-slate-700/60 bg-slate-900/60 p-2.5">
+          <label class="block text-[11px] font-semibold text-slate-400 uppercase mb-1">Video Format</label>
+          <select id="format-select" class="w-full bg-slate-800 text-white text-xs rounded-lg p-2 focus:outline-none border border-slate-700">
+            <option value="short" selected>📱 9:16 Shorts / Reel (Fast)</option>
+            <option value="landscape_long">🖥️ 16:9 Full Widescreen</option>
+          </select>
+        </div>
+
+      </div>
+
+      <!-- VOICE & STYLE ROW -->
+      <div class="grid grid-cols-2 gap-3">
+        
+        <!-- VOICE -->
+        <div class="rounded-xl border border-slate-700/60 bg-slate-900/60 p-2.5">
+          <label class="block text-[11px] font-semibold text-slate-400 uppercase mb-1">AI Voice</label>
+          <select id="voice-select" class="w-full bg-slate-800 text-white text-xs rounded-lg p-2 focus:outline-none border border-slate-700">
+            <option value="madhur" selected>🎙️ Madhur (Deep Hindi Viral)</option>
+            <option value="christopher">🎙️ Christopher (Viral English)</option>
+            <option value="swara">🎙️ Swara (Expressive Female)</option>
+          </select>
+        </div>
+
+        <!-- STYLE -->
+        <div class="rounded-xl border border-slate-700/60 bg-slate-900/60 p-2.5">
+          <label class="block text-[11px] font-semibold text-slate-400 uppercase mb-1">Visual Art Style</label>
+          <select id="style-select" class="w-full bg-slate-800 text-white text-xs rounded-lg p-2 focus:outline-none border border-slate-700">
+            <option value="multi_cinematic" selected>🎬 3D Cinematic & Stock</option>
+            <option value="ai3d">🧸 Pixar 3D Animated</option>
+            <option value="vedic_granth_ai">🕉️ Vedic Sacred Realism</option>
+          </select>
+        </div>
+
+      </div>
+
+      <!-- GENERATE BUTTON -->
+      <button id="btn-generate" onclick="startGeneration()" class="neon-btn w-full py-3.5 rounded-2xl font-bold text-white text-base shadow-xl flex items-center justify-center gap-2 mt-4">
+        <span>✨ Generate AI Video Now</span>
+        <span class="text-xs bg-white/20 px-2 py-0.5 rounded-full font-normal">Free</span>
+      </button>
+
+    </div>
+
+    <!-- LIVE PROGRESS SECTION (Hidden by default) -->
+    <div id="progress-card" class="hidden mt-6 pt-5 border-t border-purple-500/20 text-center space-y-3">
+      <div class="flex items-center justify-between text-xs text-slate-300 mb-1">
+        <span id="progress-step-title" class="font-semibold text-purple-300 flex items-center gap-1.5">
+          <svg class="animate-spin h-3.5 w-3.5 text-purple-400" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          Initializing AutoTube Engine...
+        </span>
+        <span id="progress-percent" class="font-bold text-white">10%</span>
+      </div>
+
+      <!-- PROGRESS BAR -->
+      <div class="w-full bg-slate-800 h-2.5 rounded-full overflow-hidden p-0.5 border border-purple-500/30">
+        <div id="progress-fill" class="bg-gradient-to-r from-purple-500 to-pink-500 h-full rounded-full transition-all duration-300 w-[10%]"></div>
+      </div>
+
+      <p id="progress-subtext" class="text-xs text-slate-400 italic">Writing high-retention script with Gemini AI...</p>
+    </div>
+
+    <!-- RESULT SECTION (Hidden by default) -->
+    <div id="result-card" class="hidden mt-6 pt-5 border-t border-emerald-500/30 text-center space-y-4">
+      <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-950/80 border border-emerald-500/40 text-emerald-300 text-xs font-semibold">
+        <span>🎉</span> Video Ready to Download!
+      </div>
+
+      <!-- VIDEO PLAYER -->
+      <div class="rounded-2xl overflow-hidden border border-slate-700 bg-black aspect-[9/16] max-h-96 mx-auto shadow-2xl flex items-center justify-center">
+        <video id="result-video" controls class="w-full h-full object-contain"></video>
+      </div>
+
+      <!-- METADATA BOX -->
+      <div class="text-left bg-slate-900/80 rounded-xl p-3 border border-slate-800 text-xs space-y-1.5">
+        <p class="font-bold text-white text-sm" id="result-title"></p>
+        <p class="text-slate-400 text-[11px] line-clamp-2" id="result-desc"></p>
+      </div>
+
+      <!-- DOWNLOAD BUTTON -->
+      <div class="flex flex-col sm:flex-row gap-2">
+        <a id="btn-download" href="#" download class="flex-1 py-3 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/30">
+          <span>⬇️ Download Video (MP4)</span>
+        </a>
+        <button onclick="copyMetadata()" class="py-3 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700">
+          📋 Copy Tags & Title
+        </button>
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- DAILY LIMIT EXCEEDED MODAL (Hidden by default) -->
+  <div id="limit-modal" class="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 z-50 hidden">
+    <div class="glass-card rounded-3xl max-w-sm w-full p-6 text-center border border-pink-500/40 shadow-2xl space-y-4 animate-in fade-in zoom-in duration-200">
+      
+      <div class="w-16 h-16 rounded-2xl bg-gradient-to-tr from-pink-600 to-amber-500 mx-auto flex items-center justify-center text-3xl shadow-lg shadow-pink-500/40">
+        🔒
+      </div>
+
+      <div>
+        <h3 class="text-xl font-extrabold text-white">Daily Free Limit Reached!</h3>
+        <p class="text-xs text-slate-300 mt-1.5 leading-relaxed">
+          Aapne aaj ke <span class="font-bold text-pink-400">2 Free Videos</span> generate kar liye hain!
+        </p>
+      </div>
+
+      <!-- RESET TIMER BOX -->
+      <div class="bg-purple-950/60 rounded-xl p-3 border border-purple-500/30 text-xs text-purple-200">
+        <span>⏰ Agle 2 free credits unlock honge:</span>
+        <div id="modal-timer" class="font-mono font-bold text-base text-pink-400 mt-0.5">--h --m --s</div>
+      </div>
+
+      <!-- PRO UPGRADE OFFER -->
+      <div class="p-3.5 rounded-2xl bg-gradient-to-b from-purple-900/50 to-pink-950/50 border border-purple-500/40 text-left text-xs space-y-1.5">
+        <p class="font-bold text-pink-300 flex items-center gap-1">
+          <span>💎</span> AutoTube Pro Subscription
+        </p>
+        <ul class="text-[11px] text-slate-300 space-y-1 list-disc list-inside">
+          <li>Unlimited Daily Videos (No Waiting)</li>
+          <li>1-Click Direct YouTube Auto-Upload</li>
+          <li>1080p Ultra-HD & Fast Rendering</li>
+        </ul>
+        <p class="text-right font-bold text-emerald-400 text-xs pt-1">₹399 / Month Only</p>
+      </div>
+
+      <!-- ACTIONS -->
+      <div class="space-y-2 pt-1">
+        <a id="pro-link" href="https://wa.me/?text=Hello!%20I%20want%20to%20subscribe%20to%20AutoTube%20Pro%20for%20unlimited%20videos." target="_blank" class="neon-btn block w-full py-3 rounded-xl font-bold text-white text-sm shadow-lg">
+          ⚡ Upgrade to Pro (Instant Access)
+        </a>
+        <button onclick="closeLimitModal()" class="w-full py-2 rounded-xl text-slate-400 hover:text-white text-xs">
+          Nahi, kal tak wait karunga
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <footer class="mt-8 text-center text-xs text-slate-500">
+    AutoTube AI • 2 Free Videos Daily per User • All Rights Reserved
+  </footer>
+
+  <script>
+    let currentQuota = { remaining_today: 2, used_today: 0 };
+    let pollInterval = null;
+
+    function setTopic(text) {
+      document.getElementById('topic-input').value = text;
+    }
+
+    async function fetchQuota() {
+      try {
+        const res = await fetch('/api/guest/quota');
+        const data = await res.json();
+        currentQuota = data;
+        
+        const textEl = document.getElementById('quota-text');
+        if (data.remaining_today > 0) {
+          textEl.innerHTML = `<span class="text-pink-400 font-bold">${data.remaining_today}/2</span> Free Credits Left Today`;
+        } else {
+          textEl.innerHTML = `<span class="text-rose-400 font-bold">0/2</span> Limit Reached (Resets in ${data.resets_in})`;
+        }
+        document.getElementById('modal-timer').innerText = data.resets_in;
+      } catch (err) {
+        console.error('Quota fetch error:', err);
+      }
+    }
+
+    function showLimitModal() {
+      document.getElementById('limit-modal').classList.remove('hidden');
+    }
+
+    function closeLimitModal() {
+      document.getElementById('limit-modal').classList.add('hidden');
+    }
+
+    async function startGeneration() {
+      const topic = document.getElementById('topic-input').value.trim();
+      if (!topic) {
+        alert('Kripya video ka topic ya idea likhein!');
+        return;
+      }
+
+      // Check quota first
+      if (currentQuota.remaining_today <= 0) {
+        showLimitModal();
+        return;
+      }
+
+      const lang = document.getElementById('lang-select').value;
+      const format = document.getElementById('format-select').value;
+      const voice = document.getElementById('voice-select').value;
+      const style = document.getElementById('style-select').value;
+
+      const btn = document.getElementById('btn-generate');
+      btn.disabled = true;
+      btn.classList.add('opacity-50', 'cursor-not-allowed');
+
+      document.getElementById('result-card').classList.add('hidden');
+      document.getElementById('progress-card').classList.remove('hidden');
+
+      try {
+        const res = await fetch('/api/guest/generate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            topic: topic,
+            format: format,
+            language: lang,
+            voice: voice,
+            visual_mode: style
+          })
+        });
+
+        if (res.status === 429) {
+          const errData = await res.json();
+          document.getElementById('progress-card').classList.add('hidden');
+          btn.disabled = false;
+          btn.classList.remove('opacity-50', 'cursor-not-allowed');
+          showLimitModal();
+          return;
+        }
+
+        const data = await res.json();
+        if (!data.success) {
+          alert('Generation error: ' + (data.detail || data.error));
+          btn.disabled = false;
+          btn.classList.remove('opacity-50', 'cursor-not-allowed');
+          document.getElementById('progress-card').classList.add('hidden');
+          return;
+        }
+
+        // Start polling progress
+        pollProgress();
+
+      } catch (err) {
+        alert('Server connect error: ' + err.message);
+        btn.disabled = false;
+        btn.classList.remove('opacity-50', 'cursor-not-allowed');
+        document.getElementById('progress-card').classList.add('hidden');
+      }
+    }
+
+    function pollProgress() {
+      if (pollInterval) clearInterval(pollInterval);
+      pollInterval = setInterval(async () => {
+        try {
+          const res = await fetch('/api/guest/status');
+          const status = await res.json();
+          
+          document.getElementById('progress-percent').innerText = `${status.progress}%`;
+          document.getElementById('progress-fill').style.width = `${status.progress}%`;
+          document.getElementById('progress-step-title').innerText = status.current_task || 'Rendering video...';
+          document.getElementById('progress-subtext').innerText = status.last_log || 'AI models processing...';
+
+          if (!status.is_running && status.last_result && status.last_result.video_filename) {
+            clearInterval(pollInterval);
+            showResult(status.last_result);
+          } else if (!status.is_running && status.last_result && status.last_result.error) {
+            clearInterval(pollInterval);
+            alert('Video generation failed: ' + status.last_result.error);
+            resetUI();
+          }
+        } catch (e) {
+          console.error('Poll error:', e);
+        }
+      }, 1500);
+    }
+
+    function showResult(result) {
+      document.getElementById('progress-card').classList.add('hidden');
+      const resCard = document.getElementById('result-card');
+      resCard.classList.remove('hidden');
+
+      const videoEl = document.getElementById('result-video');
+      videoEl.src = `/api/guest/stream/${result.video_filename}`;
+
+      const dlBtn = document.getElementById('btn-download');
+      dlBtn.href = `/api/guest/download/${result.video_filename}`;
+
+      document.getElementById('result-title').innerText = result.title || 'Your AI Video';
+      document.getElementById('result-desc').innerText = result.description || 'Generated with AutoTube AI';
+
+      resetUI();
+      fetchQuota();
+    }
+
+    function resetUI() {
+      const btn = document.getElementById('btn-generate');
+      btn.disabled = false;
+      btn.classList.remove('opacity-50', 'cursor-not-allowed');
+    }
+
+    function copyMetadata() {
+      const title = document.getElementById('result-title').innerText;
+      const desc = document.getElementById('result-desc').innerText;
+      navigator.clipboard.writeText(`${title}\n\n${desc}\n\n#Shorts #Viral #Trending #AI`);
+      alert('Title, Description & Tags copied to clipboard!');
+    }
+
+    // Initial quota check on load
+    fetchQuota();
+    setInterval(fetchQuota, 30000);
+  </script>
+</body>
+</html>

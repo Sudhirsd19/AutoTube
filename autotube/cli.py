@@ -828,6 +828,7 @@ def autopilot(
     niche: str = typer.Option("mixed", "--niche", "-n", help="Niche: mixed (all daily slots), space, science, history, psychology, mystery, alien"),
     voice: Optional[str] = typer.Option(None, "--voice", "-v", help="AI Voice narrator"),
     lang: str = typer.Option("mixed", "--lang", "-l", help="Language: 'mixed' (English & Hindi), 'hi' (All Hindi), or 'en' (All English)"),
+    engine: str = typer.Option("auto", "--engine", "-e", help="Render Engine: 'openmontage' (Remotion + Gemini TTS) or 'classic' (FFmpeg)"),
     upload: bool = typer.Option(True, "--upload/--no-upload", help="Upload to YouTube"),
     schedule: bool = typer.Option(True, "--schedule/--no-schedule", help="Stagger across peak hours (USA peak hours for English & India peak hours for Hindi)"),
     slot_id: Optional[str] = typer.Option(None, "--slot-id", help="Execute only a specific slot from slot matrix"),
@@ -835,8 +836,39 @@ def autopilot(
     """Fully automated batch creation and scheduled publishing for YouTube Shorts."""
     from autotube.scheduler.autopilot import AutoPilot
 
-    pilot = AutoPilot(niche=niche, voice=voice, language=lang)
+    pilot = AutoPilot(niche=niche, voice=voice, language=lang, engine=engine)
     pilot.run_daily_batch(count=count, upload=upload, schedule=schedule, slot_id=slot_id)
+
+
+@app.command(name="openmontage")
+def create_openmontage_reel(
+    topic: str = typer.Argument(..., help="Topic or Title for the reel"),
+    script: Optional[str] = typer.Option(None, "--script", "-s", help="Custom script narration (optional)"),
+    voice: str = typer.Option("Charon", "--voice", "-v", help="Gemini 3.8 Flash TTS Voice: Charon, Puck, Aoede, Kore, Fenrir"),
+    lang: str = typer.Option("hi", "--lang", "-l", help="Language: 'hi' (Hindi) or 'en' (English)"),
+    format: str = typer.Option("vertical_9x16", "--format", "-f", help="Format: 'vertical_9x16' or 'landscape_16x9'"),
+):
+    """Create a cinematic 9:16 vertical reel using OpenMontage Remotion + Gemini 3.8 Flash TTS + MultiStock."""
+    from autotube.video.remotion_bridge import RemotionBridge
+    from autotube.scripting.generator import ScriptGenerator
+    from autotube.utils.console import print_info, print_success
+
+    bridge = RemotionBridge()
+    final_script = script
+    if not final_script:
+        print_info(f"Generating viral narrative script for topic: '{topic}'...")
+        sg = ScriptGenerator()
+        short_res = sg.generate_short_script(topic=topic, language=lang)
+        final_script = short_res.narration if hasattr(short_res, "narration") else str(short_res)
+
+    print_info(f"Producing OpenMontage Reel with Gemini 3.8 Flash TTS ({voice})...")
+    res_path = bridge.render_reel(
+        title=topic,
+        script_text=final_script,
+        voice=voice,
+        output_format=format,
+    )
+    print_success(f"🎉 Reel generated successfully: {res_path}")
 
 
 @app.command()

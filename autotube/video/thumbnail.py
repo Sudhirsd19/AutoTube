@@ -24,10 +24,16 @@ class ThumbnailGenerator:
 
     def _resolve_fonts(self, font_size: int, is_devanagari: bool = False) -> Tuple[ImageFont.FreeTypeFont, ImageFont.FreeTypeFont]:
         """Resolve primary hook font and badge font supporting Devanagari Hindi and English."""
+        universal_candidates = [
+            PROJECT_ROOT / "assets" / "fonts" / "Poppins-ExtraBold.ttf",
+            PROJECT_ROOT / "assets" / "fonts" / "Poppins-Bold.ttf",
+            PROJECT_ROOT / "assets" / "fonts" / "Poppins-Black.ttf",
+            Path("C:/Windows/Fonts/Nirmala.ttc"),
+        ]
+
         # Candidates for Devanagari
         hindi_candidates = [
             PROJECT_ROOT / "assets" / "fonts" / "NotoSansDevanagari-Bold.ttf",
-            Path("C:/Windows/Fonts/Nirmala.ttc"),
             Path("C:/Windows/Fonts/mangal.ttf"),
             Path("/usr/share/fonts/truetype/noto/NotoSansDevanagari-Bold.ttf"),
             Path("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"),
@@ -37,13 +43,12 @@ class ThumbnailGenerator:
         english_candidates = [
             Path("C:/Windows/Fonts/impact.ttf"),
             Path("C:/Windows/Fonts/arialbd.ttf"),
-            PROJECT_ROOT / "assets" / "fonts" / "NotoSansDevanagari-Bold.ttf",
             Path("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"),
             Path("/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf"),
             Path("/usr/share/fonts/truetype/freefont/FreeSansBold.ttf"),
         ]
 
-        candidates = hindi_candidates + english_candidates if is_devanagari else english_candidates + hindi_candidates
+        candidates = universal_candidates + (hindi_candidates + english_candidates if is_devanagari else english_candidates + hindi_candidates)
 
         main_font = None
         for fc in candidates:
@@ -89,56 +94,25 @@ class ThumbnailGenerator:
         title: str,
         script_text: Optional[str] = None,
         language: str = "hi",
+        topic_category: str = "auto",
     ) -> str:
-        """Extract or generate a 2-4 word explosive curiosity hook for maximum thumbnail CTR."""
+        """Extract or generate an explosive curiosity hook for maximum thumbnail CTR."""
+        try:
+            from autotube.media.visual_hook import VisualHookManager
+            return VisualHookManager().generate_hook_text(
+                title=title,
+                script_text=script_text,
+                language=language,
+                topic_category=topic_category,
+            )
+        except Exception as e:
+            print_warning(f"VisualHookManager fallback in thumbnail: {e}")
+
         title_clean = title.strip()
-        # Remove hashtags and bracketed tags like #Shorts, (Part 1)
         title_clean = re.sub(r"#\w+", "", title_clean).strip()
         title_clean = re.sub(r"\(.*?\)", "", title_clean).strip()
         title_clean = re.sub(r"\[.*?\]", "", title_clean).strip()
-
         is_hindi = language.lower() in ("hi", "hindi") or any("\u0900" <= c <= "\u097F" for c in title_clean)
-
-        # 1. Try Gemini AI Hook Optimization if API Key is configured
-        gemini_key = self.config.gemini_api_key or os.getenv("GEMINI_API_KEY")
-        if gemini_key:
-            try:
-                from google import genai
-                client = genai.Client(api_key=gemini_key)
-                lang_instruction = "Devanagari Hindi (शुद्ध देवनागरी हिंदी)" if is_hindi else "Bold punchy English"
-
-                context_snippet = (script_text[:250] if script_text else title_clean)
-                prompt = f"""You are a master YouTube thumbnail CTR strategist (like MrBeast).
-Analyze this video title and context:
-Title: "{title_clean}"
-Context: "{context_snippet}"
-
-Generate an EXPLOSIVE, high-curiosity YouTube thumbnail text hook.
-STRICT RULES:
-1. LENGTH: Exactly 2 to 4 words ONLY (Absolute maximum 4 words).
-2. MUST TRIGGER EXTREME SHOCK, CURIOSITY, OR IMPOSSIBLE QUESTION.
-3. LANGUAGE: {lang_instruction}.
-4. DO NOT repeat the whole title. Focus on the core mystery or shocking contrast.
-5. Examples of winning hooks:
-   - Hindi: "यह सच छुपाया गया?!", "1000 साल पुराना रहस्य!", "वैज्ञानिक भी हैरान!", "महा-विनाशकारी अस्त्र!", "सूर्य को निगल लिया?!"
-   - English: "THE FORBIDDEN TRUTH!", "99% DON'T KNOW!", "SCIENTISTS SHOCKED!", "IMPOSSIBLE DISCOVERY!"
-6. Return ONLY the 2-4 words hook. NO quotes, NO punctuation explanation, NO filler."""
-
-                for model_candidate in ["gemini-3.5-flash-lite", "gemini-flash-lite-latest", "gemini-3.1-flash-lite-preview", "gemini-3-flash-preview"]:
-                    try:
-                        resp = client.models.generate_content(
-                            model=model_candidate,
-                            contents=prompt,
-                        )
-                        text = resp.text.strip().replace('"', '').replace("'", "")
-                        # Verify word count <= 5
-                        words = text.split()
-                        if 1 <= len(words) <= 5:
-                            return text.upper() if not is_hindi else text
-                    except Exception:
-                        continue
-            except Exception as e:
-                print_warning(f"Gemini thumbnail hook generation skipped: {e}")
 
         # 2. Heuristic fallback based on semantic keywords
         title_lower = title_clean.lower()
@@ -270,7 +244,7 @@ STRICT RULES:
         img = self._apply_contrast_overlay(img)
 
         # 3. Determine Hook Text
-        hook_text = (custom_hook_text or self.extract_punchy_hook_text(title, script_text=script_text, language=language)).strip()
+        hook_text = (custom_hook_text or self.extract_punchy_hook_text(title, script_text=script_text, language=language, topic_category=topic_category)).strip()
         print_info(f"   🔥 Thumbnail Hook Text: '{hook_text}'")
 
         # 4. Resolve Typography
@@ -287,26 +261,24 @@ STRICT RULES:
 
         main_font, badge_font = self._resolve_fonts(font_size=font_size, is_devanagari=is_devanagari)
 
-        # 5. Render Badge (e.g. 🚩 सत्य or ⚠️ CLASSIFIED)
-        draw = ImageDraw.Draw(img)
+        # 5. Render Badge (e.g. सनातन सत्य or 100% REVEALED)
         effective_badge = badge_text
         if not effective_badge or effective_badge == "auto":
-            if topic_category == "vedic" or "गिता" in title or "रामायण" in title or "वेद" in title:
-                effective_badge = "🚩 सनातन सत्य"
+            if topic_category == "vedic" or "गिता" in title or "रामायण" in title or "वेद" in title or "ध्रुव" in title or "विष्णु" in title:
+                effective_badge = "सनातन सत्य"
             elif topic_category in ("alien", "mystery") or "alien" in title.lower() or "secret" in title.lower() or "रहस्य" in title:
-                effective_badge = "⚠️ 100% REVEALED"
+                effective_badge = "100% REVEALED"
             elif topic_category == "space" or "अंतरिक्ष" in title or "ब्रह्मांड" in title:
-                effective_badge = "🚀 COSMIC MYSTERY"
+                effective_badge = "COSMIC MYSTERY"
             else:
-                effective_badge = "⚡ MUST WATCH"
+                effective_badge = "MUST WATCH"
 
-        self._render_badge(draw, effective_badge, badge_font, is_vedic=(topic_category == "vedic" or "🚩" in effective_badge))
+        self._render_badge(img=img, badge_text=effective_badge, is_vedic=(topic_category == "vedic" or "सनातन" in effective_badge))
 
         # 6. Render Bold Multi-Layer 3D Hook Text
         self._render_bold_hook_text(
-            draw=draw,
+            img=img,
             text=hook_text,
-            font=main_font,
             font_size=font_size,
             highlight_color=highlight_color,
             text_color=text_color,
@@ -314,6 +286,7 @@ STRICT RULES:
         )
 
         # 7. Apply subtle cinematic frame border (High-CTR style)
+        draw = ImageDraw.Draw(img)
         self._apply_border(draw)
 
         # Save high quality JPEG
@@ -393,13 +366,15 @@ STRICT RULES:
 
     def _render_badge(
         self,
-        draw: ImageDraw.ImageDraw,
+        img: Image.Image,
         badge_text: str,
-        font: ImageFont.FreeTypeFont,
         is_vedic: bool = False,
     ):
-        """Render high-CTR badge in the top-left corner."""
-        if not badge_text:
+        """Render high-CTR badge in the top-left corner with crisp 3D styling."""
+        from autotube.media.text_shaper import clean_display_text, shape_and_render_line
+
+        cleaned_badge = clean_display_text(badge_text).strip()
+        if not cleaned_badge:
             return
 
         x = 55
@@ -407,72 +382,78 @@ STRICT RULES:
         pad_x = 22
         pad_y = 10
 
-        try:
-            bbox = font.getbbox(badge_text)
-            text_w = bbox[2] - bbox[0]
-            text_h = bbox[3] - bbox[1]
-        except Exception:
-            text_w = len(badge_text) * 16
-            text_h = 24
+        badge_img, text_w, text_h = shape_and_render_line(
+            text=cleaned_badge,
+            font_size=28,
+            fill_color=(255, 255, 255),
+            stroke_color=(0, 0, 0),
+            stroke_px=2,
+            shadow_offset=3,
+        )
 
-        badge_rect = [x, y, x + text_w + (pad_x * 2), y + text_h + (pad_y * 2)]
+        badge_w = text_w + (pad_x * 2)
+        badge_h = 48
+        badge_rect = [x, y, x + badge_w, y + badge_h]
 
         bg_color = (230, 81, 0) if is_vedic else (220, 20, 60)       # Saffron or Crimson
         border_color = (255, 215, 0) if is_vedic else (255, 80, 80) # Gold or Bright Red
 
-        # Badge pill background
+        draw = ImageDraw.Draw(img)
+        # Badge pill background with 3D border
         draw.rounded_rectangle(badge_rect, radius=12, fill=bg_color, outline=border_color, width=3)
-        # Badge text
-        draw.text((x + pad_x, y + pad_y - 2), badge_text, font=font, fill=(255, 255, 255))
+        # Paste shaped badge text centered
+        tx = x + pad_x - (badge_img.width - text_w) // 2
+        ty = y + (badge_h - badge_img.height) // 2
+        img.paste(badge_img, (tx, ty), badge_img)
 
     def _render_bold_hook_text(
         self,
-        draw: ImageDraw.ImageDraw,
+        img: Image.Image,
         text: str,
-        font: ImageFont.FreeTypeFont,
         font_size: int,
         highlight_color: Tuple[int, int, int],
         text_color: Tuple[int, int, int],
         is_devanagari: bool = False,
     ):
-        """Render 2-tone massive 3D text with thick black outline and drop shadow."""
-        words = text.split()
-        if len(words) <= 2:
-            lines = [text]
-        elif len(words) <= 4:
-            # 2 words per line
-            lines = [" ".join(words[:2]), " ".join(words[2:])]
-        else:
-            # Textwrap for longer hooks (max 2 lines)
-            wrapped = textwrap.wrap(text, width=14)
-            lines = wrapped[:2]
+        """Render 2-tone massive 3D text with HarfBuzz complex shaping, heavy outline, and drop shadow."""
+        from autotube.media.text_shaper import clean_display_text, shape_and_render_line
 
-        line_spacing = int(font_size * 0.28)
+        cleaned_text = clean_display_text(text)
+        words = cleaned_text.split()
+        if len(words) <= 2:
+            lines = [cleaned_text]
+        elif len(words) <= 4:
+            lines = [" ".join(words[:2]), " ".join(words[2:])]
+        elif len(words) <= 6:
+            lines = [" ".join(words[:3]), " ".join(words[3:])]
+        else:
+            wrapped = textwrap.wrap(cleaned_text, width=16)
+            lines = wrapped[:3]
+
+        line_spacing = int(font_size * 0.26)
         total_text_height = (len(lines) * font_size) + ((len(lines) - 1) * line_spacing)
 
         # Position text on left half, centered vertically
-        x_offset = 60
+        x_offset = 55
         y_offset = (self.height - total_text_height) // 2 + 35
 
         for idx, line in enumerate(lines):
-            y = y_offset + idx * (font_size + line_spacing)
             line_color = highlight_color if idx == 0 else text_color
+            line_img, line_w, line_h = shape_and_render_line(
+                text=line,
+                font_size=font_size,
+                fill_color=line_color,
+                stroke_color=(0, 0, 0),
+                stroke_px=6,
+                shadow_color=(0, 0, 0),
+                shadow_offset=9,
+            )
 
-            # 1. 3D Drop Shadow (soft offset)
-            shadow_offset = 6
-            for s_dx in range(2, shadow_offset + 1):
-                for s_dy in range(2, shadow_offset + 1):
-                    draw.text((x_offset + s_dx, y + s_dy), line, font=font, fill=(0, 0, 0))
-
-            # 2. Heavy Outlines (stroke_width emulation for maximum contrast)
-            stroke_width = max(4, int(font_size * 0.08))
-            for dx in range(-stroke_width, stroke_width + 1):
-                for dy in range(-stroke_width, stroke_width + 1):
-                    if (dx * dx + dy * dy) <= (stroke_width * stroke_width) and (dx != 0 or dy != 0):
-                        draw.text((x_offset + dx, y + dy), line, font=font, fill=(0, 0, 0))
-
-            # 3. Main Vibrant Text
-            draw.text((x_offset, y), line, font=font, fill=line_color)
+            y = y_offset + idx * (font_size + line_spacing)
+            # Offset compensating for text_shaper internal padding
+            paste_x = x_offset - 10
+            paste_y = y - 10
+            img.paste(line_img, (paste_x, paste_y), line_img)
 
     def _apply_border(self, draw: ImageDraw.ImageDraw):
         """Draw subtle high-CTR framing accent on the thumbnail edges."""

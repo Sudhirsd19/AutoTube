@@ -198,11 +198,12 @@ DAILY_SCHEDULE_HOURS = [s["hour"] for s in DAILY_SCHEDULE_SLOTS]
 class AutoPilot:
     """Orchestrates fully autonomous daily video generation and publishing."""
 
-    def __init__(self, niche: str = "mixed", voice: Optional[str] = None, language: str = "mixed"):
+    def __init__(self, niche: str = "mixed", voice: Optional[str] = None, language: str = "mixed", engine: str = "auto"):
         self.cfg = get_config()
         self.niche = niche
         self.language = language
         self.voice = voice
+        self.engine = str(engine or "auto").strip().lower()
         self.trend_finder = TrendFinder()
         self.script_gen = ScriptGenerator()
         self.tts = TTSEngine(default_voice=self.voice or "hi_astro_vibes_male")
@@ -261,30 +262,54 @@ class AutoPilot:
             title="AutoPilot Initialized",
         )
 
-        is_multi_niche = self.niche in ("mixed", "auto", "daily", "daily_slots")
+        is_multi_niche = self.niche in ("mixed", "auto", "daily", "daily_slots", "daily_mirror", "day_wise")
         is_mixed_lang = self.language in ("mixed", "auto", "both")
 
-        # 1. Fetch trending non-repeating topics per slot
+        # 1. Fetch trending non-repeating topics per slot (with mirror pair support)
         topics_info = []
+        generated_topics_by_id = {}
         if is_multi_niche or slot_id:
             print_info(f"Discovering {count} fresh trending topics across configured slots...")
             for idx in range(count):
                 slot_data = active_slots[idx % len(active_slots)]
+                curr_slot_id = slot_data.get("id", f"slot_{idx+1}")
+                pair_target = slot_data.get("pair_with")
+
+                raw_slot_niche = slot_data.get("niche", "mystery")
+                if self.niche not in ("mixed", "auto", "daily", "daily_slots", "daily_mirror", "day_wise"):
+                    raw_slot_niche = self.niche
+
+                canon_niche, niche_desc = self.trend_finder.resolve_niche(raw_slot_niche)
+
                 item_lang = (slot_data.get("language") or slot_data.get("lang")) if is_mixed_lang else self.language
                 item_voice = self.voice or get_viral_voice_for_slot(slot_data.get("voice"), item_lang)
-                item_tz = slot_data.get("tz", "us" if str(item_lang).lower() == "en" else "ist")
+                item_tz = slot_data.get("tz", "us" if str(item_lang).lower().startswith("en") else "ist")
                 item_format = slot_data.get("format", "short")
-                topic_title = self.trend_finder.get_single_topic(
-                    niche=slot_data.get("niche", "mystery"),
-                    language=str(item_lang or "en"),
-                )
 
-                label_str = slot_data.get("label") or f"{slot_data.get('hour', 8):02d}:{slot_data.get('minute', 0):02d} ({item_tz.upper()}) - {slot_data.get('niche')} ({item_lang})"
+                slot_bgm = slot_data.get("bgm", "auto")
+                if slot_bgm == "auto":
+                    if canon_niche in ("space", "ocean", "quantum_matrix", "science"):
+                        slot_bgm = "space"
+                    elif canon_niche in ("ancient_engineering", "bharat_vigyan", "history", "conspiracy"):
+                        slot_bgm = "history"
+
+                # Check if this slot mirrors a previous slot
+                if pair_target and pair_target in generated_topics_by_id:
+                    topic_title = generated_topics_by_id[pair_target]
+                    print_info(f"Mirror Slot [{curr_slot_id}] paired with [{pair_target}]: Reusing topic '{topic_title}' ({item_lang})")
+                else:
+                    topic_title = self.trend_finder.get_single_topic(
+                        niche=canon_niche,
+                        language=str(item_lang or "en"),
+                    )
+                    generated_topics_by_id[curr_slot_id] = topic_title
+
+                label_str = slot_data.get("label") or f"{slot_data.get('hour', 8):02d}:{slot_data.get('minute', 0):02d} ({item_tz.upper()}) - {canon_niche} ({item_lang})"
 
                 topics_info.append({
-                    "id": slot_data.get("id", f"slot_{idx+1}"),
+                    "id": curr_slot_id,
                     "topic": topic_title,
-                    "niche": slot_data.get("niche", "mystery"),
+                    "niche": canon_niche,
                     "channel": slot_data.get("channel") or ("hindi" if str(item_lang).lower().startswith("hi") else "english"),
                     "hour": slot_data.get("hour", 8),
                     "minute": slot_data.get("minute", 0),
@@ -292,7 +317,7 @@ class AutoPilot:
                     "lang": item_lang,
                     "voice": item_voice,
                     "format": item_format,
-                    "bgm": slot_data.get("bgm", "auto"),
+                    "bgm": slot_bgm,
                     "label": label_str,
                 })
         else:
@@ -336,19 +361,20 @@ class AutoPilot:
             item_niche = item["niche"]
             item_bgm = item.get("bgm", "auto")
             item_channel = item.get("channel") or ("hindi" if str(item_lang).lower().startswith("hi") else "english")
-            item_tz_key = item.get("tz", "us" if item_lang == "en" else "ist")
+            item_tz_key = item.get("tz", "us" if str(item_lang).lower().startswith("en") else "ist")
 
             print_panel(
                 f"[bold white]Processing Video {idx+1}/{count}:[/bold white] [bold yellow]{topic}[/bold yellow]\n"
                 f"[bold cyan]Category & Slot:[/bold cyan] {slot_label}\n"
                 f"[bold blue]Target Channel:[/bold blue] {'🇬🇧 English Shorts' if item_channel == 'english' else '🇮🇳 Hindi Shorts'}\n"
-                f"[bold magenta]Language & Voice:[/bold magenta] {'English (' + item_voice + ')' if item_lang == 'en' else 'Hindi (' + item_voice + ')'}\n"
+                f"[bold magenta]Language & Voice:[/bold magenta] {'English (' + item_voice + ')' if str(item_lang).lower().startswith('en') else 'Hindi (' + item_voice + ')'}\n"
                 f"[bold green]BGM Music Track:[/bold green] {item_bgm.upper()}",
                 border_style="magenta",
             )
 
             try:
-                slug = sanitize_filename(topic)
+                lang_code = "hi" if (str(item_lang).lower().startswith("hi") or item_channel == "hindi") else "en"
+                slug = f"{sanitize_filename(topic)}_{lang_code}" 
 
                 # Determine scheduled publish time in UTC ISO 8601 using local peak timezone
                 publish_time_iso = None
@@ -476,16 +502,82 @@ class AutoPilot:
                 else:
                     selected_music_path = bgm_mgr.get_music_for_subject(niche=item_niche, topic=topic)
 
-                final_video = self.builder.build_short(
-                    audio_path=tts_res.audio_path,
-                    output_path=output_video_path,
-                    scene_assets=scene_assets,
-                    scene_durations=scene_durations,
-                    subtitles_file=tts_res.subtitles_ass_path,
-                    music_path=selected_music_path,
-                    width=v_w,
-                    height=v_h,
+                # Generate viral visual hook text synchronized for both Video Header Banner and Thumbnail
+                auto_hook_text = None
+                topic_cat = (
+                    "vedic" if ("vedic" in str(item_niche).lower() or "bharat" in str(item_niche).lower() or "history" in str(item_niche).lower())
+                    else ("space" if "space" in str(item_niche).lower() else "auto")
                 )
+                try:
+                    from autotube.media.visual_hook import VisualHookManager
+                    vm = VisualHookManager()
+                    auto_hook_text = vm.generate_hook_text(
+                        title=script.title,
+                        script_text=script.narration,
+                        language=item_channel,
+                        topic_category=topic_cat,
+                    )
+                except Exception as h_err:
+                    print_warning(f"Could not generate autopilot hook text: {h_err}")
+
+                use_openmontage = self.engine in ("openmontage", "remotion")
+                if self.engine in ("auto", "default"):
+                    try:
+                        from autotube.video.remotion_bridge import REMOTION_DIR
+                        use_openmontage = REMOTION_DIR.exists()
+                    except Exception:
+                        use_openmontage = False
+
+                if use_openmontage:
+                    try:
+                        print_info("🎬 AutoPilot: Using OpenMontage Remotion Engine for video rendering...")
+                        from autotube.video.remotion_bridge import RemotionBridge
+                        r_bridge = RemotionBridge()
+                        final_video = r_bridge.render_reel(
+                            title=script.title,
+                            script_text=script.narration,
+                            hook_text=auto_hook_text,
+                            voice=item_voice or self.voice or ("Charon" if (item_lang in ("hi", "hindi") or item_channel in ("hi", "hindi")) else "Puck"),
+                            scenes=[
+                                {
+                                    "scene_number": i + 1,
+                                    "narration": getattr(sc, "narration", ""),
+                                    "visual_subject": getattr(sc, "visual_subject", ""),
+                                    "visual_description": getattr(sc, "visual_description", ""),
+                                }
+                                for i, sc in enumerate(script.scenes)
+                            ] if hasattr(script, "scenes") and script.scenes else None,
+                            bgm_path=selected_music_path if (selected_music_path and selected_music_path.name != "none") else None,
+                            output_format="landscape_16x9" if is_landscape else "vertical_9x16",
+                            enable_subscribe_cta=True,
+                            target_platform="youtube",
+                            output_dir=output_video_path.parent,
+                        )
+                    except Exception as rb_err:
+                        print_warning(f"Remotion render failed ({rb_err}); falling back to classic builder.")
+                        final_video = self.builder.build_short(
+                            audio_path=tts_res.audio_path,
+                            output_path=output_video_path,
+                            scene_assets=scene_assets,
+                            scene_durations=scene_durations,
+                            subtitles_file=tts_res.subtitles_ass_path,
+                            music_path=selected_music_path,
+                            width=v_w,
+                            height=v_h,
+                            hook_text=auto_hook_text,
+                        )
+                else:
+                    final_video = self.builder.build_short(
+                        audio_path=tts_res.audio_path,
+                        output_path=output_video_path,
+                        scene_assets=scene_assets,
+                        scene_durations=scene_durations,
+                        subtitles_file=tts_res.subtitles_ass_path,
+                        music_path=selected_music_path,
+                        width=v_w,
+                        height=v_h,
+                        hook_text=auto_hook_text,
+                    )
 
                 # Universal Fail-Closed Shorts Duration Gate
                 if not is_landscape and final_video and final_video.exists():
@@ -537,6 +629,7 @@ class AutoPilot:
                             output_path=auto_thumb_path,
                             script_text=script.narration,
                             video_path=final_video,
+                            custom_hook_text=auto_hook_text,
                             language=item_channel,
                             topic_category=topic_cat,
                         )
@@ -569,6 +662,33 @@ class AutoPilot:
                             f"Upload could not be completed for '{topic}'. "
                             f"Rendered video is safely preserved at: {output_video_path.name if output_video_path else 'unknown'}"
                         )
+
+                    # Step F: Auto-publish to Facebook Page (CosmoChronicle) for vertical reels
+                    if not is_landscape and final_video and final_video.exists():
+                        try:
+                            from autotube.uploader.facebook_upload import FacebookReelsUploader
+                            fb_uploader = FacebookReelsUploader()
+                            if fb_uploader.is_configured():
+                                print_info(f"📤 Auto-publishing Reel to Facebook Page '{fb_uploader.load_credentials().get('page_name', 'CosmoChronicle')}'...")
+                                fb_caption = (
+                                    f"{v_title}\n\n"
+                                    f"{script.narration}\n\n"
+                                    f"फॉलो करें @CosmoChronicle ऐसे ही अविश्वसनीय रहस्यों और रोचक तथ्यों के लिए! ✨\n\n"
+                                    f"{' '.join(script.tags)}"
+                                )
+                                fb_res = fb_uploader.upload_reel(
+                                    video_path=final_video,
+                                    title=v_title,
+                                    description=fb_caption,
+                                    tags=[t.replace('#', '') for t in script.tags],
+                                )
+                                if fb_res.get("success"):
+                                    fb_id = fb_res.get("video_id") or fb_res.get("id")
+                                    print_success(f"🎉 Facebook Reel published successfully to CosmoChronicle! ID: {fb_id}")
+                                else:
+                                    print_warning(f"Facebook Reel upload notice: {fb_res.get('error')}")
+                        except Exception as fb_err:
+                            print_warning(f"Facebook Reels publishing notice: {fb_err}")
                 else:
                     self.trend_finder.record_topic(topic)
 
@@ -582,8 +702,9 @@ class AutoPilot:
         # Cleanup stale temp files to prevent disk space bloat
         self._cleanup_temp()
 
+        successful_gen = max(0, len(topics_info) - failed_count)
         print_success(
-            f"Daily Batch Complete! Generated {len(topics_info)} videos. "
+            f"Daily Batch Complete! Generated {successful_gen} videos. "
             f"Uploaded {len(uploaded_urls)}. Failed {failed_count}."
         )
         return uploaded_urls
