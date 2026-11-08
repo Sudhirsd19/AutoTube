@@ -59,15 +59,15 @@ class DirectorEngine:
         """Return available voices, BGM audio tracks, and subtitle styles."""
         # Top-quality Voices
         voices = [
-            # 🚀 VOICESTUDIO LOCAL AI (100% OFFLINE & ZERO-COST)
-            {"id": "voicestudio_local", "name": "🎙️ VoiceStudio Local (100% Offline AI Voice & Cloning) 🚀 ZERO-COST", "lang": "Hindi/English", "gender": "Male", "is_hindi": True, "speed": "1.00x"},
-
             # 🌟 OPENMONTAGE GEMINI 3.8 FLASH TTS VOICES (ULTRA-REALISTIC)
             {"id": "Charon", "name": "🎙️ Charon — Deep, Epic, Natural Human Voice (Gemini 3.8 Flash TTS) ⭐ #1 RECOMMENDED", "lang": "Hindi/English", "gender": "Male", "is_hindi": True, "speed": "1.00x"},
             {"id": "Puck", "name": "🎙️ Puck — Energetic & Engaging Viral Narrator (Gemini 3.8 Flash TTS)", "lang": "Hindi/English", "gender": "Male", "is_hindi": False, "speed": "1.00x"},
             {"id": "Aoede", "name": "🎙️ Aoede — Rich, Cinematic Female Voice (Gemini 3.8 Flash TTS)", "lang": "Hindi/English", "gender": "Female", "is_hindi": False, "speed": "1.00x"},
             {"id": "Kore", "name": "🎙️ Kore — Soothing, Elegant Storyteller Female (Gemini 3.8 Flash TTS)", "lang": "Hindi/English", "gender": "Female", "is_hindi": False, "speed": "1.00x"},
             {"id": "Fenrir", "name": "🎙️ Fenrir — Authoritative, Intense & Mysterious Male (Gemini 3.8 Flash TTS)", "lang": "Hindi/English", "gender": "Male", "is_hindi": False, "speed": "1.00x"},
+
+            # 🚀 VOICESTUDIO LOCAL AI (100% OFFLINE & ZERO-COST)
+            {"id": "voicestudio_local", "name": "🎙️ VoiceStudio Local (100% Offline AI Voice & Cloning) 🚀 ZERO-COST", "lang": "Hindi/English", "gender": "Male", "is_hindi": True, "speed": "1.00x"},
 
             # 🇮🇳 HINDI VOICES — SPACE / MYSTERY / SCIENCE
             {"id": "hi_deep_cinematic_male", "name": "🎙️ Deep Cinematic Male Hindi (Space, Universe, Black Holes) ⭐ BEST", "lang": "Hindi", "gender": "Male", "is_hindi": True, "speed": "0.92x"},
@@ -1605,7 +1605,7 @@ Return ONLY a JSON list of scene objects matching this structure:
         self,
         script_text: str,
         title: str,
-        voice: str = "hi_astro_vibes_male",
+        voice: str = "Charon",
         voice_speed: float = 1.05,
         bgm_filename: Optional[str] = None,
         bgm_volume: float = 0.03,

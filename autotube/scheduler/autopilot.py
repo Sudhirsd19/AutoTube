@@ -56,10 +56,10 @@ def get_timezone(tz_key: str) -> datetime.tzinfo:
 
 
 def get_viral_voice_for_slot(configured_voice: Optional[str], lang: str) -> str:
-    """Return the configured voice, defaulting to Astro Vibes for Hindi."""
+    """Return the configured voice, defaulting to OpenMontage Gemini TTS (Charon)."""
     v = (configured_voice or "").strip().lower()
     if not v or v in ("auto", "default"):
-        return "hi_astro_vibes_male" if lang in ("hi", "hindi") else "en_deep_cinematic_male"
+        return "Charon"
     return configured_voice
 
 
@@ -214,7 +214,7 @@ class AutoPilot:
         self.engine = str(engine or "auto").strip().lower()
         self.trend_finder = TrendFinder()
         self.script_gen = ScriptGenerator()
-        self.tts = TTSEngine(default_voice=self.voice or "hi_astro_vibes_male")
+        self.tts = TTSEngine(default_voice=self.voice or "Charon")
         self.stock_fetcher = StockFetcher()
         self.visual_gen = VisualGenerator()
         self.builder = ShortsBuilder()

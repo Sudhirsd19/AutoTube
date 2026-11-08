@@ -70,8 +70,8 @@ class VideoConfig(BaseModel):
 
 
 class VoiceConfig(BaseModel):
-    default_voice: str = "hi_astro_vibes_male"
-    hindi_voice: str = "hi_astro_vibes_male"
+    default_voice: str = "Charon"
+    hindi_voice: str = "Charon"
     rate: str = "+7%"
     pitch: str = "-3Hz"
     volume: str = "+0%"

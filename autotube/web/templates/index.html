@@ -292,7 +292,7 @@
                   <option value="voicestudio_local">🎙️ VoiceStudio Local (100% Offline, Zero-Cost & Cloning)</option>
                 </optgroup>
                 <optgroup label="🇮🇳 HINDI VOICES (EDGE-TTS)" class="bg-slate-900 text-slate-200">
-                  <option value="hi_astro_vibes_male" selected>🎙️ Astro Vibes Male Hindi (Space & Science Facts) ⭐ DEFAULT</option>
+                  <option value="hi_astro_vibes_male">🎙️ Astro Vibes Male Hindi (Space & Science Facts) ⭐ DEFAULT</option>
                   <option value="hi_deep_cinematic_male">🎙️ Deep Cinematic Male Hindi ⭐ BEST</option>
                   <option value="hi_calm_male">🎙️ Calm Male Hindi (Science Explanations)</option>
                   <option value="hi_cinematic_male">🎙️ Cinematic Male Hindi (Mystery, रहस्य)</option>
@@ -2309,7 +2309,7 @@
         const tz = (slot.tz || 'IST').toUpperCase();
         const isHindi = (slot.language || 'Hindi').toLowerCase() === 'hindi' || slot.language === 'hi';
         const isLong = (slot.format === 'landscape_long');
-        const defaultVoice = isHindi ? 'hi_deep_cinematic_male' : 'en_deep_cinematic_male';
+        const defaultVoice = 'Charon';
         const slotVoice = (slot.voice || defaultVoice).toLowerCase();
         const slotBgm = (slot.bgm || 'auto').toLowerCase();
         const slotChannel = (slot.channel || (isHindi ? 'hindi' : 'english')).toLowerCase();
@@ -2370,7 +2370,7 @@
                 class="w-full bg-slate-950 border border-slate-800 text-slate-200 text-xs px-2 py-1.5 rounded-lg focus:outline-none focus:border-brand-cyan cursor-pointer truncate">
                 <option value="auto" ${slotVoice === 'auto' ? 'selected' : ''}>🤖 Auto — Subject + Language Matched</option>
                 <optgroup label="🌟 OPENMONTAGE GEMINI 3.8 FLASH TTS (ULTRA-REALISTIC)">
-                  <option value="Charon" ${slotVoice === 'charon' ? 'selected' : ''}>🎙️ Charon — Deep, Epic Human Voice ⭐ #1 RECOMMENDED</option>
+                  <option value="Charon" ${(slotVoice === 'charon' || slotVoice === 'auto' || !slotVoice) ? 'selected' : ''}>🎙️ Charon — Deep, Epic Human Voice ⭐ #1 RECOMMENDED</option>
                   <option value="Puck" ${slotVoice === 'puck' ? 'selected' : ''}>🎙️ Puck — Energetic Viral Narrator</option>
                   <option value="Aoede" ${slotVoice === 'aoede' ? 'selected' : ''}>🎙️ Aoede — Rich Cinematic Female</option>
                   <option value="Kore" ${slotVoice === 'kore' ? 'selected' : ''}>🎙️ Kore — Soothing Storyteller Female</option>
@@ -2497,7 +2497,7 @@
 
     function playCustomVoicePreview() {
       const select = document.getElementById('quick-voice-select');
-      const voice = select ? select.value : 'hi_deep_cinematic_male';
+      const voice = select ? select.value : 'Charon';
       playAudioStream(`/api/audio/preview/voice/${encodeURIComponent(voice)}`, 'quick-voice', 'quick-v-icon');
     }
 
@@ -2510,7 +2510,7 @@
     function playSlotVoicePreview(slotId) {
       const slot = (currentSlotsConfig.slots || []).find(s => s.id === slotId);
       const isHindi = slot ? ((slot.language || 'Hindi').toLowerCase() === 'hindi' || slot.language === 'hi') : false;
-      const defaultBest = isHindi ? 'hi_deep_cinematic_male' : 'en_deep_cinematic_male';
+      const defaultBest = 'Charon';
       let voice = slot ? (slot.voice || defaultBest) : defaultBest;
       if (voice === 'auto') {
         voice = defaultBest;
@@ -2591,11 +2591,13 @@
           chSelect.value = slot.channel;
         }
 
-        const hindiVoices = ['madhur', 'swara', 'akashvani', 'hi_deep_cinematic_male', 'hi_calm_male', 'hi_cinematic_male', 'hi_authoritative_male', 'hi_young_male', 'hi_deep_female', 'hi_calm_female', 'hi_cinematic_female'];
-        const englishVoices = ['adam', 'christopher', 'guy', 'aria', 'andrew', 'en_deep_cinematic_male', 'en_deep_british_male', 'en_calm_british_male', 'en_cinematic_narrator', 'en_deep_warm_male', 'en_authoritative_male', 'en_calm_female', 'en_cinematic_female'];
-        if (slot.voice && slot.voice !== 'auto') {
-          if (isHindi && !hindiVoices.includes(slot.voice)) slot.voice = 'hi_deep_cinematic_male';
-          if (!isHindi && !englishVoices.includes(slot.voice)) slot.voice = 'en_deep_cinematic_male';
+        const openMontageVoices = ['charon', 'puck', 'aoede', 'kore', 'fenrir'];
+        const vLower = (slot.voice || '').toLowerCase();
+        if (!openMontageVoices.includes(vLower) && slot.voice && slot.voice !== 'auto') {
+          const hindiVoices = ['madhur', 'swara', 'akashvani', 'hi_deep_cinematic_male', 'hi_calm_male', 'hi_cinematic_male', 'hi_authoritative_male', 'hi_young_male', 'hi_deep_female', 'hi_calm_female', 'hi_cinematic_female'];
+          const englishVoices = ['adam', 'christopher', 'guy', 'aria', 'andrew', 'en_deep_cinematic_male', 'en_deep_british_male', 'en_calm_british_male', 'en_cinematic_narrator', 'en_deep_warm_male', 'en_authoritative_male', 'en_calm_female', 'en_cinematic_female'];
+          if (isHindi && !hindiVoices.includes(slot.voice)) slot.voice = 'Charon';
+          if (!isHindi && !englishVoices.includes(slot.voice)) slot.voice = 'Charon';
         }
 
         const vSelect = document.getElementById(`slot-voice-${id}`);
@@ -2615,11 +2617,12 @@
         const langSelect = document.getElementById(`slot-lang-${id}`);
         if (langSelect) langSelect.value = slot.language;
 
-        const defaultVoice = isHindi ? 'hi_deep_cinematic_male' : 'en_deep_cinematic_male';
-        if (slot.voice && slot.voice !== 'auto') {
-          slot.voice = defaultVoice;
+        const openMontageVoices = ['charon', 'puck', 'aoede', 'kore', 'fenrir'];
+        const vLower = (slot.voice || '').toLowerCase();
+        if (!openMontageVoices.includes(vLower) && slot.voice && slot.voice !== 'auto') {
+          slot.voice = 'Charon';
           const vSelect = document.getElementById(`slot-voice-${id}`);
-          if (vSelect) vSelect.value = defaultVoice;
+          if (vSelect) vSelect.value = 'Charon';
         }
         markSlotsUnsaved();
       }
@@ -4442,7 +4445,7 @@
             opt.textContent = `${v.name}`;
             vSelect.appendChild(opt);
           });
-          if (currentVal) vSelect.value = currentVal;
+          if (currentVal) vSelect.value = currentVal; else vSelect.value = 'Charon';
         }
 
         // BGM dropdown
