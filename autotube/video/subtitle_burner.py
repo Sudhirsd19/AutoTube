@@ -4,7 +4,7 @@ import os
 from pathlib import Path
 from typing import Optional
 from autotube.utils.console import print_error, print_info
-from autotube.utils.ffmpeg_helper import run_ffmpeg
+from autotube.utils.ffmpeg_helper import run_ffmpeg, get_media_dimensions, get_media_duration
 
 
 def format_ffmpeg_subtitle_path(path: Path) -> str:
@@ -114,7 +114,6 @@ def burn_subtitles(
 
     # 5. Sleek Neon Progress Bar (Psychological Completion Booster for 9:16 Vertical Shorts)
     try:
-        from autotube.utils.ffmpeg_helper import get_media_dimensions
         w_val, h_val = get_media_dimensions(input_video)
         if h_val > w_val and vid_dur > 0:
             filter_steps.append(

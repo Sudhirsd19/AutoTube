@@ -344,7 +344,6 @@ class TTSEngine:
             tempo_factor = round(duration / 56.5, 3)
             tempo_factor = min(1.40, max(1.05, tempo_factor))
             temp_tempo = output_audio_path.with_name(f"tempo_{output_audio_path.name}")
-            from autotube.utils.ffmpeg_helper import run_ffmpeg
             ok = run_ffmpeg(["-i", str(output_audio_path), "-af", f"atempo={tempo_factor}", "-y", str(temp_tempo)])
             if ok and temp_tempo.exists() and temp_tempo.stat().st_size > 1000:
                 temp_tempo.replace(output_audio_path)
@@ -518,6 +517,16 @@ class TTSEngine:
                 scenes=scenes,
             )
 
+        if requested_voice.lower() in ("voicestudio", "local_voice", "omnivoice", "voicestudio_local") or requested_voice.lower().startswith("voicestudio:"):
+            from autotube.voice.voicestudio_engine import VoiceStudioEngine
+            vs_engine = VoiceStudioEngine()
+            return vs_engine.synthesize(
+                text=text,
+                output_audio_path=output_audio_path,
+                voice=requested_voice,
+                scenes=scenes,
+            )
+
         if requested_voice.lower() in {"", "auto", "automatic", "smart"}:
             voice = choose_subject_voice("", text, language="auto")
         has_devanagari = sum("\u0900" <= c <= "\u097f" for c in text) >= 5
@@ -675,7 +684,6 @@ class TTSEngine:
 
         if audio_filter_to_apply:
             temp_filtered = output_audio_path.with_name(f"fx_{output_audio_path.name}")
-            from autotube.utils.ffmpeg_helper import run_ffmpeg
             ok = run_ffmpeg(["-i", str(output_audio_path), "-af", audio_filter_to_apply, str(temp_filtered)])
             if ok and temp_filtered.exists() and temp_filtered.stat().st_size > 1000:
                 temp_filtered.replace(output_audio_path)
@@ -738,7 +746,6 @@ class TTSEngine:
             tempo_factor = round(duration / 56.5, 3)  # Target comfortable 56.5s to fit 55-60s Shorts ceiling
             tempo_factor = min(1.40, max(1.05, tempo_factor))
             temp_tempo = output_audio_path.with_name(f"tempo_{output_audio_path.name}")
-            from autotube.utils.ffmpeg_helper import run_ffmpeg
             ok = run_ffmpeg(["-i", str(output_audio_path), "-af", f"atempo={tempo_factor}", "-y", str(temp_tempo)])
             if ok and temp_tempo.exists() and temp_tempo.stat().st_size > 1000:
                 temp_tempo.replace(output_audio_path)

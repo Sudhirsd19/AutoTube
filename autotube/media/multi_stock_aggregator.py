@@ -67,6 +67,34 @@ class MultiStockAggregator:
         self.persistent_used_ids: Set[str] = self._load_used_ids()
         self.persistent_used_hashes: Set[str] = self._load_used_hashes()
         self._gemini_client = None
+        self._evict_old_stock_cache()
+
+    def _evict_old_stock_cache(self, max_size_mb: float = 1500.0) -> None:
+        """Evict oldest stock cache files if directory exceeds max_size_mb to protect disk space."""
+        try:
+            if not STOCK_CACHE_DIR.exists():
+                return
+            files = [f for f in STOCK_CACHE_DIR.glob("*") if f.is_file()]
+            total_size_mb = sum(f.stat().st_size for f in files) / (1024 * 1024)
+            if total_size_mb <= max_size_mb:
+                return
+
+            print_info(f"🧹 Stock cache is {total_size_mb:.1f} MB (exceeds {max_size_mb} MB). Auto-evicting oldest clips...")
+            files.sort(key=lambda f: f.stat().st_mtime)
+            deleted_mb = 0.0
+            for f in files:
+                try:
+                    sz_mb = f.stat().st_size / (1024 * 1024)
+                    f.unlink()
+                    deleted_mb += sz_mb
+                    if (total_size_mb - deleted_mb) < (max_size_mb * 0.75):
+                        break
+                except Exception:
+                    pass
+            print_success(f"🧹 Auto-evicted {deleted_mb:.1f} MB from stock cache. Remaining: {total_size_mb - deleted_mb:.1f} MB.")
+        except Exception as e:
+            print_warning(f"Could not auto-evict stock cache: {e}")
+
 
     @property
     def pexels(self) -> PexelsVideoFetcher:
@@ -1158,6 +1186,8 @@ Output STRICT JSON with:
         scene_plan: Optional[Dict[str, Any]] = None,
         allow_ai_fallback: bool = False,
         progress_callback: Optional[Any] = None,
+        allow_youtube_fallback: bool = True,
+        character_hint: Optional[str] = None,
     ) -> Optional[Path]:
         """Acquire the best motion visual, returning None when motion footage is unavailable.
 
@@ -1218,6 +1248,31 @@ Output STRICT JSON with:
         ]
         subj_name = scene_plan.get("subject", "Concept")
         print_info(f"[*] Visual Intelligence: Scene #{scene_index+1} Subject: '{subj_name}' | Searching: {queries[:3]}...")
+
+        # Step A.2: Priority YouTube Shorts Harvester for Real Characters / Celebrities / Viral Topics
+        char_hint = character_hint or getattr(self, "current_character_hint", None)
+        if allow_youtube_fallback and char_hint:
+            try:
+                from autotube.media.youtube_harvester import YouTubeHarvester
+                yt_h = YouTubeHarvester()
+                yt_out = STOCK_CACHE_DIR / f"yt_{slug}_scene_{scene_index+1}_{random.randint(100, 999)}.mp4"
+                subj_hint = scene_plan.get("subject") if scene_plan else None
+                query_cand = f"{char_hint} {subj_hint}" if subj_hint else f"{char_hint} {title}"
+                print_info(f"   🎯 [Character Priority: {char_hint}] Sourcing authentic YouTube Shorts for scene {scene_index+1} ('{query_cand}')...")
+                yt_asset = yt_h.acquire_clip_for_scene(
+                    query_or_url=query_cand,
+                    output_path=yt_out,
+                    orientation=orientation,
+                    duration=3.8,
+                    scene_index=scene_index,
+                    character_hint=char_hint
+                )
+                if yt_asset and yt_asset.exists() and yt_asset.stat().st_size > 20000:
+                    if self._record_asset_fingerprint(yt_asset, label="YouTubeShortsCharacter"):
+                        print_success(f"   🛡️ [Character YouTube Footage Secured] Scene {scene_index+1} acquired anti-copyright clip: {yt_asset.name}")
+                        return yt_asset
+            except Exception as yt_err:
+                print_warning(f"   ⚠️ YouTube Character priority fetch notice: {yt_err}")
 
         # Step B: Parallel Search across Mixkit, Coverr, Pexels, Pixabay
         candidates = self.gather_candidates(queries=queries, orientation=orientation)
@@ -1367,6 +1422,33 @@ Output STRICT JSON with:
                 )
                 if photo_pick and photo_pick.exists():
                     return photo_pick
+
+        # Step G: YouTube Shorts Anti-Copyright Fallback (For characters, specific subjects, or unstocked scenes)
+        if allow_youtube_fallback:
+            try:
+                from autotube.media.youtube_harvester import YouTubeHarvester
+                yt_h = YouTubeHarvester()
+                yt_out = STOCK_CACHE_DIR / f"yt_{slug}_scene_{scene_index+1}_{random.randint(100, 999)}.mp4"
+
+                subj_hint = scene_plan.get("subject") if scene_plan else None
+                char_hint = character_hint or getattr(self, "current_character_hint", None) or title
+                query_cand = subj_hint or q_info.get("primary_query") or (queries[0] if queries else title)
+
+                print_info(f"   🛡️ [YouTube Shorts Fallback] Searching viral clip for scene {scene_index+1} ('{query_cand}')...")
+                yt_asset = yt_h.acquire_clip_for_scene(
+                    query_or_url=query_cand,
+                    output_path=yt_out,
+                    orientation=orientation,
+                    duration=3.8,
+                    scene_index=scene_index,
+                    character_hint=char_hint
+                )
+                if yt_asset and yt_asset.exists() and yt_asset.stat().st_size > 20000:
+                    if self._record_asset_fingerprint(yt_asset, label="YouTubeShorts"):
+                        print_success(f"   🛡️ [YouTube Shorts Fallback Approved] Scene {scene_index+1} acquired anti-copyright safe viral footage: {yt_asset.name}")
+                        return yt_asset
+            except Exception as yt_err:
+                print_warning(f"   ⚠️ YouTube Shorts fallback notice: {yt_err}")
 
         # No generic fallback: an unrelated clip or static image would break
         # scene-to-narration integrity. Returning None intentionally lets DirectorEngine

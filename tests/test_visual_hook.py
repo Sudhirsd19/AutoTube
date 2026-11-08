@@ -42,9 +42,9 @@ def test_create_top_hook_banner_vertical(tmp_path):
     
     with Image.open(banner_p) as img:
         assert img.mode == "RGBA"
-        # Width should be ~90% of 1080 = 972
-        assert img.width == 972
-        assert img.height == 150
+        # Width should be ~92% of 1080 = 993
+        assert img.width == 993
+        assert img.height == 165
 
 
 def test_create_top_hook_banner_landscape(tmp_path):
@@ -66,4 +66,4 @@ def test_create_top_hook_banner_landscape(tmp_path):
     
     with Image.open(banner_p) as img:
         assert img.mode == "RGBA"
-        assert img.height == 115
+        assert img.height == 120

@@ -7,6 +7,7 @@ Orchestrates ultra-realistic video generation combining:
 """
 
 import os
+import sys
 import re
 import json
 import time
@@ -91,8 +92,11 @@ class RemotionBridge:
         target_platform: str = "youtube",
         output_dir: Optional[Path] = None,
         progress_callback: Optional[Callable[[int, str], None]] = None,
+        character_hint: Optional[str] = None,
     ) -> Path:
         """Render a complete viral Short or Reel using Multi-Stock clips + Remotion motion graphics."""
+        if character_hint:
+            self.multi_stock.current_character_hint = character_hint
         slug = sanitize_filename(title or "hybrid_reel")
         is_vertical = output_format in ("vertical_9x16", "portrait", "short", "reel")
         target_comp = "ExplainerVertical" if is_vertical else "Explainer"
@@ -134,14 +138,25 @@ class RemotionBridge:
                 for i, sent in enumerate(raw_sentences[:8])
             ]
 
-        # 2. Synthesize Ultra-Realistic Voice with Gemini 3.8 Flash TTS
+        # 2. Synthesize Voice with Gemini 3.8 Flash TTS / VoiceStudio Local
         local_voice_path = staging_dir / "narration.wav"
-        tts_res = self.tts.synthesize(
-            text=active_script,
-            output_audio_path=local_voice_path,
-            voice=voice,
-            scenes=scenes,
-        )
+        v_clean = str(voice or "").strip().lower()
+        if v_clean in ("voicestudio", "local_voice", "omnivoice", "voicestudio_local") or v_clean.startswith("voicestudio:"):
+            from autotube.voice.voicestudio_engine import VoiceStudioEngine
+            vs_engine = VoiceStudioEngine()
+            tts_res = vs_engine.synthesize(
+                text=active_script,
+                output_audio_path=local_voice_path,
+                voice=voice,
+                scenes=scenes,
+            )
+        else:
+            tts_res = self.tts.synthesize(
+                text=active_script,
+                output_audio_path=local_voice_path,
+                voice=voice,
+                scenes=scenes,
+            )
 
         total_duration = tts_res.duration_seconds
         scene_durations = list(tts_res.scene_durations or [])
@@ -184,18 +199,65 @@ class RemotionBridge:
                 "avoid": avoid,
             }
 
-            # Query multi-stock aggregator
-            candidate = self.multi_stock.get_best_scene_asset(
-                scene_text=sentence,
-                title=title,
-                scene_index=idx,
-                orientation=orientation,
-                scene_plan=scene_plan_dict,
-                allow_archival_fallback=False,
-                allow_ai_fallback=False,
-            )
+            candidate = None
+            # Priority 0: If character_hint is present, search authentic YouTube Shorts FIRST
+            if character_hint or getattr(self.multi_stock, "current_character_hint", None):
+                active_char = character_hint or getattr(self.multi_stock, "current_character_hint", None)
+                try:
+                    from autotube.media.youtube_harvester import YouTubeHarvester
+                    yt_h = YouTubeHarvester()
+                    yt_out = staging_dir / f"yt_safe_scene_{idx+1}.mp4"
+                    char_query = f"{active_char} {keywords[0]}" if keywords else f"{active_char} {title}"
+                    yt_cand = yt_h.acquire_clip_for_scene(
+                        query_or_url=char_query,
+                        output_path=yt_out,
+                        orientation=orientation,
+                        duration=max(3.8, scene_durations[idx] if idx < len(scene_durations) else 4.0),
+                        scene_index=idx,
+                        character_hint=active_char
+                    )
+                    if yt_cand and yt_cand.exists() and yt_cand.stat().st_size > 20000:
+                        candidate = yt_cand
+                        print_success(f"   🛡️ [YouTube Shorts Character Priority] Scene {idx+1} secured real clip for {active_char}: {yt_cand.name}")
+                except Exception as yt_err:
+                    print_warning(f"   ⚠️ Remotion YouTube Shorts character priority notice: {yt_err}")
 
-            # Fallback to direct Pexels query if aggregator returned None
+            if not candidate or not Path(candidate).exists():
+                # Query multi-stock aggregator
+                candidate = self.multi_stock.get_best_scene_asset(
+                    scene_text=sentence,
+                    title=title,
+                    scene_index=idx,
+                    orientation=orientation,
+                    scene_plan=scene_plan_dict,
+                    allow_archival_fallback=False,
+                    allow_ai_fallback=False,
+                    character_hint=character_hint,
+                )
+
+            # Priority Fallback 1: YouTube Shorts Anti-Copyright Harvester (For real viral footage when exact stock is missing)
+            if not candidate or not Path(candidate).exists():
+                try:
+                    from autotube.media.youtube_harvester import YouTubeHarvester
+                    yt_h = YouTubeHarvester()
+                    yt_out = staging_dir / f"yt_safe_scene_{idx+1}.mp4"
+                    yt_query = f"{subject} footage" if subject else (keywords[0] if keywords else title)
+                    print_info(f"   🔍 [YouTube Harvester Priority] Sourcing authentic viral clip for scene {idx+1}: '{yt_query}'...")
+                    yt_cand = yt_h.acquire_clip_for_scene(
+                        query_or_url=yt_query,
+                        output_path=yt_out,
+                        orientation=orientation,
+                        duration=max(3.8, scene_durations[idx] if idx < len(scene_durations) else 4.0),
+                        scene_index=idx,
+                        character_hint=character_hint or title
+                    )
+                    if yt_cand and yt_cand.exists() and yt_cand.stat().st_size > 20000:
+                        candidate = yt_cand
+                        print_success(f"   🛡️ [YouTube Shorts Safe] Scene {idx+1} secured authentic viral footage: {yt_cand.name}")
+                except Exception as yt_err:
+                    print_warning(f"   ⚠️ Remotion YouTube Shorts harvester notice: {yt_err}")
+
+            # Fallback 2: Direct Pexels query if YouTube Harvester returned None
             if not candidate or not Path(candidate).exists():
                 print_warning(f"   ⚠️ MultiStock fallback triggered for Scene {idx+1}...")
                 fallback_query = keywords[0] if keywords else (subject or "cinematic mystery")
@@ -387,26 +449,38 @@ class RemotionBridge:
             progress_callback(75, f"Rendering {output_format} video timeline via OpenMontage Remotion Engine...")
 
         # 6. Run Remotion Render (Headless & Autonomous)
-        import sys
-        if sys.platform.startswith("win"):
-            npx_cmd = shutil.which("npx.cmd") or shutil.which("npx") or "npx.cmd"
+        remotion_bin = REMOTION_DIR / "node_modules" / ".bin" / ("remotion.cmd" if sys.platform.startswith("win") else "remotion")
+        if remotion_bin.exists():
+            render_cmd = [
+                str(remotion_bin),
+                "render",
+                "src/index.tsx",
+                target_comp,
+                str(final_video_path),
+                "--props",
+                str(props_path),
+                "--codec",
+                "h264",
+            ]
         else:
-            npx_cmd = shutil.which("npx") or "npx"
-        render_cmd = [
-            npx_cmd,
-            "remotion",
-            "render",
-            "src/index.tsx",
-            target_comp,
-            str(final_video_path),
-            "--props",
-            str(props_path),
-            "--codec",
-            "h264",
-        ]
+            if sys.platform.startswith("win"):
+                npx_cmd = shutil.which("npx.cmd") or shutil.which("npx") or "npx.cmd"
+            else:
+                npx_cmd = shutil.which("npx") or "npx"
+            render_cmd = [
+                npx_cmd,
+                "remotion",
+                "render",
+                "src/index.tsx",
+                target_comp,
+                str(final_video_path),
+                "--props",
+                str(props_path),
+                "--codec",
+                "h264",
+            ]
 
         # Headless Linux server optimizations & Chromium binding
-        import sys
         if sys.platform.startswith("linux"):
             for chrom_bin in ["/usr/bin/chromium-browser", "/usr/bin/chromium", "/usr/bin/google-chrome"]:
                 if os.path.exists(chrom_bin):

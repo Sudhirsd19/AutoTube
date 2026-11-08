@@ -288,6 +288,9 @@
                   <option value="Kore">🎙️ Kore — Soothing Storyteller Female (Gemini TTS)</option>
                   <option value="Fenrir">🎙️ Fenrir — Intense & Mysterious Male (Gemini TTS)</option>
                 </optgroup>
+                                <optgroup label="🚀 VOICESTUDIO LOCAL AI (OFFLINE & FREE)" class="bg-slate-900 text-cyan-200">
+                  <option value="voicestudio_local">🎙️ VoiceStudio Local (100% Offline, Zero-Cost & Cloning)</option>
+                </optgroup>
                 <optgroup label="🇮🇳 HINDI VOICES (EDGE-TTS)" class="bg-slate-900 text-slate-200">
                   <option value="hi_astro_vibes_male" selected>🎙️ Astro Vibes Male Hindi (Space & Science Facts) ⭐ DEFAULT</option>
                   <option value="hi_deep_cinematic_male">🎙️ Deep Cinematic Male Hindi ⭐ BEST</option>
@@ -577,6 +580,74 @@
           </div>
         </div>
 
+        <!-- VIRAL CHARACTER & SOCIAL VIDEO SOURCING (YouTube / Instagram / Facebook) -->
+        <div class="p-3.5 rounded-xl bg-gradient-to-r from-red-950/40 via-purple-950/30 to-slate-900 border border-red-500/30 space-y-2.5">
+          <div class="flex items-center justify-between flex-wrap gap-2">
+            <div class="flex items-center gap-2">
+              <span class="flex h-2 w-2 rounded-full bg-red-500 animate-ping"></span>
+              <label class="text-xs font-bold text-red-300 flex items-center gap-1.5">
+                <i class="fa-brands fa-youtube text-red-500 text-sm"></i>
+                <i class="fa-brands fa-instagram text-pink-500 text-sm"></i>
+                <i class="fa-brands fa-facebook text-blue-500 text-sm"></i>
+                Viral Character or Video URL Sourcing
+              </label>
+            </div>
+            <span class="text-[10px] bg-red-500/20 text-red-300 px-2.5 py-0.5 rounded-full border border-red-500/40 font-semibold flex items-center gap-1">
+              <i class="fa-solid fa-shield-halved"></i> 100% Anti-Copyright Shield Active
+            </span>
+          </div>
+
+          <div class="flex flex-col sm:flex-row gap-2">
+            <div class="relative flex-1">
+              <input type="text" id="director-viral-input" oninput="onViralInputChange()" placeholder="Character name (e.g. 'Hanuman', 'Batman', 'Virat Kohli') ya YouTube/Insta/FB link paste karo..." class="w-full glass bg-slate-950/90 pl-8 pr-3 py-2 rounded-lg border border-slate-700 text-xs text-white focus:outline-none focus:border-red-500 font-medium">
+              <i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-slate-500 text-xs"></i>
+            </div>
+            
+            <!-- DYNAMIC DURATION SELECTOR (Default: 55s) -->
+            <div class="flex items-center gap-1.5 bg-slate-900/90 px-3 py-1.5 rounded-lg border border-slate-700 shrink-0">
+              <i class="fa-solid fa-stopwatch text-amber-400 text-xs"></i>
+              <label for="director-target-duration" class="text-[11px] font-semibold text-slate-300">Duration:</label>
+              <select id="director-target-duration" onchange="onTargetDurationChange()" class="bg-black/80 text-brand-cyan text-xs font-bold rounded px-2 py-1 border border-slate-700 focus:outline-none focus:border-brand-cyan cursor-pointer">
+                <option value="30">30s (Quick Hook)</option>
+                <option value="45">45s (Action)</option>
+                <option value="55" selected>55s (Default / Sweet Spot)</option>
+                <option value="60">60s (Max Short)</option>
+              </select>
+            </div>
+
+            <button type="button" onclick="createDirectViralShortNow()" id="btn-create-direct-short" class="px-5 py-2.5 rounded-lg bg-gradient-to-r from-red-600 via-pink-600 to-purple-600 hover:from-red-500 hover:to-purple-500 text-white text-xs font-black transition flex items-center justify-center gap-2 shadow-lg shadow-red-950/40 hover:scale-[1.02] shrink-0">
+              <i class="fa-solid fa-bolt text-amber-300"></i> 🎬 Create 9:16 Short Directly (No Script • Original Audio)
+            </button>
+          </div>
+
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-[11px] text-slate-400">
+            <div class="flex items-center gap-2">
+              <input type="checkbox" id="director-enable-yt-fallback" checked class="w-3.5 h-3.5 rounded text-red-600 bg-slate-900 border-slate-700">
+              <label for="director-enable-yt-fallback" class="cursor-pointer text-slate-300">
+                <b>Smart Stock-to-YouTube Fallback:</b> Stock me na mile to YouTube Shorts se safe footage collect karein.
+              </label>
+            </div>
+            <div class="flex items-center gap-2 bg-amber-950/40 border border-amber-500/30 px-2.5 py-1 rounded-lg">
+              <input type="checkbox" id="director-inject-meme" checked class="w-3.5 h-3.5 rounded text-amber-500 bg-slate-900 border-slate-700">
+              <label for="director-inject-meme" class="cursor-pointer text-amber-300 font-semibold flex items-center gap-1">
+                😂 <b>Viral Laughing Meme:</b> Punchline par 1.8s meme cut add karein (Akshay/Rajpal)
+              </label>
+            </div>
+            <span id="viral-source-status" class="text-xs text-amber-400 font-medium"></span>
+          </div>
+
+          <!-- DIRECT VIRAL SHORT ACTIVE NOTICE -->
+          <div id="direct-viral-mode-banner" class="hidden p-2.5 rounded-xl bg-purple-950/70 border border-purple-500/50 text-xs text-purple-200 flex items-center justify-between shadow-inner">
+            <span class="flex items-center gap-2">
+              <i class="fa-solid fa-bolt text-amber-300 text-sm"></i>
+              <span><b>Direct Viral Mode Active:</b> Script writing & AI voiceover bypassed. Original comedy dialogues and audio from the most-viewed social clip will be used with 100% Anti-Copyright Protection!</span>
+            </span>
+            <span class="text-[10px] bg-red-600/30 text-red-300 px-2 py-0.5 rounded-full border border-red-500/40 font-bold shrink-0">
+              0 Claim • 0 Strike 🛡️
+            </span>
+          </div>
+        </div>
+
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
           <div class="lg:col-span-2 space-y-3">
             <div class="flex items-center justify-between text-xs text-slate-400">
@@ -654,9 +725,16 @@
               <label class="text-xs font-bold text-slate-200 flex items-center gap-1.5">
                 <i class="fa-solid fa-microphone-lines text-purple-400"></i> AI Narrator Voice
               </label>
-              <button type="button" onclick="playStudioVoicePreview()" id="btn-studio-voice-play" class="px-3 py-1 rounded-lg bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold transition flex items-center gap-1.5 shadow">
-                <i class="fa-solid fa-play text-[10px]"></i> ▶ Play Voice
-              </button>
+              <div class="flex items-center gap-2">
+                <div id="vs-header-badge" class="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-slate-800 text-slate-300 border border-slate-700 flex items-center gap-1.5 cursor-pointer hover:border-cyan-500/50 transition shadow" onclick="checkVoiceStudioHealth(true)" title="Click to refresh VoiceStudio status">
+                  <span id="vs-status-dot" class="w-2 h-2 rounded-full bg-slate-500 animate-pulse"></span>
+                  <span id="vs-status-text">VoiceStudio: Offline</span>
+                  <i id="vs-refresh-icon" class="fa-solid fa-arrows-rotate text-[9px] text-slate-400 ml-0.5"></i>
+                </div>
+                <button type="button" onclick="playStudioVoicePreview()" id="btn-studio-voice-play" class="px-3 py-1 rounded-lg bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold transition flex items-center gap-1.5 shadow">
+                  <i class="fa-solid fa-play text-[10px]"></i> ▶ Play Voice
+                </button>
+              </div>
             </div>
             
             <select id="director-select-voice" class="w-full glass bg-slate-900 px-3 py-2 rounded-lg border border-slate-700 text-xs text-white focus:outline-none focus:border-brand-cyan">
@@ -668,6 +746,9 @@
                 <option value="Fenrir">🎙️ Fenrir — Authoritative, Intense & Mysterious Male</option>
               </optgroup>
               <option value="auto">🤖 Auto — Subject + Language Matched Voice</option>
+                            <optgroup label="🚀 VOICESTUDIO LOCAL AI (100% OFFLINE & ZERO-COST)">
+                <option value="voicestudio_local">🎙️ VoiceStudio Local — 100% Offline AI Voice & Cloning (Zero-Cost)</option>
+              </optgroup>
               <optgroup label="🇮🇳 HINDI VOICES (EDGE-TTS)">
                 <option value="hi_astro_vibes_male">🎙️ Astro Vibes Male Hindi (Space & Science Facts - 95% Match) ⭐ VIRAL</option>
                 <option value="hi_deep_cinematic_male">🎙️ Deep Cinematic Male Hindi (Space, Universe, Black Holes)</option>
@@ -703,6 +784,28 @@
                 <span id="val-voice-speed" class="font-bold text-brand-cyan">1.05x (Energetic & Engaging)</span>
               </div>
               <input type="range" id="slider-voice-speed" min="0.85" max="1.25" step="0.01" value="1.05" oninput="document.getElementById('val-voice-speed').textContent = this.value + 'x' + (this.value < 1.0 ? ' (Slow / Dramatic)' : (this.value <= 1.10 ? ' (Energetic & Engaging)' : ' (Fast / Viral Shorts)'))" class="w-full accent-brand-cyan cursor-pointer">
+            </div>
+
+            <!-- VoiceStudio Status & Live Health Card -->
+            <div id="voicestudio-health-card" class="mt-2.5 p-2.5 rounded-xl bg-slate-950/90 border border-slate-800 flex items-center justify-between text-xs shadow-inner">
+              <div class="flex items-center gap-2">
+                <i class="fa-solid fa-server text-cyan-400 text-sm"></i>
+                <div>
+                  <div class="flex items-center gap-1.5 font-bold text-white text-[11px]">
+                    <span>Voice Engine:</span>
+                    <span id="vs-card-status" class="text-amber-400 font-medium">VoiceStudio Offline (Auto-Fallback Active)</span>
+                  </div>
+                  <div class="text-[10px] text-slate-400">100% Free Local AI Speech & Voice Cloning (Port 3900)</div>
+                </div>
+              </div>
+              <div class="flex items-center gap-1.5">
+                <button type="button" onclick="checkVoiceStudioHealth(true)" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-cyan-300 hover:text-white transition text-[10px] font-bold flex items-center gap-1 border border-slate-700 shadow">
+                  <i class="fa-solid fa-rotate text-[9px]"></i> Check Status
+                </button>
+                <button type="button" id="vs-launch-btn" onclick="launchVoiceStudioApp()" style="display:none;" title="Launch VoiceStudio Desktop" class="px-2.5 py-1 rounded-lg bg-cyan-900/80 hover:bg-cyan-800 text-cyan-200 transition text-[10px] font-bold flex items-center gap-1 border border-cyan-700/50">
+                  <i class="fa-solid fa-rocket text-[9px]"></i> Launch
+                </button>
+              </div>
             </div>
           </div>
 
@@ -775,7 +878,8 @@
               <span class="text-[10px] bg-cyan-500/20 text-cyan-400 px-1.5 py-0.2 rounded border border-cyan-500/30">Pexels/Pixabay</span>
             </label>
             <select id="director-visual-mode" class="w-full glass bg-slate-900 px-3 py-2 rounded-lg border border-slate-700 text-xs text-white focus:outline-none focus:border-brand-cyan">
-              <option value="multi_cinematic" selected>🎬 Exact-Matched Stock (Pexels, Pixabay, Mixkit)</option>
+              <option value="multi_cinematic" selected>🎬 Exact-Matched Stock + Smart YouTube Fallback</option>
+              <option value="viral_character">🔥 Viral Character & YouTube Shorts (100% Anti-Copyright)</option>
               <option value="hybrid">🌟 Hybrid Mode: Asli Archive Proofs + AI Incident Scenes</option>
               <option value="real_only">📜 100% Real Historical Photos & Scanned Documents Only</option>
               <option value="ai_only">🎨 100% Photorealistic AI Generated Incident Scenes Only</option>
@@ -818,7 +922,13 @@
           <h3 class="text-base font-bold text-white">Generate Video</h3>
         </div>
 
-        <button onclick="startDirectorRender()" id="btn-director-render" class="w-full max-w-lg mx-auto py-3.5 rounded-xl bg-gradient-to-r from-purple-600 via-pink-600 to-cyan-600 hover:from-purple-500 hover:via-pink-500 hover:to-cyan-500 text-white text-sm font-extrabold shadow-2xl transition flex items-center justify-center gap-2 transform active:scale-95">
+        <!-- Dynamic Sourcing Mode Badge -->
+        <div id="render-sourcing-mode-badge" class="max-w-lg mx-auto mb-2 py-2 px-3.5 rounded-xl bg-slate-900/90 border border-slate-700/60 text-xs text-slate-300 flex items-center justify-center gap-2 shadow-inner transition-all">
+          <i id="render-sourcing-icon" class="fa-solid fa-film text-brand-cyan"></i>
+          <span id="render-sourcing-text">Footage Source: Exact-Matched 4K Stock (Pexels / Pixabay)</span>
+        </div>
+
+        <button onclick="startDirectorRender()" id="btn-director-render"  class="w-full max-w-lg mx-auto py-3.5 rounded-xl bg-gradient-to-r from-purple-600 via-pink-600 to-cyan-600 hover:from-purple-500 hover:via-pink-500 hover:to-cyan-500 text-white text-sm font-extrabold shadow-2xl transition flex items-center justify-center gap-2 transform active:scale-95">
           <i class="fa-solid fa-play"></i> 🎬 Generate 9:16 Short Video Now
         </button>
 
@@ -3142,7 +3252,8 @@
           body: JSON.stringify({
             clean_videos: cleanVideos,
             clean_temp: cleanTemp,
-            clean_stock: cleanStock
+            clean_stock: cleanStock,
+            force: mode === 'all'
           })
         });
         const data = await res.json();
@@ -3309,6 +3420,24 @@
       studioScenePlan = null;
     }
 
+    function onTargetDurationChange() {
+      const durSelect = document.getElementById('director-target-duration');
+      const dur = durSelect ? parseInt(durSelect.value || '55') : 55;
+      const wordsTarget = Math.round(dur * 2.55);
+      const minW = Math.max(35, wordsTarget - 8);
+      const maxW = wordsTarget + 6;
+
+      const hint = document.getElementById('script-format-hint');
+      if (hint && studioVideoFormat === 'short') {
+        hint.textContent = `Target for Shorts: ${minW}-${maxW} words (~${dur}s, Dynamic)`;
+      }
+      const autoFitBtn = document.getElementById('btn-auto-fit-shorts');
+      if (autoFitBtn) {
+        autoFitBtn.textContent = `⚡ Auto-Fit ${dur}s Short (<${dur}s)`;
+      }
+      updateScriptStats();
+    }
+
     function updateScriptStats() {
       const text = document.getElementById('director-script-input').value.trim();
       const words = text ? text.split(/\s+/).filter(Boolean).length : 0;
@@ -3316,19 +3445,26 @@
       const wordCountEl = document.getElementById('script-word-count');
       const estDurEl = document.getElementById('script-est-duration');
       const autoFitBtn = document.getElementById('btn-auto-fit-shorts');
+      const durSelect = document.getElementById('director-target-duration');
+      const targetSec = durSelect ? parseInt(durSelect.value || '55') : 55;
+      const maxWords = Math.round(targetSec * 2.65);
+
       wordCountEl.textContent = words;
       estDurEl.textContent = estSec + 's';
 
       if (studioVideoFormat === 'short') {
-        if (words > 145 || estSec > 58) {
+        if (words > maxWords || estSec > (targetSec + 3)) {
           wordCountEl.className = 'text-red-400 font-bold';
           estDurEl.className = 'text-red-400 font-bold';
-          estDurEl.textContent = estSec + 's (⚠️ Exceeds 58s Shorts Limit!)';
-          if (autoFitBtn) autoFitBtn.classList.remove('hidden');
-        } else if (words < 70 && words > 0) {
+          estDurEl.textContent = estSec + `s (⚠️ Exceeds ${targetSec}s Target!)`;
+          if (autoFitBtn) {
+            autoFitBtn.textContent = `⚡ Auto-Fit ${targetSec}s Short (<${targetSec}s)`;
+            autoFitBtn.classList.remove('hidden');
+          }
+        } else if (words < Math.round(targetSec * 1.2) && words > 0) {
           wordCountEl.className = 'text-yellow-400 font-bold';
           estDurEl.className = 'text-yellow-400 font-bold';
-          estDurEl.textContent = estSec + 's (Very Short)';
+          estDurEl.textContent = estSec + 's (Short)';
           if (autoFitBtn) autoFitBtn.classList.add('hidden');
         } else {
           wordCountEl.className = 'text-brand-cyan';
@@ -3353,13 +3489,17 @@
         btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Auto-Fitting...';
       }
 
+      const durSelect = document.getElementById('director-target-duration');
+      const targetSec = durSelect ? parseInt(durSelect.value || '55') : 55;
+
       try {
         const res = await fetch('/api/director/condense_script', {
           method: 'POST',
           headers: {'Content-Type': 'application/json'},
           body: JSON.stringify({
             script_text: rawText,
-            language: studioLanguage
+            language: studioLanguage,
+            target_duration: targetSec
           })
         });
         const data = await res.json();
@@ -3448,6 +3588,214 @@
       }
     }
 
+    function onViralInputChange() {
+      const input = document.getElementById('director-viral-input');
+      const val = (input ? input.value.trim() : '');
+      const badge = document.getElementById('render-sourcing-mode-badge');
+      const icon = document.getElementById('render-sourcing-icon');
+      const text = document.getElementById('render-sourcing-text');
+      const visualSelect = document.getElementById('director-visual-mode');
+      const genBtn = document.getElementById('btn-director-render');
+      const banner = document.getElementById('direct-viral-mode-banner');
+
+      if (!val) {
+        window.isDirectClipMode = false;
+        window.currentDirectViralSourceUrl = null;
+        if (banner) banner.classList.add('hidden');
+        if (visualSelect && visualSelect.value === 'viral_character') visualSelect.value = 'multi_cinematic';
+        if (badge) badge.className = 'max-w-lg mx-auto mb-2 py-2 px-3.5 rounded-xl bg-slate-900/80 border border-slate-700/60 text-xs text-slate-300 flex items-center justify-center gap-2 shadow-inner transition-all';
+        if (icon) icon.className = 'fa-solid fa-layer-group text-brand-cyan text-sm';
+        if (text) text.innerHTML = 'Footage Source: Multi-Stock High Quality (Pexels, Pixabay, AI Video)';
+        if (genBtn) genBtn.innerHTML = `<i class="fa-solid fa-play"></i> 🎬 Generate ${studioVideoFormat === 'short' ? '9:16 Short' : '16:9 Long'} Video Now`;
+      } else {
+        window.isDirectClipMode = true;
+        if (banner) banner.classList.remove('hidden');
+        if (visualSelect) visualSelect.value = 'viral_character';
+        const isUrl = val.startsWith('http://') || val.startsWith('https://');
+        if (badge) badge.className = 'max-w-lg mx-auto mb-2 py-2 px-3.5 rounded-xl bg-purple-950/80 border border-purple-500/60 text-xs text-purple-200 flex items-center justify-center gap-2 shadow-inner transition-all';
+        if (icon) icon.className = isUrl ? 'fa-brands fa-youtube text-red-400 text-sm' : 'fa-solid fa-masks-theater text-purple-400 text-sm';
+        const isComedy = /comedy|funny|joke|hasne|laugh|aniruddh|kapil/i.test(val);
+        const memeBadge = isComedy ? ' • 😂 <b>Laughing Meme Active</b>' : '';
+        if (text) text.innerHTML = isUrl ? `Footage Source: ⚡ <b>Direct Social Video</b> (Original dialogues + Anti-Copyright Shield)` : `Footage Source: 🔥 <b>Viral Character/Topic</b> ("${val}")${memeBadge} • 100% Anti-Copyright Protected 🛡️`;
+        if (genBtn) genBtn.innerHTML = `<i class="fa-solid fa-play"></i> 🎬 Generate 9:16 Short from Original Viral Clip`;
+        const memeCheck = document.getElementById('director-inject-meme');
+        if (memeCheck && isComedy) memeCheck.checked = true;
+      }
+    }
+
+    async function createDirectViralShortNow() {
+      const input = document.getElementById('director-viral-input');
+      const val = (input ? input.value.trim() : '');
+      if (!val) {
+        return showToast('Character name / description ya video link enter karein!', true);
+      }
+
+      const durSelect = document.getElementById('director-target-duration');
+      const targetSec = durSelect ? parseInt(durSelect.value || '55') : 55;
+      const btn = document.getElementById('btn-create-direct-short');
+      const statusDiv = document.getElementById('director-render-status');
+      const statusText = document.getElementById('director-render-status-text');
+
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin text-amber-300"></i> Finding Top Clip & Creating Short...';
+      }
+      if (statusDiv) statusDiv.classList.remove('hidden');
+      if (statusText) statusText.textContent = `Searching #1 most-viewed clip for "${val}" & rendering 9:16 Short with original dialogues...`;
+      if (statusDiv) statusDiv.scrollIntoView({ behavior: 'smooth' });
+
+      // Title placeholder
+      let videoTitle = document.getElementById('director-video-title').value.trim();
+      if (!videoTitle) {
+        videoTitle = `${val} 😂 #Shorts`.substring(0, 80);
+        document.getElementById('director-video-title').value = videoTitle;
+      }
+
+      const isUrl = val.startsWith('http://') || val.startsWith('https://');
+
+      try {
+        const res = await fetch('/api/director/render', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({
+            title: videoTitle,
+            script_text: '[DIRECT VIRAL CLIP MODE ACTIVE]',
+            character_name: val,
+            source_video_url: isUrl ? val : (window.currentDirectViralSourceUrl || null),
+            is_direct_clip: true,
+            target_duration: targetSec,
+            video_format: 'short',
+            language: studioLanguage || 'hi',
+            target_platform: studioTargetPlatform || 'youtube',
+            inject_meme: document.getElementById('director-inject-meme') ? document.getElementById('director-inject-meme').checked : true,
+            meme_style: 'cut'
+          })
+        });
+
+        const data = await res.json();
+        if (data.success) {
+          window.currentDirectViralSourceUrl = null;
+          window.viralClipOffset = 0;
+          showToast('🔥 Top viral clip download & 100% Anti-Copyright render start ho chuki hai!');
+          pollDirectorResult();
+        } else {
+          showToast(data.detail || 'Failed to start direct render', true);
+          if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fa-solid fa-bolt text-amber-300"></i> 🎬 Create 9:16 Short Directly (No Script • Original Audio)';
+          }
+          if (statusDiv) statusDiv.classList.add('hidden');
+        }
+      } catch (err) {
+        showToast('Direct render error: ' + err.message, true);
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = '<i class="fa-solid fa-bolt text-amber-300"></i> 🎬 Create 9:16 Short Directly (No Script • Original Audio)';
+        }
+        if (statusDiv) statusDiv.classList.add('hidden');
+      }
+    }
+
+    function onTargetDurationChange() {
+      const durSelect = document.getElementById('director-target-duration');
+      const durVal = durSelect ? parseInt(durSelect.value || '55') : 55;
+      const hint = document.getElementById('script-format-hint');
+      if (hint && studioVideoFormat === 'short') {
+        const estWordsMin = Math.round(durVal * 2.3);
+        const estWordsMax = Math.round(durVal * 2.6);
+        hint.textContent = `Target for Shorts: ${estWordsMin}-${estWordsMax} words (~${durVal}s, Dynamic)`;
+      }
+    }
+
+    async function analyzeViralSource() {
+      const input = document.getElementById('director-viral-input');
+      const cleanVal = (input ? input.value.trim() : '');
+      if (!cleanVal) {
+        return showToast('Character name ya YouTube/Insta/FB link enter karein!', true);
+      }
+
+      if (window.lastViralQuery === cleanVal) {
+        window.viralClipOffset = (window.viralClipOffset || 0) + 1;
+      } else {
+        window.viralClipOffset = 0;
+        window.lastViralQuery = cleanVal;
+      }
+
+      const btn = document.getElementById('btn-analyze-viral-source');
+      const statusSpan = document.getElementById('director-viral-status');
+      const scriptInput = document.getElementById('director-script-input');
+      const titleInput = document.getElementById('director-video-title');
+      const durSelect = document.getElementById('director-target-duration');
+      const targetSec = durSelect ? parseInt(durSelect.value || '55') : 55;
+
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Securing Fresh Clip...';
+      }
+      if (statusSpan) statusSpan.textContent = '⏳ Fetching fresh viral footage & original dialogues...';
+
+      try {
+        const res = await fetch('/api/viral/analyze_source', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({
+            input_text: cleanVal,
+            language: studioLanguage || 'hi',
+            target_duration: targetSec,
+            offset: window.viralClipOffset || 0
+          })
+        });
+
+        const data = await res.json();
+        if (data.success) {
+          if (data.title && titleInput) titleInput.value = data.title;
+          if (data.script_text && scriptInput) scriptInput.value = data.script_text;
+          if (data.pinned_comment) {
+            const preview = document.getElementById('director-pinned-preview');
+            if (preview) preview.textContent = `"${data.pinned_comment}"`;
+            const pubPinned = document.getElementById('director-pub-pinned');
+            if (pubPinned) pubPinned.value = data.pinned_comment;
+          }
+
+          const visualSelect = document.getElementById('director-visual-mode');
+          if (visualSelect) visualSelect.value = 'viral_character';
+
+          if (data.is_direct_clip) {
+            window.currentDirectViralSourceUrl = data.source_url;
+            window.isDirectClipMode = true;
+            const badge = document.getElementById('render-sourcing-mode-badge');
+            const icon = document.getElementById('render-sourcing-icon');
+            const text = document.getElementById('render-sourcing-text');
+            const genBtn = document.getElementById('btn-director-render');
+
+            if (badge) badge.className = 'max-w-lg mx-auto mb-2 py-2 px-3.5 rounded-xl bg-purple-950/80 border border-purple-500/60 text-xs text-purple-200 flex items-center justify-center gap-2 shadow-inner transition-all';
+            if (icon) icon.className = 'fa-brands fa-youtube text-red-400 text-sm';
+            if (text) text.innerHTML = `Footage Source: 🔥 <b>Original Viral Clip & Dialogues</b> (${data.top_clip_views || 'Top Views'}) • 100% Anti-Copyright Protected 🛡️`;
+            if (genBtn) genBtn.innerHTML = `<i class="fa-solid fa-play"></i> 🎬 Generate 9:16 Short from Original Viral Clip`;
+          } else {
+            onViralInputChange();
+          }
+
+          updateScriptStats();
+
+          if (statusSpan) {
+            statusSpan.textContent = data.type === 'viral_direct' || data.is_direct_clip ? `✅ Top clip secured: "${data.top_clip_title || data.title}"` : `✅ Top viral clip secured for "${data.character || cleanVal}"!`;
+          }
+          showToast(`🔥 Top viral clip secured for "${cleanVal}"! Review karein aur Generate click karein.`);
+        } else {
+          showToast(data.detail || 'Could not analyze viral source', true);
+          if (statusSpan) statusSpan.textContent = '⚠️ Analysis failed';
+        }
+      } catch (err) {
+        console.error('Viral analyze error:', err);
+        showToast('Error analyzing viral source: ' + err.message, true);
+        if (statusSpan) statusSpan.textContent = '⚠️ Network error';
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> Checkout Most Viewed & Draft Script';
+      }
+    }
+
     async function writeStoryFromIdea() {
       const scriptInput = document.getElementById('director-script-input');
       const titleInput = document.getElementById('director-video-title');
@@ -3466,6 +3814,8 @@
 
       // Target language is strictly what the user selected in the studio (hi / hinglish / en)
       let targetLang = studioLanguage || 'hi';
+      const durSelect = document.getElementById('director-target-duration');
+      const targetSec = durSelect ? parseInt(durSelect.value || '55') : 55;
 
       try {
         const res = await fetch('/api/director/enhance_script', {
@@ -3476,7 +3826,9 @@
             topic: titleInput.value.trim() || null,
             language: targetLang,
             video_format: studioVideoFormat,
-            target_platform: studioTargetPlatform || 'youtube'
+            target_platform: studioTargetPlatform || 'youtube',
+            is_direct_clip: window.isDirectClipMode || false,
+            target_duration: targetSec
           }),
           signal: controller.signal
         });
@@ -3549,6 +3901,8 @@
 
       // Target language is strictly what the user selected in the studio (hi / hinglish / en)
       let targetLang = studioLanguage || 'hi';
+      const durSelect = document.getElementById('director-target-duration');
+      const targetSec = durSelect ? parseInt(durSelect.value || '55') : 55;
 
       try {
         const res = await fetch('/api/director/enhance_script', {
@@ -3559,7 +3913,8 @@
             topic: titleInput.value.trim() || null,
             language: targetLang,
             video_format: studioVideoFormat,
-            target_platform: studioTargetPlatform || 'youtube'
+            target_platform: studioTargetPlatform || 'youtube',
+            target_duration: targetSec
           }),
           signal: controller.signal
         });
@@ -3712,14 +4067,24 @@
             video_format: studioVideoFormat,
             language: studioLanguage,
             real_incident_mode: document.getElementById('director-real-incident-mode') ? document.getElementById('director-real-incident-mode').checked : false,
-            visual_mode: (document.getElementById('director-visual-mode') && document.getElementById('director-visual-mode').value && document.getElementById('director-visual-mode').value.trim()) ? document.getElementById('director-visual-mode').value.trim() : 'multi_cinematic',
+            visual_mode: (document.getElementById('director-viral-input') && document.getElementById('director-viral-input').value.trim()) ? 'viral_character' : ((document.getElementById('director-visual-mode') && document.getElementById('director-visual-mode').value && document.getElementById('director-visual-mode').value.trim()) ? document.getElementById('director-visual-mode').value.trim() : 'multi_cinematic'),
             auto_viral_hook: document.getElementById('director-auto-viral-hook') ? document.getElementById('director-auto-viral-hook').checked : true,
             scenes: studioScenePlan,
-            target_platform: studioTargetPlatform || 'youtube'
+            target_platform: studioTargetPlatform || 'youtube',
+            character_name: (document.getElementById('director-viral-input') && document.getElementById('director-viral-input').value.trim()) ? document.getElementById('director-viral-input').value.trim() : null,
+            source_video_url: window.currentDirectViralSourceUrl || ((document.getElementById('director-viral-input') && document.getElementById('director-viral-input').value.trim() && document.getElementById('director-viral-input').value.trim().startsWith('http')) ? document.getElementById('director-viral-input').value.trim() : null),
+            is_direct_clip: window.isDirectClipMode || false,
+            target_duration: parseInt(document.getElementById('director-target-duration') ? document.getElementById('director-target-duration').value || '55' : '55'),
+            inject_meme: document.getElementById('director-inject-meme') ? document.getElementById('director-inject-meme').checked : true,
+            meme_style: 'cut',
+            inject_meme: document.getElementById('director-inject-meme') ? document.getElementById('director-inject-meme').checked : true,
+            meme_style: 'cut'
           })
         });
         const data = await res.json();
         if (data.success) {
+          window.currentDirectViralSourceUrl = null;
+          window.viralClipOffset = 0;
           showToast('Rendering start ho chuki hai! Progress track ho rahi hai...');
           pollDirectorResult();
         } else {
@@ -5266,7 +5631,61 @@
       showToast('Dashboard refreshed!');
     }
 
+    async function checkVoiceStudioHealth(showNotification = false) {
+      const dot = document.getElementById('vs-status-dot');
+      const text = document.getElementById('vs-status-text');
+      const cardStatus = document.getElementById('vs-card-status');
+      const icon = document.getElementById('vs-refresh-icon');
+      const launchBtn = document.getElementById('vs-launch-btn');
+
+      if (icon) icon.classList.add('fa-spin');
+      if (text) text.textContent = 'VoiceStudio: Checking...';
+      if (cardStatus) cardStatus.textContent = 'Checking server status...';
+
+      try {
+        const res = await fetch('/api/voicestudio/status');
+        const data = await res.json();
+
+        if (data.online) {
+          if (dot) dot.className = 'w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.7)]';
+          if (text) text.innerHTML = '<span class="text-emerald-400 font-bold">VoiceStudio: Online</span>';
+          if (cardStatus) cardStatus.innerHTML = '<span class="text-emerald-400 font-bold">ONLINE</span> (Port 3900 • Ready for 100% Free AI Voice)';
+          if (launchBtn) launchBtn.style.display = 'none';
+          if (showNotification) showToast('VoiceStudio Local Server is ONLINE and ready!', false);
+        } else {
+          if (dot) dot.className = 'w-2 h-2 rounded-full bg-amber-500';
+          if (text) text.innerHTML = '<span class="text-amber-400">VoiceStudio: Offline</span>';
+          if (cardStatus) cardStatus.innerHTML = '<span class="text-amber-400 font-medium">Offline</span> <span class="text-slate-500 text-[10px]">(Auto-fallback to Gemini/Edge-TTS active)</span>';
+          if (launchBtn) launchBtn.style.display = data.installed ? 'inline-flex' : 'none';
+          if (showNotification) showToast('VoiceStudio is currently Offline. (Auto-fallback to Gemini/Edge is active)', false);
+        }
+      } catch (err) {
+        if (dot) dot.className = 'w-2 h-2 rounded-full bg-slate-600';
+        if (text) text.textContent = 'VoiceStudio: Offline';
+        if (cardStatus) cardStatus.textContent = 'Offline (Fallback active)';
+      } finally {
+        if (icon) icon.classList.remove('fa-spin');
+      }
+    }
+
+    async function launchVoiceStudioApp() {
+      try {
+        showToast('Launching VoiceStudio Desktop...');
+        const res = await fetch('/api/voicestudio/launch', { method: 'POST' });
+        const data = await res.json();
+        if (data.status === 'launched') {
+          showToast('VoiceStudio Desktop launched! Waiting for port 3900...');
+          setTimeout(() => checkVoiceStudioHealth(false), 4000);
+        } else {
+          showToast(data.message || 'VoiceStudio not found on disk', true);
+        }
+      } catch (err) {
+        showToast('Error launching VoiceStudio', true);
+      }
+    }
+
     window.onload = () => {
+      checkVoiceStudioHealth(false);
       loadStatus();
       loadVideos();
       loadHarvesterStatus();

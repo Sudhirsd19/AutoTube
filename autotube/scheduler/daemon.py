@@ -21,22 +21,30 @@ TRACKER_RETENTION_DAYS = 7
 _TRACKER_LOCK = threading.RLock()
 
 
+try:
+    from zoneinfo import ZoneInfo
+except ImportError:
+    ZoneInfo = None
+
+
 def _get_tz(tz_name: str) -> datetime.tzinfo:
     name = (tz_name or "").strip().lower()
     if name in ("us", "usa", "edt", "est", "en", "america/new_york"):
-        try:
-            from zoneinfo import ZoneInfo
-            return ZoneInfo("America/New_York")
-        except Exception:
-            month = datetime.datetime.now(datetime.timezone.utc).month
-            offset = -4 if 3 <= month <= 11 else -5
-            return datetime.timezone(datetime.timedelta(hours=offset))
+        if ZoneInfo is not None:
+            try:
+                return ZoneInfo("America/New_York")
+            except Exception:
+                pass
+        month = datetime.datetime.now(datetime.timezone.utc).month
+        offset = -4 if 3 <= month <= 11 else -5
+        return datetime.timezone(datetime.timedelta(hours=offset))
     if name in ("ist", "in", "india", "hi", "asia/kolkata"):
-        try:
-            from zoneinfo import ZoneInfo
-            return ZoneInfo("Asia/Kolkata")
-        except Exception:
-            return datetime.timezone(datetime.timedelta(hours=5, minutes=30))
+        if ZoneInfo is not None:
+            try:
+                return ZoneInfo("Asia/Kolkata")
+            except Exception:
+                pass
+        return datetime.timezone(datetime.timedelta(hours=5, minutes=30))
     return datetime.timezone.utc
 
 

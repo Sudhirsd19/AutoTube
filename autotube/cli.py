@@ -828,7 +828,7 @@ def autopilot(
     niche: str = typer.Option("mixed", "--niche", "-n", help="Niche: mixed (all daily slots), space, science, history, psychology, mystery, alien"),
     voice: Optional[str] = typer.Option(None, "--voice", "-v", help="AI Voice narrator"),
     lang: str = typer.Option("mixed", "--lang", "-l", help="Language: 'mixed' (English & Hindi), 'hi' (All Hindi), or 'en' (All English)"),
-    engine: str = typer.Option("auto", "--engine", "-e", help="Render Engine: 'openmontage' (Remotion + Gemini TTS) or 'classic' (FFmpeg)"),
+    engine: str = typer.Option("openmontage", "--engine", "-e", help="Render Engine: 'openmontage' (Remotion + Gemini TTS) or 'classic' (FFmpeg)"),
     upload: bool = typer.Option(True, "--upload/--no-upload", help="Upload to YouTube"),
     schedule: bool = typer.Option(True, "--schedule/--no-schedule", help="Stagger across peak hours (USA peak hours for English & India peak hours for Hindi)"),
     slot_id: Optional[str] = typer.Option(None, "--slot-id", help="Execute only a specific slot from slot matrix"),
@@ -844,7 +844,7 @@ def autopilot(
 def create_openmontage_reel(
     topic: str = typer.Argument(..., help="Topic or Title for the reel"),
     script: Optional[str] = typer.Option(None, "--script", "-s", help="Custom script narration (optional)"),
-    voice: str = typer.Option("Charon", "--voice", "-v", help="Gemini 3.8 Flash TTS Voice: Charon, Puck, Aoede, Kore, Fenrir"),
+    voice: str = typer.Option("Charon", "--voice", "-v", help="Voice: Charon, Puck, Aoede, Kore, Fenrir, or 'voicestudio' (Local AI)"),
     lang: str = typer.Option("hi", "--lang", "-l", help="Language: 'hi' (Hindi) or 'en' (English)"),
     format: str = typer.Option("vertical_9x16", "--format", "-f", help="Format: 'vertical_9x16' or 'landscape_16x9'"),
 ):

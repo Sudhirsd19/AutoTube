@@ -187,12 +187,7 @@ Accept when confidence >= {self.min_confidence}, coverage >= {self.min_coverage}
                         config={"response_mime_type": "application/json"},
                     )
                     raw = (response.text or "").strip()
-                    fence = chr(96) * 3
-                    if raw.startswith(fence + "json"):
-                        raw = raw[len(fence) + 4:].split(fence, 1)[0].strip()
-                    elif raw.startswith(fence):
-                        raw = raw[len(fence):].split(fence, 1)[0].strip()
-                    data = json.loads(raw)
+                    data = self._parse_json(raw)
                     confidence = int(data.get("confidence", 0))
                     coverage = int(data.get("coverage", 0))
                     violations = data.get("violations") or []
@@ -263,6 +258,55 @@ Accept when confidence >= {self.min_confidence}, coverage >= {self.min_coverage}
             "reason": f"Frame QA failed: {type(last_err).__name__ if last_err else 'unknown'}",
             "mode": "frame_qa_error",
         }
+
+    @staticmethod
+    def _parse_json(raw: str) -> Dict[str, Any]:
+        text = (raw or "").strip()
+        fence = chr(96) * 3
+        if fence in text:
+            parts = text.split(fence)
+            for part in parts:
+                part = part.strip()
+                if part.startswith("json"):
+                    part = part[4:].strip()
+                if part.startswith("{") and part.endswith("}"):
+                    text = part
+                    break
+        elif text.startswith(fence + "json"):
+            text = text[len(fence) + 4:].split(fence, 1)[0].strip()
+        elif text.startswith(fence):
+            text = text[len(fence):].split(fence, 1)[0].strip()
+
+        start = text.find("{")
+        end = text.rfind("}")
+        if start != -1 and end != -1 and end > start:
+            text = text[start:end + 1]
+
+        # Strip trailing commas right before closing brace or bracket
+        cleaned = re.sub(r",\s*([}\]])", r"\1", text)
+        try:
+            return json.loads(cleaned)
+        except Exception:
+            pass
+
+        # Regex fallback to extract expected fields
+        conf_m = re.search(r'"confidence"\s*:\s*(\d+)', text)
+        cov_m = re.search(r'"coverage"\s*:\s*(\d+)', text)
+        acc_m = re.search(r'"accepted"\s*:\s*(true|false)', text, re.IGNORECASE)
+        reason_m = re.search(r'"reason"\s*:\s*"([^"\\]*(?:\\.[^"\\]*)*)"', text)
+        if not reason_m:
+            reason_m = re.search(r'"reason"\s*:\s*"([^"]+)"', text)
+
+        if conf_m or cov_m or acc_m:
+            return {
+                "confidence": int(conf_m.group(1)) if conf_m else 0,
+                "coverage": int(cov_m.group(1)) if cov_m else 0,
+                "accepted": acc_m.group(1).lower() == "true" if acc_m else False,
+                "reason": reason_m.group(1) if reason_m else "",
+                "violations": [],
+            }
+
+        return json.loads(text)
 
     @staticmethod
     def _probe_duration(asset_path: Path) -> float:

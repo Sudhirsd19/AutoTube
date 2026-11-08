@@ -67,6 +67,14 @@ class YouTubeAuth:
             return legacy_token
         return ch_token
 
+    def is_authenticated(self) -> bool:
+        """Check whether valid credentials exist or can be refreshed without interactive prompt."""
+        try:
+            creds = self.get_credentials(interactive=False)
+            return bool(creds and creds.valid)
+        except Exception:
+            return False
+
     def get_credentials(self, interactive: bool = True) -> Optional[Credentials]:
         """Obtain valid user credentials from storage or run OAuth flow."""
         creds = None

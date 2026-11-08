@@ -5,6 +5,8 @@ import re
 import json
 import time
 import shutil
+import random
+import hashlib
 from pathlib import Path
 from typing import Dict, Any, List, Optional
 
@@ -57,6 +59,9 @@ class DirectorEngine:
         """Return available voices, BGM audio tracks, and subtitle styles."""
         # Top-quality Voices
         voices = [
+            # 🚀 VOICESTUDIO LOCAL AI (100% OFFLINE & ZERO-COST)
+            {"id": "voicestudio_local", "name": "🎙️ VoiceStudio Local (100% Offline AI Voice & Cloning) 🚀 ZERO-COST", "lang": "Hindi/English", "gender": "Male", "is_hindi": True, "speed": "1.00x"},
+
             # 🌟 OPENMONTAGE GEMINI 3.8 FLASH TTS VOICES (ULTRA-REALISTIC)
             {"id": "Charon", "name": "🎙️ Charon — Deep, Epic, Natural Human Voice (Gemini 3.8 Flash TTS) ⭐ #1 RECOMMENDED", "lang": "Hindi/English", "gender": "Male", "is_hindi": True, "speed": "1.00x"},
             {"id": "Puck", "name": "🎙️ Puck — Energetic & Engaging Viral Narrator (Gemini 3.8 Flash TTS)", "lang": "Hindi/English", "gender": "Male", "is_hindi": False, "speed": "1.00x"},
@@ -151,9 +156,12 @@ class DirectorEngine:
         self,
         script_text: str,
         language: str = "hi",
-        max_words: int = 145,
+        max_words: Optional[int] = None,
+        target_duration: int = 55,
     ) -> str:
-        """Condense narration into a high-retention 135-148 word script strictly between 55-58s (<59s Shorts limit)."""
+        """Condense narration into a high-retention script matching target duration (default: 55s, 135-148 words)."""
+        if max_words is None:
+            max_words = int(target_duration * 2.65)
         words = script_text.strip().split()
         if len(words) <= max_words + 2:
             return script_text
@@ -409,6 +417,7 @@ CRITICAL RULES:
         language: str = "hi",
         video_format: str = "short",
         target_platform: str = "youtube",
+        target_duration: int = 55,
     ) -> Dict[str, Any]:
         """Enhance user's script or 1-line concept into a viral script formatted for Short or Long video."""
         lang_lower = (language or "hi").lower()
@@ -438,7 +447,12 @@ CRITICAL RULES:
         is_long = (video_format == "landscape_long")
         gemini_key = os.getenv("GEMINI_API_KEY", "") or getattr(self.cfg, "gemini_api_key", "")
 
-        target_words = "350 to 500 words (3.0 to 4.5 minutes documentary length)" if is_long else "135 to 148 words (strictly 55 to 58 seconds, optimal sweet spot under 59s)"
+        target_duration = int(target_duration or 55)
+        calc_words = int(target_duration * 2.55)
+        min_w = max(35, calc_words - 8)
+        max_w = calc_words + 6
+
+        target_words = "350 to 500 words (3.0 to 4.5 minutes documentary length)" if is_long else f"{min_w} to {max_w} words (strictly {target_duration} seconds target)"
         format_desc = "16:9 Landscape Documentary Video" if is_long else ("9:16 Vertical Facebook Reel" if is_fb else "9:16 Vertical YouTube Short")
 
         if gemini_key:
@@ -530,12 +544,14 @@ CRITICAL RULES:
 - For 16:9 Long Video, the script narration should be 350 to 500 words (3.0 to 4.5 minutes spoken audio).
 - Deliver deep investigative depth, rich historical context, and comprehensive storytelling."""
                 else:
-                    duration_mandate = f"""CRITICAL DURATION MANDATE (TARGET: 55 TO 58 SECONDS, STRICT LIMIT <59.0s):
-- For {'Facebook Reels' if is_fb else 'YouTube Shorts'}, the script narration MUST BE 55 TO 58 SECONDS (Optimal watch-time, retention & algorithm sweet spot).
-- Feed HARD CUTOFF is 60.0 seconds! The video must strictly remain under 59.0s.
-- At standard natural speaking pace (~2.45-2.55 words/second), the script MUST BE STRICTLY 135 TO 148 WORDS TOTAL (ABSOLUTE CEILING: 148 words).
-- Word Budget: Hook = 18-24 words, Body = 95-102 words (5-6 intense story beats), Outro CTA = 20-24 words.
-- TARGET RANGE: 135 to 148 words. DO NOT WRITE LESS THAN 135 WORDS OR MORE THAN 148 WORDS!"""
+                    hook_w = max(10, int(min_w * 0.15))
+                    outro_w = max(10, int(min_w * 0.16))
+                    body_w = max(15, min_w - hook_w - outro_w)
+                    duration_mandate = f"""CRITICAL DURATION MANDATE (TARGET: {target_duration} SECONDS):
+- For {'Facebook Reels' if is_fb else 'YouTube Shorts'}, the script narration MUST BE TARGETED AT {target_duration} SECONDS.
+- At standard natural speaking pace (~2.45-2.55 words/second), the script MUST BE STRICTLY {min_w} TO {max_w} WORDS TOTAL (ABSOLUTE CEILING: {max_w} words).
+- Word Budget: Hook = {hook_w} words, Body = {body_w} words, Outro CTA = {outro_w} words.
+- TARGET RANGE: {min_w} to {max_w} words. DO NOT WRITE LESS THAN {min_w} WORDS OR MORE THAN {max_w} WORDS!"""
 
                 prompt = f"""You are a top-tier viral {'Facebook Reel' if is_fb else 'YouTube Short'} & Documentary scriptwriter who crafts scripts that retain 80%+ audience retention and drive massive follower/subscriber conversion.
 
@@ -610,9 +626,9 @@ Output STRICT JSON with these keys:
 
                 if data:
                     narration = data.get("full_narration", raw_input)
-                    if not is_long and len(narration.split()) > 150:
-                        print_info(f"Generated narration has {len(narration.split())} words. Auto-condensing for 56-58s limit...")
-                        narration = self._condense_rule_based(narration, max_words=145)
+                    if not is_long and len(narration.split()) > (max_w + 3):
+                        print_info(f"Generated narration has {len(narration.split())} words. Auto-condensing for {target_duration}s limit ({max_w} words)...")
+                        narration = self._condense_rule_based(narration, max_words=max_w)
 
                     word_count = len(narration.split())
                     est_seconds = round(word_count / 2.6, 1)
@@ -623,6 +639,8 @@ Output STRICT JSON with these keys:
                     return {
                         "success": True,
                         "full_narration": narration,
+                        "enhanced_script": narration,
+                        "title": (data.get("titles") or default_titles)[0],
                         "hook": data.get("hook", ""),
                         "body": data.get("body", ""),
                         "cliffhanger": data.get("cliffhanger", ""),
@@ -1602,6 +1620,8 @@ Return ONLY a JSON list of scene objects matching this structure:
         scenes: Optional[List[Dict[str, Any]]] = None,
         progress_callback = None,
         target_platform: str = "youtube",
+        character_name: Optional[str] = None,
+        source_video_url: Optional[str] = None,
     ) -> Dict[str, Any]:
         """Render complete custom Short (9:16) or Long (16:9) video matching user script, voice, BGM, and visual choices."""
         slug = sanitize_filename(title or "custom_video")
@@ -1615,6 +1635,7 @@ Return ONLY a JSON list of scene objects matching this structure:
         VALID_VISUAL_MODES = {
             "multi_cinematic", "multi_best", "auto", "hybrid", "real_only",
             "stock", "ai_only", "vedic_granth_ai", "vedic_storyboard", "vedic_ai",
+            "viral_character",
         }
         clean_v_mode = str(visual_mode or "").strip().lower()
         if not clean_v_mode or clean_v_mode not in VALID_VISUAL_MODES:
@@ -1808,7 +1829,6 @@ Return ONLY a JSON list of scene objects matching this structure:
         if bgm_filename and bgm_filename != "none":
             cat_tracks = self.bgm_manager.get_music_tracks(category=bgm_filename)
             if cat_tracks:
-                import random
                 bgm_path = random.choice(cat_tracks)
                 print_info(f"Custom Video: Selected category BGM '{bgm_filename}': {bgm_path.name}")
             else:
@@ -1845,13 +1865,14 @@ Return ONLY a JSON list of scene objects matching this structure:
         from autotube.media.ai_visuals import VisualGenerator
         from autotube.media.nvidia_video import NvidiaVideoGenerator
         from autotube.media.multi_stock_aggregator import MultiStockAggregator
+        from autotube.media.pexels_video import PexelsVideoFetcher, PEXELS_CACHE_DIR
+        from autotube.media.vedic_cinematics import render_vedic_cinematic_clip
 
         vg = VisualGenerator()
         nvidia = NvidiaVideoGenerator()
         multi_agg = MultiStockAggregator()
         pexels = getattr(multi_agg, "pexels_fetcher", getattr(multi_agg, "pexels", None))
         if not pexels:
-            from autotube.media.pexels_video import PexelsVideoFetcher
             pexels = PexelsVideoFetcher()
         # Studio motion scenes require actual frame-level semantic validation.
         multi_agg.visual_quality_gate.strict = True
@@ -1882,7 +1903,6 @@ Return ONLY a JSON list of scene objects matching this structure:
                         if progress_callback:
                             progress_callback(55 + int((idx / max(1, len(scene_specs))) * 18), f"🎬 Scene {idx+1}/{len(scene_specs)}: Animating user custom image...")
                         if is_vedic_granth_mode:
-                            from autotube.media.vedic_cinematics import render_vedic_cinematic_clip
                             motion_clip = render_vedic_cinematic_clip(
                                 image_path=custom_img_p,
                                 output_path=scene_target,
@@ -1927,7 +1947,6 @@ Return ONLY a JSON list of scene objects matching this structure:
                     # Tier 1: Authentic 4K Real Stock Video (Pexels / Multi-Stock)
                     # Guaranteed 100% realistic spiritual footage: Ganga aarti, temple lamps, sadhus, Himalayas
                     try:
-                        from autotube.media.pexels_video import PexelsVideoFetcher, PEXELS_CACHE_DIR
                         pv = PexelsVideoFetcher()
                         if pv.is_configured():
                             orientation_pref = "portrait" if is_vert else "landscape"
@@ -1954,7 +1973,6 @@ Return ONLY a JSON list of scene objects matching this structure:
                     if not acquired_video:
                         photo_asset = None
                         try:
-                            from autotube.media.pexels_video import PexelsVideoFetcher, PEXELS_CACHE_DIR
                             pv = PexelsVideoFetcher()
                             if pv.is_configured():
                                 photo_results = pv.search_photos(query=pex_q, orientation="portrait" if is_vert else "landscape", per_page=10)
@@ -1992,7 +2010,6 @@ Return ONLY a JSON list of scene objects matching this structure:
                             )
 
                         if photo_asset and photo_asset.exists() and photo_asset.stat().st_size > 5000:
-                            from autotube.media.vedic_cinematics import render_vedic_cinematic_clip
                             motion_clip = render_vedic_cinematic_clip(
                                 image_path=photo_asset,
                                 output_path=scene_target,
@@ -2056,6 +2073,49 @@ Return ONLY a JSON list of scene objects matching this structure:
                                     55 + int(((idx + 0.9) / max(1, len(scene_specs))) * 18),
                                     f"🎬 [Scene {idx+1} Asset Ready] Frame QA verified: {Path(acquired_video).name}"
                                 )
+                elif visual_mode == "viral_character" or character_name:
+                    active_char = character_name or title
+                    if progress_callback:
+                        progress_callback(
+                            55 + int((idx / max(1, len(scene_specs))) * 18),
+                            f"🔥 Scene {idx+1}/{len(scene_specs)}: Harvesting anti-copyright viral clip for '{active_char}'..."
+                        )
+                    try:
+                        from autotube.media.youtube_harvester import YouTubeHarvester
+                        yt_h = YouTubeHarvester()
+                        subj = scene_plan.get("subject") or sentence[:40]
+                        char_q = f"{active_char} {subj}" if subj else active_char
+                        yt_out = TEMP_DIR / f"yt_char_{slug}_scene_{idx+1}_{random.randint(100, 999)}.mp4"
+                        yt_cand = yt_h.acquire_clip_for_scene(
+                            query_or_url=source_video_url or char_q,
+                            output_path=yt_out,
+                            orientation=orientation,
+                            duration=scene_dur,
+                            scene_index=idx,
+                            character_hint=active_char
+                        )
+                        if yt_cand and yt_cand.exists() and yt_cand.stat().st_size > 20000:
+                            acquired_video = yt_cand
+                            qa_approved = True
+                            print_success(f"   🛡️ [Viral Character Scene {idx+1}] Secured anti-copyright clip for '{active_char}': {yt_cand.name}")
+                    except Exception as yt_err:
+                        print_warning(f"Viral character priority fetch notice for scene {idx+1}: {yt_err}")
+
+                    if not acquired_video:
+                        acquired_video = multi_agg.get_best_scene_asset(
+                            scene_text=sentence,
+                            title=title,
+                            scene_index=idx,
+                            orientation=orientation,
+                            scene_plan=scene_plan,
+                            character_hint=active_char,
+                            allow_youtube_fallback=True,
+                            allow_archival_fallback=False,
+                            allow_ai_fallback=False,
+                            progress_callback=progress_callback,
+                        )
+                        if acquired_video:
+                            qa_approved = True
                 elif visual_mode == "real_only":
                     if not archival_fetcher:
                         raise RuntimeError(f"Archival mode unavailable for scene {idx+1}.")
@@ -2371,6 +2431,34 @@ Return ONLY a JSON list of scene objects matching this structure:
                         print_warning(f"   ⚠️ Fail-safe video search failed for Scene {idx+1}: {s_err}")
 
                 if not acquired_video:
+                    # YouTube Shorts Fallback: Search top viral clips with Anti-Copyright transformation
+                    try:
+                        from autotube.media.youtube_harvester import YouTubeHarvester
+                        yt_h = YouTubeHarvester()
+                        yt_target = TEMP_DIR / f"yt_safe_{idx+1}_{slug}.mp4"
+                        query_to_use = deduped_queries[0] if deduped_queries else sentence
+                        char_hint = getattr(self, "current_character_hint", None) or title
+                        acquired_yt = yt_h.acquire_clip_for_scene(
+                            query_or_url=query_to_use,
+                            output_path=yt_target,
+                            orientation=orientation,
+                            duration=scene_dur,
+                            scene_index=idx,
+                            character_hint=char_hint
+                        )
+                        if acquired_yt and acquired_yt.exists() and acquired_yt.stat().st_size > 20000:
+                            acquired_video = acquired_yt
+                            qa_approved = True
+                            print_success(f"   🛡️ [YouTube Shorts Safe] Scene {idx+1} acquired anti-copyright viral footage: {acquired_yt.name}")
+                            if progress_callback:
+                                progress_callback(
+                                    55 + int(((idx + 0.9) / max(1, len(scene_specs))) * 18),
+                                    f"🛡️ [YouTube Shorts Safe] Scene {idx+1}: {acquired_yt.name}",
+                                )
+                    except Exception as yt_err:
+                        print_warning(f"   ⚠️ YouTube Shorts fallback notice: {yt_err}")
+
+                if not acquired_video:
                     # User-directed fallback: when multi-stock footage is unavailable or rejected, acquire 8K AI visual with smooth 3D motion
                     try:
                         ai_prompt = self._extract_ai_scene_prompt(sentence, title, idx)
@@ -2457,7 +2545,6 @@ Return ONLY a JSON list of scene objects matching this structure:
         # Strict Scene Deduplication Gate: verify distinct paths AND distinct content hashes
         scene_paths_seen = set()
         scene_hashes_seen = set()
-        import hashlib
         for i, s_path in enumerate(scene_videos):
             if s_path in scene_paths_seen:
                 raise RuntimeError(

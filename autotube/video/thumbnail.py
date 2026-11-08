@@ -478,3 +478,51 @@ class ThumbnailGenerator:
             highlight_color=highlight_color,
             text_color=text_color,
         )
+
+    def create_thumbnail(
+        self,
+        title: str,
+        output_path: Path,
+        script_text: Optional[str] = None,
+        video_path: Optional[Path] = None,
+        background_image: Optional[Path] = None,
+        custom_hook_text: Optional[str] = None,
+        language: str = "hi",
+        topic_category: str = "auto",
+        **kwargs
+    ) -> Path:
+        """Direct alias for high-CTR thumbnail creation."""
+        return self.generate_high_ctr_thumbnail(
+            title=title,
+            output_path=output_path,
+            script_text=script_text,
+            video_path=video_path,
+            background_image=background_image or video_path,
+            custom_hook_text=custom_hook_text,
+            language=language,
+            topic_category=topic_category,
+        )
+
+    def create_thumbnail(
+        self,
+        title: str,
+        output_path: Path,
+        script_text: Optional[str] = None,
+        video_path: Optional[Path] = None,
+        background_image: Optional[Path] = None,
+        custom_hook_text: Optional[str] = None,
+        language: str = "hi",
+        topic_category: str = "auto",
+        **kwargs
+    ) -> Path:
+        """Direct alias for high-CTR thumbnail creation."""
+        return self.generate_high_ctr_thumbnail(
+            title=title,
+            output_path=output_path,
+            script_text=script_text,
+            video_path=video_path,
+            background_image=background_image or video_path,
+            custom_hook_text=custom_hook_text,
+            language=language,
+            topic_category=topic_category,
+        )

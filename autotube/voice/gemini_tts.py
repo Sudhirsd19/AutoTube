@@ -1,9 +1,13 @@
-"""Gemini 3.8 Flash TTS Engine for AutoTube - Ultra-Realistic Human Speech."""
+"""Gemini 3.8 Flash & Flash Lite TTS Engine for AutoTube - Ultra-Realistic Human Speech.
+
+Powered by Google GenAI Interactions & OpenMontage voice personas.
+"""
 
 import base64
 import os
 import re
 import time
+import requests
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 from google import genai
@@ -15,16 +19,23 @@ from autotube.utils.ffmpeg_helper import get_media_duration, run_ffmpeg
 from autotube.voice.tts_engine import TimedWord, TTSResult
 
 
-# Curated Gemini 3.8 Flash TTS Voice Personas
+# Curated Gemini 3.8 Flash TTS Voice Personas (OpenMontage Multilingual)
 GEMINI_VOICES: Dict[str, str] = {
     # Cinematic / Mystery / Authority Male
     "charon": "Charon",
     "gemini_charon": "Charon",
     "gemini_male_deep": "Charon",
+    "en_deep_cinematic_male": "Charon",
+    "hi_deep_cinematic_male": "Charon",
+    "hi_astro_vibes_male": "Charon",
+    "christopher": "Charon",
+    "madhur": "Charon",
     # Energetic / Upbeat Storyteller Male
     "puck": "Puck",
     "gemini_puck": "Puck",
     "gemini_male_energetic": "Puck",
+    "en_energetic_male": "Puck",
+    "guy": "Puck",
     # Intense / Dramatic Male
     "fenrir": "Fenrir",
     "gemini_fenrir": "Fenrir",
@@ -32,6 +43,9 @@ GEMINI_VOICES: Dict[str, str] = {
     "aoede": "Aoede",
     "gemini_aoede": "Aoede",
     "gemini_female_warm": "Aoede",
+    "en_cinematic_female": "Aoede",
+    "hi_cinematic_female": "Aoede",
+    "swara": "Aoede",
     # Clear / Calm Female
     "kore": "Kore",
     "gemini_kore": "Kore",
@@ -39,7 +53,7 @@ GEMINI_VOICES: Dict[str, str] = {
 
 
 class GeminiTTSEngine:
-    """Ultra-realistic text-to-speech using Google's Gemini 3.8 Flash TTS with resilient fallbacks."""
+    """Ultra-realistic text-to-speech using Google's Gemini Flash TTS with resilient cascade & fallbacks."""
 
     def __init__(self, default_voice: str = "Charon"):
         self.cfg = get_config()
@@ -64,46 +78,96 @@ class GeminiTTSEngine:
         voice: Optional[str] = None,
         scenes: Optional[List[Dict[str, Any]]] = None,
     ) -> TTSResult:
-        """Synthesize ultra-realistic speech from text using Gemini 3.8 Flash TTS with retry & fallback."""
+        """Synthesize ultra-realistic speech from text using Gemini Flash TTS with multi-model cascade."""
         resolved_voice = self._resolve_voice_name(voice or self.default_voice)
         output_audio_path.parent.mkdir(parents=True, exist_ok=True)
 
-        print_info(f"🎙️ Synthesizing voice with Gemini 3.8 Flash TTS (Voice: {resolved_voice})...")
+        print_info(f"🎙️ Synthesizing voice with OpenMontage Gemini TTS (Voice: {resolved_voice})...")
 
         audio_bytes = None
-        max_attempts = 3
         last_error = None
 
-        for attempt in range(1, max_attempts + 1):
-            try:
-                client = genai.Client(api_key=self.api_key)
-                response = client.interactions.create(
-                    model="gemini-3.8-flash-tts",
-                    input=[{"type": "user_input", "content": [{"type": "text", "text": text.strip()}]}],
-                    response_format={"type": "audio"},
-                    generation_config={"speech_config": [{"voice": resolved_voice}]},
-                )
+        # Multi-model cascade: gemini-3.8-flash-lite-tts offers high speed & generous quota,
+        # while gemini-3.8-flash-tts is the standard model.
+        candidate_models = ["gemini-3.8-flash-lite-tts", "gemini-3.8-flash-tts"]
+        pref = os.getenv("GEMINI_TTS_MODEL")
+        if pref and pref in candidate_models:
+            candidate_models.remove(pref)
+            candidate_models.insert(0, pref)
 
-                if hasattr(response, "output_audio") and response.output_audio and hasattr(response.output_audio, "data"):
-                    raw_data = response.output_audio.data
-                    if raw_data:
-                        audio_bytes = base64.b64decode(raw_data)
-                        if audio_bytes and len(audio_bytes) > 500:
+        # Attempt 1: Fast direct HTTP invocation (bypasses SDK retry sleep loops on 429)
+        endpoint = f"https://generativelanguage.googleapis.com/v1beta/interactions?key={self.api_key}"
+        clean_text = text.strip()
+
+        for model in candidate_models:
+            payload = {
+                "model": model,
+                "input": [{"type": "user_input", "content": [{"type": "text", "text": clean_text}]}],
+                "response_format": {"type": "audio"},
+                "generation_config": {"speech_config": [{"voice": resolved_voice}]},
+            }
+
+            try:
+                t0 = time.time()
+                resp = requests.post(endpoint, json=payload, timeout=25.0)
+                elapsed = time.time() - t0
+
+                if resp.status_code == 200:
+                    resp_json = resp.json()
+                    raw_b64 = None
+                    # Search steps
+                    for step in resp_json.get("steps", []):
+                        for part in step.get("content", []):
+                            if part.get("type") == "audio" and part.get("data"):
+                                raw_b64 = part.get("data")
+                                break
+                        if raw_b64:
                             break
-            except Exception as e:
-                last_error = e
-                print_warning(
-                    f"⚠️ Gemini 3.8 Flash TTS attempt {attempt}/{max_attempts} failed ({e}). "
-                    f"{'Retrying in ' + str(attempt * 2) + 's...' if attempt < max_attempts else ''}"
-                )
-                if attempt < max_attempts:
-                    time.sleep(attempt * 2)
+                    if not raw_b64 and resp_json.get("output_audio", {}).get("data"):
+                        raw_b64 = resp_json["output_audio"]["data"]
+
+                    if raw_b64:
+                        audio_bytes = base64.b64decode(raw_b64)
+                        if audio_bytes and len(audio_bytes) > 500:
+                            print_success(f"   ✨ Gemini TTS ({model}, {resolved_voice}) synthesized in {elapsed:.2f}s ({len(audio_bytes)} bytes)")
+                            break
+                elif resp.status_code == 429:
+                    print_warning(f"   ⚡ Gemini TTS model '{model}' rate/quota limited (HTTP 429). Switching to alternate model...")
+                    last_error = f"Model {model} 429: {resp.text[:120]}"
+                else:
+                    print_warning(f"   ⚠️ Gemini TTS model '{model}' returned HTTP {resp.status_code}: {resp.text[:150]}")
+                    last_error = f"HTTP {resp.status_code}: {resp.text[:120]}"
+            except Exception as net_err:
+                last_error = net_err
+                print_warning(f"   ⚠️ Gemini TTS HTTP call failed for '{model}': {net_err}")
+
+        # Attempt 2: SDK Client Fallback if direct HTTP didn't produce audio
+        if not audio_bytes:
+            for model in candidate_models:
+                try:
+                    client = genai.Client(api_key=self.api_key)
+                    response = client.interactions.create(
+                        model=model,
+                        input=[{"type": "user_input", "content": [{"type": "text", "text": clean_text}]}],
+                        response_format={"type": "audio"},
+                        generation_config={"speech_config": [{"voice": resolved_voice}]},
+                    )
+                    if hasattr(response, "output_audio") and response.output_audio and hasattr(response.output_audio, "data"):
+                        raw_data = response.output_audio.data
+                        if raw_data:
+                            audio_bytes = base64.b64decode(raw_data)
+                            if audio_bytes and len(audio_bytes) > 500:
+                                print_success(f"   ✨ Gemini TTS SDK fallback ({model}) succeeded ({len(audio_bytes)} bytes)")
+                                break
+                except Exception as sdk_err:
+                    last_error = sdk_err
+                    print_warning(f"   ⚠️ Gemini TTS SDK attempt failed for '{model}': {sdk_err}")
 
         # Graceful fallback: If Gemini TTS is busy, blocked by safety filter, or unavailable,
         # fallback to Edge-TTS instead of crashing the pipeline!
         if not audio_bytes:
             print_warning(
-                f"⚠️ Gemini 3.8 Flash TTS unavailable ({last_error or 'empty response'}). "
+                f"⚠️ Gemini Flash TTS unavailable ({last_error or 'empty response'}). "
                 "Seamlessly falling back to high-fidelity Edge-TTS engine..."
             )
             from autotube.voice.tts_engine import TTSEngine
@@ -118,11 +182,10 @@ class GeminiTTSEngine:
                 scenes=scenes,
             )
 
-        # Save as WAV first, then normalize/transcode to target output path
+        # Transcode cleanly: Google returns a valid 24kHz WAV file (starts with 'RIFF')
         temp_wav = output_audio_path.with_suffix(".temp.wav")
         temp_wav.write_bytes(audio_bytes)
 
-        # Transcode according to requested target extension
         is_wav_target = output_audio_path.suffix.lower() == ".wav"
         if is_wav_target:
             transcode_cmd = [
@@ -151,7 +214,7 @@ class GeminiTTSEngine:
             pass
 
         duration = get_media_duration(output_audio_path)
-        print_success(f"✅ Gemini 3.8 Flash TTS audio ready ({duration:.2f}s): {output_audio_path.name}")
+        print_success(f"✅ OpenMontage Gemini TTS audio ready ({duration:.2f}s): {output_audio_path.name}")
 
         # Compute scene durations proportional to narration word counts if scenes provided
         scene_durations: List[float] = []
@@ -190,3 +253,7 @@ class GeminiTTSEngine:
             words=timed_words,
             scene_durations=scene_durations if scene_durations else None,
         )
+
+
+# Export alias so `from autotube.voice.gemini_tts import GeminiTTS` works everywhere
+GeminiTTS = GeminiTTSEngine

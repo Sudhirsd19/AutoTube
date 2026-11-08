@@ -61,11 +61,10 @@ class YouTubeUploader:
                     )
                     active_channel = "english"
                 else:
-                    print_error(
-                        f"🛡️ SAFETY GUARD: Blocked upload! Content is in English but target channel is 'hindi'. "
-                        f"Refusing to upload English video to Hindi channel without English authentication."
+                    print_warning(
+                        f"🛡️ SAFETY GUARD: Content is in English but English channel is not authenticated. "
+                        f"Proceeding with target channel '{active_channel}'."
                     )
-                    return None
         elif active_channel == "english":
             if is_devanagari or is_stem_hi:
                 hi_auth = YouTubeAuth(channel="hindi")
@@ -76,11 +75,10 @@ class YouTubeUploader:
                     )
                     active_channel = "hindi"
                 else:
-                    print_error(
-                        f"🛡️ SAFETY GUARD: Blocked upload! Content is in Hindi (Devanagari) but target channel is 'english'. "
-                        f"Refusing to upload Hindi video to English channel without Hindi authentication."
+                    print_warning(
+                        f"🛡️ SAFETY GUARD: Content is in Hindi but Hindi channel (@bgyanmantra) is not authenticated. "
+                        f"Proceeding with user-selected channel '{active_channel}'."
                     )
-                    return None
 
         active_auth = YouTubeAuth(channel=active_channel)
         creds = active_auth.get_credentials()

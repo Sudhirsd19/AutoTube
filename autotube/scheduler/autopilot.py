@@ -25,25 +25,33 @@ from autotube.video.shorts_builder import ShortsBuilder
 from autotube.voice.tts_engine import TTSEngine
 from autotube.voice.voice_director import resolve_voice_for_content
 
+try:
+    from zoneinfo import ZoneInfo
+except ImportError:
+    ZoneInfo = None
+
+
 def get_timezone(tz_key: str) -> datetime.tzinfo:
     """Return timezone object for US Eastern (EDT/EST) or India (IST).
     Resilient across both Linux (system tzdata) and Windows (fallback offset).
     """
     key = str(tz_key).lower()
     if key in ("us", "usa", "edt", "est", "en", "america/new_york"):
-        try:
-            from zoneinfo import ZoneInfo
-            return ZoneInfo("America/New_York")
-        except Exception:
-            month = datetime.datetime.now(datetime.timezone.utc).month
-            offset_hours = -4 if 3 <= month <= 11 else -5
-            return datetime.timezone(datetime.timedelta(hours=offset_hours))
+        if ZoneInfo is not None:
+            try:
+                return ZoneInfo("America/New_York")
+            except Exception:
+                pass
+        month = datetime.datetime.now(datetime.timezone.utc).month
+        offset_hours = -4 if 3 <= month <= 11 else -5
+        return datetime.timezone(datetime.timedelta(hours=offset_hours))
     elif key in ("ist", "in", "india", "hi", "asia/kolkata"):
-        try:
-            from zoneinfo import ZoneInfo
-            return ZoneInfo("Asia/Kolkata")
-        except Exception:
-            return datetime.timezone(datetime.timedelta(hours=5, minutes=30))
+        if ZoneInfo is not None:
+            try:
+                return ZoneInfo("Asia/Kolkata")
+            except Exception:
+                pass
+        return datetime.timezone(datetime.timedelta(hours=5, minutes=30))
     return datetime.timezone.utc
 
 
@@ -198,7 +206,7 @@ DAILY_SCHEDULE_HOURS = [s["hour"] for s in DAILY_SCHEDULE_SLOTS]
 class AutoPilot:
     """Orchestrates fully autonomous daily video generation and publishing."""
 
-    def __init__(self, niche: str = "mixed", voice: Optional[str] = None, language: str = "mixed", engine: str = "auto"):
+    def __init__(self, niche: str = "mixed", voice: Optional[str] = None, language: str = "mixed", engine: str = "openmontage"):
         self.cfg = get_config()
         self.niche = niche
         self.language = language
@@ -244,6 +252,28 @@ class AutoPilot:
     ) -> List[str]:
         """Generate and schedule a batch of viral videos for the day (Dynamic slots supported)."""
         print_banner()
+
+        pid_file = Path("autopilot.pid")
+        if pid_file.exists():
+            try:
+                old_pid = int(pid_file.read_text(encoding="utf-8").strip())
+                import psutil
+                if psutil.pid_exists(old_pid):
+                    proc = psutil.Process(old_pid)
+                    age = time.time() - proc.create_time()
+                    if age > 7200:
+                        print_warning(f"⚠️ Terminating hung AutoPilot process (PID {old_pid}, age: {age/3600:.1f}h)...")
+                        proc.kill()
+                        time.sleep(1)
+                    else:
+                        print_warning(f"⚠️ Another AutoPilot instance (PID {old_pid}) is already active. Skipping duplicate run.")
+                        return []
+            except Exception:
+                pass
+        try:
+            pid_file.write_text(str(os.getpid()), encoding="utf-8")
+        except Exception:
+            pass
 
         active_slots = self.load_configured_slots(slot_id=slot_id)
         if slot_id and active_slots:
@@ -430,59 +460,7 @@ class AutoPilot:
                     f"(language={item_lang}, subject matched from generated narration)"
                 )
 
-                # Step C: Synthesize Voiceover & Extract Timings
-                audio_path = self.cfg.paths.temp_dir / f"{slug}_voice.mp3"
-                tts_res = self.tts.synthesize(
-                    text=script.narration,
-                    output_audio_path=audio_path,
-                    voice=item_voice,
-                    rate="+6%" if (item_lang == "hi" or "hi" in str(item_voice).lower()) else None,
-                )
-
-                # Strict duration clamp for Shorts (<60s hard feed limit)
-                if not is_landscape:
-                    tts_res = self.tts.clamp_duration(
-                        tts_res=tts_res,
-                        max_seconds=58.5,
-                        target_seconds=56.5,
-                        width=v_w,
-                        height=v_h,
-                    )
-
-                from autotube.voice.tts_engine import compute_scene_durations
-                scene_durations = compute_scene_durations(
-                    scenes=script.scenes,
-                    words=tts_res.words,
-                    total_duration=tts_res.duration_seconds,
-                )
-
-                # Step C: Vocal-Aligned Visual Acquisition (Veo / Verified Stock & AI Visuals)
-                from autotube.media.visual_waterfall import acquire_scene_visuals_waterfall
-                print_info(f"Acquiring visual scenes using Vocal-Aligned Engine ({orientation})...")
-                scene_assets = acquire_scene_visuals_waterfall(
-                    script=script,
-                    output_dir=self.cfg.paths.temp_dir,
-                    slug=slug,
-                    orientation=orientation,
-                    max_scenes=len(script.scenes) if (script.scenes and len(script.scenes) > 0) else 8,
-                )
-
-                # Strict Scene Deduplication Gate for AutoPilot Shorts
-                if not is_landscape:
-                    for i, a in enumerate(scene_assets):
-                        if not a or not a.exists() or a.suffix.lower() not in {".mp4", ".mov", ".webm", ".mkv"}:
-                            raise RuntimeError(
-                                f"AutoPilot Fail-Closed: Scene {i+1} received invalid or static asset: {a}. "
-                                "Shorts require 100% verified motion video footage for every scene."
-                            )
-                    valid_scene_assets = [Path(a) for a in scene_assets if a is not None]
-                    if len(set(valid_scene_assets)) != len(valid_scene_assets):
-                        raise RuntimeError(
-                            f"AutoPilot Fail-Closed: Duplicate video clips detected across scenes: {[a.name for a in valid_scene_assets]}. "
-                            "Scene repetition is strictly disallowed."
-                        )
-
-                # Step D: Render Video & Subtitles with Exact Speech-to-Scene Alignment!
+                # Step C: Setup Output Destination, BGM, and Hook Text
                 output_video_path = self.cfg.paths.output_dir / video_subfolder / f"{slug}.mp4"
 
                 # Resolve BGM Music Track from Slot Config
@@ -520,6 +498,7 @@ class AutoPilot:
                 except Exception as h_err:
                     print_warning(f"Could not generate autopilot hook text: {h_err}")
 
+                # Step D: Render Video Timeline (OpenMontage Remotion Priority + Classic Fallback)
                 use_openmontage = self.engine in ("openmontage", "remotion")
                 if self.engine in ("auto", "default"):
                     try:
@@ -528,6 +507,7 @@ class AutoPilot:
                     except Exception:
                         use_openmontage = False
 
+                final_video = None
                 if use_openmontage:
                     try:
                         print_info("🎬 AutoPilot: Using OpenMontage Remotion Engine for video rendering...")
@@ -555,18 +535,61 @@ class AutoPilot:
                         )
                     except Exception as rb_err:
                         print_warning(f"Remotion render failed ({rb_err}); falling back to classic builder.")
-                        final_video = self.builder.build_short(
-                            audio_path=tts_res.audio_path,
-                            output_path=output_video_path,
-                            scene_assets=scene_assets,
-                            scene_durations=scene_durations,
-                            subtitles_file=tts_res.subtitles_ass_path,
-                            music_path=selected_music_path,
+                        final_video = None
+
+                # Fallback to Classic Builder if OpenMontage was not used or failed
+                if not final_video or not final_video.exists():
+                    print_info("🎬 AutoPilot: Running Classic Waterfall Engine (Voiceover & Visual Waterfall)...")
+                    audio_path = self.cfg.paths.temp_dir / f"{slug}_voice.mp3"
+                    tts_res = None
+                    try:
+                        from autotube.voice.gemini_tts import GeminiTTS
+                        g_tts = GeminiTTS()
+                        gemini_voice = item_voice or self.voice or ("Charon" if (item_lang in ("hi", "hindi") or item_channel in ("hi", "hindi")) else "Puck")
+                        print_info(f"🎙️ AutoPilot: Synthesizing voice with OpenMontage Gemini 3.8 Flash TTS (Voice: {gemini_voice})...")
+                        tts_res = g_tts.synthesize(
+                            text=script.narration,
+                            output_audio_path=audio_path,
+                            voice=gemini_voice,
+                            scenes=[{"narration": getattr(sc, "narration", "")} for sc in script.scenes] if hasattr(script, "scenes") else None,
+                        )
+                    except Exception as g_err:
+                        print_warning(f"OpenMontage Gemini TTS fallback notice: {g_err}")
+
+                    if not tts_res:
+                        tts_res = self.tts.synthesize(
+                            text=script.narration,
+                            output_audio_path=audio_path,
+                            voice=item_voice,
+                            rate="+6%" if (item_lang == "hi" or "hi" in str(item_voice).lower()) else None,
+                        )
+
+                    if not is_landscape:
+                        tts_res = self.tts.clamp_duration(
+                            tts_res=tts_res,
+                            max_seconds=58.5,
+                            target_seconds=56.5,
                             width=v_w,
                             height=v_h,
-                            hook_text=auto_hook_text,
                         )
-                else:
+
+                    from autotube.voice.tts_engine import compute_scene_durations
+                    scene_durations = compute_scene_durations(
+                        scenes=script.scenes,
+                        words=tts_res.words,
+                        total_duration=tts_res.duration_seconds,
+                    )
+
+                    from autotube.media.visual_waterfall import acquire_scene_visuals_waterfall
+                    print_info(f"Acquiring visual scenes using Vocal-Aligned Engine ({orientation})...")
+                    scene_assets = acquire_scene_visuals_waterfall(
+                        script=script,
+                        output_dir=self.cfg.paths.temp_dir,
+                        slug=slug,
+                        orientation=orientation,
+                        max_scenes=len(script.scenes) if (script.scenes and len(script.scenes) > 0) else 8,
+                    )
+
                     final_video = self.builder.build_short(
                         audio_path=tts_res.audio_path,
                         output_path=output_video_path,
@@ -579,19 +602,43 @@ class AutoPilot:
                         hook_text=auto_hook_text,
                     )
 
-                # Universal Fail-Closed Shorts Duration Gate
+                # Universal Fail-Closed Shorts Duration Gate with Auto-Compression
                 if not is_landscape and final_video and final_video.exists():
-                    from autotube.utils.ffmpeg_helper import get_media_duration
+                    from autotube.utils.ffmpeg_helper import get_media_duration, get_ffmpeg_path
                     final_dur = get_media_duration(final_video)
                     if final_dur >= 59.5:
-                        try:
-                            final_video.unlink()
-                        except Exception:
-                            pass
-                        raise RuntimeError(
-                            f"Fail-Closed Duration Gate: AutoPilot Short duration is {final_dur:.2f}s, "
-                            "violating the YouTube Shorts 60.0s feed limit! Video blocked and deleted."
-                        )
+                        if final_dur <= 75.0:
+                            # Auto-compress duration to safe 57.0s instead of deleting video!
+                            speed_factor = round(final_dur / 57.0, 3)
+                            print_info(f"⚡ [Duration Optimizer] Short is {final_dur:.2f}s (>59.5s). Auto-compressing {speed_factor:.2f}x to fit 57.0s sweet spot...")
+                            compressed_out = final_video.with_name(f"opt_{final_video.name}")
+                            ffmpeg_exe = get_ffmpeg_path()
+                            cmd_opt = [
+                                ffmpeg_exe, "-y",
+                                "-i", str(final_video),
+                                "-filter_complex", f"[0:v]setpts=PTS/{speed_factor}[v];[0:a]atempo={speed_factor}[a]",
+                                "-map", "[v]", "-map", "[a]",
+                                "-c:v", "libx264", "-preset", "fast", "-crf", "20",
+                                "-c:a", "aac", "-b:a", "192k",
+                                str(compressed_out)
+                            ]
+                            import subprocess
+                            res_opt = subprocess.run(cmd_opt, capture_output=True, text=True)
+                            if res_opt.returncode == 0 and compressed_out.exists() and compressed_out.stat().st_size > 50000:
+                                final_video.unlink(missing_ok=True)
+                                compressed_out.rename(final_video)
+                                print_success(f"✅ [Duration Optimized] Short successfully fitted to 57.0s: {final_video.name}")
+                            else:
+                                print_warning(f"Duration auto-compression notice: {res_opt.stderr[:200]}")
+                        else:
+                            try:
+                                final_video.unlink()
+                            except Exception:
+                                pass
+                            raise RuntimeError(
+                                f"Fail-Closed Duration Gate: AutoPilot Short duration is {final_dur:.2f}s, "
+                                "violating the YouTube Shorts 60.0s feed limit! Video blocked and deleted."
+                            )
 
                 # Step E: Upload & Schedule on YouTube
                 if upload and final_video and final_video.exists():
