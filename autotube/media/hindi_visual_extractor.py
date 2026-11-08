@@ -417,22 +417,7 @@ def extract_english_visual_queries(
     combined_lower = f"{clean_topic.lower()} {raw_text.lower()}"
 
     # -------------------------------------------------------------
-    # STEP 1: Fast direct semantic dictionary matching (Sentence level)
-    # -------------------------------------------------------------
-    for concept in HINDI_VISUAL_CONCEPTS:
-        triggers = concept.get("triggers", [])
-        if any(trig in raw_text.lower() for trig in triggers):
-            return {
-                "subject": concept["subject"],
-                "search_queries": list(concept["search_queries"]),
-                "must_show": list(concept["must_show"]),
-                "avoid": list(concept["avoid"]),
-                "visual_description": f"Cinematic visual depicting {concept['subject']}",
-                "mode": "concept_matched_sentence",
-            }
-
-    # -------------------------------------------------------------
-    # STEP 2: Gemini AI Semantic Extraction with Strict 3-Second Timeout
+    # STEP 1: Gemini AI Semantic Extraction (Primary & Contextual Extraction)
     # -------------------------------------------------------------
     cfg = get_config()
     gemini_key = os.getenv("GEMINI_API_KEY", "") or getattr(cfg, "gemini_api_key", "")
@@ -441,41 +426,47 @@ def extract_english_visual_queries(
             from google import genai
             from google.genai import types
             client = genai.Client(api_key=gemini_key)
-            prompt = f"""You are an elite Hollywood visual director.
-Topic: "{clean_topic}"
-Current Scene #{scene_idx + 1} Narration: "{raw_text}"
+            prompt = f"""You are an elite video director sourcing exact visual footage for a viral video.
+Topic/Title: "{clean_topic}"
+Current Scene #{scene_idx + 1} Spoken Narration: "{raw_text}"
 
 TASK:
-1. Translate or understand the core physical subject described in this sentence.
-2. Provide 3-4 clean, concise (1-3 words each) English search keywords that stock video libraries (Pexels, Mixkit, Coverr, Pixabay) ACTUALLY index footage under.
+1. Understand the exact physical subject and action described in this sentence.
+2. Provide 3-4 clean, precise (2-4 words each) English search keywords that stock video libraries (Pexels, Mixkit, Coverr, Pixabay) and YouTube Shorts ACTUALLY index footage under.
 3. Identify the main physical visual subject.
 
-STRICT RULES:
-- If the narration mentions an animal (e.g. lion, eagle, whale), queries MUST be about that animal.
-- If it mentions underwater / ocean / lake, queries MUST be underwater / ocean.
-- If it mentions space / black hole / stars, queries MUST be space / stars.
-- If it mentions ancient temples / archaeology, queries MUST be ancient temples / archaeology.
-- NEVER invent outer space for Earth/history/nature stories.
-- Keep search queries to 1-3 simple words each (e.g. ["underwater lake", "deep ocean floor", "ocean abyss"]).
+STRICT ACCURACY RULES:
+- If the narration mentions an animal, insect, or plant (e.g. jaguar, crocodile, exploding seed pod, eagle), search queries MUST feature that exact animal/plant.
+- If it mentions a specific machine, experiment, or vehicle (e.g. submarine, rocket, particle collider), queries MUST feature that subject.
+- If it mentions underwater / ocean floor / brine pool, queries MUST be about underwater deep sea.
+- If it mentions space / black hole / event horizon / time dilation, queries MUST be space astrophysics.
+- If it mentions ancient temples, architecture, or history, queries MUST be ancient temples / archaeology.
+- NEVER invent unrelated outer space, generic waterfalls, or random rooms for specific real-world stories.
 
 Return JSON only:
 {{
-  "subject": "concise 2-3 word English subject",
-  "search_queries": ["query 1", "query 2", "query 3"],
+  "subject": "concise 2-4 word English subject",
+  "search_queries": ["exact query 1", "exact query 2", "exact query 3"],
   "must_show": ["concrete visual element 1", "element 2"],
-  "avoid": ["element to avoid 1", "element 2"],
-  "visual_description": "1 clear sentence in English"
+  "avoid": ["unrelated element 1", "element 2"],
+  "visual_description": "1 clear sentence describing what the viewer should see"
 }}"""
-            resp = client.models.generate_content(
-                model="gemini-3.5-flash-lite",
-                contents=prompt,
-                config=types.GenerateContentConfig(response_mime_type="application/json"),
-            )
-            return resp.text
+            for m in ("gemini-3.5-flash-lite", "gemini-flash-lite-latest", "gemini-3.8-flash"):
+                try:
+                    resp = client.models.generate_content(
+                        model=m,
+                        contents=prompt,
+                        config=types.GenerateContentConfig(response_mime_type="application/json"),
+                    )
+                    if resp and resp.text:
+                        return resp.text
+                except Exception:
+                    continue
+            return None
 
         try:
             future = _EXTRACTOR_EXECUTOR.submit(_call_ai)
-            ai_text = future.result(timeout=3.0)
+            ai_text = future.result(timeout=7.5)
             if ai_text:
                 clean_json = ai_text.strip()
                 if clean_json.startswith("```json"):
@@ -485,7 +476,7 @@ Return JSON only:
                 data = json.loads(clean_json)
                 if data.get("subject") and data.get("search_queries"):
                     clean_qs = [
-                        re.sub(r"[^a-zA-Z0-9\s]", "", str(q)).strip()
+                        re.sub(r"[^a-zA-Z0-9\s-]", "", str(q)).strip()
                         for q in data.get("search_queries", [])
                         if str(q).strip()
                     ]
@@ -501,6 +492,22 @@ Return JSON only:
                         }
         except (TimeoutError, Exception):
             pass
+
+    # -------------------------------------------------------------
+    # STEP 2: Semantic dictionary fallback (Only when AI is unavailable, requiring meaningful phrases)
+    # -------------------------------------------------------------
+    for concept in HINDI_VISUAL_CONCEPTS:
+        triggers = concept.get("triggers", [])
+        meaningful_triggers = [t for t in triggers if len(t) >= 4 or " " in t]
+        if any(trig in raw_text.lower() for trig in meaningful_triggers):
+            return {
+                "subject": concept["subject"],
+                "search_queries": list(concept["search_queries"]),
+                "must_show": list(concept["must_show"]),
+                "avoid": list(concept["avoid"]),
+                "visual_description": f"Cinematic visual depicting {concept['subject']}",
+                "mode": "concept_matched_sentence",
+            }
 
     # -------------------------------------------------------------
     # STEP 3: Topic / Combined concept matching

@@ -1251,25 +1251,27 @@ Output STRICT JSON with:
 
         # Step A.2: Priority YouTube Shorts Harvester for Real Characters / Celebrities / Viral Topics
         char_hint = character_hint or getattr(self, "current_character_hint", None)
-        if allow_youtube_fallback and char_hint:
+        v_mode = str(getattr(self, "visual_mode", "")).strip().lower()
+        is_viral_mode = v_mode in ("viral_character", "youtube", "hybrid")
+        if allow_youtube_fallback and (char_hint or is_viral_mode):
             try:
                 from autotube.media.youtube_harvester import YouTubeHarvester
                 yt_h = YouTubeHarvester()
                 yt_out = STOCK_CACHE_DIR / f"yt_{slug}_scene_{scene_index+1}_{random.randint(100, 999)}.mp4"
                 subj_hint = scene_plan.get("subject") if scene_plan else None
-                query_cand = f"{char_hint} {subj_hint}" if subj_hint else f"{char_hint} {title}"
-                print_info(f"   🎯 [Character Priority: {char_hint}] Sourcing authentic YouTube Shorts for scene {scene_index+1} ('{query_cand}')...")
+                query_cand = f"{char_hint} {subj_hint}" if (char_hint and subj_hint) else (queries[0] if queries else title)
+                print_info(f"   🎯 [YouTube Priority] Sourcing authentic YouTube Shorts for scene {scene_index+1} ('{query_cand}')...")
                 yt_asset = yt_h.acquire_clip_for_scene(
                     query_or_url=query_cand,
                     output_path=yt_out,
                     orientation=orientation,
                     duration=3.8,
                     scene_index=scene_index,
-                    character_hint=char_hint
+                    character_hint=char_hint or title
                 )
                 if yt_asset and yt_asset.exists() and yt_asset.stat().st_size > 20000:
                     if self._record_asset_fingerprint(yt_asset, label="YouTubeShortsCharacter"):
-                        print_success(f"   🛡️ [Character YouTube Footage Secured] Scene {scene_index+1} acquired anti-copyright clip: {yt_asset.name}")
+                        print_success(f"   🛡️ [YouTube Footage Secured] Scene {scene_index+1} acquired clip: {yt_asset.name}")
                         return yt_asset
             except Exception as yt_err:
                 print_warning(f"   ⚠️ YouTube Character priority fetch notice: {yt_err}")
@@ -1385,6 +1387,29 @@ Output STRICT JSON with:
                     )
                 except Exception:
                     pass
+
+        # Step D.2: If stock clips from Pexels/Pixabay were rejected or lack relevance, source authentic YouTube Shorts clip!
+        if allow_youtube_fallback:
+            try:
+                from autotube.media.youtube_harvester import YouTubeHarvester
+                yt_h = YouTubeHarvester()
+                yt_out = STOCK_CACHE_DIR / f"yt_{slug}_scene_{scene_index+1}_{random.randint(100, 999)}.mp4"
+                yt_q = queries[0] if queries else (subj_name or title)
+                print_info(f"   🛡️ [YouTube Harvester Active] Sourcing authentic real clip for scene {scene_index+1}: '{yt_q}'...")
+                yt_asset = yt_h.acquire_clip_for_scene(
+                    query_or_url=yt_q,
+                    output_path=yt_out,
+                    orientation=orientation,
+                    duration=3.8,
+                    scene_index=scene_index,
+                    character_hint=char_hint or title
+                )
+                if yt_asset and yt_asset.exists() and yt_asset.stat().st_size > 20000:
+                    if self._record_asset_fingerprint(yt_asset, label="YouTubeShortsScene"):
+                        print_success(f"   🛡️ [YouTube Footage Secured] Scene {scene_index+1} acquired anti-copyright clip: {yt_asset.name}")
+                        return yt_asset
+            except Exception as yt_err:
+                print_warning(f"   ⚠️ YouTube fallback notice: {yt_err}")
 
         # Step E: Authentic archival proof is opt-in and scene-indexed.
         if allow_archival_fallback and archival_pool and scene_index < len(archival_pool):

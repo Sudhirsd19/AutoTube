@@ -396,7 +396,7 @@ class YouTubeHarvester:
         filter_str = (
             f"scale={target_w}:{target_h}:force_original_aspect_ratio=increase,"
             f"crop={target_w}:{target_h},"
-            f"crop=w=iw*0.94:h=ih*0.94:x=(iw-iw*0.94)/2:y=(ih-ih*0.94)/2,"
+            f"crop=w='2*trunc(iw*0.94/2)':h='2*trunc(ih*0.94/2)':x='(iw-2*trunc(iw*0.94/2))/2':y='(ih-2*trunc(ih*0.94/2))/2',"
             f"scale={target_w}:{target_h},"
             f"setpts=PTS/1.04,"
             f"eq=contrast=1.05:brightness=0.01:saturation=1.06,"
@@ -411,6 +411,7 @@ class YouTubeHarvester:
             "-vf", filter_str,
             "-an",
             "-c:v", "libx264",
+            "-pix_fmt", "yuv420p",
             "-preset", "veryfast",
             "-crf", "22",
             "-movflags", "+faststart",
@@ -630,6 +631,10 @@ class YouTubeHarvester:
                     effective_query = f"{clean_char} {effective_query}"
 
             candidates = self.search_top_shorts(effective_query, limit=5, target_orientation=orientation)
+            if not candidates and len(effective_query.split()) > 3:
+                concise_q = " ".join(effective_query.split()[:3])
+                print_info(f"   🔎 [YouTube Harvester] Retrying with concise query: '{concise_q}'...")
+                candidates = self.search_top_shorts(concise_q, limit=5, target_orientation=orientation)
             if not candidates and character_hint:
                 candidates = self.search_top_shorts(character_hint.strip(), limit=5, target_orientation=orientation)
 

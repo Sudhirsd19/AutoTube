@@ -3422,6 +3422,10 @@ def run_director_render_task(req_data: dict):
 
                     progress_callback=update_progress,
 
+                    visual_mode=clean_v_mode,
+
+                    character_hint=req_data.get("character_name"),
+
                 )
 
 

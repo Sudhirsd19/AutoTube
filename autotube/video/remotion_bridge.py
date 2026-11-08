@@ -93,10 +93,12 @@ class RemotionBridge:
         output_dir: Optional[Path] = None,
         progress_callback: Optional[Callable[[int, str], None]] = None,
         character_hint: Optional[str] = None,
+        visual_mode: str = "multi_cinematic",
     ) -> Path:
         """Render a complete viral Short or Reel using Multi-Stock clips + Remotion motion graphics."""
         if character_hint:
             self.multi_stock.current_character_hint = character_hint
+        self.multi_stock.visual_mode = visual_mode
         slug = sanitize_filename(title or "hybrid_reel")
         is_vertical = output_format in ("vertical_9x16", "portrait", "short", "reel")
         target_comp = "ExplainerVertical" if is_vertical else "Explainer"
@@ -128,15 +130,25 @@ class RemotionBridge:
         # 1. Prepare Storyboard Scene Specs if not explicitly provided
         active_script = script_text.strip()
         if not scenes:
-            raw_sentences = [
-                s.strip() for s in re.split(r"[।\.\!\?]+", active_script) if len(s.strip()) > 8
-            ]
-            if not raw_sentences:
-                raw_sentences = [active_script]
-            scenes = [
-                {"scene_number": i + 1, "narration": sent}
-                for i, sent in enumerate(raw_sentences[:8])
-            ]
+            try:
+                from autotube.media.director_engine import DirectorEngine
+                de = DirectorEngine()
+                scenes = de._prepare_scene_specs(
+                    script_text=active_script,
+                    title=title,
+                    provided_scenes=None,
+                    max_scenes=15 if is_vertical else 30
+                )
+            except Exception:
+                raw_sentences = [
+                    s.strip() for s in re.split(r"[।\.\!\?]+", active_script) if len(s.strip()) > 8
+                ]
+                if not raw_sentences:
+                    raw_sentences = [active_script]
+                scenes = [
+                    {"scene_number": i + 1, "narration": sent}
+                    for i, sent in enumerate(raw_sentences[:8])
+                ]
 
         # 2. Synthesize Voice with Gemini 3.8 Flash TTS / VoiceStudio Local
         local_voice_path = staging_dir / "narration.wav"
@@ -200,27 +212,29 @@ class RemotionBridge:
             }
 
             candidate = None
-            # Priority 0: If character_hint is present, search authentic YouTube Shorts FIRST
-            if character_hint or getattr(self.multi_stock, "current_character_hint", None):
+            # Priority 0: YouTube Shorts Priority for viral_character, youtube mode, or character_hint
+            is_viral_yt = (visual_mode in ("viral_character", "youtube") or bool(character_hint) or bool(getattr(self.multi_stock, "current_character_hint", None)))
+            if is_viral_yt:
                 active_char = character_hint or getattr(self.multi_stock, "current_character_hint", None)
                 try:
                     from autotube.media.youtube_harvester import YouTubeHarvester
                     yt_h = YouTubeHarvester()
                     yt_out = staging_dir / f"yt_safe_scene_{idx+1}.mp4"
-                    char_query = f"{active_char} {keywords[0]}" if keywords else f"{active_char} {title}"
+                    yt_search = f"{active_char} {keywords[0]}" if (active_char and keywords) else (keywords[0] if keywords else (subject or title))
+                    print_info(f"   🛡️ [YouTube Priority] Sourcing authentic viral footage for scene {idx+1}: '{yt_search}'...")
                     yt_cand = yt_h.acquire_clip_for_scene(
-                        query_or_url=char_query,
+                        query_or_url=yt_search,
                         output_path=yt_out,
                         orientation=orientation,
                         duration=max(3.8, scene_durations[idx] if idx < len(scene_durations) else 4.0),
                         scene_index=idx,
-                        character_hint=active_char
+                        character_hint=active_char or title
                     )
                     if yt_cand and yt_cand.exists() and yt_cand.stat().st_size > 20000:
                         candidate = yt_cand
-                        print_success(f"   🛡️ [YouTube Shorts Character Priority] Scene {idx+1} secured real clip for {active_char}: {yt_cand.name}")
+                        print_success(f"   🛡️ [YouTube Viral Clip Secured] Scene {idx+1} secured authentic footage: {yt_cand.name}")
                 except Exception as yt_err:
-                    print_warning(f"   ⚠️ Remotion YouTube Shorts character priority notice: {yt_err}")
+                    print_warning(f"   ⚠️ Remotion YouTube priority notice: {yt_err}")
 
             if not candidate or not Path(candidate).exists():
                 # Query multi-stock aggregator
@@ -241,7 +255,7 @@ class RemotionBridge:
                     from autotube.media.youtube_harvester import YouTubeHarvester
                     yt_h = YouTubeHarvester()
                     yt_out = staging_dir / f"yt_safe_scene_{idx+1}.mp4"
-                    yt_query = f"{subject} footage" if subject else (keywords[0] if keywords else title)
+                    yt_query = keywords[0] if keywords else (subject or title)
                     print_info(f"   🔍 [YouTube Harvester Priority] Sourcing authentic viral clip for scene {idx+1}: '{yt_query}'...")
                     yt_cand = yt_h.acquire_clip_for_scene(
                         query_or_url=yt_query,
