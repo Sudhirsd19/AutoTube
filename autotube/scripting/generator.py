@@ -365,11 +365,16 @@ class ScriptGenerator:
             scene_guide = "8 to 14 sequential documentary scenes in 'scenes'"
             dur_label = f"{target_duration} seconds (Full In-Depth Documentary)"
         else:
-            target_duration = max(55, min(target_duration, 58))
-            min_words = 135
-            max_words = 148
-            scene_guide = "7 to 9 sequential scenes in 'scenes'"
-            dur_label = f"{target_duration} seconds (CRITICAL: YouTube Shorts sweet spot 55 to 58 seconds spoken audio, strictly under 59 seconds, HARD CEILING 148 words)"
+            # Dynamic high-retention Shorts duration (20s, 25s, 30s, 45s, 55s)
+            target_duration = max(18, min(target_duration, 58))
+            min_words = max(40, int(target_duration * 2.3))
+            max_words = max(50, int(target_duration * 2.65))
+            num_scenes = max(3, min(int(target_duration / 4.8), 8))
+            scene_guide = f"{num_scenes} to {num_scenes + 2} sequential scenes in 'scenes'"
+            dur_label = (
+                f"{target_duration} seconds (CRITICAL: High-retention Shorts pacing {target_duration}s, "
+                f"strictly between {min_words} and {max_words} words, perfectly paced for high-energy voiceover)"
+            )
 
         prompt = f"""Generate a high-retention viral YouTube video script about: '{topic}' {lang_note}.
 Target duration: {dur_label}.
@@ -742,7 +747,7 @@ Provide title, description, tags, and each scene with spoken narration and visua
             narration=narration,
             call_to_action=get_subject_outro_text(topic, "hi" if is_hi else "en"),
             visual_keywords=[s.visual_subject for s in scenes],
-            tags=["#Shorts", "#viral", "#facts", f"#{clean_topic.replace(' ', '')}"],
+            tags=["#Shorts", "#facts", "#science", f"#{clean_topic.replace(' ', '')}"],
             estimated_duration_sec=target_duration,
         )
         return ensure_subject_outro_cta(fb_script, topic, "hi" if is_hi else "en")

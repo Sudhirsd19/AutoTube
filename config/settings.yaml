@@ -19,7 +19,7 @@ video:
     width: 1080
     height: 1920
     fps: 30
-    default_duration: 50
+    default_duration: 25
     subtitle_style:
       font: "Arial-Bold"
       fontsize: 58

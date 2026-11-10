@@ -3,6 +3,8 @@
   "daily_target": 2,
   "autopilot_daemon": true,
   "review_before_upload": false,
+  "shorts_duration": 25,
+  "render_engine": "openmontage",
   "presets": {
     "growth_4": [
       {

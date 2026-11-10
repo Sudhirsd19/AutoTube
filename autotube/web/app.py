@@ -240,6 +240,10 @@ class SaveSlotsRequest(BaseModel):
 
     auto_upload: Optional[bool] = True
 
+    shorts_duration: Optional[int] = 25
+
+    render_engine: Optional[str] = "openmontage"
+
 
 
 
@@ -1888,7 +1892,7 @@ def run_autopilot_task(slot_id: Optional[str] = None):
 
 
 
-        cmd = [python_bin, "run.py", "autopilot", "--count", str(count), "--niche", active_niche, "--lang", active_lang]
+        cmd = [python_bin, "run.py", "autopilot", "--count", str(count), "--niche", active_niche, "--lang", active_lang, "--engine", "openmontage"]
 
         if auto_upload:
 
@@ -2091,6 +2095,12 @@ async def save_autopilot_slots(req: SaveSlotsRequest):
     if req.auto_upload is not None:
 
         data["auto_upload"] = req.auto_upload
+
+    if req.shorts_duration is not None:
+
+        data["shorts_duration"] = int(req.shorts_duration)
+
+    data["render_engine"] = "openmontage"
 
     _save_slots_config(data)
 
@@ -4654,7 +4664,7 @@ def generate_smart_ai_tags(title: str, narration: str, channel: str = "english")
 
             )
 
-            resp = client.models.generate_content(model="gemini-2.5-flash", contents=prompt)
+            resp = client.models.generate_content(model="gemini-3.8-flash", contents=prompt)
 
             raw = resp.text.strip()
 

@@ -211,7 +211,7 @@ class AutoPilot:
         self.niche = niche
         self.language = language
         self.voice = voice
-        self.engine = str(engine or "auto").strip().lower()
+        self.engine = "openmontage" if str(engine or "").strip().lower() in ("openmontage", "remotion", "auto", "default", "") else str(engine).strip().lower()
         self.trend_finder = TrendFinder()
         self.script_gen = ScriptGenerator()
         self.tts = TTSEngine(default_voice=self.voice or "Charon")
@@ -434,7 +434,14 @@ class AutoPilot:
 
                 item_fmt = item.get("format", "short")
                 is_landscape = (item_fmt == "landscape_long")
-                target_dur = 180 if is_landscape else 56
+                # Read configured duration from slot or global config or settings.yaml (defaults to 25s viral sweet spot)
+                configured_dur = (
+                    item.get("duration")
+                    or item.get("target_duration")
+                    or getattr(self.cfg.video.shorts, "default_duration", None)
+                    or 25
+                )
+                target_dur = 180 if is_landscape else int(configured_dur)
                 orientation = "landscape" if is_landscape else "portrait"
                 video_subfolder = "longform" if is_landscape else "shorts"
                 v_w = 1920 if is_landscape else 1080
@@ -524,6 +531,7 @@ class AutoPilot:
                                     "narration": getattr(sc, "narration", ""),
                                     "visual_subject": getattr(sc, "visual_subject", ""),
                                     "visual_description": getattr(sc, "visual_description", ""),
+                                    "search_keywords": getattr(sc, "search_keywords", []),
                                 }
                                 for i, sc in enumerate(script.scenes)
                             ] if hasattr(script, "scenes") and script.scenes else None,

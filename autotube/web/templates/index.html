@@ -248,6 +248,19 @@
               </select>
             </div>
             <div class="flex items-center gap-2">
+              <label for="matrix-duration-select" class="text-slate-400 font-semibold"><i class="fa-solid fa-stopwatch text-amber-400"></i> Shorts Length:</label>
+              <select id="matrix-duration-select" onchange="updateMatrixDuration(this.value)" class="bg-slate-950 border border-slate-700 text-white text-xs px-3 py-1.5 rounded-lg focus:outline-none focus:border-brand-cyan font-bold text-amber-300">
+                <option value="20">⚡ 20s (Fast Hook / Ultra Viral)</option>
+                <option value="25" selected>🔥 25s (Recommended / Best Retention)</option>
+                <option value="30">⏱️ 30s (Balanced Story)</option>
+                <option value="45">📖 45s (Deep Mystery)</option>
+                <option value="55">🎬 55s (Max YouTube Shorts)</option>
+              </select>
+            </div>
+            <div class="flex items-center gap-1.5 bg-purple-950/60 border border-purple-500/40 px-2.5 py-1.5 rounded-lg text-purple-300 text-[11px] font-bold">
+              <i class="fa-solid fa-bolt text-yellow-400"></i> Engine: OpenMontage Remotion + Gemini TTS (100% Enforced)
+            </div>
+            <div class="flex items-center gap-2">
               <input type="checkbox" id="matrix-upload-check" checked onchange="updateMatrixUpload(this.checked)" class="w-4 h-4 rounded text-brand-cyan focus:ring-brand-cyan bg-slate-950 border-slate-700">
               <label for="matrix-upload-check" class="text-slate-300 font-medium">Auto-upload to YouTube after rendering</label>
             </div>
@@ -2208,6 +2221,10 @@
 
       const daemonCheck = document.getElementById('matrix-daemon-check');
       if (daemonCheck) currentSlotsConfig.autopilot_daemon = daemonCheck.checked;
+
+      const durSelect = document.getElementById('matrix-duration-select');
+      if (durSelect) currentSlotsConfig.shorts_duration = parseInt(durSelect.value, 10);
+      currentSlotsConfig.render_engine = 'openmontage';
     }
 
     async function loadSlotsMatrix() {
@@ -2227,6 +2244,10 @@
         const daemonCheck = document.getElementById('matrix-daemon-check');
         if (daemonCheck && data.autopilot_daemon !== undefined) {
           daemonCheck.checked = Boolean(data.autopilot_daemon);
+        }
+        const durationSelect = document.getElementById('matrix-duration-select');
+        if (durationSelect && data.shorts_duration) {
+          durationSelect.value = String(data.shorts_duration);
         }
 
         renderSlotsMatrix();
@@ -2250,6 +2271,13 @@
     function updateMatrixUpload(checked) {
       currentSlotsConfig.auto_upload = checked;
       markSlotsUnsaved();
+    }
+
+    function updateMatrixDuration(val) {
+      currentSlotsConfig.shorts_duration = parseInt(val, 10);
+      currentSlotsConfig.render_engine = 'openmontage';
+      markSlotsUnsaved();
+      showToast(`⚡ Shorts target length set to ${val}s. Click "Save Slot Settings" to apply.`);
     }
 
     function filterSlotsByChannel(ch) {
