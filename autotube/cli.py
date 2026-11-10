@@ -982,7 +982,21 @@ def auth(
     auth_mgr = YouTubeAuth(channel=channel)
     creds = auth_mgr.get_credentials(interactive=True)
     if creds and creds.valid:
-        print_success(f"YouTube Authentication SUCCESSFUL for [{channel.upper()}] channel! Token saved locally.")
+        is_correct, verify_msg = auth_mgr.verify_channel_identity(creds=creds)
+        if not is_correct:
+            print_error(f"❌ CHANNEL IDENTITY MISMATCH: {verify_msg}")
+            print_error(
+                f"You requested login for [{channel.upper()}], but authorized a different YouTube channel in your browser!\n"
+                f"Mismatched credentials will NOT be saved to {auth_mgr.token_file.name} to prevent cross-channel upload bugs."
+            )
+            if auth_mgr.token_file.exists():
+                try:
+                    auth_mgr.token_file.unlink()
+                except Exception:
+                    pass
+            return
+
+        print_success(f"YouTube Authentication SUCCESSFUL for [{channel.upper()}] channel! Verified: {verify_msg}")
         if sync_remote:
             try:
                 import subprocess

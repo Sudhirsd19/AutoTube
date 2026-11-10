@@ -63,7 +63,7 @@ class YouTubeAuth:
         if ch_token.exists() and ch_token.stat().st_size > 0:
             return ch_token
         legacy_token = PROJECT_ROOT / "config" / "token.json"
-        if ch == "english" and legacy_token.exists() and legacy_token.stat().st_size > 0:
+        if ch == "english" and not ch_token.exists() and legacy_token.exists() and legacy_token.stat().st_size > 0:
             return legacy_token
         return ch_token
 
@@ -86,8 +86,8 @@ class YouTubeAuth:
             except Exception as e:
                 print_warning(f"Existing token for '{self.channel}' could not be loaded: {e}")
 
-        # English legacy fallback if primary token failed to load or is invalid
-        if (not creds or not creds.valid) and self.channel == "english":
+        # English legacy fallback ONLY if token_english.json does not exist
+        if (not creds or not creds.valid) and self.channel == "english" and not self.token_file.exists():
             legacy = PROJECT_ROOT / "config" / "token.json"
             if legacy.exists() and legacy != self.token_file and legacy.stat().st_size > 0:
                 try:
@@ -194,20 +194,85 @@ class YouTubeAuth:
         finally:
             local_server.server_close()
 
-            # Save token for all future runs
-            if creds:
-                self.token_file.parent.mkdir(parents=True, exist_ok=True)
-                with open(self.token_file, "w", encoding="utf-8") as token:
-                    token.write(creds.to_json())
-                if self.channel == "english":
-                    try:
-                        with open(PROJECT_ROOT / "config" / "token.json", "w", encoding="utf-8") as token:
-                            token.write(creds.to_json())
-                    except Exception:
-                        pass
-                print_success(f"YouTube credentials saved to {self.token_file}")
+        # Save token for all future runs
+        if creds:
+            is_valid, id_msg = self.verify_channel_identity(creds=creds)
+            if not is_valid:
+                print_error(f"❌ REJECTING TOKEN: {id_msg}")
+                return None
+
+            self.token_file.parent.mkdir(parents=True, exist_ok=True)
+            with open(self.token_file, "w", encoding="utf-8") as token:
+                token.write(creds.to_json())
+            if self.channel == "english":
+                try:
+                    with open(PROJECT_ROOT / "config" / "token.json", "w", encoding="utf-8") as token:
+                        token.write(creds.to_json())
+                except Exception:
+                    pass
+            print_success(f"YouTube credentials saved to {self.token_file} ({id_msg})")
 
         return creds
+
+    def verify_channel_identity(self, creds: Optional[Credentials] = None) -> tuple[bool, str]:
+        """Verify whether authenticated credentials match the configured channel handle/name."""
+        ch_cfg_file = PROJECT_ROOT / "config" / "channels_config.json"
+        if not ch_cfg_file.exists():
+            return True, "No channels_config.json found to validate against."
+
+        try:
+            import json
+            cfg_data = json.loads(ch_cfg_file.read_text(encoding="utf-8"))
+            channel_meta = cfg_data.get("channels", {}).get(self.channel, {})
+            expected_handle = (channel_meta.get("handle") or "").lower().strip()
+            expected_name = (channel_meta.get("name") or "").lower().strip()
+
+            other_channels = {}
+            for other_k, other_v in cfg_data.get("channels", {}).items():
+                if other_k != self.channel:
+                    other_channels[other_k] = {
+                        "handle": (other_v.get("handle") or "").lower().strip(),
+                        "name": (other_v.get("name") or "").lower().strip(),
+                    }
+
+            if not creds:
+                creds = self.get_credentials(interactive=False)
+            if not creds:
+                return False, f"Channel '{self.channel}' is not authenticated."
+
+            from googleapiclient.discovery import build
+            yt = build("youtube", "v3", credentials=creds)
+            resp = yt.channels().list(part="snippet", mine=True).execute()
+            items = resp.get("items", [])
+            if not items:
+                return False, "No YouTube channel associated with this Google Account."
+
+            actual_snippet = items[0].get("snippet", {})
+            actual_handle = (actual_snippet.get("customUrl") or "").lower().strip()
+            actual_title = (actual_snippet.get("title") or "").lower().strip()
+
+            # Check if actual matches one of the OTHER channels (critical mixup!)
+            for other_k, other_meta in other_channels.items():
+                other_h = other_meta.get("handle")
+                other_n = other_meta.get("name")
+                if (other_h and other_h == actual_handle) or (other_n and other_n in actual_title):
+                    return False, (
+                        f"CRITICAL CHANNEL MISMATCH: Target channel '{self.channel}' expects "
+                        f"{expected_handle or expected_name}, but credentials belong to '{other_k}' "
+                        f"({actual_snippet.get('title')} / {actual_snippet.get('customUrl')})!"
+                    )
+
+            # Check if actual matches expected handle
+            if expected_handle and actual_handle and expected_handle != actual_handle:
+                return False, (
+                    f"Channel handle mismatch: expected '{expected_handle}', "
+                    f"got '{actual_snippet.get('customUrl')}'"
+                )
+
+            return True, f"Verified as '{actual_snippet.get('title')}' ({actual_snippet.get('customUrl')})"
+        except Exception as e:
+            print_warning(f"Could not verify channel identity for '{self.channel}': {e}")
+            return True, f"Check bypassed due to API error: {e}"
 
     def get_channel_info(self) -> Optional[Dict[str, Any]]:
         """Fetch title, customUrl, thumbnail, and stats for this channel."""

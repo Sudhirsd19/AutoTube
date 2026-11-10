@@ -61,10 +61,12 @@ class YouTubeUploader:
                     )
                     active_channel = "english"
                 else:
-                    print_warning(
-                        f"🛡️ SAFETY GUARD: Content is in English but English channel is not authenticated. "
-                        f"Proceeding with target channel '{active_channel}'."
+                    print_error(
+                        f"🛡️ SAFETY GUARD BLOCKED UPLOAD: Content is in English but target channel is 'hindi' "
+                        f"and 'english' channel is not authenticated. Refusing cross-channel upload."
                     )
+                    self.last_error = "English content blocked from Hindi channel"
+                    return None
         elif active_channel == "english":
             if is_devanagari or is_stem_hi:
                 hi_auth = YouTubeAuth(channel="hindi")
@@ -75,15 +77,25 @@ class YouTubeUploader:
                     )
                     active_channel = "hindi"
                 else:
-                    print_warning(
-                        f"🛡️ SAFETY GUARD: Content is in Hindi but Hindi channel (@bgyanmantra) is not authenticated. "
-                        f"Proceeding with user-selected channel '{active_channel}'."
+                    print_error(
+                        f"🛡️ SAFETY GUARD BLOCKED UPLOAD: Content is in Hindi but target channel is 'english' "
+                        f"and 'hindi' channel is not authenticated. Refusing cross-channel upload."
                     )
+                    self.last_error = "Hindi content blocked from English channel"
+                    return None
 
         active_auth = YouTubeAuth(channel=active_channel)
         creds = active_auth.get_credentials()
         if not creds:
             print_error(f"Cannot upload: YouTube authentication credentials missing for channel '{active_channel}'.")
+            self.last_error = f"Missing credentials for {active_channel}"
+            return None
+
+        # Critical channel identity verification: prevent uploading if token belongs to the wrong channel
+        is_verified_channel, identity_msg = active_auth.verify_channel_identity(creds=creds)
+        if not is_verified_channel:
+            print_error(f"🛡️ CRITICAL IDENTITY MISMATCH: {identity_msg}")
+            self.last_error = f"Identity Mismatch: {identity_msg}"
             return None
 
         privacy = privacy_status or self.cfg.youtube.default_privacy
