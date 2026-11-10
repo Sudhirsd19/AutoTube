@@ -1,10 +1,43 @@
 """AutoPilot Engine for hands-free daily batch video creation and scheduling."""
 
 import datetime
+import json
 import time
 from pathlib import Path
 from typing import List, Optional
-from autotube.config import get_config
+from autotube.config import get_config, PROJECT_ROOT
+
+PAIRED_TOPICS_FILE = PROJECT_ROOT / "config" / "daily_paired_topics.json"
+
+
+def _load_paired_topics() -> dict:
+    try:
+        if PAIRED_TOPICS_FILE.exists():
+            with open(PAIRED_TOPICS_FILE, "r", encoding="utf-8") as f:
+                data = json.load(f)
+                today_str = datetime.date.today().isoformat()
+                return data.get(today_str, {})
+    except Exception:
+        pass
+    return {}
+
+
+def _save_paired_topic(slot_id: str, topic: str):
+    try:
+        data = {}
+        today_str = datetime.date.today().isoformat()
+        if PAIRED_TOPICS_FILE.exists():
+            with open(PAIRED_TOPICS_FILE, "r", encoding="utf-8") as f:
+                data = json.load(f)
+        cutoff = (datetime.date.today() - datetime.timedelta(days=7)).isoformat()
+        data = {k: v for k, v in data.items() if k >= cutoff}
+        day_dict = data.setdefault(today_str, {})
+        day_dict[slot_id] = topic
+        PAIRED_TOPICS_FILE.parent.mkdir(parents=True, exist_ok=True)
+        with open(PAIRED_TOPICS_FILE, "w", encoding="utf-8") as f:
+            json.dump(data, f, indent=2, ensure_ascii=False)
+    except Exception:
+        pass
 from autotube.media.ai_visuals import VisualGenerator
 from autotube.media.stock_fetcher import StockFetcher
 from autotube.scripting.generator import ScriptGenerator
@@ -297,7 +330,7 @@ class AutoPilot:
 
         # 1. Fetch trending non-repeating topics per slot (with mirror pair support)
         topics_info = []
-        generated_topics_by_id = {}
+        generated_topics_by_id = _load_paired_topics()
         if is_multi_niche or slot_id:
             print_info(f"Discovering {count} fresh trending topics across configured slots...")
             for idx in range(count):
@@ -332,7 +365,8 @@ class AutoPilot:
                         niche=canon_niche,
                         language=str(item_lang or "en"),
                     )
-                    generated_topics_by_id[curr_slot_id] = topic_title
+                generated_topics_by_id[curr_slot_id] = topic_title
+                _save_paired_topic(curr_slot_id, topic_title)
 
                 label_str = slot_data.get("label") or f"{slot_data.get('hour', 8):02d}:{slot_data.get('minute', 0):02d} ({item_tz.upper()}) - {canon_niche} ({item_lang})"
 

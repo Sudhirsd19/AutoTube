@@ -396,6 +396,7 @@ class ScriptGenerator:
             max_words = int(target_duration * 2.3)
             scene_guide = "8 to 14 sequential documentary scenes in 'scenes'"
             dur_label = f"{target_duration} seconds (Full In-Depth Documentary)"
+            scene_words_guide = "18 to 28 words"
         else:
             # Dynamic high-retention Shorts duration (20s, 25s, 30s, 45s, 55s)
             target_duration = max(18, min(target_duration, 58))
@@ -407,6 +408,11 @@ class ScriptGenerator:
                 f"{target_duration} seconds (CRITICAL: High-retention Shorts pacing {target_duration}s, "
                 f"strictly between {min_words} and {max_words} words, perfectly paced for high-energy voiceover)"
             )
+            scene_words_guide = (
+                f"{max(8, int(min_words / (num_scenes + 1)))} to {max(12, int(max_words / num_scenes))} words"
+                if target_duration < 50
+                else "14 to 20 words"
+            )
 
         prompt = f"""Generate a high-retention viral YouTube video script about: '{topic}' {lang_note}.
 Target duration: {dur_label}.
@@ -415,7 +421,7 @@ MANDATORY STRUCTURAL REQUIREMENTS:
 1. Break the entire script into {scene_guide}.
 2. For each scene in 'scenes':
    - 'scene_number': 1, 2, 3, 4, 5...
-   - 'narration': 1 punchy spoken sentence for this scene ({'in authentic Hindi using Devanagari script only (शुद्ध देवनागरी लिपि, NO Roman Hinglish)' if is_hindi else 'in English'}, 14 to 20 words).
+   - 'narration': 1 punchy spoken sentence for this scene ({'in authentic Hindi using Devanagari script only (शुद्ध देवनागरी लिपि, NO Roman Hinglish)' if is_hindi else 'in English'}, {scene_words_guide}).
    - 'visual_subject': The exact physical subject on screen in 1-3 simple English words (e.g. 'black hole space', 'earth from space', 'pyramid egypt', 'deep ocean storm', 'glowing brain'). MUST directly match the spoken words!
    - 'visual_description': Vivid description in English of the visual scene.
    - 'search_keywords': 2-3 clean, simple English search words (e.g. ['black hole', 'space galaxy']).
