@@ -54,12 +54,44 @@ def is_bhagavad_gita_topic(topic: str) -> bool:
     )
 
 
-def get_subject_outro_text(topic: str, language: str = "en") -> str:
-    """Return a natural, subject-tailored Outro CTA containing like, subscribe, and support."""
+def get_subject_outro_text(topic: str, language: str = "en", is_short: bool = True) -> str:
+    """Return a natural, subject-tailored Outro CTA.
+    For Shorts (is_short=True), keep it ultra-compact (4-6 words, ~1.2-1.5s) to maximize story retention.
+    For documentaries (is_short=False), return a full, rich CTA.
+    """
     t_lower = topic.lower()
     is_hindi = language.lower() in ("hi", "hindi")
-
     is_spiritual = is_gita_granth_motivation_topic(topic)
+
+    if is_short:
+        if not is_spiritual and any(k in t_lower for k in ("space", "antariksh", "galaxy", "black hole", "cosmic", "universe", "planet", "astronomy", "nasa")):
+            return "अंतरिक्ष के ऐसे ही रहस्यों के लिए अभी सब्सक्राइब करें!" if is_hindi else "Subscribe for more cosmic mysteries!"
+
+        elif is_spiritual:
+            return "ऐसे ही दिव्य ज्ञान के लिए अभी सब्सक्राइब करें!" if is_hindi else "Subscribe for more timeless wisdom!"
+
+        elif any(k in t_lower for k in ("bharat", "temple", "mandir", "ancient india", "vedic", "kailasa", "dwarka", "history", "itihas", "empire", "archaeology")):
+            return "प्राचीन इतिहास के रहस्यों के लिए अभी सब्सक्राइब करें!" if is_hindi else "Subscribe for more ancient mysteries!"
+
+        elif any(k in t_lower for k in ("psychology", "brain", "mind", "dimag", "human behavior", "subconscious", "manipulation", "glitch in")):
+            return "दिमाग के ऐसे ही रहस्यों के लिए अभी सब्सक्राइब करें!" if is_hindi else "Subscribe for more mind-bending psychology!"
+
+        elif any(k in t_lower for k in ("science", "physics", "quantum", "paradox", "dilation", "atom", "biology")):
+            return "अनोखे साइंस फैक्ट्स के लिए अभी सब्सक्राइब करें!" if is_hindi else "Subscribe for more mind-blowing science facts!"
+
+        elif any(k in t_lower for k in ("matrix", "simulation", "mandela", "time slip", "dimension")):
+            return "मैट्रिक्स के ऐसे रहस्यों के लिए अभी सब्सक्राइब करें!" if is_hindi else "Subscribe for more simulation glitches!"
+
+        elif any(k in t_lower for k in ("ocean", "sea", "trench", "samundar", "marianas", "water")):
+            return "गहरे समंदर के रहस्यों के लिए अभी सब्सक्राइब करें!" if is_hindi else "Subscribe for more deep ocean secrets!"
+
+        elif any(k in t_lower for k in ("alien", "ufo", "roswell", "extraterrestrial")):
+            return "एलियन रहस्यों के लिए अभी सब्सक्राइब करें!" if is_hindi else "Subscribe for more declassified mysteries!"
+
+        else:
+            return "ऐसे ही अनसुलझे रहस्यों के लिए अभी सब्सक्राइब करें!" if is_hindi else "Subscribe for more mind-bending facts!"
+
+    # Longform / Documentary (is_short=False)
     if not is_spiritual and any(k in t_lower for k in ("space", "antariksh", "galaxy", "black hole", "cosmic", "universe", "planet", "astronomy", "nasa")):
         if is_hindi:
             return "ऐसे ही अंतरिक्ष और ब्रह्मांड के रहस्यमयी इंफॉर्मेटिव वीडियोज़ के लिए हमें अभी लाइक और फॉलो करें और सपोर्ट करें!"
@@ -163,12 +195,12 @@ def generate_polarizing_debate_comment(topic: str, language: str = "en") -> str:
             return "🔥 What's your take? Type 1 if you 100% agree with this, Type 2 if you disagree! Drop your reasoning in the comments below! 👇"
 
 
-def ensure_subject_outro_cta(script: ShortScript, topic: str, language: str) -> ShortScript:
+def ensure_subject_outro_cta(script: ShortScript, topic: str, language: str, is_short: bool = True) -> ShortScript:
     """Ensure that the final scene ends with the subject-specific CTA and high-engagement polarizing pinned comment is set."""
     if not script or not script.scenes:
         return script
 
-    outro_text = get_subject_outro_text(topic, language)
+    outro_text = get_subject_outro_text(topic, language, is_short=is_short)
     last_scene = script.scenes[-1]
     last_text = last_scene.narration.strip()
 
@@ -323,7 +355,7 @@ class ScriptGenerator:
             ),
             estimated_duration_sec=min(max(target_duration, 35), 48),
         )
-        return ensure_subject_outro_cta(script, topic, language)
+        return ensure_subject_outro_cta(script, topic, language, is_short=(target_duration < 90))
 
     def generate_short_script(
         self, topic: str, target_duration: int = 50, language: str = "en"
@@ -389,7 +421,7 @@ MANDATORY STRUCTURAL REQUIREMENTS:
    - 'search_keywords': 2-3 clean, simple English search words (e.g. ['black hole', 'space galaxy']).
 3. TOTAL SPOKEN WORDS across all scenes MUST be strictly between {min_words} and {max_words} words (hard ceiling {max_words} words). NEVER exceed {max_words} words as YouTube Shorts feed disqualifies any vertical video 60 seconds or above!
 4. Set the top-level 'narration' field to the combined text of all scene narrations.
-5. High-converting climax cliffhanger CTA in the final scene.
+5. High-converting climax cliffhanger CTA in the final scene (CRITICAL: Spoken subscribe CTA MUST be ultra-short, strictly 4-6 words maximum, e.g. 'Subscribe for more mind-bending facts!' / 'ऐसे ही रहस्यों के लिए अभी सब्सक्राइब करें!').
 6. Seamless infinite loop: ending sentence flows back into opening hook.
 7. STRICT ANTI-REPETITION MANDATE: Do NOT use stock opening cliches ('Did you know', 'Imagine if'). Present a completely fresh, unique, factually grounded story angle."""
 
@@ -409,7 +441,7 @@ MANDATORY STRUCTURAL REQUIREMENTS:
                 data = json.loads(response.text)
                 script = ShortScript(**data)
                 # Ensure spoken outro CTA matches subject with like, subscribe, support
-                script = ensure_subject_outro_cta(script, topic, language)
+                script = ensure_subject_outro_cta(script, topic, language, is_short=(target_duration < 90))
                 if is_hindi and script.scenes:
                     import re
                     has_foreign_script = any(
@@ -745,12 +777,12 @@ Provide title, description, tags, and each scene with spoken narration and visua
             hook=hook,
             scenes=scenes,
             narration=narration,
-            call_to_action=get_subject_outro_text(topic, "hi" if is_hi else "en"),
+            call_to_action=get_subject_outro_text(topic, "hi" if is_hi else "en", is_short=(target_duration < 90)),
             visual_keywords=[s.visual_subject for s in scenes],
             tags=["#Shorts", "#facts", "#science", f"#{clean_topic.replace(' ', '')}"],
             estimated_duration_sec=target_duration,
         )
-        return ensure_subject_outro_cta(fb_script, topic, "hi" if is_hi else "en")
+        return ensure_subject_outro_cta(fb_script, topic, "hi" if is_hi else "en", is_short=(target_duration < 90))
 
     def _generate_fallback_long(
         self, topic: str, num_scenes: int
@@ -796,7 +828,7 @@ Provide title, description, tags, and each scene with spoken narration and visua
             ),
             Scene(
                 scene_number=6,
-                narration=f"The future is arriving faster than anyone anticipated. {get_subject_outro_text(topic, 'en')}",
+                narration=f"The future is arriving faster than anyone anticipated. {get_subject_outro_text(topic, 'en', is_short=False)}",
                 visual_query=f"{topic_lower} conclusion summary",
                 visual_description=f"Concluding montage related to {clean_topic}",
                 estimated_duration_sec=6.0,
