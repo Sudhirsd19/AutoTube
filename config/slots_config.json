@@ -1,5 +1,5 @@
 {
-  "active_preset": "daily_mirror",
+  "active_preset": "independent_growth",
   "daily_target": 2,
   "autopilot_daemon": true,
   "review_before_upload": false,
@@ -648,6 +648,36 @@
         "label": "08:30 PM IST (India Prime Time) - Daily Universal Theme Mirror (Hindi Short)",
         "bgm": "auto"
       }
+    ],
+    "independent_growth": [
+      {
+        "id": "slot_1",
+        "hour": 12,
+        "minute": 0,
+        "tz": "EDT",
+        "niche": "Space & Cosmic Mysteries",
+        "language": "English",
+        "channel": "english",
+        "voice": "Puck",
+        "format": "short",
+        "status": "ready",
+        "label": "12:00 PM EDT (US Lunch / 09:30 PM IST) - Cosmic Space & Universe Mysteries (English Short)",
+        "bgm": "space"
+      },
+      {
+        "id": "slot_2",
+        "hour": 20,
+        "minute": 30,
+        "tz": "IST",
+        "niche": "Bharat Ka Prachin Vigyan & Mandir Rahasya",
+        "language": "Hindi",
+        "channel": "hindi",
+        "voice": "Charon",
+        "format": "short",
+        "status": "ready",
+        "label": "08:30 PM IST (India Prime Time) - Bharat Ka Prachin Vigyan & Mandir (Hindi Short)",
+        "bgm": "history"
+      }
     ]
   },
   "slots": [
@@ -656,29 +686,28 @@
       "hour": 12,
       "minute": 0,
       "tz": "EDT",
-      "niche": "daily_mirror",
+      "niche": "Space & Cosmic Mysteries",
       "language": "English",
       "channel": "english",
       "voice": "Puck",
       "format": "short",
       "status": "ready",
-      "label": "12:00 PM EDT (US Lunch / 09:30 PM IST) - Daily Universal Theme (English Short)",
-      "bgm": "auto"
+      "label": "12:00 PM EDT (US Lunch / 09:30 PM IST) - Cosmic Space & Universe Mysteries (English Short)",
+      "bgm": "space"
     },
     {
       "id": "slot_2",
       "hour": 20,
       "minute": 30,
       "tz": "IST",
-      "niche": "daily_mirror",
-      "pair_with": "slot_1",
+      "niche": "Bharat Ka Prachin Vigyan & Mandir Rahasya",
       "language": "Hindi",
       "channel": "hindi",
       "voice": "Charon",
       "format": "short",
       "status": "ready",
-      "label": "08:30 PM IST (India Prime Time) - Daily Universal Theme Mirror (Hindi Short)",
-      "bgm": "auto"
+      "label": "08:30 PM IST (India Prime Time) - Bharat Ka Prachin Vigyan & Mandir (Hindi Short)",
+      "bgm": "history"
     }
   ],
   "upload_privacy": "private",

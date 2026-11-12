@@ -14,11 +14,10 @@ from autotube.utils.console import print_error, print_info, print_success, print
 
 # Recommended modern models with automatic fallback
 CANDIDATE_MODELS = [
-    "gemini-3.5-flash-lite",
-    "gemini-flash-lite-latest",
-    "gemini-3.1-flash-lite-preview",
     "gemini-3.1-flash-lite",
-    "gemini-3-flash-preview",
+    "gemini-3.5-flash",
+    "gemini-flash-latest",
+    "gemini-3.8-flash",
 ]
 
 
@@ -263,7 +262,10 @@ class ScriptGenerator:
         self.client = None
         if self.api_key:
             try:
-                self.client = genai.Client(api_key=self.api_key)
+                self.client = genai.Client(
+                    api_key=self.api_key,
+                    http_options=types.HttpOptions(timeout=30000),
+                )
             except Exception as e:
                 print_warning(f"Could not initialize Gemini client: {e}")
 

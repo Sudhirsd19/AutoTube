@@ -177,6 +177,34 @@ class YouTubeHarvester:
         elif any(k in ql for k in ["vasooli", "golmaal"]):
             return "Golmaal movie comedy scene"
 
+        # Ancient Indian Temples & Historical Heritage Sites
+        elif any(k in ql for k in ["lepakshi", "लेपाक्षी", "झूलता खंभा", "लटकता"]):
+            return "Lepakshi temple hanging pillar mystery drone real footage"
+        elif any(k in ql for k in ["kailasa", "ellora", "कैलाश मंदिर", "कैलासा", "एलोरा"]):
+            return "Kailasa temple Ellora ancient rock cut architecture drone real"
+        elif any(k in ql for k in ["ram setu", "ramsetu", "राम सेतु", "floating stone", "तैरते पत्थर"]):
+            return "Ram Setu floating stone Rameshwaram ocean real video"
+        elif any(k in ql for k in ["iron pillar", "लौह स्तंभ", "delhi pillar", "rustproof iron"]):
+            return "Delhi Iron Pillar Qutub Minar 1600 year rustproof mystery"
+        elif any(k in ql for k in ["padmanabha", "पद्मनाभ", "vault b", "वॉल्ट बी"]):
+            return "Padmanabhaswamy temple secret vault door Kerala real footage"
+        elif any(k in ql for k in ["brihadeeswarar", "thanjavur", "तंजावुर", "बृहदेश्वर"]):
+            return "Brihadeeswarar temple Thanjavur granite dome real architecture"
+        elif any(k in ql for k in ["dwarka", "द्वारका", "submerged dwarka", "डूबी द्वारका"]):
+            return "Dwarka submerged city underwater ruins Gujarat archaeology"
+        elif any(k in ql for k in ["konark", "कोणार्क", "sun temple"]):
+            return "Konark Sun Temple wheel chariot architecture real footage"
+        elif any(k in ql for k in ["hampi", "vittala", "हम्पी", "विट्ठल"]):
+            return "Hampi Vittala temple musical pillars stone chariot real"
+        elif any(k in ql for k in ["kedarnath", "केदारनाथ"]):
+            return "Kedarnath temple Himalayas snow drone view real footage"
+        elif any(k in ql for k in ["ajanta", "अजंता"]):
+            return "Ajanta caves ancient rock architecture caves real"
+        elif any(k in ql for k in ["rani ki vav", "रानी की वाव"]):
+            return "Rani Ki Vav stepwell Patan Gujarat ancient architecture"
+        elif any(k in ql for k in ["bhangarh", "भानगढ़"]):
+            return "Bhangarh fort Rajasthan mystery ruins real footage"
+
         return query
 
     @staticmethod

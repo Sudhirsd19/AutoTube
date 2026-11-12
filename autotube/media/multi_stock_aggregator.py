@@ -38,11 +38,10 @@ HTTP_HEADERS = {
 }
 
 CANDIDATE_GEMINI_MODELS = [
-    "gemini-3.5-flash-lite",
-    "gemini-flash-lite-latest",
-    "gemini-3.1-flash-lite-preview",
     "gemini-3.1-flash-lite",
-    "gemini-3-flash-preview",
+    "gemini-3.5-flash",
+    "gemini-flash-latest",
+    "gemini-3.8-flash",
 ]
 
 # Blacklisted stock IDs (e.g. 95% pitch-black empty void or defective footage)
@@ -394,10 +393,12 @@ class MultiStockAggregator:
         genre_rules = ""
         if is_space_or_black_hole:
             genre_rules = """- The story is about space, astronomy, black holes, or cosmic phenomena. The visuals MUST REMAIN 100% IN OUTER SPACE throughout the ENTIRE video.
+- NEVER show amateur telescopes, people looking through telescopes, observatory domes, or people on Earth. The camera MUST be in deep space showing the cosmic bodies directly!
 - NEVER switch to human faces, smartphones, people typing, social media icons, or office desks, EVEN IF the narration mentions subscribing, liking, commenting, or asking a question! For outro/CTA lines, keep visuals anchored in epic cosmic vortexes or rotating deep space galaxies."""
         elif is_ancient_history:
             genre_rules = """- The story is about ANCIENT HISTORY, ARCHAEOLOGY, or SACRED MYTHOLOGY on Earth (Mahabharat, Ramayan, ancient temples, ruins, lost cities).
 - Visuals MUST depict EARTHLY ancient stone temples, archaeological ruins, excavation sites, ancient battlefield artifacts, or ancient sacred scrolls.
+- NEVER include modern science laboratories, microscopes, test tubes, or scientists in lab coats, EVEN IF the narration mentions "वैज्ञानिक" (scientists) or "जांच" (investigation)! That is figurative speech; the visual MUST focus on the ancient temple, stone carvings, monument, or historical ruins!
 - NEVER include outer space, nebulas, galaxies, black holes, modern offices, smartphones, or modern city streets."""
         else:
             genre_rules = """- Keep visuals strictly grounded in the real-world subject matter of the narration.
@@ -1249,18 +1250,34 @@ Output STRICT JSON with:
         subj_name = scene_plan.get("subject", "Concept")
         print_info(f"[*] Visual Intelligence: Scene #{scene_index+1} Subject: '{subj_name}' | Searching: {queries[:3]}...")
 
-        # Step A.2: Priority YouTube Shorts Harvester for Real Characters / Celebrities / Viral Topics
+        # Step A.2: Priority YouTube Shorts Harvester for Real Characters / Celebrities / Viral Topics / Heritage Sites
         char_hint = character_hint or getattr(self, "current_character_hint", None)
         v_mode = str(getattr(self, "visual_mode", "")).strip().lower()
         is_viral_mode = v_mode in ("viral_character", "youtube", "hybrid")
-        if allow_youtube_fallback and (char_hint or is_viral_mode):
+        combined_text = f"{title.lower()} {scene_text.lower()}"
+        is_heritage_site = any(
+            k in combined_text for k in (
+                "mandir", "temple", "मंदिर", "kailasa", "कैलाश", "lepakshi", "लेपाक्षी",
+                "ram setu", "राम सेतु", "dwarka", "द्वारका", "pillar", "स्तंभ", "khambha",
+                "खंभा", "ellora", "एलोरा", "konark", "कोणार्क", "hampi", "हम्पी",
+                "brihadeeswarar", "बृहदेश्वर", "padmanabha", "पद्मनाभ", "puri", "jagannath",
+                "kedarnath", "somnath", "ajanta", "अजंता", "khajuraho", "खजुराहो",
+                "varanasi", "काशी", "ghat", "घाट", "harappa", "हड़प्पा", "mohenjo", "मोहनजोदड़ो",
+                "archaeol", "heritage", "monument", "स्मारक", "fort", "किला"
+            )
+        )
+
+        if allow_youtube_fallback and (char_hint or is_viral_mode or is_heritage_site):
             try:
                 from autotube.media.youtube_harvester import YouTubeHarvester
                 yt_h = YouTubeHarvester()
                 yt_out = STOCK_CACHE_DIR / f"yt_{slug}_scene_{scene_index+1}_{random.randint(100, 999)}.mp4"
                 subj_hint = scene_plan.get("subject") if scene_plan else None
-                query_cand = f"{char_hint} {subj_hint}" if (char_hint and subj_hint) else (queries[0] if queries else title)
-                print_info(f"   🎯 [YouTube Priority] Sourcing authentic YouTube Shorts for scene {scene_index+1} ('{query_cand}')...")
+                if is_heritage_site:
+                    query_cand = f"{title} real footage" if title else (queries[0] if queries else "ancient indian temple")
+                else:
+                    query_cand = f"{char_hint} {subj_hint}" if (char_hint and subj_hint) else (queries[0] if queries else title)
+                print_info(f"   🎯 [YouTube Priority] Sourcing authentic real footage for scene {scene_index+1} ('{query_cand}')...")
                 yt_asset = yt_h.acquire_clip_for_scene(
                     query_or_url=query_cand,
                     output_path=yt_out,
@@ -1270,11 +1287,11 @@ Output STRICT JSON with:
                     character_hint=char_hint or title
                 )
                 if yt_asset and yt_asset.exists() and yt_asset.stat().st_size > 20000:
-                    if self._record_asset_fingerprint(yt_asset, label="YouTubeShortsCharacter"):
+                    if self._record_asset_fingerprint(yt_asset, label="YouTubeFootage"):
                         print_success(f"   🛡️ [YouTube Footage Secured] Scene {scene_index+1} acquired clip: {yt_asset.name}")
                         return yt_asset
             except Exception as yt_err:
-                print_warning(f"   ⚠️ YouTube Character priority fetch notice: {yt_err}")
+                print_warning(f"   ⚠️ YouTube priority fetch notice: {yt_err}")
 
         # Step B: Parallel Search across Mixkit, Coverr, Pexels, Pixabay
         candidates = self.gather_candidates(queries=queries, orientation=orientation)

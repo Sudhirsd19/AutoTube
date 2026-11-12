@@ -2358,15 +2358,23 @@ Return ONLY a JSON list of scene objects matching this structure:
                 if not acquired_video and visual_mode in ("multi_cinematic", "multi_best", "auto", "hybrid", "stock"):
                     # Safe cinematic stock motion video fallback matching story genre
                     try:
-                        is_space = any(k in sentence.lower() or k in title.lower() for k in ("space", "antariksh", "अंतरिक्ष", "black hole", "galaxy", "universe", "planet", "stars", "cosmos", "telescope", "beacon", "singularity", "pulsar"))
-                        is_hist = (not is_space) and any(k in sentence.lower() or k in title.lower() for k in ("mahabharat", "महाभारत", "ramayan", "रामायण", "kurukshetra", "कुरुक्षेत्र", "temple", "mandir", "मंदिर", "itihas", "इतिहास", "prachin", "प्राचीन", "purana", "पुराण", "dwarka", "द्वारका", "archaeol"))
+                        is_space = any(k in sentence.lower() or k in title.lower() for k in ("space", "antariksh", "अंतरिक्ष", "black hole", "galaxy", "universe", "planet", "stars", "cosmos", "beacon", "singularity", "pulsar"))
+                        is_hist = (not is_space) and any(k in sentence.lower() or k in title.lower() for k in (
+                            "mahabharat", "महाभारत", "ramayan", "रामायण", "kurukshetra", "कुरुक्षेत्र", "temple",
+                            "mandir", "मंदिर", "itihas", "इतिहास", "prachin", "प्राचीन", "purana", "पुराण",
+                            "dwarka", "द्वारका", "archaeol", "lepakshi", "लेपाक्षी", "kailasa", "कैलाश",
+                            "setu", "सेतु", "pillar", "स्तंभ", "khambha", "खंभा", "hampi", "हम्पी", "konark",
+                            "कोणार्क", "padmanabha", "पद्मनाभ", "heritage", "monument", "fort", "किला"
+                        ))
 
                         if is_space:
                             fallback_pool = [
                                 "deep space stars cosmos nebula",
                                 "black hole event horizon cosmos",
                                 "spinning planet universe galaxy",
-                                "telescope observatory starry night",
+                                "exoplanet cosmic space orbit",
+                                "supernova cosmic explosion space",
+                                "deep space galaxy cluster stars",
                                 "cosmic dust interstellar space",
                                 "glowing galaxy stars rotation",
                             ]
@@ -2375,6 +2383,7 @@ Return ONLY a JSON list of scene objects matching this structure:
                                 "ancient stone temple ruins dramatic",
                                 "mysterious hindu temple architecture",
                                 "ancient historical ruins aerial",
+                                "ancient temple stone pillars carvings",
                                 "underwater ocean ruins deep water",
                                 "epic battlefield landscape dramatic mist",
                                 "ancient artifacts excavation archaeology",
@@ -2436,7 +2445,10 @@ Return ONLY a JSON list of scene objects matching this structure:
                         from autotube.media.youtube_harvester import YouTubeHarvester
                         yt_h = YouTubeHarvester()
                         yt_target = TEMP_DIR / f"yt_safe_{idx+1}_{slug}.mp4"
-                        query_to_use = deduped_queries[0] if deduped_queries else sentence
+                        if is_hist and title:
+                            query_to_use = f"{title} historical site real footage"
+                        else:
+                            query_to_use = deduped_queries[0] if deduped_queries else sentence
                         char_hint = getattr(self, "current_character_hint", None) or title
                         acquired_yt = yt_h.acquire_clip_for_scene(
                             query_or_url=query_to_use,

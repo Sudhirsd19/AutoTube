@@ -86,7 +86,7 @@ HINDI_VISUAL_CONCEPTS: List[Dict[str, Any]] = [
         "subject": "black hole cosmic event horizon and accretion disk",
         "search_queries": ["black hole space", "black hole vortex", "cosmic black hole", "deep space galaxy vortex"],
         "must_show": ["black hole", "cosmic vortex", "deep space", "singularity"],
-        "avoid": ["earth daytime", "blue sky", "nature", "sunny", "phone", "office", "face mask"],
+        "avoid": ["telescope", "observatory", "person with telescope", "earth daytime", "blue sky", "nature", "sunny", "phone", "office", "face mask"],
     },
     {
         "triggers": [
@@ -158,13 +158,67 @@ HINDI_VISUAL_CONCEPTS: List[Dict[str, Any]] = [
     # 3. ANCIENT HISTORY, TEMPLES, SACRED & ARCHAEOLOGY
     {
         "triggers": [
+            "लेपाक्षी", "lepakshi", "झूलता खंभा", "लटकता खंभा", "hanging pillar", "वीरभद्र मंदिर"
+        ],
+        "subject": "ancient Lepakshi temple hanging stone pillar mystery",
+        "search_queries": ["lepakshi temple hanging pillar", "ancient indian temple stone pillar", "lepakshi temple andhra pradesh", "ancient stone temple carvings"],
+        "must_show": ["hanging stone pillar", "intricate temple pillars", "ancient stone floor"],
+        "avoid": ["modern laboratory", "microscope", "scientists in lab coats", "modern office", "cartoon", "outer space"],
+    },
+    {
+        "triggers": [
+            "राम सेतु", "ram setu", "ramsetu", "नल नील", "तैरते पत्थर", "floating stone", "floating stones", "adam bridge"
+        ],
+        "subject": "ancient Ram Setu floating stones and submerged causeway",
+        "search_queries": ["ram setu floating stones rameswaram", "adam bridge satellite ocean", "ancient stone floating water", "rameswaram temple ocean"],
+        "must_show": ["ancient stone floating", "ocean causeway", "sacred stones"],
+        "avoid": ["modern laboratory", "microscope", "scientists in lab coats", "modern office", "cartoon"],
+    },
+    {
+        "triggers": [
+            "लौह स्तंभ", "iron pillar", "कुतुब मीनार", "जंग-रोधी", "rustproof", "1600 साल पुराना", "1600 year old iron pillar"
+        ],
+        "subject": "Delhi ancient rustproof iron pillar metallurgy mystery",
+        "search_queries": ["delhi iron pillar rustproof", "ancient indian iron pillar metallurgy", "qutub minar complex pillar", "ancient metallurgy artifact"],
+        "must_show": ["ancient iron pillar", "ancient inscription", "historical monument"],
+        "avoid": ["modern laboratory", "microscope", "scientists in lab coats", "outer space"],
+    },
+    {
+        "triggers": [
+            "कोणार्क", "सूर्य मंदिर", "konark", "sun temple", "पहिया", "sun dial", "धूपघड़ी"
+        ],
+        "subject": "ancient Konark sun temple stone chariot wheel sundial",
+        "search_queries": ["konark sun temple wheel", "ancient sun temple odisha", "ancient stone sundial carvings", "konark temple architecture"],
+        "must_show": ["sun temple wheel", "intricate stone carvings", "ancient temple architecture"],
+        "avoid": ["modern laboratory", "microscope", "outer space", "office"],
+    },
+    {
+        "triggers": [
+            "पद्मनाभ", "padmanabha", "वॉल्ट बी", "vault b", "नागा बंधम", "naga bandham", "तिजोरी"
+        ],
+        "subject": "ancient Padmanabhaswamy temple secret vault B doorway",
+        "search_queries": ["padmanabhaswamy temple secret vault", "ancient temple golden door", "ancient stone temple kerala", "sacred serpent carvings"],
+        "must_show": ["ancient temple doorway", "sacred carvings", "golden temple"],
+        "avoid": ["modern laboratory", "microscope", "bank vault modern", "outer space"],
+    },
+    {
+        "triggers": [
+            "हम्पी", "hampi", "विट्ठल", "vittala", "सारेगामा खंभे", "म्यूजिकल पिलर", "musical pillars"
+        ],
+        "subject": "ancient Vittala temple Hampi musical stone pillars",
+        "search_queries": ["vittala temple hampi musical pillars", "ancient stone pillars hampi", "hampi ruins karnataka aerial", "ancient temple architecture"],
+        "must_show": ["musical stone pillars", "intricate stone carvings", "ancient temple ruins"],
+        "avoid": ["modern laboratory", "microscope", "guitars modern", "outer space"],
+    },
+    {
+        "triggers": [
             "कैलाश मंदिर", "कैलासा", "एलोरा", "एक ही पत्थर", "चट्टान काटकर", "kailasa temple", "ellora",
             "monolithic rock temple"
         ],
         "subject": "ancient Kailasa monolithic rock temple carved from top to bottom",
         "search_queries": ["ancient stone temple ruins", "kailasa temple ellora", "ancient rock carved temple", "ancient indian architecture"],
         "must_show": ["ancient rock temple", "intricate stone pillars", "monolithic carving"],
-        "avoid": ["modern office", "cars", "outer space", "smartphone", "neon"],
+        "avoid": ["modern laboratory", "microscope", "scientists in lab coats", "modern office", "cars", "outer space", "smartphone", "neon"],
     },
     {
         "triggers": [
@@ -173,7 +227,7 @@ HINDI_VISUAL_CONCEPTS: List[Dict[str, Any]] = [
         "subject": "underwater ancient submerged stone city ruins",
         "search_queries": ["underwater ancient ruins", "submerged stone city", "underwater temple ruins", "ancient sunken city"],
         "must_show": ["underwater stone ruins", "ancient pillars submerged", "ancient sunken stone"],
-        "avoid": ["modern submarine cartoon", "office", "cars"],
+        "avoid": ["modern laboratory", "microscope", "scientists in lab coats", "modern submarine cartoon", "office", "cars"],
     },
     {
         "triggers": [
@@ -183,7 +237,7 @@ HINDI_VISUAL_CONCEPTS: List[Dict[str, Any]] = [
         "subject": "ancient Indian stone temple with intricate carvings at golden hour",
         "search_queries": ["ancient indian temple", "stone temple carvings", "ancient temple architecture", "ancient stone ruins"],
         "must_show": ["ancient stone temple", "intricate carvings", "majestic architecture"],
-        "avoid": ["modern city", "cars", "office", "outer space", "smartphone"],
+        "avoid": ["modern laboratory", "microscope", "scientists in lab coats", "modern city", "cars", "office", "outer space", "smartphone"],
     },
     {
         "triggers": [
@@ -236,13 +290,13 @@ HINDI_VISUAL_CONCEPTS: List[Dict[str, Any]] = [
     },
     {
         "triggers": [
-            "वैज्ञानिक", "प्रयोगशाला", "रिसर्च", "माइक्रोस्कोप", "शोध", "जांच", "लैब",
-            "scientist", "laboratory", "microscope", "science experiment", "researchers"
+            "प्रयोगशाला", "केमिकल लैब", "टेस्ट ट्यूब", "माइक्रोस्कोप", "केमिस्ट्री लैब",
+            "laboratory experiment", "chemical reaction lab", "biology lab"
         ],
-        "subject": "scientists conducting advanced research in modern high-tech laboratory",
+        "subject": "scientists conducting chemical biology experiment in laboratory",
         "search_queries": ["scientists in laboratory", "science research microscope", "high tech laboratory", "scientific experiment glass"],
         "must_show": ["scientists in lab coats", "laboratory equipment", "microscope or test tubes"],
-        "avoid": ["messy kitchen", "cartoon", "garage"],
+        "avoid": ["ancient temple", "ancient architecture", "ruins", "messy kitchen", "cartoon", "garage"],
     },
     {
         "triggers": [
@@ -425,7 +479,10 @@ def extract_english_visual_queries(
         def _call_ai():
             from google import genai
             from google.genai import types
-            client = genai.Client(api_key=gemini_key)
+            client = genai.Client(
+                api_key=gemini_key,
+                http_options=types.HttpOptions(timeout=6000),
+            )
             prompt = f"""You are an elite video director sourcing exact visual footage for a viral video.
 Topic/Title: "{clean_topic}"
 Current Scene #{scene_idx + 1} Spoken Narration: "{raw_text}"
@@ -436,11 +493,15 @@ TASK:
 3. Identify the main physical visual subject.
 
 STRICT ACCURACY RULES:
+- HERITAGE & TEMPLES RULE: If the topic or narration mentions an ancient temple, historical monument, or sacred site (e.g. Kailasa, Lepakshi, Ram Setu, Iron Pillar, Dwarka, Konark, Ellora, Ajanta, Hampi, temples, ancient architecture, archaeology):
+  Visuals MUST STRICTLY feature ancient stone temples, majestic carvings, stone pillars, aerial monument views, or archaeological relics.
+  NEVER EVER generate modern science laboratories, scientists in lab coats, test tubes, or microscopes, EVEN IF the narration mentions "वैज्ञानिक" (scientists), "रिसर्च" (research), or "जांच" (investigation)! That is just rhetorical narrator speech!
+- SPACE & COSMIC RULE: If the topic is about space, universe, black holes, rogue planets, stars:
+  Visuals MUST depict the actual cosmic phenomenon (black hole accretion disk, planet surface, nebula, supernova, spinning galaxy).
+  NEVER show a person on Earth looking through a telescope or standing in an observatory dome!
 - If the narration mentions an animal, insect, or plant (e.g. jaguar, crocodile, exploding seed pod, eagle), search queries MUST feature that exact animal/plant.
 - If it mentions a specific machine, experiment, or vehicle (e.g. submarine, rocket, particle collider), queries MUST feature that subject.
 - If it mentions underwater / ocean floor / brine pool, queries MUST be about underwater deep sea.
-- If it mentions space / black hole / event horizon / time dilation, queries MUST be space astrophysics.
-- If it mentions ancient temples, architecture, or history, queries MUST be ancient temples / archaeology.
 - NEVER invent unrelated outer space, generic waterfalls, or random rooms for specific real-world stories.
 
 Return JSON only:
@@ -451,7 +512,7 @@ Return JSON only:
   "avoid": ["unrelated element 1", "element 2"],
   "visual_description": "1 clear sentence describing what the viewer should see"
 }}"""
-            for m in ("gemini-3.5-flash-lite", "gemini-flash-lite-latest", "gemini-3.8-flash"):
+            for m in ("gemini-3.1-flash-lite", "gemini-3.5-flash", "gemini-flash-latest", "gemini-3.8-flash"):
                 try:
                     resp = client.models.generate_content(
                         model=m,
@@ -496,7 +557,24 @@ Return JSON only:
     # -------------------------------------------------------------
     # STEP 2: Semantic dictionary fallback (Only when AI is unavailable, requiring meaningful phrases)
     # -------------------------------------------------------------
+    is_temple_or_history_topic = any(
+        k in combined_lower for k in (
+            "मंदिर", "temple", "mandir", "kailasa", "कैलाश", "lepakshi", "लेपाक्षी",
+            "ram setu", "राम सेतु", "dwarka", "द्वारका", "pillar", "स्तंभ", "khambha",
+            "खंभा", "ellora", "एलोरा", "konark", "कोणार्क", "hampi", "हम्पी",
+            "brihadeeswarar", "बृहदेश्वर", "padmanabha", "पद्मनाभ", "puri", "jagannath",
+            "kedarnath", "somnath", "ajanta", "अजंता", "khajuraho", "खजुराहो",
+            "varanasi", "काशी", "ghat", "घाट", "harappa", "हड़प्पा", "mohenjo", "मोहनजोदड़ो",
+            "archaeol", "prachin", "प्राचीन", "itihas", "इतिहास", "monument", "स्मारक", "heritage"
+        )
+    )
+
     for concept in HINDI_VISUAL_CONCEPTS:
+        # If the overall story is about an ancient temple or historical place,
+        # NEVER match laboratory or modern office concepts
+        if is_temple_or_history_topic and any(b in str(concept.get("subject", "")).lower() for b in ("laboratory", "microscope", "server room", "robot")):
+            continue
+
         triggers = concept.get("triggers", [])
         meaningful_triggers = [t for t in triggers if len(t) >= 4 or " " in t]
         if any(trig in raw_text.lower() for trig in meaningful_triggers):
@@ -513,6 +591,9 @@ Return JSON only:
     # STEP 3: Topic / Combined concept matching
     # -------------------------------------------------------------
     for concept in HINDI_VISUAL_CONCEPTS:
+        if is_temple_or_history_topic and any(b in str(concept.get("subject", "")).lower() for b in ("laboratory", "microscope", "server room", "robot")):
+            continue
+
         triggers = concept.get("triggers", [])
         if any(trig in combined_lower for trig in triggers):
             return {
@@ -544,19 +625,26 @@ Return JSON only:
                 f"{eng_words[1]} detailed",
             ],
             "must_show": [eng_words[0], eng_words[1]],
-            "avoid": ["modern office", "cartoon", "smartphone"],
+            "avoid": ["modern office", "cartoon", "smartphone", "laboratory"],
             "visual_description": f"Cinematic shot of {subject}",
             "mode": "latin_tokens",
         }
 
-    # General High-Quality Cinematic Fallback
-    general_styles = [
-        ("deep space galaxy cosmos", ["deep space galaxy", "cosmic stars galaxy", "outer space nebula"]),
-        ("ancient stone temple ruins", ["ancient stone temple", "ancient temple ruins", "stone carvings ancient"]),
-        ("dark deep ocean abyss", ["dark deep ocean", "underwater deep sea", "ocean abyss dark"]),
-        ("mysterious dramatic atmosphere", ["cinematic dramatic mystery", "dark moody atmospheric", "atmospheric mystery suspense"]),
-    ]
-    chosen = general_styles[scene_idx % len(general_styles)]
+    # General High-Quality Cinematic Fallback (Strictly Respecting Genre)
+    if is_temple_or_history_topic:
+        chosen = ("ancient Indian stone temple ruins", ["ancient indian temple", "ancient stone temple carvings", "stone temple architecture", "ancient archaeological site"])
+    elif any(k in combined_lower for k in ("space", "antariksh", "अंतरिक्ष", "black hole", "galaxy", "universe", "planet", "stars", "cosmos")):
+        chosen = ("deep space galaxy cosmos", ["deep space galaxy", "cosmic stars galaxy", "outer space nebula", "glowing stars cosmos"])
+    elif any(k in combined_lower for k in ("ocean", "samundar", "समुद्र", "सागर", "sea", "trench", "underwater")):
+        chosen = ("dark deep ocean abyss", ["dark deep ocean", "underwater deep sea", "ocean abyss dark", "deep ocean water"])
+    else:
+        general_styles = [
+            ("deep space galaxy cosmos", ["deep space galaxy", "cosmic stars galaxy", "outer space nebula"]),
+            ("ancient stone temple ruins", ["ancient stone temple", "ancient temple ruins", "stone carvings ancient"]),
+            ("dark deep ocean abyss", ["dark deep ocean", "underwater deep sea", "ocean abyss dark"]),
+            ("mysterious dramatic atmosphere", ["cinematic dramatic mystery", "dark moody atmospheric", "atmospheric mystery suspense"]),
+        ]
+        chosen = general_styles[scene_idx % len(general_styles)]
     return {
         "subject": chosen[0],
         "search_queries": chosen[1],

@@ -627,7 +627,7 @@ class StockFetcher:
             motion_fallbacks = ["space galaxy stars", "deep space galaxy", "earth rotating in space", "cosmic nebula colorful", "black hole space"]
         elif any(k in context_lower for k in ("temple", "mandir", "kailasa", "ellora", "prachin", "monument", "mahabharat", "ramayan", "dwarka", "vedic")) or (not is_space and any(k in context_lower for k in ("stone", "ruins", "ancient", "bharat"))):
             motion_fallbacks = ["ancient indian temple architecture", "ancient stone temple carvings", "hindu temple drone aerial", "ancient archaeological ruins"]
-        elif any(k in context_lower for k in ("cell", "biology", "microscop", "organism", "dna", "gene", "bacteria", "science", "laboratory", "molecule", "hydra", "tissue", "regenerat")):
+        elif any(k in context_lower for k in ("cell", "biology", "microscop", "organism", "dna", "gene", "bacteria", "laboratory", "molecule", "hydra", "tissue", "regenerat")):
             motion_fallbacks = ["microscopic cells dividing", "laboratory science research", "abstract medical cellular biology", "dna helix animation"]
         elif any(k in context_lower for k in ("ocean", "squid", "mariana", "abyss", "trench", "deep sea", "underwater", "marine", "octopus")):
             motion_fallbacks = ["deep ocean creature underwater", "deep sea dark water", "abyssal ocean waves", "dark underwater bubbles"]
