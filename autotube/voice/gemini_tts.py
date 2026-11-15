@@ -141,11 +141,12 @@ class GeminiTTSEngine:
                 last_error = net_err
                 print_warning(f"   ⚠️ Gemini TTS HTTP call failed for '{model}': {net_err}")
 
-        # Attempt 2: SDK Client Fallback if direct HTTP didn't produce audio
-        if not audio_bytes:
+        # Attempt 2: SDK Client Fallback if direct HTTP didn't produce audio (skip if quota limited to avoid hang)
+        is_quota_limited = bool(last_error and "429" in str(last_error))
+        if not audio_bytes and not is_quota_limited:
             for model in candidate_models:
                 try:
-                    client = genai.Client(api_key=self.api_key)
+                    client = genai.Client(api_key=self.api_key, http_options={"timeout": 15000})
                     response = client.interactions.create(
                         model=model,
                         input=[{"type": "user_input", "content": [{"type": "text", "text": clean_text}]}],

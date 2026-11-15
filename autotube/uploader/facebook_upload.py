@@ -45,7 +45,7 @@ class FacebookReelsUploader:
         if not self.credentials_path.exists():
             return {}
         try:
-            with open(self.credentials_path, "r", encoding="utf-8") as f:
+            with open(self.credentials_path, "r", encoding="utf-8-sig") as f:
                 return json.load(f)
         except Exception as e:
             logger.error(f"Error reading Facebook credentials: {e}")
@@ -342,6 +342,153 @@ class FacebookReelsUploader:
 
         return "\n".join(parts).strip()
 
+    def upload_video(
+        self,
+        video_path: Path,
+        title: str,
+        description: Optional[str] = None,
+        tags: Optional[List[str]] = None,
+        progress_callback: Optional[Callable[[int, str], None]] = None,
+    ) -> Dict[str, Any]:
+        """Upload a standard feed / long-form video (3+ minutes) to Facebook Page for In-Stream Ads.
+        
+        Args:
+            video_path: Path to MP4 video file.
+            title: Title of the video.
+            description: Description / text caption.
+            tags: Hashtags list.
+            progress_callback: Optional progress reporter.
+        """
+        video_path = Path(video_path)
+        if not video_path.exists():
+            return {"success": False, "error": f"Video not found: {video_path}"}
+            
+        creds = self.load_credentials()
+        page_id = creds.get("page_id")
+        access_token = creds.get("access_token")
+        if not page_id or not access_token:
+            return {"success": False, "error": "Facebook Page credentials missing."}
+
+        caption = self._build_reel_caption(title=title, description=description, tags=tags)
+        url = f"{GRAPH_API_BASE}/{page_id}/videos"
+        
+        print_info(f"📤 Uploading long-form video ({video_path.name}) to Facebook Page feed...")
+        try:
+            with open(video_path, "rb") as f:
+                files = {"source": (video_path.name, f, "video/mp4")}
+                data = {
+                    "title": title,
+                    "description": caption,
+                    "access_token": access_token
+                }
+                resp = requests.post(url, files=files, data=data, timeout=300)
+            
+            resp_data = resp.json()
+            if resp.status_code != 200 or "error" in resp_data:
+                err_msg = resp_data.get("error", {}).get("message", resp.text)
+                print_error(f"❌ Facebook video upload failed: {err_msg}")
+                return {"success": False, "error": err_msg}
+                
+            video_id = resp_data.get("id")
+            post_url = f"https://www.facebook.com/{page_id}/videos/{video_id}"
+            print_success(f"🎉 Long-form video published to Facebook! ID: {video_id}")
+            
+            self._record_publish(
+                video_id=video_id,
+                post_id=f"{page_id}_{video_id}",
+                title=title,
+                caption=caption,
+                reel_url=post_url,
+                video_filename=video_path.name,
+                content_type="long_video"
+            )
+            return {"success": True, "video_id": video_id, "post_url": post_url}
+        except Exception as e:
+            logger.error(f"Error uploading long-form video to Facebook: {e}", exc_info=True)
+            return {"success": False, "error": str(e)}
+
+    def publish_photo(
+        self,
+        image_path: Path,
+        caption: str,
+        tags: Optional[List[str]] = None,
+    ) -> Dict[str, Any]:
+        """Upload and publish a photo / infographic post directly to the Facebook Page feed.
+        
+        Args:
+            image_path: Local path to 1080x1080 (or other format) image file.
+            caption: Formatted text caption with headline, breakdown, and engagement poll.
+            tags: Optional hashtags to append if not already in caption.
+        """
+        img_path = Path(image_path)
+        if not img_path.exists():
+            return {"success": False, "error": f"Image file not found: {image_path}"}
+
+        creds = self.load_credentials()
+        page_id = creds.get("page_id")
+        access_token = creds.get("access_token")
+
+        if not page_id or not access_token:
+            return {"success": False, "error": "Facebook Page ID or Access Token not configured."}
+
+        print_info(f"📸 Preparing photo upload to Facebook Page '{creds.get('page_name', page_id)}'...")
+
+        clean_caption = caption.strip()
+        if tags:
+            for t in tags:
+                tag_str = str(t).strip()
+                if not tag_str.startswith("#"):
+                    tag_str = f"#{tag_str}"
+                if tag_str.lower() not in clean_caption.lower():
+                    clean_caption += f" {tag_str}"
+
+        url = f"{GRAPH_API_BASE}/{page_id}/photos"
+        try:
+            with open(img_path, "rb") as img_file:
+                files = {"source": (img_path.name, img_file, "image/jpeg")}
+                data = {
+                    "message": clean_caption,
+                    "access_token": access_token,
+                    "published": "true",
+                }
+                print_info(f"📤 Uploading photo ({img_path.name}) to Facebook Graph API...")
+                resp = requests.post(url, files=files, data=data, timeout=60)
+
+            resp_data = resp.json()
+            if resp.status_code != 200 or "error" in resp_data:
+                err_msg = resp_data.get("error", {}).get("message", resp.text)
+                print_error(f"❌ Facebook photo upload failed: {err_msg}")
+                return {"success": False, "error": err_msg, "response": resp_data}
+
+            photo_id = resp_data.get("id", "")
+            post_id = resp_data.get("post_id", f"{page_id}_{photo_id}")
+            post_url = f"https://www.facebook.com/{post_id}"
+
+            print_success(f"🎉 Photo published to Facebook Page! ID: {photo_id}")
+            print_success(f"🔗 Post URL: {post_url}")
+
+            self._record_publish(
+                video_id=photo_id,
+                post_id=post_id,
+                title=clean_caption.split("\n")[0][:80],
+                caption=clean_caption,
+                reel_url=post_url,
+                video_filename=img_path.name,
+                content_type="photo",
+            )
+
+            return {
+                "success": True,
+                "photo_id": photo_id,
+                "post_id": post_id,
+                "post_url": post_url,
+            }
+
+        except Exception as e:
+            logger.error(f"Exception during Facebook photo upload: {e}", exc_info=True)
+            print_error(f"❌ Photo upload exception: {e}")
+            return {"success": False, "error": str(e)}
+
     def _record_publish(
         self,
         video_id: str,
@@ -350,12 +497,13 @@ class FacebookReelsUploader:
         caption: str,
         reel_url: str,
         video_filename: str,
+        content_type: str = "reel",
     ) -> None:
         """Record published Reel details in history."""
         try:
             records = []
             if self.history_path.exists():
-                with open(self.history_path, "r", encoding="utf-8") as f:
+                with open(self.history_path, "r", encoding="utf-8-sig") as f:
                     records = json.load(f)
                     if not isinstance(records, list):
                         records = []
@@ -368,6 +516,7 @@ class FacebookReelsUploader:
                     "title": title,
                     "reel_url": reel_url,
                     "video_filename": video_filename,
+                    "content_type": content_type,
                     "published_at": int(time.time()),
                     "published_date": time.strftime("%Y-%m-%d %H:%M:%S"),
                 },
@@ -391,3 +540,8 @@ class FacebookReelsUploader:
                 return data if isinstance(data, list) else []
         except Exception:
             return []
+
+
+# Backward compatibility and semantic alias
+FacebookPageManager = FacebookReelsUploader
+

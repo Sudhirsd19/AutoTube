@@ -11,7 +11,7 @@ import yt_dlp
 
 from autotube.config import PROJECT_ROOT
 from autotube.utils.console import print_info, print_success, print_warning, print_error
-from autotube.utils.ffmpeg_helper import get_ffmpeg_path, get_media_duration
+from autotube.utils.ffmpeg_helper import get_ffmpeg_path, get_media_duration, get_media_dimensions
 
 YOUTUBE_CACHE_DIR = PROJECT_ROOT / "temp" / "youtube_clips"
 YOUTUBE_CACHE_DIR.mkdir(parents=True, exist_ok=True)
@@ -242,13 +242,22 @@ class YouTubeHarvester:
 
         Returns metadata list: id, title, url, duration, views.
         """
-        clean_q = re.sub(r"[^\w\s-]", " ", query).strip()
+        if any('\u0900' <= c <= '\u097f' for c in query):
+            from autotube.media.hindi_visual_extractor import extract_english_visual_queries
+            try:
+                h_res = extract_english_visual_queries(query)
+                clean_q = " ".join(h_res.get("search_queries")[:2]) if h_res.get("search_queries") else (h_res.get("subject") or "documentary")
+            except Exception:
+                clean_q = re.sub(r"[^\w\s-]", " ", query).strip()
+        else:
+            clean_q = re.sub(r"[^\w\s-]", " ", query).strip()
+
         if not clean_q:
             return []
 
         enriched_q = self.enrich_character_query(clean_q)
-        negative_filters = "-mimicry -acting -filter -parody -roast -lookalike -cosplay -duplicate"
-        search_term = f"{enriched_q} shorts #shorts {negative_filters}"
+        negative_filters = "-mimicry -acting -filter -parody -roast -lookalike -cosplay -duplicate -song -music -dance -vlog -recipe -cooking -status"
+        search_term = f"{enriched_q} shorts {negative_filters}" if "documentary" not in enriched_q.lower() else f"{enriched_q} {negative_filters}"
         print_info(f"🔎 [YouTube Harvester] Searching authentic viral clips for: '{enriched_q}'...")
 
         ffmpeg_exe = get_ffmpeg_path()
@@ -307,8 +316,8 @@ class YouTubeHarvester:
                     t_low = (c.get("title") or "").lower()
                     has_tag = any(x in t_low for x in ["#short", "short", "shorts", "reel"])
 
-                    req_min = max(25.0, target_duration - 10)
-                    req_max = max(120.0, target_duration * 2.5)
+                    req_min = 3.0
+                    req_max = 600.0
 
                     if req_min <= d <= req_max:
                         dur_rank = 5
@@ -350,9 +359,9 @@ class YouTubeHarvester:
         node_path = shutil.which("node") or ("/usr/bin/node" if os.path.exists("/usr/bin/node") else None)
 
         fmt = (
-            "best[height<=720][ext=mp4]/best[height<=1080][ext=mp4]/bestvideo[height<=720]+bestaudio/best"
+            "bestvideo[height<=1080][ext=mp4]+bestaudio/best[height<=1080]/bestvideo+bestaudio/best"
             if include_audio
-            else "bestvideo[height<=1080][ext=mp4]/bestvideo[height<=1080]/bestvideo/best"
+            else "bestvideo[height<=1440][ext=mp4]/bestvideo[height<=1080][ext=mp4]/bestvideo[height<=1080]/bestvideo/best"
         )
 
         ydl_opts: Dict[str, Any] = {
@@ -421,30 +430,57 @@ class YouTubeHarvester:
         target_w = 1080 if orientation == "portrait" else 1920
         target_h = 1920 if orientation == "portrait" else 1080
 
-        filter_str = (
-            f"scale={target_w}:{target_h}:force_original_aspect_ratio=increase,"
-            f"crop={target_w}:{target_h},"
-            f"crop=w='2*trunc(iw*0.94/2)':h='2*trunc(ih*0.94/2)':x='(iw-2*trunc(iw*0.94/2))/2':y='(ih-2*trunc(ih*0.94/2))/2',"
-            f"scale={target_w}:{target_h},"
-            f"setpts=PTS/1.04,"
-            f"eq=contrast=1.05:brightness=0.01:saturation=1.06,"
-            f"noise=c0s=2:allf=t"
-        )
+        in_w, in_h = get_media_dimensions(input_path)
+        is_landscape = (in_w / max(1, in_h)) >= 1.05
 
-        cmd = [
-            ffmpeg_exe, "-y",
-            "-ss", str(start_time),
-            "-t", str(duration),
-            "-i", str(input_path),
-            "-vf", filter_str,
-            "-an",
-            "-c:v", "libx264",
-            "-pix_fmt", "yuv420p",
-            "-preset", "veryfast",
-            "-crf", "22",
-            "-movflags", "+faststart",
-            str(output_path)
-        ]
+        if orientation == "portrait" and is_landscape:
+            # CINEMATIC FULL-FRAME 9:16 COVER:
+            # Scale video to fill 100% of 1080x1920 vertical canvas edge-to-edge.
+            # ZERO blurry letterbox bars! Subject fills the screen in crisp high definition.
+            filter_str = (
+                f"scale={target_w}:{target_h}:force_original_aspect_ratio=increase,"
+                f"crop={target_w}:{target_h},"
+                f"setpts=PTS/1.04,"
+                f"eq=contrast=1.06:brightness=0.01:saturation=1.08"
+            )
+            cmd = [
+                ffmpeg_exe, "-y",
+                "-ss", str(start_time),
+                "-t", str(duration),
+                "-i", str(input_path),
+                "-vf", filter_str,
+                "-an",
+                "-c:v", "libx264",
+                "-pix_fmt", "yuv420p",
+                "-preset", "medium",
+                "-crf", "18",
+                "-movflags", "+faststart",
+                str(output_path)
+            ]
+        else:
+            filter_str = (
+                f"scale={target_w}:{target_h}:force_original_aspect_ratio=increase,"
+                f"crop={target_w}:{target_h},"
+                f"crop=w='2*trunc(iw*0.94/2)':h='2*trunc(ih*0.94/2)':x='(iw-2*trunc(iw*0.94/2))/2':y='(ih-2*trunc(ih*0.94/2))/2',"
+                f"scale={target_w}:{target_h},"
+                f"setpts=PTS/1.04,"
+                f"eq=contrast=1.05:brightness=0.01:saturation=1.06,"
+                f"noise=c0s=2:allf=t"
+            )
+            cmd = [
+                ffmpeg_exe, "-y",
+                "-ss", str(start_time),
+                "-t", str(duration),
+                "-i", str(input_path),
+                "-vf", filter_str,
+                "-an",
+                "-c:v", "libx264",
+                "-pix_fmt", "yuv420p",
+                "-preset", "medium",
+                "-crf", "18",
+                "-movflags", "+faststart",
+                str(output_path)
+            ]
 
         try:
             res = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=25)
@@ -652,8 +688,8 @@ class YouTubeHarvester:
                         return transformed
 
             # 2. Character / Query Search Mode
-            effective_query = query_or_url
-            if character_hint and character_hint.strip():
+            effective_query = str(query_or_url or "")
+            if character_hint and isinstance(character_hint, str) and character_hint.strip():
                 clean_char = character_hint.strip()
                 if clean_char.lower() not in effective_query.lower():
                     effective_query = f"{clean_char} {effective_query}"
@@ -663,7 +699,7 @@ class YouTubeHarvester:
                 concise_q = " ".join(effective_query.split()[:3])
                 print_info(f"   🔎 [YouTube Harvester] Retrying with concise query: '{concise_q}'...")
                 candidates = self.search_top_shorts(concise_q, limit=5, target_orientation=orientation)
-            if not candidates and character_hint:
+            if not candidates and character_hint and isinstance(character_hint, str) and character_hint.strip():
                 candidates = self.search_top_shorts(character_hint.strip(), limit=5, target_orientation=orientation)
 
             for cand in candidates:

@@ -333,11 +333,26 @@ HINDI_VISUAL_CONCEPTS: List[Dict[str, Any]] = [
         "avoid": ["zoo cage", "cartoon", "circus"],
     },
     {
-        "triggers": ["चील", "बाज", "उड़ान", "शिकारी पक्षी", "eagle", "hawk", "falcon", "flying eagle"],
-        "subject": "majestic golden eagle soaring through mountain clouds",
-        "search_queries": ["golden eagle flying", "eagle soaring mountains", "predator eagle flying sky", "eagle closeup eyes"],
+        "triggers": [
+            "पेरेग्रीन बाज़", "पेरेग्रीन बाज", "पेरेग्रीन", "peregrine falcon", "peregrine", "बाज़", "बाज",
+            "390 किमी", "390 km/h", "390 kmh", "टर्मिनल वेलोसिटी", "stoop dive", "बाज़ की स्पीड", "तेज बाज़", "शिकारी बाज़"
+        ],
+        "subject": "peregrine falcon diving at 390 km/h high speed predatory stoop hunt",
+        "search_queries": [
+            "peregrine falcon dive 4k",
+            "peregrine falcon stoop 4k bbc natgeo",
+            "peregrine falcon fastest animal attack",
+            "peregrine falcon closeup eyes beak"
+        ],
+        "must_show": ["peregrine falcon", "high speed dive", "falcon predatory flight", "falcon closeup"],
+        "avoid": ["airplane", "jet", "golden eagle", "seagull", "pigeon", "crow", "city street light", "cage", "cartoon"],
+    },
+    {
+        "triggers": ["चील", "गरुड़", "eagle", "golden eagle", "flying eagle", "bald eagle"],
+        "subject": "majestic eagle soaring through mountain clouds",
+        "search_queries": ["eagle soaring mountains", "predator eagle flying sky", "eagle closeup eyes"],
         "must_show": ["flying eagle", "wide wingspan", "sky mountains"],
-        "avoid": ["cage", "cartoon", "poultry farm"],
+        "avoid": ["cage", "cartoon", "street lamp"],
     },
     {
         "triggers": ["शार्क", "व्हेल", "व्हेल मछली", "shark", "great white shark", "whale", "blue whale"],

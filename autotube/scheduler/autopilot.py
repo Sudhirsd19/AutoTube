@@ -127,11 +127,11 @@ DAILY_SCHEDULE_SLOTS = [
         "hour": 12,
         "minute": 0,
         "tz": "ist",
-        "niche": "bharat_vigyan",
+        "niche": "space",
         "lang": "hi",
         "voice": "auto",
         "format": "short",
-        "label": "12:00 PM IST - Bharat Ka Prachin Vigyan (Hindi Short)",
+        "label": "12:00 PM IST - Cosmic Space & Universe Mysteries (Hindi Short)",
     },
     # Slot 4 (Short 4 - English): 02:30 PM IST (05:00 AM EDT)
     {
@@ -171,22 +171,22 @@ DAILY_SCHEDULE_SLOTS = [
         "hour": 20,
         "minute": 0,
         "tz": "ist",
-        "niche": "bharat_vigyan",
+        "niche": "mystery",
         "lang": "hi",
         "voice": "auto",
         "format": "landscape_long",
-        "label": "08:00 PM IST - प्राचीन भारत के अनसुलझे रहस्य व खोया विज्ञान [16:9 Landscape Documentary] (Hindi Long)",
+        "label": "08:00 PM IST - दुनिया के अनसुलझे रहस्य व खोया विज्ञान [16:9 Landscape Documentary] (Hindi Long)",
     },
     # Slot 8 (Short 7 - Hindi): 09:45 PM IST
     {
         "hour": 21,
         "minute": 45,
         "tz": "ist",
-        "niche": "history",
+        "niche": "conspiracy",
         "lang": "hi",
         "voice": "auto",
         "format": "short",
-        "label": "09:45 PM IST - Rahasyamay Itihas & Khopiya Sach (Hindi Short)",
+        "label": "09:45 PM IST - Declassified Secrets & Khopiya Sach (Hindi Short)",
     },
     # Slot 9 (Short 8 - English): 11:30 PM IST (02:00 PM EDT)
     {
@@ -259,10 +259,14 @@ class AutoPilot:
         cfg_path = Path("config/slots_config.json")
         if cfg_path.exists():
             try:
-                import json
                 with open(cfg_path, "r", encoding="utf-8") as f:
                     data = json.load(f)
                     slots = data.get("slots", [])
+                    global_dur = data.get("shorts_duration")
+                    if global_dur:
+                        for s in slots:
+                            if "target_duration" not in s and "duration" not in s:
+                                s["target_duration"] = int(global_dur)
             except Exception as e:
                 print_warning(f"Could not load slots_config.json: {e}")
 
@@ -342,9 +346,8 @@ class AutoPilot:
                 if self.niche not in ("mixed", "auto", "daily", "daily_slots", "daily_mirror", "day_wise"):
                     raw_slot_niche = self.niche
 
-                canon_niche, niche_desc = self.trend_finder.resolve_niche(raw_slot_niche)
-
                 item_lang = (slot_data.get("language") or slot_data.get("lang")) if is_mixed_lang else self.language
+                canon_niche, niche_desc = self.trend_finder.resolve_niche(raw_slot_niche, language=item_lang)
                 item_voice = self.voice or get_viral_voice_for_slot(slot_data.get("voice"), item_lang)
                 item_tz = slot_data.get("tz", "us" if str(item_lang).lower().startswith("en") else "ist")
                 item_format = slot_data.get("format", "short")
@@ -357,9 +360,21 @@ class AutoPilot:
                         slot_bgm = "history"
 
                 # Check if this slot mirrors a previous slot
+                saved_paired = _load_paired_topics()
                 if pair_target and pair_target in generated_topics_by_id:
                     topic_title = generated_topics_by_id[pair_target]
                     print_info(f"Mirror Slot [{curr_slot_id}] paired with [{pair_target}]: Reusing topic '{topic_title}' ({item_lang})")
+                elif curr_slot_id in saved_paired and saved_paired[curr_slot_id]:
+                    cand_topic = saved_paired[curr_slot_id]
+                    # Verify language compatibility: if slot is Hindi, topic must NOT be purely English
+                    is_slot_hi = str(item_lang).lower().startswith("hi")
+                    has_devanagari = any("\u0900" <= c <= "\u097f" for c in cand_topic)
+                    if is_slot_hi and not has_devanagari:
+                        print_warning(f"Slot [{curr_slot_id}] is Hindi but pre-paired topic is English ('{cand_topic}'). Generating fresh pure Hindi topic...")
+                        topic_title = self.trend_finder.get_single_topic(niche=canon_niche, language="hi")
+                    else:
+                        topic_title = cand_topic
+                        print_info(f"Slot [{curr_slot_id}]: Using pre-scheduled topic '{topic_title}' ({item_lang})")
                 else:
                     topic_title = self.trend_finder.get_single_topic(
                         niche=canon_niche,
@@ -468,12 +483,22 @@ class AutoPilot:
 
                 item_fmt = item.get("format", "short")
                 is_landscape = (item_fmt == "landscape_long")
-                # Read configured duration from slot or global config or settings.yaml (defaults to 25s viral sweet spot)
+                # Read configured duration from slot or slots_config.json or global config
+                slots_cfg_dur = None
+                try:
+                    cfg_p = Path("config/slots_config.json")
+                    if cfg_p.exists():
+                        with open(cfg_p, "r", encoding="utf-8") as sc_fh:
+                            slots_cfg_dur = json.load(sc_fh).get("shorts_duration")
+                except Exception:
+                    pass
+
                 configured_dur = (
                     item.get("duration")
+                    or slots_cfg_dur
                     or item.get("target_duration")
                     or getattr(self.cfg.video.shorts, "default_duration", None)
-                    or 25
+                    or 45
                 )
                 target_dur = 180 if is_landscape else int(configured_dur)
                 orientation = "landscape" if is_landscape else "portrait"
@@ -548,7 +573,15 @@ class AutoPilot:
                     except Exception:
                         use_openmontage = False
 
+                is_hindi_video = (
+                    str(item_lang).lower().startswith("hi")
+                    or item_channel == "hindi"
+                    or any("\u0900" <= c <= "\u097F" for c in (script.narration or ""))
+                    or any("\u0900" <= c <= "\u097F" for c in (script.title or ""))
+                )
+
                 final_video = None
+                r_bridge = None
                 if use_openmontage:
                     try:
                         print_info("🎬 AutoPilot: Using OpenMontage Remotion Engine for video rendering...")
@@ -574,6 +607,7 @@ class AutoPilot:
                             enable_subscribe_cta=True,
                             target_platform="youtube",
                             output_dir=output_video_path.parent,
+                            render_fb_variant=(not is_landscape and is_hindi_video),
                         )
                     except Exception as rb_err:
                         print_warning(f"Remotion render failed ({rb_err}); falling back to classic builder.")
@@ -741,6 +775,7 @@ class AutoPilot:
                         pinned_comment=getattr(script, "pinned_comment", None),
                         chapters=chapters if is_landscape else None,
                         channel=item_channel,
+                        interactive=False,
                     )
                     if video_url:
                         uploaded_urls.append(video_url)
@@ -787,11 +822,31 @@ class AutoPilot:
                                     fb_caption = (
                                         f"{v_title}\n\n"
                                         f"{clean_narration}\n\n"
-                                        f"👉 ऐसे ही रोंगटे खड़े कर देने वाले रहस्यों और अनसुने तथ्यों के लिए अभी @{page_name} पेज को फॉलो करें! 🔔✨\n\n"
+                                        f"👉 ऐसे ही अद्भुत ज्ञान और रहस्यों के लिए अभी @{page_name} पेज को फॉलो करें! 🔔\n\n"
                                         f"{' '.join(script.tags)}"
                                     )
+
+                                    # Generate or reuse dedicated Facebook-branded variant with Follow Hook banner (fb_follow_like_banner.png)
+                                    fb_video_path = getattr(r_bridge, "last_fb_video", None) if r_bridge else None
+                                    if not fb_video_path or not fb_video_path.exists():
+                                        if use_openmontage:
+                                            try:
+                                                from autotube.video.remotion_bridge import RemotionBridge
+                                                if not r_bridge:
+                                                    r_bridge = RemotionBridge()
+                                                remotion_slug = sanitize_filename(script.title or topic or "hybrid_reel")
+                                                fb_video_path = r_bridge.render_facebook_variant(
+                                                    slug=remotion_slug,
+                                                    original_video_path=final_video,
+                                                )
+                                            except Exception as fb_v_err:
+                                                print_warning(f"Could not render Facebook variant ({fb_v_err}); using base video.")
+                                                fb_video_path = final_video
+                                        else:
+                                            fb_video_path = final_video
+
                                     fb_res = fb_uploader.upload_reel(
-                                        video_path=final_video,
+                                        video_path=fb_video_path,
                                         title=v_title,
                                         description=fb_caption,
                                         tags=[t.replace('#', '') for t in script.tags],
@@ -804,6 +859,14 @@ class AutoPilot:
                                         print_warning(f"Facebook Reel upload notice: {fb_res.get('error')}")
                             except Exception as fb_err:
                                 print_warning(f"Facebook Reels publishing notice: {fb_err}")
+
+                    # Step G: Immediate post-upload storage & memory prune
+                    try:
+                        import gc
+                        gc.collect()
+                        self._cleanup_temp(max_age_hours=1)
+                    except Exception:
+                        pass
                 else:
                     self.trend_finder.record_topic(topic)
 
@@ -835,7 +898,6 @@ class AutoPilot:
         except Exception:
             pass
 
-        from autotube.config import PROJECT_ROOT
         target_dirs = [
             self.cfg.paths.temp_dir,
             PROJECT_ROOT / "temp" / "director",

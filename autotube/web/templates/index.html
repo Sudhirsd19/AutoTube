@@ -193,46 +193,137 @@
     <div id="tab-generator" class="tab-content hidden space-y-6">
       <div class="glass-card p-6 rounded-2xl border border-brand-border space-y-5 shadow-2xl">
         
-        <!-- Header: Presets, Slot Counter & Badges -->
+        <!-- Header: Autonomous 4-Slot Engine Status & Actions -->
         <div class="flex flex-wrap items-center justify-between gap-4 border-b border-slate-800 pb-4">
           <div class="flex items-center gap-3">
-            <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-brand-red to-amber-500 border border-brand-red/40 flex items-center justify-center text-white text-2xl shadow-lg neon-glow-red">
-              ⚡
+            <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-brand-cyan to-indigo-600 border border-cyan-500/40 flex items-center justify-center text-white text-2xl shadow-lg neon-glow-cyan">
+              🤖
             </div>
             <div>
               <div class="flex items-center flex-wrap gap-2">
-                <h3 class="font-black text-xl text-white tracking-wide">YouTube Slot Automation Matrix</h3>
-                <span id="slot-count-badge" class="text-xs font-bold px-2.5 py-0.5 rounded-full bg-red-950/80 text-red-400 border border-red-500/30">
-                  5 Slots Active
+                <h3 class="font-black text-xl text-white tracking-wide">24/7 Autonomous Daily Shorts Matrix</h3>
+                <span id="slot-count-badge" class="text-xs font-bold px-2.5 py-0.5 rounded-full bg-emerald-950/80 text-emerald-400 border border-emerald-500/30">
+                  4 Daily Slots Active (2 EN + 2 HI)
                 </span>
                 <div class="flex items-center gap-1 bg-slate-950 p-1 rounded-lg border border-slate-800 text-[11px] font-bold">
-                  <button type="button" onclick="filterSlotsByChannel('all')" id="slot-f-all" class="slot-filter-btn px-2 py-0.5 rounded bg-brand-cyan/20 text-brand-cyan border border-brand-cyan/40">All</button>
-                  <button type="button" onclick="filterSlotsByChannel('english')" id="slot-f-english" class="slot-filter-btn px-2 py-0.5 rounded text-slate-400 hover:text-white">🇬🇧 EN</button>
-                  <button type="button" onclick="filterSlotsByChannel('hindi')" id="slot-f-hindi" class="slot-filter-btn px-2 py-0.5 rounded text-slate-400 hover:text-white">🇮🇳 HI</button>
+                  <button type="button" onclick="filterSlotsByChannel('all')" id="slot-f-all" class="slot-filter-btn px-2.5 py-0.5 rounded bg-brand-cyan/20 text-brand-cyan border border-brand-cyan/40">All Slots (4)</button>
+                  <button type="button" onclick="filterSlotsByChannel('english')" id="slot-f-english" class="slot-filter-btn px-2.5 py-0.5 rounded text-slate-400 hover:text-white">🇬🇧 US English (2)</button>
+                  <button type="button" onclick="filterSlotsByChannel('hindi')" id="slot-f-hindi" class="slot-filter-btn px-2.5 py-0.5 rounded text-slate-400 hover:text-white">🇮🇳 IN Hindi (2)</button>
                 </div>
               </div>
-              <p class="text-xs text-slate-400">Har slot ke anusaar Time, Niche, Language, Target Channel, AI Voice aur BGM configure karein. Single slot run karein ya poora batch automate karein.</p>
+              <p class="text-xs text-slate-400">Zero-touch autopilot daily generation: 2 YouTube Shorts for English channel (@cosmochro), 2 YouTube Shorts for Hindi channel (@bgyanmantra) + Facebook Page auto cross-post.</p>
             </div>
           </div>
           
-          <!-- Templates Selector (Optional Quick-Fill) -->
-          <div class="flex flex-wrap items-center gap-1.5 bg-slate-900/95 p-1.5 rounded-xl border border-slate-800 text-xs">
-            <span class="text-[11px] text-slate-400 font-semibold px-2 flex items-center gap-1">
-              <i class="fa-solid fa-layer-group text-brand-cyan"></i> Load Template Set:
+          <div class="flex items-center gap-2">
+            <span class="slot-sync-status hidden sm:inline-flex items-center gap-1.5 text-xs text-emerald-400 font-semibold bg-emerald-950/50 border border-emerald-500/30 px-3 py-1.5 rounded-xl">
+              <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> 4 Slots AutoPilot Active
             </span>
-            <button type="button" onclick="applyPreset('elite_2')" id="preset-btn-elite_2" class="preset-btn px-3 py-1.5 rounded-lg bg-cyan-950/80 text-cyan-300 border border-cyan-500/40 hover:text-white transition font-bold shadow-md">⚡ 4 Elite Space & Mystery (2 EN + 2 HI)</button>
-            <button type="button" onclick="applyPreset('growth_4')" id="preset-btn-growth_4" class="preset-btn px-3 py-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition">🚀 4 Viral Growth</button>
-            <button type="button" onclick="applyPreset('viral_5')" id="preset-btn-viral_5" class="preset-btn px-3 py-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition">5 Viral (Daily)</button>
-            <button type="button" onclick="applyPreset('master_12')" id="preset-btn-master_12" class="preset-btn px-3 py-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition">12 Master (10S+2L)</button>
-            <button type="button" onclick="applyPreset('shorts_10')" id="preset-btn-shorts_10" class="preset-btn px-3 py-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition">10 Shorts</button>
-            <button type="button" onclick="applyPreset('balanced_7')" id="preset-btn-balanced_7" class="preset-btn px-3 py-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition">7 Balanced</button>
-            <button type="button" onclick="applyPreset('starter_3')" id="preset-btn-starter_3" class="preset-btn px-3 py-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition">3 Quick</button>
+            <button type="button" onclick="addNewSlot()" class="btn-add-slot px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold transition flex items-center gap-1.5 border border-slate-700 text-xs">
+              <i class="fa-solid fa-plus text-xs"></i> Add Slot
+            </button>
+            <button type="button" onclick="saveSlotsConfiguration()" class="btn-save-slots px-5 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-black transition flex items-center gap-1.5 shadow-lg shadow-emerald-950/50 text-xs border border-emerald-400/40">
+              <i class="fa-solid fa-floppy-disk text-xs"></i> Save Settings
+            </button>
+          </div>
+
+          <!-- Hidden preset buttons preserved for JS compatibility -->
+          <div class="hidden" aria-hidden="true">
+            <button type="button" id="preset-btn-independent_growth"></button>
+            <button type="button" id="preset-btn-elite_2"></button>
+            <button type="button" id="preset-btn-growth_4"></button>
+            <button type="button" id="preset-btn-viral_5"></button>
+            <button type="button" id="preset-btn-master_12"></button>
+            <button type="button" id="preset-btn-shorts_10"></button>
+            <button type="button" id="preset-btn-balanced_7"></button>
+            <button type="button" id="preset-btn-starter_3"></button>
           </div>
         </div>
 
-        <!-- Global Slot Settings & Action Controls -->
+        <!-- Connected Channels & API Settings Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+          
+          <!-- Card 1: English YouTube Channel -->
+          <div class="bg-slate-950/90 border border-slate-800 hover:border-slate-700 transition rounded-xl p-3.5 space-y-2 shadow-sm">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <span class="w-2 h-2 rounded-full bg-emerald-400 shadow-sm shadow-emerald-400"></span>
+                <span class="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
+                  <i class="fa-brands fa-youtube text-red-500 text-sm"></i> YouTube English
+                </span>
+              </div>
+              <span class="text-[10px] bg-emerald-950/80 text-emerald-300 border border-emerald-500/40 px-2 py-0.5 rounded-full font-bold">Connected</span>
+            </div>
+            <div class="text-xs font-bold text-cyan-300 truncate">CosmoChronicle (@cosmochro)</div>
+            <div class="text-[11px] text-slate-400 space-y-1 pt-1 border-t border-slate-800/60">
+              <div class="flex justify-between"><span>Daily Slots:</span><span class="text-slate-200 font-mono font-semibold">12:00 PM & 06:30 PM EDT</span></div>
+              <div class="flex justify-between"><span>Target Audience:</span><span class="text-slate-200">USA (US Mysteries / Space)</span></div>
+              <div class="flex justify-between"><span>Voice Narrator:</span><span class="text-amber-300 font-medium">🎙️ Puck (Gemini TTS)</span></div>
+            </div>
+          </div>
+
+          <!-- Card 2: Hindi YouTube Channel -->
+          <div class="bg-slate-950/90 border border-slate-800 hover:border-slate-700 transition rounded-xl p-3.5 space-y-2 shadow-sm">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <span class="w-2 h-2 rounded-full bg-emerald-400 shadow-sm shadow-emerald-400"></span>
+                <span class="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
+                  <i class="fa-brands fa-youtube text-red-500 text-sm"></i> YouTube Hindi
+                </span>
+              </div>
+              <span class="text-[10px] bg-emerald-950/80 text-emerald-300 border border-emerald-500/40 px-2 py-0.5 rounded-full font-bold">Connected</span>
+            </div>
+            <div class="text-xs font-bold text-cyan-300 truncate">Dulumoni Borah DB (@bgyanmantra)</div>
+            <div class="text-[11px] text-slate-400 space-y-1 pt-1 border-t border-slate-800/60">
+              <div class="flex justify-between"><span>Daily Slots:</span><span class="text-slate-200 font-mono font-semibold">01:30 PM & 08:30 PM IST</span></div>
+              <div class="flex justify-between"><span>Saturday Special:</span><span class="text-emerald-300 font-semibold">Animal Secrets & Facts</span></div>
+              <div class="flex justify-between"><span>Voice Narrator:</span><span class="text-amber-300 font-medium">🎙️ Charon (Gemini TTS)</span></div>
+            </div>
+          </div>
+
+          <!-- Card 3: Facebook Page (Hindi Reels Only) -->
+          <div class="bg-slate-950/90 border border-slate-800 hover:border-slate-700 transition rounded-xl p-3.5 space-y-2 shadow-sm">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <span class="w-2 h-2 rounded-full bg-emerald-400 shadow-sm shadow-emerald-400"></span>
+                <span class="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
+                  <i class="fa-brands fa-facebook text-blue-500 text-sm"></i> Facebook Reels
+                </span>
+              </div>
+              <span class="text-[10px] bg-blue-950/80 text-blue-300 border border-blue-500/40 px-2 py-0.5 rounded-full font-bold">Page Linked</span>
+            </div>
+            <div class="text-xs font-bold text-cyan-300 truncate">CosmoChronicle (1319257467944992)</div>
+            <div class="text-[11px] text-slate-400 space-y-1 pt-1 border-t border-slate-800/60">
+              <div class="flex justify-between"><span>Publish Policy:</span><span class="text-slate-200 font-semibold">Hindi Reels Only (2/day)</span></div>
+              <div class="flex justify-between"><span>English Filter:</span><span class="text-rose-400 font-semibold">Strictly Blocked (0 to FB)</span></div>
+              <div class="flex justify-between"><span>Follow Hook:</span><span class="text-slate-200">Dignified Gyan Hook 🔔</span></div>
+            </div>
+          </div>
+
+          <!-- Card 4: AI Engine & Storage Settings -->
+          <div class="bg-slate-950/90 border border-slate-800 hover:border-slate-700 transition rounded-xl p-3.5 space-y-2 shadow-sm">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <span class="w-2 h-2 rounded-full bg-emerald-400 shadow-sm shadow-emerald-400"></span>
+                <span class="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
+                  <i class="fa-solid fa-microchip text-amber-400 text-sm"></i> AI Engine & Storage
+                </span>
+              </div>
+              <span class="text-[10px] bg-purple-950/80 text-purple-300 border border-purple-500/40 px-2 py-0.5 rounded-full font-bold">Auto-Purge ON</span>
+            </div>
+            <div class="text-xs font-bold text-cyan-300 truncate">Gemini 3.5 Flash + Exact Visual Match</div>
+            <div class="text-[11px] text-slate-400 space-y-1 pt-1 border-t border-slate-800/60">
+              <div class="flex justify-between"><span>CTA &lt;30s:</span><span class="text-emerald-300 font-semibold">Visual Badge Only (Silent)</span></div>
+              <div class="flex justify-between"><span>CTA &ge;30s:</span><span class="text-slate-200">Dignified Spoken Outro</span></div>
+              <div class="flex justify-between"><span>Disk Guardian:</span><span class="text-emerald-400 font-mono font-semibold">Auto-Purge (7.93 GB Safe)</span></div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Global Slot Settings & Controls Bar -->
         <div class="flex flex-wrap items-center justify-between gap-3 bg-slate-900/80 border border-slate-800/90 rounded-xl px-4 py-3 text-xs">
-          <div class="flex flex-wrap items-center gap-5">
+          <div class="flex flex-wrap items-center gap-4">
             <div class="flex items-center gap-2 bg-slate-950 px-3 py-1.5 rounded-lg border border-slate-800">
               <input type="checkbox" id="matrix-daemon-check" onchange="updateMatrixDaemon(this.checked)" class="w-4 h-4 rounded text-brand-cyan focus:ring-brand-cyan bg-slate-900 border-slate-700 cursor-pointer">
               <label for="matrix-daemon-check" class="text-amber-300 font-bold flex items-center gap-1.5 cursor-pointer">
@@ -250,115 +341,50 @@
             <div class="flex items-center gap-2">
               <label for="matrix-duration-select" class="text-slate-400 font-semibold"><i class="fa-solid fa-stopwatch text-amber-400"></i> Shorts Length:</label>
               <select id="matrix-duration-select" onchange="updateMatrixDuration(this.value)" class="bg-slate-950 border border-slate-700 text-white text-xs px-3 py-1.5 rounded-lg focus:outline-none focus:border-brand-cyan font-bold text-amber-300">
-                <option value="20">⚡ 20s (Fast Hook / Ultra Viral)</option>
-                <option value="25" selected>🔥 25s (Recommended / Best Retention)</option>
-                <option value="30">⏱️ 30s (Balanced Story)</option>
-                <option value="45">📖 45s (Deep Mystery)</option>
-                <option value="55">🎬 55s (Max YouTube Shorts)</option>
+                <option value="20">⚡ 20s (Fast Hook / Ultra Viral - Visual VFX Icon Only)</option>
+                <option value="25" selected>🔥 25s (Recommended / Best Retention - Visual VFX Icon Only)</option>
+                <option value="30">⏱️ 30s (Balanced Story + Spoken CTA)</option>
+                <option value="45">📖 45s (Deep Mystery + Spoken CTA)</option>
+                <option value="55">🎬 55s (Max YouTube Shorts + Spoken CTA)</option>
               </select>
-            </div>
-            <div class="flex items-center gap-1.5 bg-purple-950/60 border border-purple-500/40 px-2.5 py-1.5 rounded-lg text-purple-300 text-[11px] font-bold">
-              <i class="fa-solid fa-bolt text-yellow-400"></i> Engine: OpenMontage Remotion + Gemini TTS (100% Enforced)
             </div>
             <div class="flex items-center gap-2">
               <input type="checkbox" id="matrix-upload-check" checked onchange="updateMatrixUpload(this.checked)" class="w-4 h-4 rounded text-brand-cyan focus:ring-brand-cyan bg-slate-950 border-slate-700">
               <label for="matrix-upload-check" class="text-slate-300 font-medium">Auto-upload to YouTube after rendering</label>
             </div>
             <span class="hidden md:inline-flex items-center gap-2 font-mono text-[11px] text-slate-400 border-l border-slate-800 pl-4">
-              <span class="text-cyan-400 font-bold"><i class="fa-solid fa-mobile-screen"></i> 9:16 Shorts</span>
-              <span class="text-slate-600">•</span>
-              <span class="text-amber-400 font-bold"><i class="fa-solid fa-film"></i> 16:9 Long (Doc)</span>
+              <span class="text-cyan-400 font-bold"><i class="fa-solid fa-mobile-screen"></i> 9:16 Vertical Shorts</span>
             </span>
           </div>
 
-          <div class="flex flex-wrap items-center gap-2.5">
-            <span class="slot-sync-status hidden sm:inline-flex items-center gap-1.5 text-xs text-slate-400 font-semibold mr-1">
-              <span class="w-2 h-2 rounded-full bg-emerald-400"></span> Synced
+          <div class="flex items-center gap-2">
+            <span class="text-[11px] text-emerald-400 font-medium bg-emerald-950/40 border border-emerald-500/20 px-2.5 py-1 rounded-lg">
+              <i class="fa-solid fa-check-double text-emerald-400"></i> OpenMontage Engine Enforced
             </span>
-            <button type="button" onclick="addNewSlot()" class="btn-add-slot px-4 py-2 rounded-xl bg-cyan-700 hover:bg-cyan-600 text-white font-bold transition flex items-center gap-1.5 shadow-md shadow-cyan-950/40 text-xs">
-              <i class="fa-solid fa-plus text-xs"></i> Add New Slot
-            </button>
-            <button type="button" onclick="saveSlotsConfiguration()" class="btn-save-slots px-5 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-black transition flex items-center gap-1.5 shadow-lg shadow-emerald-950/50 text-xs border border-emerald-400/40">
-              <i class="fa-solid fa-floppy-disk text-xs"></i> Save Slot Settings
-            </button>
           </div>
         </div>
 
-        <!-- Audio Preview Studio Bar -->
-        <div class="flex flex-wrap items-center justify-between gap-3 bg-slate-950/80 border border-slate-800 rounded-xl px-4 py-2.5 text-xs">
-          <div class="flex flex-wrap items-center gap-3">
-            <span class="text-cyan-400 font-bold flex items-center gap-1.5">
-              <i class="fa-solid fa-headphones"></i> Listen & Preview Audio:
+        <!-- Live Today's Day-Wise Theme Bar -->
+        <div class="bg-gradient-to-r from-slate-950 via-slate-900 to-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 flex flex-wrap items-center justify-between gap-3 text-xs shadow-inner">
+          <div class="flex items-center gap-2">
+            <span class="px-2.5 py-1 rounded-lg bg-amber-500/20 text-amber-300 border border-amber-500/30 font-bold flex items-center gap-1.5 text-xs">
+              <i class="fa-solid fa-calendar-day text-amber-400"></i> आज का दिन: <span id="today-day-display" class="uppercase tracking-wider">Friday</span>
             </span>
-            <!-- Quick Voice Preview -->
-            <div class="flex items-center gap-1.5 bg-slate-900 px-2 py-1 rounded-lg border border-slate-800">
-              <span class="text-[11px] text-slate-400">Voice:</span>
-              <select id="quick-voice-select" class="bg-transparent text-white font-medium text-xs focus:outline-none cursor-pointer">
-                <optgroup label="🌟 OPENMONTAGE GEMINI 3.8 FLASH TTS" class="bg-slate-900 text-slate-200">
-                  <option value="Charon" selected>🎙️ Charon — Deep, Epic Human Voice (Gemini TTS) ⭐ #1 RECOMMENDED</option>
-                  <option value="Puck">🎙️ Puck — Energetic Viral Narrator (Gemini TTS)</option>
-                  <option value="Aoede">🎙️ Aoede — Cinematic Female Voice (Gemini TTS)</option>
-                  <option value="Kore">🎙️ Kore — Soothing Storyteller Female (Gemini TTS)</option>
-                  <option value="Fenrir">🎙️ Fenrir — Intense & Mysterious Male (Gemini TTS)</option>
-                </optgroup>
-                                <optgroup label="🚀 VOICESTUDIO LOCAL AI (OFFLINE & FREE)" class="bg-slate-900 text-cyan-200">
-                  <option value="voicestudio_local">🎙️ VoiceStudio Local (100% Offline, Zero-Cost & Cloning)</option>
-                </optgroup>
-                <optgroup label="🇮🇳 HINDI VOICES (EDGE-TTS)" class="bg-slate-900 text-slate-200">
-                  <option value="hi_astro_vibes_male">🎙️ Astro Vibes Male Hindi (Space & Science Facts) ⭐ DEFAULT</option>
-                  <option value="hi_deep_cinematic_male">🎙️ Deep Cinematic Male Hindi ⭐ BEST</option>
-                  <option value="hi_calm_male">🎙️ Calm Male Hindi (Science Explanations)</option>
-                  <option value="hi_cinematic_male">🎙️ Cinematic Male Hindi (Mystery, रहस्य)</option>
-                  <option value="hi_authoritative_male">🎙️ Authoritative Male Hindi (History, Facts)</option>
-                  <option value="hi_young_male">🎙️ Young Male Hindi (Shorts, Fast Facts)</option>
-                  <option value="hi_deep_female">🎙️ Deep Female Hindi (Mystery, Dark Stories)</option>
-                  <option value="hi_calm_female">🎙️ Calm Female Hindi (Science, Space)</option>
-                  <option value="hi_cinematic_female">🎙️ Cinematic Female Hindi (Emotional)</option>
-                </optgroup>
-                <optgroup label="🇺🇸🇬🇧 ENGLISH VOICES — SPACE / MYSTERY / SCIENCE" class="bg-slate-900 text-slate-200">
-                  <option value="en_deep_cinematic_male">🎙️ Deep Cinematic American Male ⭐ BEST</option>
-                  <option value="en_deep_british_male">🎙️ Deep British Male (Documentary)</option>
-                  <option value="en_calm_british_male">🎙️ Calm British Male (Science, Space)</option>
-                  <option value="en_cinematic_narrator">🎙️ Cinematic Narrator (Mystery, Aliens)</option>
-                  <option value="en_deep_warm_male">🎙️ Deep Warm Male (Cosmic Events)</option>
-                  <option value="en_authoritative_male">🎙️ Authoritative Male (Scientific Facts)</option>
-                  <option value="en_calm_female">🎙️ Calm Female (Space & Science)</option>
-                  <option value="en_cinematic_female">🎙️ Cinematic Female (Mystery & Emotion)</option>
-                </optgroup>
-                <optgroup label="✨ CLASSIC / LEGACY" class="bg-slate-900 text-slate-200">
-                  <option value="akashvani">🎙️ आकाशवाणी (Cosmic Echo Devavani)</option>
-                  <option value="madhur">🎙️ Madhur (Natural Hindi)</option>
-                  <option value="adam">🎙️ Adam (US Male Cinematic #1)</option>
-                  <option value="swara">🎙️ Swara (Hindi Female)</option>
-                  <option value="christopher">🎙️ Christopher (Deep US Male)</option>
-                  <option value="guy">🎙️ Guy (US Storyteller)</option>
-                </optgroup>
-              </select>
-              <button type="button" onclick="playCustomVoicePreview()" class="px-2.5 py-1 rounded bg-cyan-900 hover:bg-cyan-800 text-cyan-200 font-bold flex items-center gap-1 transition shadow">
-                <i id="quick-v-icon" class="fa-solid fa-play text-[10px]"></i> Play Voice
-              </button>
-            </div>
-
-            <!-- Quick BGM Preview -->
-            <div class="flex items-center gap-1.5 bg-slate-900 px-2 py-1 rounded-lg border border-slate-800">
-              <span class="text-[11px] text-slate-400">BGM:</span>
-              <select id="quick-bgm-select" class="bg-transparent text-white font-medium text-xs focus:outline-none cursor-pointer">
-                <option value="psychology" selected>🧠 Dark Psychology (Ambient)</option>
-                <option value="spiritual">🕉️ Spiritual & Vedic (Deep Ambience / Flute)</option>
-                <option value="space">🌌 Cosmic Space (Deep Ambient)</option>
-                <option value="history">⚔️ History & Bharat (Epic / Ancient)</option>
-                <option value="mystery">🕵️ Eerie Mystery & Unsolved</option>
-                <option value="alien">🛸 Alien Sci-Fi (Atmospheric)</option>
-              </select>
-              <button type="button" onclick="playCustomBgmPreview()" class="px-2.5 py-1 rounded bg-purple-900 hover:bg-purple-800 text-purple-200 font-bold flex items-center gap-1 transition shadow">
-                <i id="quick-bgm-icon" class="fa-solid fa-play text-[10px]"></i> Play BGM
-              </button>
-            </div>
           </div>
 
-          <button type="button" onclick="stopCurrentAudio()" class="px-3 py-1 rounded-lg bg-red-950/70 hover:bg-red-900 text-red-300 border border-red-500/30 font-bold flex items-center gap-1.5 transition">
-            <i class="fa-solid fa-stop text-xs"></i> Stop Audio
-          </button>
+          <div class="flex flex-wrap items-center gap-3 text-xs">
+            <div class="flex items-center gap-1.5 bg-slate-950 px-2.5 py-1 rounded-lg border border-slate-800">
+              <span class="text-slate-400 font-medium">🇮🇳 Hindi Channel आज का विषय:</span>
+              <span id="today-hi-theme-display" class="text-cyan-300 font-bold">क्वांटम दुनिया व सिमुलेशन बग्स</span>
+              <span class="text-[10px] text-emerald-400 font-mono ml-1">(शनिवार: 🐾 Animal Secrets)</span>
+            </div>
+
+            <div class="flex items-center gap-1.5 bg-slate-950 px-2.5 py-1 rounded-lg border border-slate-800">
+              <span class="text-slate-400 font-medium">🇬🇧 English Channel आज का विषय:</span>
+              <span id="today-en-theme-display" class="text-cyan-300 font-bold">Quantum Paradoxes & Simulation Reality</span>
+              <span class="text-[10px] text-amber-400 font-mono ml-1">(Sat: 🛸 US Secrets)</span>
+            </div>
+          </div>
         </div>
 
         <!-- Table Column Titles for Desktop -->
@@ -396,12 +422,6 @@
           </div>
 
           <div class="flex flex-wrap items-center gap-2.5 w-full md:w-auto justify-end">
-            <button type="button" onclick="addNewSlot()" class="btn-add-slot px-4 py-3 rounded-xl bg-cyan-700 hover:bg-cyan-600 text-white font-bold text-xs uppercase tracking-wider flex items-center gap-2 shadow-md transition">
-              <i class="fa-solid fa-circle-plus text-sm"></i> Add Slot
-            </button>
-            <button type="button" onclick="saveSlotsConfiguration()" class="btn-save-slots px-6 py-3 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-black text-xs uppercase tracking-wider flex items-center gap-2 shadow-xl shadow-emerald-950/50 border border-emerald-400/40 transition">
-              <i class="fa-solid fa-floppy-disk text-sm"></i> Save Settings
-            </button>
             <button onclick="handleAutopilotTrigger()" id="btn-gen-autopilot" class="px-7 py-3 rounded-xl bg-gradient-to-r from-red-600 via-amber-600 to-red-600 hover:from-red-500 hover:to-amber-500 text-white font-black tracking-wide shadow-xl neon-glow-red transition flex items-center justify-center gap-2 text-xs uppercase">
               <i class="fa-solid fa-bolt text-amber-300"></i> Run All Active Slots Now
             </button>
@@ -1673,7 +1693,7 @@
         <div>
           <label class="block text-xs font-semibold text-slate-300 mb-1">Page Access Token <span class="text-rose-400">*</span></label>
           <textarea id="fb-input-token" rows="3" placeholder="EAAB... (Never-expiring or long-lived Page Access Token)" class="w-full glass bg-slate-950 px-3.5 py-2.5 rounded-xl border border-slate-700 text-xs text-white font-mono focus:outline-none focus:border-blue-500"></textarea>
-          <p class="text-[11px] text-slate-400 mt-1">Meta for Developers (<a href="https://developers.facebook.com/tools/explorer/" target="_blank" class="text-blue-400 underline">Graph API Explorer</a>) se Page Access Token generate karein.</p>
+          <p id="fb-token-hint" class="text-[11px] text-slate-400 mt-1">Meta for Developers (<a href="https://developers.facebook.com/tools/explorer/" target="_blank" class="text-blue-400 underline">Graph API Explorer</a>) se Page Access Token generate karein.</p>
         </div>
 
         <button onclick="saveFacebookCredentials()" id="btn-save-fb-creds" class="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white text-xs font-bold transition flex items-center justify-center gap-2 shadow-lg">
@@ -2332,46 +2352,91 @@
         return;
       }
 
+      const dayNames = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+      const todayDay = currentSlotsConfig.today_day_name || dayNames[new Date().getDay() === 0 ? 6 : new Date().getDay() - 1];
+
+      const dayEl = document.getElementById('today-day-display');
+      if (dayEl) dayEl.textContent = todayDay;
+      const hiThemeEl = document.getElementById('today-hi-theme-display');
+      if (hiThemeEl && currentSlotsConfig.today_niches?.hindi?.name) {
+        hiThemeEl.textContent = currentSlotsConfig.today_niches.hindi.name;
+      }
+      const enThemeEl = document.getElementById('today-en-theme-display');
+      if (enThemeEl && currentSlotsConfig.today_niches?.english?.name) {
+        enThemeEl.textContent = currentSlotsConfig.today_niches.english.name;
+      }
+
       container.innerHTML = slots.map((slot, index) => {
         const timeDisplay = `${String(slot.hour !== undefined ? slot.hour : 8).padStart(2, '0')}:${String(slot.minute !== undefined ? slot.minute : 0).padStart(2, '0')}`;
         const tz = (slot.tz || 'IST').toUpperCase();
         const isHindi = (slot.language || 'Hindi').toLowerCase() === 'hindi' || slot.language === 'hi';
         const isLong = (slot.format === 'landscape_long');
+        const isFbPost = (slot.format === 'fb_post' || slot.channel === 'facebook' || slot.id === 'slot_fb_post');
         const defaultVoice = 'Charon';
         const slotVoice = (slot.voice || defaultVoice).toLowerCase();
         const slotBgm = (slot.bgm || 'auto').toLowerCase();
-        const slotChannel = (slot.channel || (isHindi ? 'hindi' : 'english')).toLowerCase();
+        const slotChannel = (slot.channel || (isFbPost ? 'facebook' : (isHindi ? 'hindi' : 'english'))).toLowerCase();
 
-        const rowBg = isLong 
-          ? 'bg-amber-950/25 hover:bg-amber-950/35 border border-amber-500/40 rounded-xl p-3 flex flex-wrap lg:grid lg:grid-cols-12 gap-2.5 items-center text-xs transition shadow-sm'
-          : 'bg-slate-900/90 hover:bg-slate-900 border border-slate-800 rounded-xl p-3 flex flex-wrap lg:grid lg:grid-cols-12 gap-2.5 items-center text-xs transition';
+        let todayResolvedNiche = slot.today_niche_name;
+        if (isFbPost) {
+          todayResolvedNiche = slot.today_niche_name || 'ट्रेंडिंग टेक, AI व स्पेस न्यूज़ (Daily 1080x1080 Card + Poll)';
+        } else if (!todayResolvedNiche) {
+          if (isHindi) {
+            todayResolvedNiche = (todayDay === 'Saturday') 
+              ? 'अनोखे जानवरों के गुप्त रहस्य (Animal Secrets 🐾)' 
+              : (currentSlotsConfig.today_niches?.hindi?.name || 'क्वांटम दुनिया व सिमुलेशन बग्स');
+          } else {
+            todayResolvedNiche = (todayDay === 'Saturday') 
+              ? 'Declassified US Secrets & Conspiracies 🛸' 
+              : (currentSlotsConfig.today_niches?.english?.name || 'Quantum Paradoxes & Simulation Reality');
+          }
+        }
+        const todayTopic = slot.today_topic || '';
+
+        let rowBg = 'bg-slate-900/90 hover:bg-slate-900 border border-slate-800 rounded-xl p-3 flex flex-wrap lg:grid lg:grid-cols-12 gap-2.5 items-center text-xs transition';
+        if (isFbPost) {
+          rowBg = 'bg-blue-950/25 hover:bg-blue-950/35 border border-blue-500/50 rounded-xl p-3 flex flex-wrap lg:grid lg:grid-cols-12 gap-2.5 items-center text-xs transition shadow-sm';
+        } else if (isLong) {
+          rowBg = 'bg-amber-950/25 hover:bg-amber-950/35 border border-amber-500/40 rounded-xl p-3 flex flex-wrap lg:grid lg:grid-cols-12 gap-2.5 items-center text-xs transition shadow-sm';
+        }
+
+        const idBadgeClass = isFbPost ? 'text-blue-400 bg-blue-950/60 border border-blue-500/40' : (isLong ? 'text-amber-400 bg-amber-950/60 border border-amber-500/40' : 'text-cyan-400 bg-slate-950 border border-slate-800');
 
         return `
           <div id="slot-row-${slot.id}" class="${rowBg}">
             <!-- Slot Index, Time & Timezone (Col 2) -->
             <div class="lg:col-span-2 flex items-center gap-2">
-              <span class="font-mono font-bold ${isLong ? 'text-amber-400 bg-amber-950/60 border border-amber-500/40' : 'text-cyan-400 bg-slate-950 border border-slate-800'} w-6 h-6 rounded flex items-center justify-center text-[11px] shrink-0">#${index + 1}</span>
+              <span class="font-mono font-bold ${idBadgeClass} w-6 h-6 rounded flex items-center justify-center text-[11px] shrink-0">#${index + 1}</span>
               
-              <div class="flex items-center gap-1 bg-slate-950 px-2 py-1 rounded border ${isLong ? 'border-amber-500/40' : 'border-slate-800'}">
+              <div class="flex items-center gap-1 bg-slate-950 px-2 py-1 rounded border ${isFbPost ? 'border-blue-500/40' : (isLong ? 'border-amber-500/40' : 'border-slate-800')}">
                 <input id="slot-time-${slot.id}" type="text" value="${timeDisplay}" 
                   oninput="updateSlotTime('${slot.id}', this.value); markSlotsUnsaved();"
                   onchange="updateSlotTime('${slot.id}', this.value); markSlotsUnsaved();"
                   class="bg-transparent text-white font-mono font-bold w-12 text-center focus:outline-none" 
                   title="24hr Time (HH:MM)">
                 <button type="button" id="slot-tz-${slot.id}" onclick="toggleSlotTz('${slot.id}')" 
-                  class="text-[10px] px-1.5 py-0.5 rounded bg-slate-800 ${isLong ? 'text-amber-300' : 'text-cyan-300'} font-bold hover:bg-slate-700 transition" title="Click to toggle IST/EDT">
+                  class="text-[10px] px-1.5 py-0.5 rounded bg-slate-800 ${isFbPost ? 'text-blue-300' : (isLong ? 'text-amber-300' : 'text-cyan-300')} font-bold hover:bg-slate-700 transition" title="Click to toggle IST/EDT">
                   ${tz}
                 </button>
               </div>
             </div>
 
             <!-- Topic / Niche (Col 2) -->
-            <div class="lg:col-span-2 flex items-center min-w-0">
-              <input id="slot-niche-${slot.id}" type="text" value="${slot.niche || 'Trending Mystery'}" 
+            <div class="lg:col-span-2 flex flex-col justify-center min-w-0 py-1">
+              <input id="slot-niche-${slot.id}" type="text" value="${slot.niche || 'Daily Rotating (Day-Wise)'}" 
                 oninput="updateSlotField('${slot.id}', 'niche', this.value); markSlotsUnsaved();"
                 onchange="updateSlotField('${slot.id}', 'niche', this.value); markSlotsUnsaved();"
-                class="w-full bg-slate-950 border ${isLong ? 'border-amber-500/30 text-amber-200' : 'border-slate-800 text-slate-200'} px-2.5 py-1.5 rounded-lg truncate focus:outline-none focus:border-brand-cyan"
+                class="w-full bg-slate-950 border ${isFbPost ? 'border-blue-500/40 text-blue-200' : (isLong ? 'border-amber-500/30 text-amber-200' : 'border-slate-800 text-slate-200')} px-2.5 py-1 rounded-lg text-xs font-semibold truncate focus:outline-none focus:border-brand-cyan"
                 placeholder="Topic / Niche">
+              
+              <!-- Today's Live Topic / Niche Indicator -->
+              <div class="mt-1 flex items-center gap-1.5 min-w-0" title="${todayTopic ? 'आज का टॉपिक: ' + todayTopic : 'आज का शेड्यूल विषय: ' + todayResolvedNiche}">
+                <span class="w-1.5 h-1.5 rounded-full ${isFbPost ? 'bg-blue-400' : (todayTopic ? 'bg-emerald-400' : 'bg-amber-400')} shrink-0 animate-pulse"></span>
+                <span class="text-[10px] ${isFbPost ? 'text-blue-300' : 'text-amber-300'} font-bold shrink-0">आज:</span>
+                <span class="text-[10px] ${isFbPost ? 'text-blue-200 font-semibold' : (todayTopic ? 'text-emerald-300 font-semibold' : 'text-cyan-300 font-medium')} truncate">
+                  ${todayTopic ? `🎯 ${todayTopic}` : `📅 ${todayResolvedNiche}`}
+                </span>
+              </div>
             </div>
 
             <!-- Language (Col 1) -->
@@ -2386,85 +2451,99 @@
             <!-- Target Channel (Col 1) -->
             <div class="lg:col-span-1">
               <select id="slot-channel-${slot.id}" onchange="handleSlotChannelChange('${slot.id}', this.value)" 
-                class="w-full bg-slate-950 border border-slate-800 text-slate-200 text-xs px-2 py-1.5 rounded-lg focus:outline-none focus:border-brand-cyan cursor-pointer" title="Target YouTube Channel">
+                class="w-full bg-slate-950 border ${isFbPost ? 'border-blue-500/40 text-blue-300 font-semibold' : 'border-slate-800 text-slate-200'} text-xs px-2 py-1.5 rounded-lg focus:outline-none focus:border-brand-cyan cursor-pointer" title="Target Platform / Channel">
                 <option value="english" ${slotChannel === 'english' ? 'selected' : ''}>🇬🇧 EN</option>
                 <option value="hindi" ${slotChannel === 'hindi' ? 'selected' : ''}>🇮🇳 HI</option>
+                <option value="facebook" ${slotChannel === 'facebook' || isFbPost ? 'selected' : ''}>🔵 FB Page</option>
               </select>
             </div>
 
             <!-- Voice Selection (Col 2) with Play Preview Button -->
             <div class="lg:col-span-2 flex items-center gap-1.5 min-w-0">
-              <select id="slot-voice-${slot.id}" onchange="updateSlotField('${slot.id}', 'voice', this.value); markSlotsUnsaved();" 
-                class="w-full bg-slate-950 border border-slate-800 text-slate-200 text-xs px-2 py-1.5 rounded-lg focus:outline-none focus:border-brand-cyan cursor-pointer truncate">
-                <option value="auto" ${slotVoice === 'auto' ? 'selected' : ''}>🤖 Auto — Subject + Language Matched</option>
-                <optgroup label="🌟 OPENMONTAGE GEMINI 3.8 FLASH TTS (ULTRA-REALISTIC)">
-                  <option value="Charon" ${(slotVoice === 'charon' || slotVoice === 'auto' || !slotVoice) ? 'selected' : ''}>🎙️ Charon — Deep, Epic Human Voice ⭐ #1 RECOMMENDED</option>
-                  <option value="Puck" ${slotVoice === 'puck' ? 'selected' : ''}>🎙️ Puck — Energetic Viral Narrator</option>
-                  <option value="Aoede" ${slotVoice === 'aoede' ? 'selected' : ''}>🎙️ Aoede — Rich Cinematic Female</option>
-                  <option value="Kore" ${slotVoice === 'kore' ? 'selected' : ''}>🎙️ Kore — Soothing Storyteller Female</option>
-                  <option value="Fenrir" ${slotVoice === 'fenrir' ? 'selected' : ''}>🎙️ Fenrir — Intense & Mysterious Male</option>
-                </optgroup>
-                <optgroup label="🇮🇳 HINDI VOICES — SPACE / MYSTERY / SCIENCE">
-                  <option value="hi_astro_vibes_male" ${slotVoice === 'hi_astro_vibes_male' ? 'selected' : ''}>🎙️ Astro Vibes Male Hindi (Space & Science Facts) ⭐ DEFAULT</option>
-                  <option value="hi_deep_cinematic_male" ${slotVoice === 'hi_deep_cinematic_male' ? 'selected' : ''}>🎙️ Deep Cinematic Male Hindi (Space, Universe, Black Holes) ⭐ BEST</option>
-                  <option value="hi_calm_male" ${slotVoice === 'hi_calm_male' ? 'selected' : ''}>🎙️ Calm Male Hindi (Science Explanations, Astronomy)</option>
-                  <option value="hi_cinematic_male" ${slotVoice === 'hi_cinematic_male' ? 'selected' : ''}>🎙️ Cinematic Male Hindi (Mystery, रहस्य, Unsolved Stories)</option>
-                  <option value="hi_authoritative_male" ${slotVoice === 'hi_authoritative_male' ? 'selected' : ''}>🎙️ Authoritative Male Hindi (History, Educational)</option>
-                  <option value="hi_young_male" ${slotVoice === 'hi_young_male' ? 'selected' : ''}>🎙️ Young Male Hindi (YouTube Shorts, Fast Facts)</option>
-                  <option value="hi_deep_female" ${slotVoice === 'hi_deep_female' ? 'selected' : ''}>🎙️ Deep Female Hindi (Mystery, Paranormal)</option>
-                  <option value="hi_calm_female" ${slotVoice === 'hi_calm_female' ? 'selected' : ''}>🎙️ Calm Female Hindi (Science, Space & Storytelling)</option>
-                  <option value="hi_cinematic_female" ${slotVoice === 'hi_cinematic_female' ? 'selected' : ''}>🎙️ Cinematic Female Hindi (Emotional & Mysterious)</option>
-                </optgroup>
-                <optgroup label="🇺🇸🇬🇧 ENGLISH VOICES — SPACE / MYSTERY / SCIENCE">
-                  <option value="en_deep_cinematic_male" ${slotVoice === 'en_deep_cinematic_male' ? 'selected' : ''}>🎙️ Deep Cinematic American Male (Space Shorts, Universe) ⭐ BEST</option>
-                  <option value="en_deep_british_male" ${slotVoice === 'en_deep_british_male' ? 'selected' : ''}>🎙️ Deep British Male (Premium Space Documentary)</option>
-                  <option value="en_calm_british_male" ${slotVoice === 'en_calm_british_male' ? 'selected' : ''}>🎙️ Calm British Male (Science, Astronomy)</option>
-                  <option value="en_cinematic_narrator" ${slotVoice === 'en_cinematic_narrator' ? 'selected' : ''}>🎙️ Cinematic Male Narrator (Mystery, Aliens)</option>
-                  <option value="en_deep_warm_male" ${slotVoice === 'en_deep_warm_male' ? 'selected' : ''}>🎙️ Deep Warm Male (Cosmic Events, Deep Space)</option>
-                  <option value="en_authoritative_male" ${slotVoice === 'en_authoritative_male' ? 'selected' : ''}>🎙️ Authoritative Male (Scientific Facts)</option>
-                  <option value="en_calm_female" ${slotVoice === 'en_calm_female' ? 'selected' : ''}>🎙️ Calm Female (Space & Science Storytelling)</option>
-                  <option value="en_cinematic_female" ${slotVoice === 'en_cinematic_female' ? 'selected' : ''}>🎙️ Cinematic Female (Mystery & Emotional)</option>
-                </optgroup>
-                <optgroup label="✨ CLASSIC / LEGACY">
-                  <option value="akashvani" ${slotVoice === 'akashvani' ? 'selected' : ''}>🎙️ आकाशवाणी (Cosmic Echo Devavani)</option>
-                  <option value="madhur" ${slotVoice === 'madhur' ? 'selected' : ''}>🎙️ Madhur (Natural Hindi Documentary)</option>
-                  <option value="adam" ${slotVoice === 'adam' ? 'selected' : ''}>🎙️ Adam (US Male Cinematic #1 Viral)</option>
-                  <option value="swara" ${slotVoice === 'swara' ? 'selected' : ''}>🎙️ Swara (Hindi Female)</option>
-                  <option value="christopher" ${slotVoice === 'christopher' ? 'selected' : ''}>🎙️ Christopher (Deep US Male)</option>
-                  <option value="guy" ${slotVoice === 'guy' ? 'selected' : ''}>🎙️ Guy (Conversational Storyteller)</option>
-                </optgroup>
-              </select>
-              <button type="button" onclick="playSlotVoicePreview('${slot.id}')" title="Play Voice Preview" 
-                class="p-1.5 rounded-lg bg-slate-950 hover:bg-cyan-950 text-cyan-400 border border-slate-800 hover:border-cyan-500/50 transition shrink-0">
-                <i id="v-icon-${slot.id}" class="fa-solid fa-volume-high text-xs"></i>
-              </button>
+              ${isFbPost ? `
+                <div class="w-full bg-slate-950/80 border border-blue-500/30 text-blue-300 text-xs px-2.5 py-1.5 rounded-lg flex items-center gap-1.5 truncate font-medium" title="Facebook Image Post — Visual Infographic (No audio narration)">
+                  <i class="fa-solid fa-image text-blue-400 text-xs"></i> 1080x1080 Card Post
+                </div>
+              ` : `
+                <select id="slot-voice-${slot.id}" onchange="updateSlotField('${slot.id}', 'voice', this.value); markSlotsUnsaved();" 
+                  class="w-full bg-slate-950 border border-slate-800 text-slate-200 text-xs px-2 py-1.5 rounded-lg focus:outline-none focus:border-brand-cyan cursor-pointer truncate">
+                  <option value="auto" ${slotVoice === 'auto' ? 'selected' : ''}>🤖 Auto — Subject + Language Matched</option>
+                  <optgroup label="🌟 OPENMONTAGE GEMINI 3.8 FLASH TTS (ULTRA-REALISTIC)">
+                    <option value="Charon" ${(slotVoice === 'charon' || slotVoice === 'auto' || !slotVoice) ? 'selected' : ''}>🎙️ Charon — Deep, Epic Human Voice ⭐ #1 RECOMMENDED</option>
+                    <option value="Puck" ${slotVoice === 'puck' ? 'selected' : ''}>🎙️ Puck — Energetic Viral Narrator</option>
+                    <option value="Aoede" ${slotVoice === 'aoede' ? 'selected' : ''}>🎙️ Aoede — Rich Cinematic Female</option>
+                    <option value="Kore" ${slotVoice === 'kore' ? 'selected' : ''}>🎙️ Kore — Soothing Storyteller Female</option>
+                    <option value="Fenrir" ${slotVoice === 'fenrir' ? 'selected' : ''}>🎙️ Fenrir — Intense & Mysterious Male</option>
+                  </optgroup>
+                  <optgroup label="🇮🇳 HINDI VOICES — SPACE / MYSTERY / SCIENCE">
+                    <option value="hi_astro_vibes_male" ${slotVoice === 'hi_astro_vibes_male' ? 'selected' : ''}>🎙️ Astro Vibes Male Hindi (Space & Science Facts) ⭐ DEFAULT</option>
+                    <option value="hi_deep_cinematic_male" ${slotVoice === 'hi_deep_cinematic_male' ? 'selected' : ''}>🎙️ Deep Cinematic Male Hindi (Space, Universe, Black Holes) ⭐ BEST</option>
+                    <option value="hi_calm_male" ${slotVoice === 'hi_calm_male' ? 'selected' : ''}>🎙️ Calm Male Hindi (Science Explanations, Astronomy)</option>
+                    <option value="hi_cinematic_male" ${slotVoice === 'hi_cinematic_male' ? 'selected' : ''}>🎙️ Cinematic Male Hindi (Mystery, रहस्य, Unsolved Stories)</option>
+                    <option value="hi_authoritative_male" ${slotVoice === 'hi_authoritative_male' ? 'selected' : ''}>🎙️ Authoritative Male Hindi (History, Educational)</option>
+                    <option value="hi_young_male" ${slotVoice === 'hi_young_male' ? 'selected' : ''}>🎙️ Young Male Hindi (YouTube Shorts, Fast Facts)</option>
+                    <option value="hi_deep_female" ${slotVoice === 'hi_deep_female' ? 'selected' : ''}>🎙️ Deep Female Hindi (Mystery, Paranormal)</option>
+                    <option value="hi_calm_female" ${slotVoice === 'hi_calm_female' ? 'selected' : ''}>🎙️ Calm Female Hindi (Science, Space & Storytelling)</option>
+                    <option value="hi_cinematic_female" ${slotVoice === 'hi_cinematic_female' ? 'selected' : ''}>🎙️ Cinematic Female Hindi (Emotional & Mysterious)</option>
+                  </optgroup>
+                  <optgroup label="🇺🇸🇬🇧 ENGLISH VOICES — SPACE / MYSTERY / SCIENCE">
+                    <option value="en_deep_cinematic_male" ${slotVoice === 'en_deep_cinematic_male' ? 'selected' : ''}>🎙️ Deep Cinematic American Male (Space Shorts, Universe) ⭐ BEST</option>
+                    <option value="en_deep_british_male" ${slotVoice === 'en_deep_british_male' ? 'selected' : ''}>🎙️ Deep British Male (Premium Space Documentary)</option>
+                    <option value="en_calm_british_male" ${slotVoice === 'en_calm_british_male' ? 'selected' : ''}>🎙️ Calm British Male (Science, Astronomy)</option>
+                    <option value="en_cinematic_narrator" ${slotVoice === 'en_cinematic_narrator' ? 'selected' : ''}>🎙️ Cinematic Male Narrator (Mystery, Aliens)</option>
+                    <option value="en_deep_warm_male" ${slotVoice === 'en_deep_warm_male' ? 'selected' : ''}>🎙️ Deep Warm Male (Cosmic Events, Deep Space)</option>
+                    <option value="en_authoritative_male" ${slotVoice === 'en_authoritative_male' ? 'selected' : ''}>🎙️ Authoritative Male (Scientific Facts)</option>
+                    <option value="en_calm_female" ${slotVoice === 'en_calm_female' ? 'selected' : ''}>🎙️ Calm Female (Space & Science Storytelling)</option>
+                    <option value="en_cinematic_female" ${slotVoice === 'en_cinematic_female' ? 'selected' : ''}>🎙️ Cinematic Female (Mystery & Emotional)</option>
+                  </optgroup>
+                  <optgroup label="✨ CLASSIC / LEGACY">
+                    <option value="akashvani" ${slotVoice === 'akashvani' ? 'selected' : ''}>🎙️ आकाशवाणी (Cosmic Echo Devavani)</option>
+                    <option value="madhur" ${slotVoice === 'madhur' ? 'selected' : ''}>🎙️ Madhur (Natural Hindi Documentary)</option>
+                    <option value="adam" ${slotVoice === 'adam' ? 'selected' : ''}>🎙️ Adam (US Male Cinematic #1 Viral)</option>
+                    <option value="swara" ${slotVoice === 'swara' ? 'selected' : ''}>🎙️ Swara (Hindi Female)</option>
+                    <option value="christopher" ${slotVoice === 'christopher' ? 'selected' : ''}>🎙️ Christopher (Deep US Male)</option>
+                    <option value="guy" ${slotVoice === 'guy' ? 'selected' : ''}>🎙️ Guy (Conversational Storyteller)</option>
+                  </optgroup>
+                </select>
+                <button type="button" onclick="playSlotVoicePreview('${slot.id}')" title="Play Voice Preview" 
+                  class="p-1.5 rounded-lg bg-slate-950 hover:bg-cyan-950 text-cyan-400 border border-slate-800 hover:border-cyan-500/50 transition shrink-0">
+                  <i id="v-icon-${slot.id}" class="fa-solid fa-volume-high text-xs"></i>
+                </button>
+              `}
             </div>
 
             <!-- BGM Selection (Col 2) with Play Preview Button -->
             <div class="lg:col-span-2 flex items-center gap-1.5">
-              <select id="slot-bgm-${slot.id}" onchange="updateSlotField('${slot.id}', 'bgm', this.value); markSlotsUnsaved();" 
-                class="w-full bg-slate-950 border border-slate-800 text-slate-200 text-xs px-2 py-1.5 rounded-lg focus:outline-none focus:border-brand-cyan cursor-pointer">
-                <option value="auto" ${slotBgm === 'auto' ? 'selected' : ''}>🎯 Auto (Topic Match)</option>
-                <option value="spiritual" ${slotBgm === 'spiritual' ? 'selected' : ''}>🕉️ Spiritual & Vedic</option>
-                <option value="psychology" ${slotBgm === 'psychology' ? 'selected' : ''}>🧠 Dark Psychology</option>
-                <option value="space" ${slotBgm === 'space' ? 'selected' : ''}>🌌 Cosmic Space</option>
-                <option value="history" ${slotBgm === 'history' ? 'selected' : ''}>⚔️ History & Bharat</option>
-                <option value="mystery" ${slotBgm === 'mystery' ? 'selected' : ''}>🕵️ Eerie Mystery</option>
-                <option value="alien" ${slotBgm === 'alien' ? 'selected' : ''}>🛸 Alien Sci-Fi</option>
-                <option value="none" ${slotBgm === 'none' ? 'selected' : ''}>🔇 None (Speech Only)</option>
-              </select>
-              <button type="button" onclick="playSlotBgmPreview('${slot.id}')" title="Play BGM Preview" 
-                class="p-1.5 rounded-lg bg-slate-950 hover:bg-purple-950 text-purple-400 border border-slate-800 hover:border-purple-500/50 transition shrink-0">
-                <i id="bgm-icon-${slot.id}" class="fa-solid fa-music text-xs"></i>
-              </button>
+              ${isFbPost ? `
+                <div class="w-full bg-slate-950/80 border border-slate-800 text-slate-300 text-xs px-2.5 py-1.5 rounded-lg flex items-center gap-1.5 truncate" title="Facebook Post with binary debate poll question">
+                  <i class="fa-solid fa-comment-dots text-emerald-400 text-xs"></i> Viral Debate Poll
+                </div>
+              ` : `
+                <select id="slot-bgm-${slot.id}" onchange="updateSlotField('${slot.id}', 'bgm', this.value); markSlotsUnsaved();" 
+                  class="w-full bg-slate-950 border border-slate-800 text-slate-200 text-xs px-2 py-1.5 rounded-lg focus:outline-none focus:border-brand-cyan cursor-pointer">
+                  <option value="auto" ${slotBgm === 'auto' ? 'selected' : ''}>🎯 Auto (Topic Match)</option>
+                  <option value="spiritual" ${slotBgm === 'spiritual' ? 'selected' : ''}>🕉️ Spiritual & Vedic</option>
+                  <option value="psychology" ${slotBgm === 'psychology' ? 'selected' : ''}>🧠 Dark Psychology</option>
+                  <option value="space" ${slotBgm === 'space' ? 'selected' : ''}>🌌 Cosmic Space</option>
+                  <option value="history" ${slotBgm === 'history' ? 'selected' : ''}>⚔️ History & Bharat</option>
+                  <option value="mystery" ${slotBgm === 'mystery' ? 'selected' : ''}>🕵️ Eerie Mystery</option>
+                  <option value="alien" ${slotBgm === 'alien' ? 'selected' : ''}>🛸 Alien Sci-Fi</option>
+                  <option value="none" ${slotBgm === 'none' ? 'selected' : ''}>🔇 None (Speech Only)</option>
+                </select>
+                <button type="button" onclick="playSlotBgmPreview('${slot.id}')" title="Play BGM Preview" 
+                  class="p-1.5 rounded-lg bg-slate-950 hover:bg-purple-950 text-purple-400 border border-slate-800 hover:border-purple-500/50 transition shrink-0">
+                  <i id="bgm-icon-${slot.id}" class="fa-solid fa-music text-xs"></i>
+                </button>
+              `}
             </div>
 
-            <!-- Format: 9:16 Short vs 16:9 Long (Col 1) -->
+            <!-- Format: 9:16 Short vs 16:9 Long vs 1:1 FB Post (Col 1) -->
             <div class="lg:col-span-1">
               <select id="slot-format-${slot.id}" onchange="handleSlotFormatChange('${slot.id}', this.value)" 
-                class="w-full bg-slate-950 border ${isLong ? 'border-amber-500/60 text-amber-300 font-bold' : 'border-slate-800 text-cyan-400 font-medium'} text-[11px] px-2 py-1.5 rounded-lg focus:outline-none cursor-pointer">
-                <option value="short" ${!isLong ? 'selected' : ''}>📱 9:16 Short</option>
-                <option value="landscape_long" ${isLong ? 'selected' : ''}>🎬 16:9 Long</option>
+                class="w-full bg-slate-950 border ${isFbPost ? 'border-blue-500/60 text-blue-300 font-bold' : (isLong ? 'border-amber-500/60 text-amber-300 font-bold' : 'border-slate-800 text-cyan-400 font-medium')} text-[11px] px-2 py-1.5 rounded-lg focus:outline-none cursor-pointer">
+                <option value="short" ${slot.format === 'short' ? 'selected' : ''}>📱 9:16 Short</option>
+                <option value="landscape_long" ${slot.format === 'landscape_long' ? 'selected' : ''}>🎬 16:9 Long</option>
+                <option value="fb_post" ${isFbPost ? 'selected' : ''}>🖼️ 1:1 FB Post</option>
               </select>
             </div>
 
@@ -2783,7 +2862,7 @@
 
         saveBtns.forEach(btn => {
           btn.disabled = false;
-          btn.innerHTML = '<i class="fa-solid fa-floppy-disk text-xs"></i> Save Slot Settings';
+          btn.innerHTML = '<i class="fa-solid fa-floppy-disk text-xs"></i> Save Settings';
         });
 
         if (result.success) {
@@ -2808,7 +2887,7 @@
         const saveBtns = document.querySelectorAll('.btn-save-slots');
         saveBtns.forEach(btn => {
           btn.disabled = false;
-          btn.innerHTML = '<i class="fa-solid fa-floppy-disk text-xs"></i> Save Slot Settings';
+          btn.innerHTML = '<i class="fa-solid fa-floppy-disk text-xs"></i> Save Settings';
         });
         return false;
       }
@@ -4396,12 +4475,28 @@
       try {
         const res = await fetch('/api/facebook/status');
         const data = await res.json();
+        
+        // Always populate Page ID if available on server, even if token expired
+        if (inputPageId && data.page_id) {
+          inputPageId.value = data.page_id;
+        }
+
+        const tokenInput = document.getElementById('fb-input-token');
+        const tokenHint = document.getElementById('fb-token-hint');
+
         if (data.configured) {
           badge.textContent = 'CONNECTED';
           badge.className = 'px-2.5 py-1 text-xs font-bold rounded-full bg-emerald-950 text-emerald-400 border border-emerald-500/30';
           nameEl.textContent = data.page_name || 'Facebook Page';
           idEl.textContent = 'Page ID: ' + (data.page_id || '--');
-          if (inputPageId && data.page_id) inputPageId.value = data.page_id;
+
+          if (tokenInput) {
+            tokenInput.value = '';
+            tokenInput.placeholder = '🔒 Token Connected & Securely Saved on Server (••••••••••••••••••••••••)';
+          }
+          if (tokenHint) {
+            tokenHint.innerHTML = '<span class="text-emerald-400 font-semibold"><i class="fa-solid fa-circle-check"></i> Token Active & Saved!</span> Security ke liye secret token screen par reveal nahi kiya jata. (Replace karne ke liye yahan naya token paste karein).';
+          }
 
           if (data.page_picture) {
             avatarBox.innerHTML = `<img src="${data.page_picture}" class="w-full h-full object-cover">`;
@@ -4409,11 +4504,18 @@
             avatarBox.innerHTML = '<i class="fa-brands fa-facebook text-2xl"></i>';
           }
         } else {
-          badge.textContent = 'NOT CONNECTED';
+          badge.textContent = 'TOKEN EXPIRED / NOT CONNECTED';
           badge.className = 'px-2.5 py-1 text-xs font-bold rounded-full bg-amber-950 text-amber-400 border border-amber-500/30';
-          nameEl.textContent = 'Not Configured';
-          idEl.textContent = data.error ? data.error : 'Enter Page ID & Access Token below';
-          avatarBox.innerHTML = '<i class="fa-brands fa-facebook text-2xl"></i>';
+          nameEl.textContent = 'Token Expired or Invalid';
+          idEl.textContent = data.error ? data.error : 'Enter new Page Access Token below';
+          avatarBox.innerHTML = '<i class="fa-brands fa-facebook text-2xl text-amber-400"></i>';
+          if (tokenInput) {
+            tokenInput.value = '';
+            tokenInput.placeholder = 'Paste new Permanent / Never-Expiring Page Access Token here...';
+          }
+          if (tokenHint) {
+            tokenHint.innerHTML = 'Meta for Developers (<a href="https://developers.facebook.com/tools/explorer/" target="_blank" class="text-blue-400 underline">Graph API Explorer</a>) se Page Access Token generate karein.';
+          }
         }
       } catch (e) {
         badge.textContent = 'ERROR';

@@ -1873,13 +1873,23 @@ def run_autopilot_task(slot_id: Optional[str] = None):
         completion_summary = None
 
         if slot_id:
-
             this_slot = next((s for s in slots if s.get("id") == slot_id), None)
+            if this_slot and (this_slot.get("format") == "fb_post" or this_slot.get("id") == "slot_fb_post" or this_slot.get("channel") == "facebook"):
+                log_event("Triggering Facebook Trending News & AI Post pipeline...")
+                from autotube.news.news_pipeline import DailyNewsPostPipeline
+                pipeline = DailyNewsPostPipeline()
+                result = pipeline.run(publish=auto_upload)
+                GENERATION_STATUS["is_running"] = False
+                GENERATION_STATUS["current_task"] = None
+                success = result.get("success", False)
+                if success:
+                    log_event(f"✅ Facebook News Post completed: {result.get('title', '')}")
+                else:
+                    log_event(f"❌ Facebook News Post failed: {result.get('error', '')}")
+                return success
 
             active_niche = this_slot.get("niche", "mystery") if this_slot else "mixed"
-
             raw_lang = this_slot.get("language") or this_slot.get("lang") if this_slot else "mixed"
-
             active_lang = "hi" if str(raw_lang).lower().startswith("hi") else ("en" if str(raw_lang).lower().startswith("en") else "mixed")
 
         else:
@@ -2023,10 +2033,70 @@ def run_autopilot_task(slot_id: Optional[str] = None):
 
 
 @app.get("/api/autopilot/slots")
-
 async def get_autopilot_slots():
+    data = _load_slots_config()
+    try:
+        from autotube.scripting.trend_finder import get_day_wise_niche
+        # Use IST (India Standard Time) as primary calendar reference for day-wise rotation
+        tz_ist = datetime.timezone(datetime.timedelta(hours=5, minutes=30))
+        now_dt = datetime.datetime.now(tz_ist)
+        weekday_idx = now_dt.weekday()
+        day_names = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+        today_day_name = day_names[weekday_idx]
+        today_str = now_dt.date().isoformat()
+        
+        # Load any paired/generated topics for today from daily_paired_topics.json
+        paired_topics = {}
+        paired_file = PROJECT_ROOT / "config" / "daily_paired_topics.json"
+        if paired_file.exists():
+            try:
+                with open(paired_file, "r", encoding="utf-8") as pf:
+                    all_pt = json.load(pf)
+                    paired_topics = all_pt.get(today_str, {})
+                    # If today's topics not yet created for today_str, fallback to latest entry
+                    if not paired_topics and today_str not in all_pt:
+                        # Also check UTC date if IST is next day but UTC matches
+                        now_utc_str = datetime.datetime.now(datetime.timezone.utc).date().isoformat()
+                        paired_topics = all_pt.get(now_utc_str, {})
+            except Exception:
+                pass
 
-    return _load_slots_config()
+        hi_info = get_day_wise_niche(weekday_idx, language="hi")
+        en_info = get_day_wise_niche(weekday_idx, language="en")
+        sat_hi_info = get_day_wise_niche(5, language="hi")
+        sat_en_info = get_day_wise_niche(5, language="en")
+
+        data["today_day_name"] = today_day_name
+        data["today_weekday"] = weekday_idx
+        data["today_niches"] = {
+            "hindi": hi_info,
+            "english": en_info,
+            "saturday_hindi": sat_hi_info,
+            "saturday_english": sat_en_info,
+        }
+
+        slots = data.get("slots", [])
+        for slot in slots:
+            slot_id = slot.get("id", "")
+            slot["today_day_name"] = today_day_name
+
+            if slot.get("format") == "fb_post" or slot.get("channel") == "facebook" or slot_id == "slot_fb_post":
+                slot["today_niche_key"] = "tech_ai_news"
+                slot["today_niche_name"] = "ट्रेंडिंग टेक, AI व स्पेस न्यूज़ (1080x1080 Card + Poll)"
+                slot["today_topic"] = "डेली ब्रेकिंग न्यूज़ & AI अपडेट्स (Facebook Feed)"
+                continue
+
+            is_hi = (slot.get("language") or "").lower() in ("hindi", "hi") or slot.get("channel") == "hindi"
+            lang_code = "hi" if is_hi else "en"
+            niche_info = get_day_wise_niche(weekday_idx, language=lang_code)
+            
+            slot["today_niche_key"] = niche_info.get("niche")
+            slot["today_niche_name"] = niche_info.get("name")
+            slot["today_topic"] = paired_topics.get(slot_id, "")
+    except Exception as exc:
+        log_event(f"Error enriching autopilot slots with today's topic: {exc}")
+
+    return data
 
 
 
@@ -3792,9 +3862,9 @@ async def get_facebook_status():
 
     fb = FacebookReelsUploader()
 
+    creds = fb.load_credentials()
     if not fb.is_configured():
-
-        return {"configured": False, "page_name": None, "page_id": None}
+        return {"configured": False, "page_name": None, "page_id": creds.get("page_id")}
 
     info = fb.verify_credentials()
 
@@ -3913,16 +3983,39 @@ async def publish_facebook_reel_endpoint(req: FacebookPublishRequest):
 
 
 @app.get("/api/facebook/history")
-
 async def get_facebook_history_endpoint():
-
     """Get history of published Facebook Reels."""
-
     from autotube.uploader.facebook_upload import FacebookReelsUploader
-
     fb = FacebookReelsUploader()
-
     return {"success": True, "history": fb.get_published_history()}
+
+
+@app.post("/api/facebook/generate-news-post")
+async def generate_facebook_news_post_endpoint(payload: Optional[Dict[str, Any]] = None):
+    """Generate or publish a daily trending news card post for Facebook."""
+    payload = payload or {}
+    publish = bool(payload.get("publish", False))
+    override_topic = payload.get("topic")
+
+    from autotube.news.news_pipeline import DailyNewsPostPipeline
+    pipeline = DailyNewsPostPipeline()
+    result = pipeline.run(publish=publish, override_topic=override_topic)
+    return result
+
+
+@app.get("/api/facebook/news-history")
+async def get_facebook_news_history_endpoint():
+    """Retrieve history of generated & published Facebook news cards."""
+    history_file = PROJECT_ROOT / "config" / "facebook_news_posts_history.json"
+    if not history_file.exists():
+        return {"success": True, "history": []}
+    try:
+        with open(history_file, "r", encoding="utf-8") as f:
+            data = json.load(f)
+            return {"success": True, "history": data if isinstance(data, list) else []}
+    except Exception as e:
+        return {"success": False, "error": str(e), "history": []}
+
 
 
 

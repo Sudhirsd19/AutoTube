@@ -106,57 +106,107 @@ VIRAL_NICHES = {
     "quantum_matrix": "Quantum Paradoxes & Simulation Reality: The Quantum Zeno effect freezing atoms under observation, Time dilation traps where your head ages faster than your feet, Boltzmann brain paradox, vacuum decay cosmic bubble, double slit experiment observer effect, simulation hypothesis physical proofs",
 }
 
-# 7-Day Universal Content Schedule (Mirror Paired: English & Hindi)
-DAY_WISE_NICHES = {
+# 7-Day Content Schedule Tailored specifically for English (USA / Global Audience)
+DAY_WISE_NICHES_EN = {
     0: {  # Monday
         "niche": "space",
-        "name": "Cosmic Extremes & Universe Horrors",
+        "name": "Cosmic Extremes & Deep Space Horrors",
         "bgm": "space",
-        "description": "Mind-bending cosmic mysteries, black holes, rogue planets, cosmic radiation, universe boundaries, quantum vacuum decay, James Webb space telescope discoveries",
+        "description": "Mind-bending cosmic mysteries for US audience: Supermassive black hole event horizons, rogue planet collision orbits, quantum vacuum decay, Fermi paradox scary solutions, James Webb space telescope anomalies, strange signals from deep space",
     },
     1: {  # Tuesday
-        "niche": "ancient_engineering",
-        "name": "Impossible Ancient Engineering & Megaliths",
-        "bgm": "history",
-        "description": "Impossible Ancient Engineering & Megaliths: Kailasa Temple Ellora monolithic rock carving from top down, Great Pyramids Giza acoustic & thermal anomalies, Göbekli Tepe 12,000-year megaliths, Antikythera Mechanism 2,000-year analog computer, Puma Punku precision stones, submerged Dwarka megaliths, Machu Picchu earthquake-proof masonry",
+        "niche": "glitch_matrix",
+        "name": "Simulation Glitches & Parallel Universes",
+        "bgm": "space",
+        "description": "Glitch in the matrix & simulation theory for US audience: The 1954 Man from Taured, Pan American Flight 914 37-year time jump, real physical evidence we live in a computed simulation, quantum timeline shifts, shared mass false memories (Mandela effect), time slip testimonies",
     },
     2: {  # Wednesday
         "niche": "psychology",
-        "name": "Dark Psychology & Brain Glitches",
+        "name": "Dark Psychology & FBI Profiling Secrets",
         "bgm": "auto",
-        "description": "Dark psychology, human mind tricks, subconscious cognitive biases, body language micro-expressions, semantic satiation glitch, Mandela effect, manipulation defense",
+        "description": "Dark psychology, behavioral profiling & FBI interrogation tactics for US audience: Subconscious cognitive bias exploitation, micro-expression deception spotting, emotional manipulation defense, linguistic markers of lying, Machiavellian psychological tricks",
     },
     3: {  # Thursday
         "niche": "ocean",
-        "name": "Deep Ocean Terrors & Earth Secrets",
+        "name": "Deep Ocean Horrors & Abyssal Anomalies",
         "bgm": "space",
-        "description": "Deep sea abyssal horrors, Mariana Trench sonar anomalies, Point Nemo spacecraft graveyard, giant colossal squids, glowing ocean milky seas, deep underwater toxic brine pools",
+        "description": "Deep sea abyssal terrors & oceanic anomalies for US audience: Mariana Trench extreme depth sound anomalies, Point Nemo oceanic pole of inaccessibility, giant colossal squids, deep toxic underwater brine lakes, underwater sonar anomalies like The Bloop and Julia",
     },
     4: {  # Friday
         "niche": "quantum_matrix",
-        "name": "Quantum Paradoxes & Simulation Bugs",
+        "name": "Quantum Paradoxes & Simulation Reality",
         "bgm": "space",
-        "description": "Quantum Paradoxes & Simulation Reality: The Quantum Zeno effect freezing atoms under observation, Time dilation traps where your head ages faster than your feet, Boltzmann brain paradox, vacuum decay cosmic bubble, double slit experiment observer effect, simulation hypothesis physical proofs",
+        "description": "Quantum paradoxes & simulation physics for US audience: The Quantum Zeno effect freezing reality under observation, Boltzmann brain paradox, vacuum decay cosmic bubble, quantum entanglement spooky action, time dilation traps, AI emergent consciousness",
     },
-    5: {  # Saturday
+    5: {  # Saturday - Tailored for USA Audience (Declassified Secrets & Government Conspiracies)
         "niche": "conspiracy",
-        "name": "Declassified Secrets & Historical Enigmas",
+        "name": "Declassified FBI & CIA Secrets / US Government Conspiracies",
         "bgm": "history",
-        "description": "Declassified FBI & CIA files, Project Stargate remote viewing, Voynich manuscript unbreakable cipher, 1954 Man from Taured, 1518 dancing plague, Area 51, Svalbard seed vault mysteries, bizarre historical time slips",
+        "description": "Declassified US government, FBI & CIA secret files: Project Stargate remote viewing psychic experiments, Area 51 secret reverse-engineering files, Operation Starfish Prime nuclear space detonation, Project MKUltra cognitive experiments, Svalbard global seed vault, 1947 Roswell declassified memos, hidden DARPA projects",
     },
-    6: {  # Sunday
-        "niche": "animal_secrets",
-        "name": "Extreme Nature & Biological Superpowers",
-        "bgm": "auto",
-        "description": "Mind-blowing animal secrets, insane biological superpowers, immortal jellyfish Turritopsis dohrnii reversing age, pistol shrimp punch creating sun surface temperature, tardigrades space vacuum survival, zombie cordyceps fungi, electric eel shock voltage",
+    6: {  # Sunday - High Engagement American Mysteries
+        "niche": "mystery",
+        "name": "Unsolved American Enigmas & Bizarre Disappearances",
+        "bgm": "history",
+        "description": "Unsolved enigmas and eerie anomalies for US audience: Skinwalker Ranch electromagnetic and animal mutilation anomalies, the vanished Roanoke colony, bizarre national park vanishings (Missing 411 phenomena), Dyatlov Pass anomaly, Voynich manuscript cryptanalysis failure",
     },
 }
 
-def get_day_wise_niche(weekday=None) -> dict:
+# 7-Day Content Schedule Tailored specifically for Hindi Audience (@bgyanmantra)
+DAY_WISE_NICHES_HI = {
+    0: {  # Monday
+        "niche": "space",
+        "name": "अंतरिक्ष व ब्रह्मांड के रहस्य (Cosmic Space & Universe Mysteries)",
+        "bgm": "space",
+        "description": "Mind-bending cosmic mysteries in Hindi: Black holes, neutron stars, time dilation in space, rogue wandering planets, cosmic radiation anomalies, boundaries of universe, James Webb telescope shock discoveries",
+    },
+    1: {  # Tuesday
+        "niche": "ancient_engineering",
+        "name": "प्राचीन भारत व विश्व के अजूबे (Impossible Ancient Megaliths & Architecture)",
+        "bgm": "history",
+        "description": "Impossible Ancient Engineering & Megaliths in Hindi: Kailasa Temple Ellora monolithic carving from single rock top-down, Giza Great Pyramids acoustic anomalies, Submerged Dwarka city, Tanjore Brihadeeswarar 80-ton granite dome, Lepakshi hanging pillar, Puma Punku precision stones",
+    },
+    2: {  # Wednesday
+        "niche": "psychology",
+        "name": "माइंड हैक्स व डार्क साइकोलॉजी (Dark Psychology & Brain Glitches)",
+        "bgm": "auto",
+        "description": "Dark psychology and human mind glitches in Hindi: Subconscious cognitive tricks, body language micro-expressions, manipulation defense, Mandela effect, eye movement lies detection, memory bugs",
+    },
+    3: {  # Thursday
+        "niche": "ocean",
+        "name": "गहरा समंदर व पाताल लोक (Deep Ocean Terrors & Earth Secrets)",
+        "bgm": "space",
+        "description": "Deep ocean abyss and earth secrets in Hindi: Mariana Trench sound anomalies, Point Nemo spacecraft graveyard, giant squid abyssal horrors, underwater toxic brine pools, mysterious subterranean caves",
+    },
+    4: {  # Friday
+        "niche": "quantum_matrix",
+        "name": "क्वांटम दुनिया व सिमुलेशन बग्स (Quantum Paradoxes & Simulation Reality)",
+        "bgm": "space",
+        "description": "Quantum paradoxes and simulation reality in Hindi: Time dilation traps where time moves differently, Quantum Zeno effect freezing particles, double-slit observer effect, simulation hypothesis real glitch proofs",
+    },
+    5: {  # Saturday - Tailored for Hindi Audience (Wild Animals Secrets & Superpowers)
+        "niche": "animal_secrets",
+        "name": "जानवरों के गुप्त रहस्य व सुपरपावर (Wild Animals Secrets & Biological Superpowers)",
+        "bgm": "auto",
+        "description": "Mind-blowing animal secrets and crazy biological superpowers in Hindi: Immortal jellyfish reversing aging, pistol shrimp punch creating sun surface heat shockwave, peregrine falcon 390 km/h dive speed vs cheetah, honey badger venom immunity, tardigrades surviving vacuum of space, electric eel 860-volt shock, deep sea glowing vampire squid, predator bite force comparisons",
+    },
+    6: {  # Sunday
+        "niche": "mystery",
+        "name": "दुनिया के अनसुलझे रहस्य (Unsolved World Enigmas & Strange Phenomena)",
+        "bgm": "history",
+        "description": "Shocking global unsolved mysteries in Hindi: Bermuda Triangle vanishings, mysterious sound of Taos Hum, bizarre dancing plague of 1518, mysterious Green children of Woolpit, cursed objects and unexplained archaeological discoveries",
+    },
+}
+
+DAY_WISE_NICHES = DAY_WISE_NICHES_EN
+
+def get_day_wise_niche(weekday=None, language: str = "en") -> dict:
     import datetime
     if weekday is None:
         weekday = datetime.datetime.now().weekday()
-    return DAY_WISE_NICHES.get(weekday % 7, DAY_WISE_NICHES[0])
+    is_hindi = str(language or "").lower().startswith("hi")
+    schedule = DAY_WISE_NICHES_HI if is_hindi else DAY_WISE_NICHES_EN
+    return schedule.get(weekday % 7, schedule[0])
 
 # Bilingual stop words for accurate semantic normalization
 STOPWORDS: Set[str] = {
@@ -551,6 +601,83 @@ NICHE_FALLBACKS = {
 }
 
 
+NICHE_FALLBACKS_HI = {
+    "ancient_engineering": [
+        "एलोरा का कैलाश मंदिर: ऊपर से नीचे की ओर एक ही चट्टान को तराश कर बनाया गया अजूबा!",
+        "प्राचीन स्तूपों की 1500 साल पुरानी सेल्फ-कूलिंग ईंटें: 95% गर्मी सोखने वाली गुप्त तकनीक!",
+        "दिल्ली का 1600 साल पुराना लौह स्तंभ: जिस पर आज तक जंग क्यों नहीं लगी?",
+        "तंजौर का वृहदेश्वर मंदिर: 80 टन के ग्रेनाइट गुंबद को शिखर पर कैसे स्थापित किया गया?",
+        "लेपाक्षी का झूलता हुआ खंभा: जो जमीन को छुए बिना हवा में लटका हुआ है!",
+        "गुजरात के तट पर डूबी 9000 साल पुरानी द्वारका नगरी का पुरातात्विक रहस्य!",
+        "तुर्की की 18 मंजिला भूमिगत नगरी डेरिंकुयु: जमीन के नीचे 20,000 लोगों का शहर!",
+        "गीज़ा के पिरामिडों के भीतर का थर्मल एनोमली: वैज्ञानिक आज भी हैरान क्यों हैं?",
+    ],
+    "bharat_vigyan": [
+        "एलोरा का कैलाश मंदिर: 1200 साल पुरानी वास्तुकला जो आज भी आधुनिक विज्ञान को चुनौती देती है!",
+        "पद्मनाभस्वामी मंदिर का सातवां तहखाना: जिसे प्राचीन नाग बंधम मंत्र से सील किया गया है!",
+        "राम सेतु के तैरते पत्थरों का भूवैज्ञानिक और ध्वनि तरंग विज्ञान!",
+        "प्राचीन भारत का वूट्ज स्टील: जिससे दमिश्क की अटूट तलवारें बनाई जाती थीं!",
+        "सुश्रुत संहिता: 2600 साल पहले भारत में की गई पहली प्लास्टिक सर्जरी का इतिहास!",
+        "वराहमिहिर और आर्यभट्ट का खगोल विज्ञान: गुरुत्वाकर्षण और ग्रहों की सटीक गणना!",
+    ],
+    "animal_secrets": [
+        "अमर जेलीफ़िश: जो कभी बूढ़ी नहीं होती और अपनी उम्र को उल्टा घुमा लेती है!",
+        "पेरेग्रीन बाज़ की 390 किमी/घंटा डाइव स्पीड: चीते से 3 गुना तेज उड़ने वाली सुपरपावर!",
+        "पिस्तौल झींगा: जिसका एक झटका पानी के अंदर सूरज जितनी गर्मी पैदा करता है!",
+        "हनी बैजर की अद्भुत प्रतिरोधक क्षमता: किंग कोबरा के जानलेवा जहर को भी पचाने वाला जीव!",
+        "एक्सोलोटल का जैविक चमत्कार: जो कुछ ही हफ्तों में अपना दिल और दिमाग दोबारा उगा लेता है!",
+        "टार्डिग्रेड: जो अंतरिक्ष के शून्य और जानलेवा रेडिएशन में भी 30 साल जिंदा रह सकता है!",
+        "इलेक्ट्रिक ईल का 860 वोल्ट करंट: जो मगरमच्छ को भी एक झटके में बेहोश कर दे!",
+        "मिमिक ऑक्टोपस: जो पलक झपकते ही 15 अलग-अलग समुद्री शिकारियों का रूप बदल लेता है!",
+    ],
+    "space": [
+        "अंतरिक्ष का वह भयानक गड्ढा: जहां लाखों प्रकाश वर्ष तक कोई तारा या गैलेक्सी मौजूद नहीं है!",
+        "डायमंड प्लैनेट 55 कैनक्री ई: जो पूरा का पूरा शुद्ध हीरे और ग्रेफाइट से बना हुआ है!",
+        "न्यूट्रॉन स्टार का भयानक घनत्व: जिसके एक चम्मच पदार्थ का वजन माउंट एवरेस्ट जितना होता है!",
+        "ग्रेट अट्रैक्टर: वह अदृश्य शक्ति जो हमारी पूरी आकाशगंगा को अपनी ओर खींच रही है!",
+        "बोमरैंग नेबुला: ब्रह्मांड की वह जगह जो अंतरिक्ष के सामान्य तापमान से भी ज्यादा ठंडी है!",
+        "ब्लैक होल का इवेंट होराइजन: जहां पहुंचकर समय हमेशा के लिए पूरी तरह थम जाता है!",
+    ],
+    "quantum_matrix": [
+        "क्वांटम ज़ेनो इफ़ेक्ट: किसी कण को लगातार देखने पर उसका समय कैसे रुक जाता है?",
+        "टाइम डाइलेशन का चक्रव्यूह: आपके सिर की उम्र आपके पैरों से ज्यादा तेज क्यों बढ़ती है?",
+        "डबल स्लिट प्रयोग का रहस्य: क्या चेतना भौतिक पदार्थ के व्यवहार को बदल देती है?",
+        "बोल्ट्ज़मैन ब्रेन का विरोधाभास: क्या यह पूरी दुनिया महज एक क्षणिक भ्रम है?",
+        "समय की गति की सीमा: प्रकाश की गति इस ब्रह्मांड के प्रोसेसर की लिमिट क्यों मानी जाती है?",
+    ],
+    "glitch_matrix": [
+        "टॉरेड का वह अज्ञात यात्री: जो 1954 में एक ऐसे देश का पासपोर्ट लेकर आया जो धरती पर था ही नहीं!",
+        "पैन अमेरिकन फ्लाइट 914: 1955 में उड़े विमान का 37 साल बाद कराकस में उतरने का सच!",
+        "डेजा वू का न्यूरोलॉजिकल रहस्य: क्या हमारा मस्तिष्क पहले से जी चुकी घटना को याद करता है?",
+        "मंडेला इफ़ेक्ट: जब करोड़ों लोगों को इतिहास की एक जैसी झूठी घटना याद रहने लगे!",
+    ],
+    "psychology": [
+        "मानव मस्तिष्क का अजीबोगरीब खेल: इंसान कभी कोई नया रंग क्यों नहीं सोच सकता?",
+        "डार्क साइकोलॉजी और बॉडी लैंग्वेज: किसी के झूठ को 5 सेकंड में पकड़ने का तरीका!",
+        "सबकॉन्शियस माइंड की प्रोग्रामिंग: नींद में हमारा दिमाग क्या सीखता है?",
+        "प्लेसबो इफ़ेक्ट की रहस्यमयी ताकत: जब खाली चीनी की गोली से बड़ी-बड़ी बीमारियां ठीक हो जाती हैं!",
+    ],
+    "mystery": [
+        "मारियाना ट्रेंच की 36,000 फीट की गहराई: जहां आज भी अजीबोगरीब विशालकाय आकृतियां देखी जाती हैं!",
+        "वॉयनिच पांडुलिपि: 600 साल पुरानी वह रहस्यमयी किताब जिसे आज तक कोई वैज्ञानिक नहीं पढ़ पाया!",
+        "अंटार्कटिका की बर्फ के 2 मील नीचे दबी झील वोस्तोक का रहस्य!",
+        "बरमूडा ट्रायंगल की मैग्नेटिक एनोमली: जहां कंपास अचानक दिशा भूल जाते हैं!",
+    ],
+    "gita_motivation": [
+        "श्रीमद्भगवद्गीता: कर्म के फल की चिंता किए बिना श्रेष्ठ कर्म कैसे करें?",
+        "श्रीकृष्ण का अर्जुन को उपदेश: जब मन में गहरा संशय हो तो सही निर्णय कैसे लें?",
+        "स्थितप्रज्ञ का लक्षण: सुख और दुख में समभाव रखने की प्राचीन कला!",
+        "निष्काम कर्म योग: आधुनिक तनाव और बेचैनी से मुक्ति पाने का वैदिक मार्ग!",
+    ],
+    "ocean": [
+        "मारियाना ट्रेंच की अतल गहराइयां: धरती के सबसे गहरे गड्ढे में क्या छिपा है?",
+        "पॉइंट नीमो: अंतरिक्ष से भी दूर समुद्र का वह कोना जहां कोई इंसान नहीं रहता!",
+        "विशालकाय कोलोसल स्क्विड: गहरे समुद्र में रहने वाला वह महाकाय दैत्य!",
+        "समुद्र के भीतर बनी रहस्यमयी खारे पानी की झीलें: जहां जाने वाला जीव कभी वापस नहीं आता!",
+    ],
+}
+
+
 SCRIPTURE_TOPIC_MARKERS = (
     "bhagavad gita", "bhagwat gita", "gita", "geeta", "granth", "scripture",
     "shloka", "shlok", "upanishad", "chanakya niti", "sanatan", "spiritual",
@@ -593,12 +720,21 @@ class TrendFinder:
             with open(self.history_file, "w", encoding="utf-8") as f:
                 json.dump({"topics": [], "video_ids": []}, f, indent=2, ensure_ascii=False)
 
-    def resolve_niche(self, raw_niche: str) -> Tuple[str, str]:
+    def get_day_wise_niche(self, weekday=None, language: str = "en") -> dict:
+        """Return the day-wise theme dictionary for the specified weekday and target audience language."""
+        return get_day_wise_niche(weekday=weekday, language=language)
+
+    def resolve_niche(self, raw_niche: str, language: str = "en") -> Tuple[str, str]:
         """Map any free-form slot niche string to a canonical key and rich prompt description."""
         raw_lower = raw_niche.lower().strip()
         # Daily Mirror & Day-Wise automatic theme rotation
-        if raw_lower in ("daily_mirror", "daily_theme", "day_wise", "daily_schedule", "auto_day", "daily"):
-            day_data = get_day_wise_niche()
+        daily_rotation_triggers = (
+            "daily_mirror", "daily_theme", "day_wise", "day-wise", "daily_schedule",
+            "auto_day", "daily", "daily rotating", "rotating", "rotation", "rotate",
+            "dynamic", "theme of the day", "har din alag", "alag topic", "daily rotate"
+        )
+        if any(trig in raw_lower for trig in daily_rotation_triggers):
+            day_data = get_day_wise_niche(language=language)
             return day_data["niche"], day_data["description"]
         # Explicit scripture-topic routing comes before the broad substring map.
         # Latin terms use word boundaries so "gita" does not accidentally match "digital".
@@ -617,9 +753,12 @@ class TrendFinder:
         if raw_lower in VIRAL_NICHES:
             return raw_lower, VIRAL_NICHES[raw_lower]
 
-        # Keyword mapping
+        # Keyword mapping (use word boundaries for short <= 3 char words like 'ai' or 'sea')
         for keyword, canon_key in NICHE_KEYWORD_MAPPINGS.items():
-            if keyword in raw_lower:
+            if len(keyword) <= 3 and keyword.isalpha():
+                if re.search(rf"\b{re.escape(keyword)}\b", raw_lower):
+                    return canon_key, VIRAL_NICHES.get(canon_key, VIRAL_NICHES["mystery"])
+            elif keyword in raw_lower:
                 return canon_key, VIRAL_NICHES.get(canon_key, VIRAL_NICHES["mystery"])
 
         # Default fallback
@@ -745,7 +884,7 @@ class TrendFinder:
     ) -> List[str]:
         """Generate unique, non-repeating viral topics using Gemini with multi-factor deduplication and large fallback pools."""
         history = self.get_history() + list(self.session_used_topics)
-        canon_niche, niche_focus = self.resolve_niche(niche)
+        canon_niche, niche_focus = self.resolve_niche(niche, language=language)
         is_hindi = language.lower() in ("hi", "hindi")
 
         client = None
@@ -760,7 +899,7 @@ class TrendFinder:
             past_topics_str = ", ".join(f"'{t}'" for t in history[-150:]) if history else "None"
             entropy_seed = int(time.time() * 1000) % 999999
             lang_directive = (
-                "in captivating Hindi/Hinglish (Devanagari or Romanized Hindi)"
+                "in 100% authentic pure Devanagari Hindi (शुद्ध देवनागरी हिंदी केवल, absolutely NO English or Romanized Hinglish words)"
                 if is_hindi
                 else "in punchy, curiosity-inducing English"
             )
@@ -783,7 +922,7 @@ Requirements:
 5. Randomization Seed: {entropy_seed}.
 
 Return ONLY a valid JSON list of strings, for example:
-["Why You Would Age Backwards Near a Neutron Star", "The 12000-Year-Old Underground City Discovered Beneath Cappadocia"]
+{json.dumps(["तारे के पास समय उल्टा क्यों चलने लगता है?", "कप्पाडोसिया के नीचे खोजी गई 12000 साल पुरानी भूमिगत नगरी का सच"] if is_hindi else ["Why You Would Age Backwards Near a Neutron Star", "The 12000-Year-Old Underground City Discovered Beneath Cappadocia"])}
 """
             for model_name in CANDIDATE_MODELS:
                 try:
@@ -819,8 +958,14 @@ Return ONLY a valid JSON list of strings, for example:
                     print_warning(f"TrendFinder model attempt failed: {e}")
                     continue
 
-        # Niche-specific fallback pool with 18 topics per niche
-        pool = NICHE_FALLBACKS.get(canon_niche, NICHE_FALLBACKS.get("mystery", []))
+        # Niche-specific fallback pool with diverse topics per niche
+        if is_hindi:
+            pool = NICHE_FALLBACKS_HI.get(canon_niche, NICHE_FALLBACKS_HI.get("ancient_engineering", []))
+            if not pool:
+                pool = NICHE_FALLBACKS_HI.get("mystery", [])
+        else:
+            pool = NICHE_FALLBACKS.get(canon_niche, NICHE_FALLBACKS.get("mystery", []))
+
         # Randomize order to prevent sequential repetition
         shuffled_pool = list(pool)
         random.shuffle(shuffled_pool)
@@ -832,13 +977,21 @@ Return ONLY a valid JSON list of strings, for example:
             # If available pool is small, supplement with dynamic parameterized angles
             selected = available
             needed = count - len(selected)
-            dynamic_modifiers = [
-                "The Untold Reality Behind",
-                "The Declassified Scientific Truth About",
-                "Why Physicists Are Baffled By",
-                "The Ancient Anomaly Found Inside",
-                "What Really Happened During The Mystery Of",
-            ]
+            if is_hindi:
+                dynamic_modifiers = [
+                    "इतिहास और विज्ञान का अनसुलझा सच:",
+                    "वैज्ञानिकों को हैरान कर देने वाला रहस्य:",
+                    "प्राचीन काल की अद्भुत गुप्त तकनीक:",
+                    "प्रकृति और ब्रह्मांड का यह चौंकाने वाला चमत्कार:",
+                ]
+            else:
+                dynamic_modifiers = [
+                    "The Untold Reality Behind",
+                    "The Declassified Scientific Truth About",
+                    "Why Physicists Are Baffled By",
+                    "The Ancient Anomaly Found Inside",
+                    "What Really Happened During The Mystery Of",
+                ]
             for i in range(needed):
                 mod = random.choice(dynamic_modifiers)
                 base = pool[i % len(pool)]
@@ -864,7 +1017,8 @@ Return ONLY a valid JSON list of strings, for example:
             self.record_topic(selected)
             return selected
 
-        fallback = "The Most Mind-Blowing Unsolved Mystery In The Universe"
+        is_hindi = str(language).lower().startswith("hi")
+        fallback = "ब्रह्मांड का सबसे रहस्यमयी अनसुलझा सच" if is_hindi else "The Most Mind-Blowing Unsolved Mystery In The Universe"
         self.session_used_topics.add(fallback.lower())
         self.record_topic(fallback)
         return fallback

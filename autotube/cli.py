@@ -855,18 +855,33 @@ def create_openmontage_reel(
 
     bridge = RemotionBridge()
     final_script = script
+    scenes_data = None
     if not final_script:
         print_info(f"Generating viral narrative script for topic: '{topic}'...")
         sg = ScriptGenerator()
-        short_res = sg.generate_short_script(topic=topic, language=lang)
+        short_res = sg.generate_short_script(topic=topic, language=lang, target_duration=45)
         final_script = short_res.narration if hasattr(short_res, "narration") else str(short_res)
+        if hasattr(short_res, "scenes") and short_res.scenes:
+            scenes_data = [
+                {
+                    "scene_number": i + 1,
+                    "narration": getattr(sc, "narration", ""),
+                    "visual_subject": getattr(sc, "visual_subject", ""),
+                    "visual_description": getattr(sc, "visual_description", ""),
+                    "search_keywords": getattr(sc, "search_keywords", []),
+                }
+                for i, sc in enumerate(short_res.scenes)
+            ]
 
-    print_info(f"Producing OpenMontage Reel with Gemini 3.8 Flash TTS ({voice})...")
+    print_info(f"Producing OpenMontage Reel with Gemini TTS ({voice})...")
     res_path = bridge.render_reel(
         title=topic,
         script_text=final_script,
         voice=voice,
         output_format=format,
+        scenes=scenes_data,
+        target_platform="youtube",
+        render_fb_variant=(lang.lower() in ("hi", "hindi")),
     )
     print_success(f"🎉 Reel generated successfully: {res_path}")
 

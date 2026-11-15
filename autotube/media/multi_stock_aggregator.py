@@ -1422,9 +1422,17 @@ Output STRICT JSON with:
                     character_hint=char_hint or title
                 )
                 if yt_asset and yt_asset.exists() and yt_asset.stat().st_size > 20000:
-                    if self._record_asset_fingerprint(yt_asset, label="YouTubeShortsScene"):
-                        print_success(f"   🛡️ [YouTube Footage Secured] Scene {scene_index+1} acquired anti-copyright clip: {yt_asset.name}")
-                        return yt_asset
+                    qa = self.visual_quality_gate.verify(yt_asset, scene_text, scene_plan)
+                    if qa.get("accepted"):
+                        if self._record_asset_fingerprint(yt_asset, label="YouTubeShortsScene"):
+                            print_success(f"   🛡️ [YouTube Footage Secured] Scene {scene_index+1} acquired anti-copyright clip: {yt_asset.name}")
+                            return yt_asset
+                    else:
+                        print_warning(f"   ⚠️ [YouTube Fallback QA Rejected] Scene {scene_index+1}: {yt_asset.name} rejected ({qa.get('reason')}).")
+                        try:
+                            yt_asset.unlink(missing_ok=True)
+                        except Exception:
+                            pass
             except Exception as yt_err:
                 print_warning(f"   ⚠️ YouTube fallback notice: {yt_err}")
 

@@ -12,12 +12,13 @@ from autotube.scripting.models import LongVideoScript, Scene, ShortScene, ShortS
 from autotube.scripting.prompts import LONGFORM_SYSTEM_PROMPT, SHORTS_SYSTEM_PROMPT
 from autotube.utils.console import print_error, print_info, print_success, print_warning
 
-# Recommended modern models with automatic fallback
+# Recommended modern models with automatic fallback prioritized by quota stability
 CANDIDATE_MODELS = [
+    "gemini-3.5-flash-lite",
+    "gemini-flash-lite-latest",
     "gemini-3.1-flash-lite",
     "gemini-3.5-flash",
     "gemini-flash-latest",
-    "gemini-3.8-flash",
 ]
 
 
@@ -53,97 +54,67 @@ def is_bhagavad_gita_topic(topic: str) -> bool:
     )
 
 
-def get_subject_outro_text(topic: str, language: str = "en", is_short: bool = True) -> str:
-    """Return a natural, subject-tailored Outro CTA.
-    For Shorts (is_short=True), keep it ultra-compact (4-6 words, ~1.2-1.5s) to maximize story retention.
-    For documentaries (is_short=False), return a full, rich CTA.
+def extract_hindi_subject(topic: str) -> str:
+    """Extract or map a topic to a natural, dignified Hindi subject phrase (शुद्ध देवनागरी).
+    Guarantees zero raw English text is ever injected into Hindi spoken narration.
     """
+    if not topic:
+        return "इस अद्भुत और अनसुलझे रहस्य"
+
+    clean = topic.strip()
+    # If the topic already contains substantial Devanagari, clean it
+    devanagari_chars = [c for c in clean if "\u0900" <= c <= "\u097f"]
+    if len(devanagari_chars) >= 4:
+        # Strip trailing punctuation, tags, and parenthesized English
+        clean = re.sub(r"[#!\?:].*$", "", clean).strip()
+        clean = re.sub(r"\([A-Za-z0-9\s,\-_]+\)", "", clean)  # remove (Immortal Jellyfish) etc.
+        clean = re.sub(r"[A-Za-z0-9]+", "", clean).strip()
+        clean = re.sub(r"\s+", " ", clean).strip()
+        if len(clean) >= 4:
+            return clean
+
+    # If topic has English words, map domain keywords to pure Devanagari
     t_lower = topic.lower()
+    if any(k in t_lower for k in ("stupa", "brick", "mandir", "temple", "kailasa", "pillar", "ancient engineering", "pyramid", "architecture", "monolith", "stone", "lepakshi", "ellora", "derinkuyu", "gobekli", "dwarka", "metallurgy", "iron pillar")):
+        return "प्राचीन भारतीय निर्माण कला और स्तूपों के इस अद्भुत रहस्य"
+    elif any(k in t_lower for k in ("jellyfish", "falcon", "animal", "bird", "creature", "predator", "squid", "shrimp", "venom", "frog", "tiger", "cheetah", "badger", "crocodile", "axolotl", "tardigrade", "eel", "octopus")):
+        return "प्रकृति और अनोखे जीवों के इस चौंकाने वाले जैविक चमत्कार"
+    elif any(k in t_lower for k in ("space", "galaxy", "black hole", "cosmic", "universe", "planet", "star", "radiation", "nebula", "vacuum", "void", "stargate", "area 51", "starfish prime", "supernova", "exoplanet")):
+        return "अंतरिक्ष और ब्रह्मांड के इस अनसुलझे रहस्य"
+    elif any(k in t_lower for k in ("ocean", "sea", "trench", "mariana", "abyss", "underwater", "deep earth", "brine pool", "point nemo")):
+        return "गहरे समुद्र और महासागर के इस रहस्यमयी रहस्य"
+    elif any(k in t_lower for k in ("brain", "mind", "psychology", "aging", "foot-first", "human", "sleep", "dream", "memory", "subconscious")):
+        return "मानव शरीर और मस्तिष्क के इस हैरतअंगेज विज्ञान"
+    elif any(k in t_lower for k in ("quantum", "matrix", "simulation", "time", "physics", "paradox", "boltzmann", "zeno", "speed of light")):
+        return "समय और क्वांटम भौतिकी के इस हैरान कर देने वाले रहस्य"
+    elif any(k in t_lower for k in ("gita", "krishna", "arjuna", "karma", "upanishad", "chanakya", "scripture", "sanatan", "vedic")):
+        return "श्रीमद्भगवद्गीता और वेदों की इस दिव्य और अनमोल सीख"
+    elif any(k in t_lower for k in ("history", "lost library", "alexandria", "ancient", "war", "emperor", "civilization")):
+        return "प्राचीन इतिहास और सभ्यताओं के इस अनसुलझे रहस्य"
+    else:
+        return "इतिहास और विज्ञान से जुड़े इस हैरतअंगेज रहस्य"
+
+
+def get_subject_outro_text(topic: str, language: str = "en", is_short: bool = True, target_duration: int = 55) -> str:
+    """Return a natural, subject-tailored Outro CTA.
+    For Shorts under 30s, returns empty string (no spoken audio CTA, only visual VFX overlay).
+    For Shorts 30s+, returns clean, dignified CTA without dramatic sensationalism.
+    """
+    if is_short and target_duration < 30:
+        return ""
+
     is_hindi = language.lower() in ("hi", "hindi")
     is_spiritual = is_gita_granth_motivation_topic(topic)
 
     if is_short:
-        if not is_spiritual and any(k in t_lower for k in ("space", "antariksh", "galaxy", "black hole", "cosmic", "universe", "planet", "astronomy", "nasa")):
-            return "अंतरिक्ष के ऐसे ही रहस्यों के लिए अभी सब्सक्राइब करें!" if is_hindi else "Subscribe for more cosmic mysteries!"
-
-        elif is_spiritual:
-            return "ऐसे ही दिव्य ज्ञान के लिए अभी सब्सक्राइब करें!" if is_hindi else "Subscribe for more timeless wisdom!"
-
-        elif any(k in t_lower for k in ("bharat", "temple", "mandir", "ancient india", "vedic", "kailasa", "dwarka", "history", "itihas", "empire", "archaeology")):
-            return "प्राचीन इतिहास के रहस्यों के लिए अभी सब्सक्राइब करें!" if is_hindi else "Subscribe for more ancient mysteries!"
-
-        elif any(k in t_lower for k in ("psychology", "brain", "mind", "dimag", "human behavior", "subconscious", "manipulation", "glitch in")):
-            return "दिमाग के ऐसे ही रहस्यों के लिए अभी सब्सक्राइब करें!" if is_hindi else "Subscribe for more mind-bending psychology!"
-
-        elif any(k in t_lower for k in ("science", "physics", "quantum", "paradox", "dilation", "atom", "biology")):
-            return "अनोखे साइंस फैक्ट्स के लिए अभी सब्सक्राइब करें!" if is_hindi else "Subscribe for more mind-blowing science facts!"
-
-        elif any(k in t_lower for k in ("matrix", "simulation", "mandela", "time slip", "dimension")):
-            return "मैट्रिक्स के ऐसे रहस्यों के लिए अभी सब्सक्राइब करें!" if is_hindi else "Subscribe for more simulation glitches!"
-
-        elif any(k in t_lower for k in ("ocean", "sea", "trench", "samundar", "marianas", "water")):
-            return "गहरे समंदर के रहस्यों के लिए अभी सब्सक्राइब करें!" if is_hindi else "Subscribe for more deep ocean secrets!"
-
-        elif any(k in t_lower for k in ("alien", "ufo", "roswell", "extraterrestrial")):
-            return "एलियन रहस्यों के लिए अभी सब्सक्राइब करें!" if is_hindi else "Subscribe for more declassified mysteries!"
-
-        else:
-            return "ऐसे ही अनसुलझे रहस्यों के लिए अभी सब्सक्राइब करें!" if is_hindi else "Subscribe for more mind-bending facts!"
+        if is_spiritual:
+            return "ऐसे ही दिव्य ज्ञान के लिए अभी फॉलो और सब्सक्राइब करें!" if is_hindi else "Follow and subscribe for more timeless wisdom!"
+        return "ऐसे ही अद्भुत ज्ञान और रहस्यों के लिए अभी फॉलो और सब्सक्राइब करें!" if is_hindi else "Follow and subscribe for more fascinating knowledge and mysteries!"
 
     # Longform / Documentary (is_short=False)
-    if not is_spiritual and any(k in t_lower for k in ("space", "antariksh", "galaxy", "black hole", "cosmic", "universe", "planet", "astronomy", "nasa")):
-        if is_hindi:
-            return "ऐसे ही अंतरिक्ष और ब्रह्मांड के रहस्यमयी इंफॉर्मेटिव वीडियोज़ के लिए हमें अभी लाइक और फॉलो करें और सपोर्ट करें!"
-        else:
-            return "For more mind-bending cosmic mysteries and informative space videos, make sure to like, subscribe, and support our channel!"
-
-    elif is_spiritual:
-        if is_hindi:
-            return "ऐसे ही श्रीमद्भगवद्गीता और सनातन ज्ञान के प्रेरणादायक वीडियोज़ के लिए हमें अभी लाइक और फॉलो करें और सपोर्ट करें!"
-        else:
-            return "For more life-changing wisdom from the Bhagavad Gita and ancient scriptures, please like, subscribe, and support our channel!"
-
-    elif any(k in t_lower for k in ("bharat", "temple", "mandir", "ancient india", "vedic", "kailasa", "dwarka", "history", "itihas", "empire", "archaeology")):
-        if is_hindi:
-            return "ऐसे ही प्राचीन भारत और इतिहास के अनसुलझे रहस्यों के इंफॉर्मेटिव वीडियोज़ के लिए हमें अभी लाइक और फॉलो करें और सपोर्ट करें!"
-        else:
-            return "For more untold historical facts and ancient mysteries, please like, subscribe, and support our channel!"
-
-    elif any(k in t_lower for k in ("psychology", "brain", "mind", "dimag", "human behavior", "subconscious", "manipulation", "glitch in")):
-        if is_hindi:
-            return "ऐसे ही दिमाग हिला देने वाले साइकोलॉजिकल फैक्ट्स और माइंड हैक्स के इंफॉर्मेटिव वीडियोज़ के लिए हमें अभी लाइक और फॉलो करें और सपोर्ट करें!"
-        else:
-            return "For more fascinating psychology hacks and human mind mysteries, please like, subscribe, and support our channel!"
-
-    elif any(k in t_lower for k in ("science", "physics", "quantum", "paradox", "dilation", "atom", "biology")):
-        if is_hindi:
-            return "ऐसे ही हैरान कर देने वाले साइंस फैक्ट्स और पैराडॉक्स के इंफॉर्मेटिव वीडियोज़ के लिए हमें अभी लाइक और फॉलो करें और सपोर्ट करें!"
-        else:
-            return "For more incredible science facts and mind-blowing paradoxes, hit like, subscribe, and support our channel!"
-
-    elif any(k in t_lower for k in ("matrix", "simulation", "mandela", "time slip", "dimension")):
-        if is_hindi:
-            return "ऐसे ही सिमुलेशन प्रूफ्स और मैट्रिक्स ग्लिच के इंफॉर्मेटिव वीडियोज़ के लिए हमें अभी लाइक और फॉलो करें और सपोर्ट करें!"
-        else:
-            return "For more reality glitches and simulation evidence videos, remember to like, subscribe, and support our channel!"
-
-    elif any(k in t_lower for k in ("ocean", "sea", "trench", "samundar", "marianas", "water")):
-        if is_hindi:
-            return "ऐसे ही गहरे समंदर और दुनिया के अनसुलझे रहस्यों के इंफॉर्मेटिव वीडियोज़ के लिए हमें अभी लाइक और फॉलो करें और सपोर्ट करें!"
-        else:
-            return "For more deep ocean terrors and mysterious secrets, make sure to like, subscribe, and support our channel!"
-
-    elif any(k in t_lower for k in ("alien", "ufo", "roswell", "extraterrestrial")):
-        if is_hindi:
-            return "ऐसे ही डीक्लासिफाइड एलियन फाइल्स और रहस्यमयी इंफॉर्मेटिव वीडियोज़ के लिए हमें अभी लाइक और फॉलो करें और सपोर्ट करें!"
-        else:
-            return "For more declassified extraterrestrial files and informative documentaries, please like, subscribe, and support our channel!"
-
-    else:
-        if is_hindi:
-            return "ऐसे ही रहस्यमयी और ज्ञानवर्धक इंफॉर्मेटिव वीडियोज़ के लिए हमें अभी लाइक और फॉलो करें और सपोर्ट करें!"
-        else:
-            return "For more exciting and informative deep-dive videos like this, please like, subscribe, and support our channel!"
+    if is_spiritual:
+        return "ऐसे ही श्रीमद्भगवद्गीता और सनातन ज्ञान के लिए चैनल को अभी सब्सक्राइब करें!" if is_hindi else "For more wisdom from ancient scriptures, please subscribe to our channel!"
+    return "ऐसे ही अद्भुत ज्ञान और अनसुलझे रहस्यों के लिए चैनल को सब्सक्राइब करें!" if is_hindi else "For more fascinating knowledge and mysteries, make sure to subscribe to our channel!"
 
 
 def generate_polarizing_debate_comment(topic: str, language: str = "en") -> str:
@@ -194,25 +165,45 @@ def generate_polarizing_debate_comment(topic: str, language: str = "en") -> str:
             return "🔥 What's your take? Type 1 if you 100% agree with this, Type 2 if you disagree! Drop your reasoning in the comments below! 👇"
 
 
-def ensure_subject_outro_cta(script: ShortScript, topic: str, language: str, is_short: bool = True) -> ShortScript:
-    """Ensure that the final scene ends with the subject-specific CTA and high-engagement polarizing pinned comment is set."""
+def ensure_subject_outro_cta(
+    script: ShortScript, topic: str, language: str, is_short: bool = True, target_duration: int = 55
+) -> ShortScript:
+    """Ensure that the final scene ends cleanly.
+    Under 30s videos have ZERO spoken audio CTA (visual badge overlay only).
+    """
     if not script or not script.scenes:
         return script
 
-    outro_text = get_subject_outro_text(topic, language, is_short=is_short)
+    outro_text = get_subject_outro_text(topic, language, is_short=is_short, target_duration=target_duration)
     last_scene = script.scenes[-1]
     last_text = last_scene.narration.strip()
 
-    lower_last = last_text.lower()
-    has_sub = "subscribe" in lower_last or "सब्सक्राइब" in lower_last
-    has_like = "like" in lower_last or "लाइक" in lower_last
-    has_support = "support" in lower_last or "सपोर्ट" in lower_last
+    if is_short and target_duration < 30:
+        # Strictly NO spoken audio CTA for shorts under 30s. Visual badge only.
+        import re
+        cleaned = re.sub(
+            r"[\s,]*(और\s+)?(अभी\s+)?(सब्सक्राइब\s*करें|चैनल\s+को\s+सब्सक्राइब|subscribe(\s+to\s+(the\s+)?channel)?|follow\s+us|पेज\s+को\s+फॉलो)[^.!?\n]*[.!?]?",
+            "",
+            last_text,
+            flags=re.IGNORECASE
+        ).strip()
+        cleaned = re.sub(r"[\s,]+(और\s+अभी|और|and\s+now|and)\s*$", "", cleaned).strip()
+        if cleaned and not cleaned.endswith((".", "!", "?", "।")):
+            cleaned += "।" if language.lower() in ("hi", "hindi") else "."
+        last_scene.narration = cleaned
+        script.call_to_action = ""
+    else:
+        lower_last = last_text.lower()
+        has_sub = "subscribe" in lower_last or "सब्सक्राइब" in lower_last
+        has_like = "like" in lower_last or "लाइक" in lower_last
+        has_support = "support" in lower_last or "सपोर्ट" in lower_last
 
-    if not (has_sub or (has_like and has_support)):
-        if len(last_text.split()) < 15:
-            last_scene.narration = f"{last_text} {outro_text}".strip()
-        else:
-            last_scene.narration = f"{last_text}. {outro_text}"
+        if not (has_sub or (has_like and has_support)):
+            if len(last_text.split()) < 15:
+                last_scene.narration = f"{last_text} {outro_text}".strip()
+            else:
+                last_scene.narration = f"{last_text}. {outro_text}"
+        script.call_to_action = outro_text
 
     # ALWAYS ensure the final scene has a rich, genre-specific grand cinematic finale visual.
     # It must NEVER have an empty visual_subject or mention 'subscribe'/'bell'/'button'/'like'.
@@ -357,7 +348,7 @@ class ScriptGenerator:
             ),
             estimated_duration_sec=min(max(target_duration, 35), 48),
         )
-        return ensure_subject_outro_cta(script, topic, language, is_short=(target_duration < 90))
+        return ensure_subject_outro_cta(script, topic, language, is_short=(target_duration < 90), target_duration=target_duration)
 
     def generate_short_script(
         self, topic: str, target_duration: int = 50, language: str = "en"
@@ -423,13 +414,13 @@ MANDATORY STRUCTURAL REQUIREMENTS:
 1. Break the entire script into {scene_guide}.
 2. For each scene in 'scenes':
    - 'scene_number': 1, 2, 3, 4, 5...
-   - 'narration': 1 punchy spoken sentence for this scene ({'in authentic Hindi using Devanagari script only (शुद्ध देवनागरी लिपि, NO Roman Hinglish)' if is_hindi else 'in English'}, {scene_words_guide}).
+   - 'narration': 1 punchy spoken sentence for this scene ({'in authentic pure Hindi using Devanagari script only (शुद्ध देवनागरी लिपि केवल, absolutely ZERO English words or Roman Hinglish)' if is_hindi else 'in English'}, {scene_words_guide}).
    - 'visual_subject': The exact physical subject on screen in 1-3 simple English words (e.g. 'black hole space', 'earth from space', 'pyramid egypt', 'deep ocean storm', 'glowing brain'). MUST directly match the spoken words!
    - 'visual_description': Vivid description in English of the visual scene.
    - 'search_keywords': 2-3 clean, simple English search words (e.g. ['black hole', 'space galaxy']).
 3. TOTAL SPOKEN WORDS across all scenes MUST be strictly between {min_words} and {max_words} words (hard ceiling {max_words} words). NEVER exceed {max_words} words as YouTube Shorts feed disqualifies any vertical video 60 seconds or above!
 4. Set the top-level 'narration' field to the combined text of all scene narrations.
-5. High-converting climax cliffhanger CTA in the final scene (CRITICAL: Spoken subscribe CTA MUST be ultra-short, strictly 4-6 words maximum, e.g. 'Subscribe for more mind-bending facts!' / 'ऐसे ही रहस्यों के लिए अभी सब्सक्राइब करें!').
+5. {"Under-30s Short Mandate: DO NOT write any spoken subscribe/follow CTA in the narration audio! End the story naturally with a high-impact climax." if target_duration < 30 else "High-converting climax cliffhanger CTA in the final scene (strictly 4-6 words, e.g. 'Subscribe for more fascinating knowledge and mysteries!' / 'ऐसे ही अद्भुत ज्ञान और रहस्यों के लिए अभी सब्सक्राइब करें!')."}
 6. Seamless infinite loop: ending sentence flows back into opening hook.
 7. STRICT ANTI-REPETITION MANDATE: Do NOT use stock opening cliches ('Did you know', 'Imagine if'). Present a completely fresh, unique, factually grounded story angle."""
 
@@ -448,20 +439,24 @@ MANDATORY STRUCTURAL REQUIREMENTS:
                 )
                 data = json.loads(response.text)
                 script = ShortScript(**data)
-                # Ensure spoken outro CTA matches subject with like, subscribe, support
-                script = ensure_subject_outro_cta(script, topic, language, is_short=(target_duration < 90))
+                # Ensure spoken outro CTA matches subject with like, subscribe, support (<30s has zero spoken CTA)
+                script = ensure_subject_outro_cta(script, topic, language, is_short=(target_duration < 90), target_duration=target_duration)
                 if is_hindi and script.scenes:
                     import re
                     has_foreign_script = any(
                         re.search(r'[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\u0980-\u09FF]', s.narration)
                         for s in script.scenes
                     )
-                    if has_foreign_script:
-                        print_warning("Foreign/Urdu script detected in Hindi scene narration. Sanitizing to pure Devanagari...")
+                    has_english_words = any(
+                        len(re.findall(r'[a-zA-Z]{3,}', s.narration)) >= 3
+                        for s in script.scenes
+                    )
+                    if has_foreign_script or has_english_words:
+                        print_warning("Foreign script or English words detected in Hindi scene narration. Sanitizing to pure Devanagari...")
                         try:
                             clean_resp = self.client.models.generate_content(
                                 model=model_name,
-                                contents=f"Convert the following narration sentences into 100% pure Devanagari Hindi (देवनागरी लिपि). Return ONLY a JSON list of strings, one string per scene: {[s.narration for s in script.scenes]}",
+                                contents=f"Convert the following narration sentences into 100% pure Devanagari Hindi (शुद्ध देवनागरी लिपि केवल). Translate all English words into natural pure Hindi. Return ONLY a JSON list of strings, one string per scene: {[s.narration for s in script.scenes]}",
                                 config=types.GenerateContentConfig(response_mime_type="application/json"),
                             )
                             cleaned_list = json.loads(clean_resp.text)
@@ -469,7 +464,7 @@ MANDATORY STRUCTURAL REQUIREMENTS:
                                 for s_idx, clean_text in enumerate(cleaned_list):
                                     script.scenes[s_idx].narration = str(clean_text).strip()
                         except Exception as clean_err:
-                            print_warning(f"Could not sanitize foreign script: {clean_err}")
+                            print_warning(f"Could not sanitize narration to pure Devanagari: {clean_err}")
 
                 if script.scenes:
                     script.narration = " ".join(s.narration.strip() for s in script.scenes if s.narration.strip())
@@ -708,40 +703,41 @@ Provide title, description, tags, and each scene with spoken narration and visua
 
         is_hi = str(language).lower().startswith("hi") or any('\u0900' <= c <= '\u097f' for c in topic)
         if is_hi:
-            hook = f"{clean_topic} के पीछे का चौंकाने वाला सच कोई नहीं जानता!"
+            hi_subj = extract_hindi_subject(topic)
+            hook = f"{hi_subj} के बारे में यह चौंकाने वाला सच कोई नहीं जानता!"
             scenes = [
                 ShortScene(
                     scene_number=1,
-                    narration=f"{clean_topic} के बारे में यह चौंकाने वाला सच कोई नहीं जानता!",
+                    narration=f"{hi_subj} के बारे में यह चौंकाने वाला सच बहुत कम लोग जानते हैं।",
                     visual_subject=search_term,
-                    visual_description=f"Dramatic reveal shot related to {clean_topic}",
-                    search_keywords=[search_term, topic_words[0] if topic_words else clean_topic.lower()],
+                    visual_description=f"Dramatic reveal shot related to {search_term}",
+                    search_keywords=[search_term, topic_words[0] if topic_words else "ancient mystery"],
                 ),
                 ShortScene(
                     scene_number=2,
-                    narration=f"लोग मानते हैं कि वे {clean_topic} को समझते हैं, लेकिन हाल ही में सामने आए सबूतों ने सबको हैरान कर दिया है।",
+                    narration="वैज्ञानिक भी हैरान हैं कि सदियों पहले ऐसी अद्भुत तकनीक और ज्ञान कैसे विकसित हुआ।",
                     visual_subject=f"{search_term} closeup",
-                    visual_description=f"Detailed close-up view related to {clean_topic}",
-                    search_keywords=[f"{topic_words[0] if topic_words else clean_topic.lower()} detail",
+                    visual_description=f"Detailed close-up view related to {search_term}",
+                    search_keywords=[f"{topic_words[0] if topic_words else search_term} detail",
                                      topic_words[1] if len(topic_words) > 1 else search_term],
                 ),
                 ShortScene(
                     scene_number=3,
-                    narration=f"इसके भीतर एक ऐसा गहरा रहस्य छिपा है, जिसके बारे में विशेषज्ञ भी खुलकर बात करने से कतराते हैं।",
+                    narration="इसके भीतर एक ऐसा गहरा रहस्य छिपा है, जिसे देखकर आज के आधुनिक वैज्ञानिक भी दंग रह जाते हैं।",
                     visual_subject=f"{search_term} mystery",
-                    visual_description=f"Mysterious and dramatic perspective of {clean_topic}",
+                    visual_description=f"Mysterious and dramatic perspective of {search_term}",
                     search_keywords=[f"{search_term} secret",
-                                     topic_words[-1] if topic_words else clean_topic.lower()],
+                                     topic_words[-1] if topic_words else "mystery"],
                 ),
                 ShortScene(
                     scene_number=4,
-                    narration=f"आप इस रहस्य के बारे में क्या सोचते हैं? कमेंट्स में बताएं और अभी सब्सक्राइब करें क्योंकि अगला भाग होश उड़ाने वाला है!",
+                    narration="यह खोज साबित करती है कि हमारी दुनिया में आज भी ऐसे कई अनसुलझे राज़ मौजूद हैं।",
                     visual_subject=f"{search_term} dramatic",
-                    visual_description=f"Epic dramatic perspective of {clean_topic} for the finale",
+                    visual_description=f"Epic dramatic perspective of {search_term} for the finale",
                     search_keywords=[search_term, f"{search_term} dramatic"],
                 ),
             ]
-            title = f"{clean_topic} का चौंकाने वाला सच! #Shorts"
+            title = f"{hi_subj} का चौंकाने वाला सच! #Shorts"
         else:
             hook = f"Nobody talks about the hidden truth behind {clean_topic}!"
             scenes = [
@@ -790,7 +786,7 @@ Provide title, description, tags, and each scene with spoken narration and visua
             tags=["#Shorts", "#facts", "#science", f"#{clean_topic.replace(' ', '')}"],
             estimated_duration_sec=target_duration,
         )
-        return ensure_subject_outro_cta(fb_script, topic, "hi" if is_hi else "en", is_short=(target_duration < 90))
+        return ensure_subject_outro_cta(fb_script, topic, "hi" if is_hi else "en", is_short=(target_duration < 90), target_duration=target_duration)
 
     def _generate_fallback_long(
         self, topic: str, num_scenes: int

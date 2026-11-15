@@ -23,22 +23,30 @@ class VisualQualityGate:
 
     MODELS = (
         "gemini-3.5-flash-lite",
+        "gemini-3.1-flash-lite",
         "gemini-flash-lite-latest",
-        "gemini-3.8-flash",
         "gemini-3.5-flash",
+        "gemini-3.8-flash",
         "gemini-3-flash-preview",
     )
 
-    def __init__(self, min_confidence: int = 75, min_coverage: int = 70) -> None:
+    def __init__(self, min_confidence: int = 85, min_coverage: int = 80) -> None:
         self.min_confidence = min_confidence
         self.min_coverage = min_coverage
-        self.strict = os.getenv("AUTOTUBE_FRAME_QA_STRICT", "0").lower() in {"1", "true", "yes"}
+        self.strict = os.getenv("AUTOTUBE_FRAME_QA_STRICT", "1").lower() in {"1", "true", "yes"}
         self._client = None
 
     def _get_client(self):
         if self._client is not None:
             return self._client
         key = os.getenv("GEMINI_API_KEY", "").strip()
+        if not key:
+            try:
+                from autotube.config import get_config
+                cfg = get_config()
+                key = getattr(cfg, "gemini_api_key", "") or ""
+            except Exception:
+                key = ""
         if not key:
             return None
         try:
@@ -120,7 +128,28 @@ class VisualQualityGate:
         ):
             is_cta_or_outro = True
 
-        must_show_list = plan.get("must_show", [])
+        must_show_list = list(plan.get("must_show", []))
+        avoid_list = list(plan.get("avoid", []))
+
+        # Auto-infer strict must_show and avoid if missing or loose
+        combined_context = (str(plan.get("subject", "")) + " " + str(plan.get("description", "")) + " " + narration).lower()
+        wildlife_species_rules = {
+            "falcon": ("peregrine falcon in nature, hunting, diving or high-speed flight", ["airplanes", "passenger jets", "fighter jets", "modern street lights", "electric poles", "cars", "unrelated birds", "kites", "pigeons", "crows", "seagulls", "cages"]),
+            "cheetah": ("cheetah sprinting, hunting or prowling in wild nature", ["cars", "domestic cats", "modern offices", "cages", "talking heads"]),
+            "snake": ("snake or reptile moving in natural habitat", ["modern rooms", "kitchens", "talking heads", "cartoons"]),
+            "jellyfish": ("bioluminescent jellyfish underwater in ocean", ["cooked dishes", "food", "aquarium glare", "talking heads"]),
+            "shark": ("shark swimming deep underwater in natural ocean", ["aquarium", "food dishes", "talking heads"]),
+            "whale": ("whale swimming in open ocean", ["aquarium", "boats", "fishing nets"]),
+            "black hole": ("deep space black hole, event horizon or cosmic accretion disk simulation", ["airplanes", "modern offices", "human faces", "helmets", "daytime terrestrial"]),
+            "temple": ("ancient stone carvings, monolithic temple architecture, stone ruins", ["modern city streets", "asphalt roads", "plastic", "modern cars", "space footage"]),
+        }
+        for kw, (auto_show, auto_avoid) in wildlife_species_rules.items():
+            if kw in combined_context:
+                if not must_show_list or len(must_show_list) == 1:
+                    must_show_list.append(auto_show)
+                avoid_list.extend(auto_avoid)
+                break
+
         if is_cta_or_outro and isinstance(must_show_list, list):
             must_show_list = [
                 m for m in must_show_list
@@ -131,33 +160,43 @@ class VisualQualityGate:
                 if not any(k in clean_subj.lower() for k in ("subscribe", "bell", "button", "like")):
                     must_show_list = [clean_subj]
 
-        prompt = f"""You are visual QA for a YouTube video scene.
+        prompt = f"""You are visual QA for a viral scientific & documentary video scene.
 EXACT NARRATION: {narration}
 TARGET SUBJECT: {plan.get("subject", "")}
 MUST SHOW: {json.dumps(must_show_list, ensure_ascii=False)}
-MUST AVOID: {json.dumps(plan.get("avoid", []), ensure_ascii=False)}
+MUST AVOID: {json.dumps(avoid_list, ensure_ascii=False)}
 
 Judge ONLY the supplied video frames or the supplied still image.
 Guidelines:
-- Visuals MUST genuinely depict or directly support the scene narration and TARGET SUBJECT.
-- If narration is in Hindi or non-English, understand the spoken sentence in context with TARGET SUBJECT.
+- 100% LITERAL ENTITY & SPECIES FIDELITY:
+  * Visuals MUST genuinely depict the EXACT TARGET SUBJECT and scene narration. 75% loose match is NOT enough; it must be 100% relevant.
+  * If a specific animal species (e.g. Peregrine Falcon, Cheetah, Anaconda, Jellyfish) is targeted:
+    The footage MUST depict that EXACT species or its unmistakable close biological equivalent in active nature/flight/hunt.
+    Showing an unrelated substitute bird/animal (e.g. a Brahminy kite, seagull, crow, pigeon, or eagle for Peregrine Falcon) is a CRITICAL VIOLATION.
+  * For wildlife: The animal must be in nature. Birds perched statically on modern street lights, electric poles, or asphalt roads is a VIOLATION.
+- STRICT BAN ON DISTANT SPECKS & TINY SILHOUETTES:
+  * The subject MUST be prominent, clearly visible, detailed, and identifiable in the frame (e.g. sharp close-up, dramatic mid-shot, or dynamic action).
+  * If the subject is just a tiny, distant, unidentifiable speck or dot in an empty sky or blurry haze, REJECT it immediately ('distant_unidentifiable_speck', confidence < 50).
+- STRICT BAN ON LETTERBOXING & WATERMARKS:
+  * Footage MUST fill the full screen cleanly. Any footage with black bars, blurry top/bottom letterbox bars, or prominent channel watermarks/logos MUST BE REJECTED ('unwanted_borders_or_watermark').
+- STRICT BAN ON LAZY METAPHORS:
+  * If the narration uses an analogy or metaphor (e.g. "flies fast like a fighter jet/aircraft", "eyes like a telescope", "mind like a computer"):
+    The footage MUST depict the ACTUAL CORE ENTITY (e.g. the falcon in high-speed flight/clouds, the eye, the brain), NOT the modern machine!
+    Showing a passenger airplane, jet, or contrail when the subject is a bird/animal is a CRITICAL VIOLATION ('metaphorical_substitution').
 - CRITICAL RULE FOR CALL-TO-ACTION (CTA) / OUTRO SCENES:
   If the scene narration or context is an outro or call-to-action (e.g., asking viewers to like, subscribe, follow, share, comment, or support the channel):
   * The raw video footage is NEVER expected to show an animated subscribe button, bell icon, or mouse cursor. Digital graphic overlays and stickers are rendered on top by the video editor.
   * The footage MUST be evaluated as an atmospheric, majestic, or thematic grand finale (e.g. ancient architecture, temple, fort, sunset, deep space, nature landscape, ancient ruins) that fits the overarching theme of the video.
   * DO NOT reject or penalize footage for lacking a subscribe button or bell icon.
   * Accept high-quality thematic finale visuals that fit the topic or historical setting.
-- Check MUST SHOW and MUST AVOID elements reasonably:
+- Check MUST SHOW and MUST AVOID elements strictly:
   * For astronomy, space, black hole, star, or cosmos topics: footage MUST show authentic cosmic phenomena (deep space, nebulae, stars, planets, galaxies, black hole simulations, celestial motion). DO NOT accept human faces, helmets, visors, modern offices, or terrestrial daytime scenes!
   * For history, mythology, temple, or archaeology topics: footage of ancient stone ruins, temple architecture, archaeological excavations, ancient artifacts, or historical landscapes ARE VALID ACCEPTABLE EVIDENCE for the subject.
   * For nature, geography, science, wildlife, rivers, or Amazon topics: footage of rainforest canopies, rivers, thermal steam, jungle wildlife, reptiles, or deep nature landscapes ARE VALID ACCEPTABLE EVIDENCE for the subject.
-  * DO NOT accept modern gadgets, doorbells, modern yoga studios, modern city streets, or outer space footage for ancient history/temple/rainforest narration!
-  * Do NOT fail footage if one optional secondary element from MUST SHOW is absent, as long as the core TARGET SUBJECT is visually represented.
-- Check MUST AVOID items strictly: if modern offices, smartphones, irrelevant talking faces, helmets, doorbells, or modern cartoons appear, add them to 'violations'.
-- DO NOT accept completely unrelated stock footage (e.g., modern cities/offices/talking faces when narration discusses space, biology, physics, or ancient temples).
-- Set accepted to true when visuals have strong semantic bearing on the spoken words.
+  * Check MUST AVOID items strictly: if modern offices, smartphones, irrelevant talking faces, helmets, doorbells, street lights, or airplanes appear in wildlife/temple footage, add them to 'violations'.
+- Set accepted to true ONLY when visuals have strong literal semantic bearing on the spoken words and core subject.
 Return JSON only:
-{{"confidence":0-100,"coverage":0-100,"accepted":true/false,"reason":"one sentence","violations":[]}}
+{{"confidence":0-100,"coverage":0-100,"accepted":true/false,"reason":"one sentence explanation","violations":[]}}
 Accept when confidence >= {self.min_confidence}, coverage >= {self.min_coverage}, and there are no violations.
 """
 

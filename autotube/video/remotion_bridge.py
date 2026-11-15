@@ -64,6 +64,7 @@ class RemotionBridge:
         self.cfg = get_config()
         self.tts = GeminiTTSEngine()
         self.multi_stock = MultiStockAggregator()
+        self.last_fb_video: Optional[Path] = None
         self._ensure_environment()
 
     def _ensure_environment(self) -> None:
@@ -94,8 +95,10 @@ class RemotionBridge:
         progress_callback: Optional[Callable[[int, str], None]] = None,
         character_hint: Optional[str] = None,
         visual_mode: str = "multi_cinematic",
+        render_fb_variant: bool = False,
     ) -> Path:
         """Render a complete viral Short or Reel using Multi-Stock clips + Remotion motion graphics."""
+        self.last_fb_video = None
         if character_hint:
             self.multi_stock.current_character_hint = character_hint
         self.multi_stock.visual_mode = visual_mode
@@ -115,7 +118,6 @@ class RemotionBridge:
             if parent_remotion_assets.exists():
                 for sub in parent_remotion_assets.iterdir():
                     if sub.is_dir() and sub.name != slug:
-                        import shutil
                         shutil.rmtree(sub, ignore_errors=True)
         except Exception:
             pass
@@ -212,16 +214,52 @@ class RemotionBridge:
             }
 
             candidate = None
-            # Priority 0: YouTube Shorts Priority for viral_character, youtube mode, or character_hint
+            # Priority 0: YouTube Documentary / Viral Priority for real wildlife, nature, animal species, space, and ancient history
+            doc_keywords = (
+                "falcon", "cheetah", "lion", "tiger", "leopard", "eagle", "hawk", "predator", "hunt", "stoop",
+                "diving", "shark", "whale", "squid", "octopus", "jellyfish", "deep sea", "ocean", "snake",
+                "black hole", "neutron star", "supernova", "galaxy", "telescope", "nasa", "spacewalk",
+                "temple", "kailash", "monolithic", "dholavira", "mohenjo", "pyramid", "ancient", "ruins",
+                "archaeology", "excavation", "fossil", "dinosaur", "subconscious", "brain", "neuron", "speed"
+            )
+            is_documentary_scene = any(
+                m in (sentence or "").lower() or m in (subject or "").lower() or m in (title or "").lower() or any(m in str(k).lower() for k in keywords)
+                for m in doc_keywords
+            )
             is_viral_yt = (visual_mode in ("viral_character", "youtube") or bool(character_hint) or bool(getattr(self.multi_stock, "current_character_hint", None)))
-            if is_viral_yt:
+
+            if is_documentary_scene or is_viral_yt:
                 active_char = character_hint or getattr(self.multi_stock, "current_character_hint", None)
                 try:
                     from autotube.media.youtube_harvester import YouTubeHarvester
+                    from autotube.media.visual_quality_gate import VisualQualityGate
                     yt_h = YouTubeHarvester()
+                    gate = VisualQualityGate(min_confidence=85, min_coverage=80)
                     yt_out = staging_dir / f"yt_safe_scene_{idx+1}.mp4"
-                    yt_search = f"{active_char} {keywords[0]}" if (active_char and keywords) else (keywords[0] if keywords else (subject or title))
-                    print_info(f"   🛡️ [YouTube Priority] Sourcing authentic viral footage for scene {idx+1}: '{yt_search}'...")
+
+                    # Ensure query is strictly in English for high-quality global documentary YouTube search
+                    en_keywords = [str(k) for k in keywords if not any('\u0900' <= c <= '\u097f' for c in str(k))]
+                    is_hindi_subj = any('\u0900' <= c <= '\u097f' for c in str(subject or ""))
+
+                    if en_keywords:
+                        en_subj = " ".join(en_keywords[:2])
+                        en_action = en_keywords[2] if len(en_keywords) > 2 else ""
+                    elif is_hindi_subj or not subject:
+                        from autotube.media.hindi_visual_extractor import extract_english_visual_queries
+                        h_res = extract_english_visual_queries(sentence)
+                        en_subj = h_res.get("subject") or "wildlife predator"
+                        en_action = h_res.get("search_queries")[0] if h_res.get("search_queries") else ""
+                    else:
+                        en_subj = str(subject)
+                        en_action = keywords[0] if keywords else ""
+
+                    if is_documentary_scene:
+                        yt_search = f"{en_subj} {en_action} 4k documentary bbc natgeo".strip()
+                    else:
+                        active_char = character_hint or getattr(self.multi_stock, "current_character_hint", None)
+                        yt_search = f"{active_char} {en_action}" if (active_char and en_action) else f"{en_subj} {en_action}".strip()
+
+                    print_info(f"   🛡️ [YouTube Documentary Priority] Sourcing authentic footage for scene {idx+1}: '{yt_search}'...")
                     yt_cand = yt_h.acquire_clip_for_scene(
                         query_or_url=yt_search,
                         output_path=yt_out,
@@ -231,14 +269,22 @@ class RemotionBridge:
                         character_hint=active_char or title
                     )
                     if yt_cand and yt_cand.exists() and yt_cand.stat().st_size > 20000:
-                        candidate = yt_cand
-                        print_success(f"   🛡️ [YouTube Viral Clip Secured] Scene {idx+1} secured authentic footage: {yt_cand.name}")
+                        qa = gate.verify(yt_cand, sentence, scene_plan_dict)
+                        if qa.get("accepted"):
+                            candidate = yt_cand
+                            print_success(f"   🛡️ [Visual QA Passed] Scene {idx+1} authentic footage verified: {yt_cand.name} (Score: {qa.get('confidence')}%)")
+                        else:
+                            print_warning(f"   ⚠️ [Visual QA Rejected] YouTube clip for scene {idx+1} rejected ({qa.get('reason')}); falling back...")
+                            try:
+                                yt_cand.unlink(missing_ok=True)
+                            except Exception:
+                                pass
                 except Exception as yt_err:
                     print_warning(f"   ⚠️ Remotion YouTube priority notice: {yt_err}")
 
             if not candidate or not Path(candidate).exists():
                 # Query multi-stock aggregator
-                candidate = self.multi_stock.get_best_scene_asset(
+                stock_cand = self.multi_stock.get_best_scene_asset(
                     scene_text=sentence,
                     title=title,
                     scene_index=idx,
@@ -248,15 +294,28 @@ class RemotionBridge:
                     allow_ai_fallback=False,
                     character_hint=character_hint,
                 )
+                if stock_cand and Path(stock_cand).exists():
+                    from autotube.media.visual_quality_gate import VisualQualityGate
+                    gate = VisualQualityGate(min_confidence=85, min_coverage=80)
+                    qa = gate.verify(stock_cand, sentence, scene_plan_dict)
+                    if qa.get("accepted"):
+                        candidate = stock_cand
+                        print_success(f"   🎬 [Stock Visual QA Approved] Scene {idx+1}: {stock_cand.name} (Score: {qa.get('confidence')}%)")
+                    else:
+                        print_warning(f"   ⚠️ [Stock Visual QA Rejected] Scene {idx+1}: {stock_cand.name} rejected ({qa.get('reason')}). Refusing lazy metaphor/mismatch.")
+                        candidate = None
 
-            # Priority Fallback 1: YouTube Shorts Anti-Copyright Harvester (For real viral footage when exact stock is missing)
+            # Priority Fallback 1: YouTube Shorts Anti-Copyright Harvester Rescue if stock failed QA
             if not candidate or not Path(candidate).exists():
                 try:
                     from autotube.media.youtube_harvester import YouTubeHarvester
+                    from autotube.media.visual_quality_gate import VisualQualityGate
                     yt_h = YouTubeHarvester()
-                    yt_out = staging_dir / f"yt_safe_scene_{idx+1}.mp4"
-                    yt_query = keywords[0] if keywords else (subject or title)
-                    print_info(f"   🔍 [YouTube Harvester Priority] Sourcing authentic viral clip for scene {idx+1}: '{yt_query}'...")
+                    gate = VisualQualityGate(min_confidence=85, min_coverage=80)
+                    yt_out = staging_dir / f"yt_rescue_scene_{idx+1}.mp4"
+                    en_rescue = en_subj if en_subj else "wildlife"
+                    yt_query = f"{en_rescue} {en_action} real 4k footage".strip()
+                    print_info(f"   🔍 [YouTube Harvester Rescue] Sourcing authentic viral clip for scene {idx+1}: '{yt_query}'...")
                     yt_cand = yt_h.acquire_clip_for_scene(
                         query_or_url=yt_query,
                         output_path=yt_out,
@@ -266,44 +325,44 @@ class RemotionBridge:
                         character_hint=character_hint or title
                     )
                     if yt_cand and yt_cand.exists() and yt_cand.stat().st_size > 20000:
-                        candidate = yt_cand
-                        print_success(f"   🛡️ [YouTube Shorts Safe] Scene {idx+1} secured authentic viral footage: {yt_cand.name}")
+                        qa = gate.verify(yt_cand, sentence, scene_plan_dict)
+                        if qa.get("accepted"):
+                            candidate = yt_cand
+                            print_success(f"   🛡️ [YouTube Rescue QA Passed] Scene {idx+1} authentic viral footage verified: {yt_cand.name}")
+                        else:
+                            try:
+                                yt_cand.unlink(missing_ok=True)
+                            except Exception:
+                                pass
                 except Exception as yt_err:
-                    print_warning(f"   ⚠️ Remotion YouTube Shorts harvester notice: {yt_err}")
+                    print_warning(f"   ⚠️ Remotion YouTube Shorts harvester rescue notice: {yt_err}")
 
             # Fallback 2: Direct Pexels query if YouTube Harvester returned None
             if not candidate or not Path(candidate).exists():
                 print_warning(f"   ⚠️ MultiStock fallback triggered for Scene {idx+1}...")
-                fallback_query = keywords[0] if keywords else (subject or "cinematic mystery")
+                fallback_query = keywords[0] if keywords else (subject or "wildlife")
                 pexels_cand = self.multi_stock.pexels_fetcher.get_scene_video(
                     search_query=fallback_query,
                     orientation=orientation,
                     scene_index=idx,
                 )
                 if pexels_cand and pexels_cand.exists():
-                    candidate = pexels_cand
+                    qa = gate.verify(pexels_cand, sentence, scene_plan_dict)
+                    if qa.get("accepted"):
+                        candidate = pexels_cand
+                        print_success(f"   🎬 [Direct Stock Approved] Scene {idx+1}: {pexels_cand.name}")
+                    else:
+                        print_warning(f"   ⚠️ Direct Pexels clip rejected by QA: {qa.get('reason')}")
+                        candidate = None
 
-            # Fail-safe 1: Scan local stock & project video assets
-            if not candidate or not Path(candidate).exists():
-                local_candidates = (
-                    list((PROJECT_ROOT / "assets" / "stock_cache").glob("*.mp4"))
-                    + list((PROJECT_ROOT / "assets" / "pexels_videos").glob("*.mp4"))
-                    + list((PROJECT_ROOT / "assets" / "nvidia_videos").glob("*.mp4"))
-                    + list((PROJECT_ROOT / "assets" / "real_kailash").glob("*.mp4"))
-                    + list(PROJECT_ROOT.glob("pexels_video_*.mp4"))
-                    + list((PROJECT_ROOT / "temp").glob("**/*.mp4"))
-                )
-                valid_locals = [p for p in local_candidates if p.exists() and p.stat().st_size > 100_000]
-                if valid_locals:
-                    candidate = valid_locals[idx % len(valid_locals)]
-                    print_info(f"   🛡️ Using local verified stock asset: {candidate.name}")
-
-            # Fail-safe 2: Reuse previously acquired scene clip
+            # Fail-safe 1: Reuse an ALREADY VERIFIED active scene clip from this same video session
+            # (Guarantees 100% entity consistency and ZERO bicycles or space nebulas in wildlife videos!)
             if (not candidate or not Path(candidate).exists()) and scene_video_assets:
-                candidate = scene_video_assets[-1]
-                print_info(f"   🛡️ Reusing active scene footage: {Path(candidate).name}")
+                donor_clip = scene_video_assets[idx % len(scene_video_assets)]
+                print_info(f"   🛡️ Reusing verified on-topic scene footage: {donor_clip.name}")
+                candidate = donor_clip
 
-            # Fail-safe 3: Generate emergency high-res cinematic motion clip using ffmpeg lavfi
+            # Fail-safe 2: Generate emergency high-res cinematic motion clip using ffmpeg lavfi
             if not candidate or not Path(candidate).exists():
                 em_clip = staging_dir / f"emergency_scene_{idx+1}.mp4"
                 dur_s = max(4.0, scene_durations[idx] if idx < len(scene_durations) else 5.0)
@@ -502,13 +561,11 @@ class RemotionBridge:
                     break
             render_cmd.extend(["--gl", "angle", "--enable-multiprocess-on-linux"])
 
-        # Cloud Server Speed Optimizations:
-        # 1. Scale: 0.75 canvas scale reduces rasterization pixel workload by 44% with crisp 810x1440 quality
-        # 2. Quality: 80% JPEG intermediate frames for optimal encode throughput
-        scale_val = str(os.getenv("REMOTION_SCALE", "0.75"))
+        # Studio Master Quality Settings (1080x1920 Full HD, 95% JPEG Frame Fidelity)
+        scale_val = str(os.getenv("REMOTION_SCALE", "1.0"))
         render_cmd.extend([
             "--scale", scale_val,
-            "--jpeg-quality", "80",
+            "--jpeg-quality", "95",
         ])
         if os.getenv("REMOTION_CONCURRENCY"):
             render_cmd.extend(["--concurrency", str(os.getenv("REMOTION_CONCURRENCY"))])
@@ -560,7 +617,159 @@ class RemotionBridge:
         final_size_mb = final_video_path.stat().st_size / (1024 * 1024)
         print_success(f"🎉 OpenMontage Reel rendered successfully! File: {final_video_path.name} ({final_size_mb:.1f} MB)")
 
+        if render_fb_variant and is_vertical:
+            try:
+                print_info(f"🎨 Auto-rendering dedicated Facebook Reel variant with FB Follow Hook for '{slug}'...")
+                self.last_fb_video = self.render_facebook_variant(slug=slug, original_video_path=final_video_path)
+            except Exception as fb_err:
+                print_warning(f"Could not render Facebook variant in render_reel ({fb_err}); falling back to base video.")
+                self.last_fb_video = final_video_path
+
+        # Automated Post-Render Screenshot Verification Audit
+        try:
+            print_info(f"📸 Running Post-Render Visual Verification Audit on {final_video_path.name}...")
+            audit_dir = final_video_path.parent / f"{slug}_audit"
+            audit_dir.mkdir(parents=True, exist_ok=True)
+            from autotube.media.visual_quality_gate import VisualQualityGate
+            from autotube.utils.ffmpeg_helper import get_ffmpeg_path
+            audit_gate = VisualQualityGate(min_confidence=85, min_coverage=80)
+            audit_results = []
+            ffmpeg_exe = get_ffmpeg_path()
+            for i, cut in enumerate(cuts):
+                mid_ts = round((cut["in_seconds"] + cut["out_seconds"]) / 2, 2)
+                frame_out = audit_dir / f"scene_{i+1}_audit.jpg"
+                cmd = [
+                    ffmpeg_exe, "-y", "-ss", str(mid_ts), "-i", str(final_video_path),
+                    "-frames:v", "1", "-vf", "scale=512:-1", "-q:v", "4", str(frame_out)
+                ]
+                subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False)
+                if frame_out.exists():
+                    sc_narr = scenes[i].get("narration", "") if (scenes and i < len(scenes)) else ""
+                    sc_subj = scenes[i].get("visual_subject", "") if (scenes and i < len(scenes)) else ""
+                    qa_res = audit_gate.verify(frame_out, sc_narr, {"subject": sc_subj, "is_outro": (i == len(cuts)-1)})
+                    passed = qa_res.get("accepted", True)
+                    conf = qa_res.get("confidence", 90)
+                    status_emoji = "✅" if passed else "⚠️"
+                    print_info(f"   {status_emoji} [Scene {i+1} Audit] Score: {conf}% | Reason: {qa_res.get('reason', 'OK')}")
+                    audit_results.append({
+                        "scene": i + 1,
+                        "timestamp": mid_ts,
+                        "passed": passed,
+                        "confidence": conf,
+                        "reason": qa_res.get("reason", ""),
+                    })
+
+            audit_log_path = final_video_path.parent / f"{slug}_audit_report.json"
+            with open(audit_log_path, "w", encoding="utf-8") as f_aud:
+                json.dump({"video": final_video_path.name, "scenes": audit_results}, f_aud, indent=2, ensure_ascii=False)
+            print_success(f"🎉 Visual Audit complete: {len(audit_results)} scenes verified and logged to {audit_log_path.name}")
+        except Exception as audit_err:
+            print_warning(f"Visual audit notice: {audit_err}")
+
         if progress_callback:
             progress_callback(100, f"Render complete: {final_video_path.name} ({final_size_mb:.1f} MB)")
 
         return final_video_path
+
+    def render_facebook_variant(self, slug: str, original_video_path: Path) -> Path:
+        """Render a dedicated Facebook Reels variant of an existing Short.
+        Replaces YouTube subscribe/bell overlay with Facebook follow/like hook banner (fb_follow_like_banner.png).
+        Reuses all already-downloaded scene cuts, narration audio, and word captions (fast ~15-20s render).
+        """
+        props_path = REMOTION_PUBLIC_DIR / "demo-props" / f"{slug}.json"
+        if not props_path.exists():
+            return original_video_path
+
+        fb_video_path = original_video_path.parent / f"{original_video_path.stem}_fb.mp4"
+        if fb_video_path.exists() and fb_video_path.stat().st_size > 50000:
+            return fb_video_path
+
+        try:
+            with open(props_path, "r", encoding="utf-8") as f:
+                props_data = json.load(f)
+
+            fb_banner_name = "fb_follow_like_banner.png"
+            local_fb_banner = PROJECT_ROOT / "assets" / fb_banner_name
+            target_public_fb_banner = REMOTION_PUBLIC_DIR / "assets" / fb_banner_name
+            if local_fb_banner.exists() and not target_public_fb_banner.exists():
+                target_public_fb_banner.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(local_fb_banner, target_public_fb_banner)
+
+            # Check if Hindi
+            is_hindi = any("\u0900" <= c <= "\u097F" for c in str(props_data))
+
+            # Modify or add subscribe_cta overlay to Facebook Follow Hook
+            has_cta = False
+            for overlay in props_data.get("overlays", []):
+                if overlay.get("type") in ("subscribe_cta", "subscribe_badge"):
+                    overlay["text"] = "लाइक और फॉलो करें" if is_hindi else "LIKE & FOLLOW PAGE"
+                    overlay["subtitle"] = "🔔 CosmoChronicle पेज को अभी फॉलो करें" if is_hindi else "🔔 Follow CosmoChronicle"
+                    overlay["imageSrc"] = f"assets/{fb_banner_name}"
+                    overlay["accentColor"] = "#2563EB"
+                    has_cta = True
+
+            if not has_cta:
+                cuts = props_data.get("cuts", [])
+                total_dur = cuts[-1].get("out_seconds", 25.0) if cuts else 25.0
+                props_data.setdefault("overlays", []).append({
+                    "type": "subscribe_cta",
+                    "in_seconds": max(1.0, round(total_dur - 5.5, 2)),
+                    "out_seconds": max(2.0, round(total_dur - 0.2, 2)),
+                    "text": "लाइक और फॉलो करें" if is_hindi else "LIKE & FOLLOW PAGE",
+                    "subtitle": "🔔 CosmoChronicle पेज को अभी फॉलो करें" if is_hindi else "🔔 Follow CosmoChronicle",
+                    "imageSrc": f"assets/{fb_banner_name}",
+                    "accentColor": "#2563EB",
+                })
+
+            fb_props_path = REMOTION_PUBLIC_DIR / "demo-props" / f"{slug}_fb.json"
+            with open(fb_props_path, "w", encoding="utf-8") as f:
+                json.dump(props_data, f, indent=2, ensure_ascii=False)
+
+            print_info(f"🎨 Rendering dedicated Facebook Reel variant with FB Follow Hook: {fb_video_path.name}...")
+            target_comp = "ExplainerVertical"
+            remotion_bin = REMOTION_DIR / "node_modules" / ".bin" / ("remotion.cmd" if sys.platform.startswith("win") else "remotion")
+            if remotion_bin.exists():
+                render_cmd = [
+                    str(remotion_bin), "render", "src/index.tsx", target_comp,
+                    str(fb_video_path), "--props", str(fb_props_path), "--codec", "h264",
+                ]
+            else:
+                npx_cmd = shutil.which("npx.cmd") or shutil.which("npx") or "npx"
+                render_cmd = [
+                    npx_cmd, "remotion", "render", "src/index.tsx", target_comp,
+                    str(fb_video_path), "--props", str(fb_props_path), "--codec", "h264",
+                ]
+
+            if sys.platform.startswith("linux"):
+                for chrom_bin in ["/usr/bin/chromium-browser", "/usr/bin/chromium", "/usr/bin/google-chrome"]:
+                    if os.path.exists(chrom_bin):
+                        render_cmd.extend(["--browser-executable", chrom_bin])
+                        break
+                render_cmd.extend(["--gl", "angle", "--enable-multiprocess-on-linux"])
+
+            scale_val = str(os.getenv("REMOTION_SCALE", "1.0"))
+            render_cmd.extend(["--scale", scale_val, "--jpeg-quality", "95"])
+            if os.getenv("REMOTION_CONCURRENCY"):
+                render_cmd.extend(["--concurrency", str(os.getenv("REMOTION_CONCURRENCY"))])
+
+            subprocess.run(
+                render_cmd,
+                cwd=str(REMOTION_DIR),
+                shell=sys.platform.startswith("win"),
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                text=True,
+                encoding="utf-8",
+                errors="replace",
+                timeout=600,
+            )
+
+            if fb_video_path.exists() and fb_video_path.stat().st_size > 50000:
+                print_success(f"✅ Facebook Reel variant successfully rendered: {fb_video_path.name}")
+                return fb_video_path
+            else:
+                print_warning("Remotion FB variant render incomplete; using base video.")
+                return original_video_path
+        except Exception as e:
+            print_warning(f"Error rendering Facebook variant ({e}); falling back to base video.")
+            return original_video_path

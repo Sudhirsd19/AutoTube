@@ -6,6 +6,7 @@ Tier 2: Vocal-Aligned Real Motion Stock Video Footage (Pexels HD) + Photorealist
         100% reliable, fast, zero timeouts, cinematic high retention.
 """
 
+import re
 from pathlib import Path
 from typing import Any, List, Optional, Set
 
@@ -14,6 +15,14 @@ from autotube.media.stock_fetcher import StockFetcher
 from autotube.media.veo_generator import VeoQuotaExceededError, VeoVideoGenerator
 from autotube.media.visual_quality_gate import VisualQualityGate
 from autotube.media.ai_visuals import VisualGenerator
+
+
+def _distill_search_query(text: Any, max_words: int = 4) -> str:
+    """Extract a clean, concise search query from subject or description text."""
+    if not text:
+        return ""
+    words = re.findall(r"[A-Za-z0-9]+", str(text))
+    return " ".join(words[:max_words])
 
 
 def _scene_value(scene: Any, key: str, default: Any = None) -> Any:
@@ -751,6 +760,48 @@ def acquire_scene_visuals_waterfall(
                     print_success(f"🎬 [YouTube/Social Secured] Scene {m_idx+1} recovered with authentic video: {clip.name}!")
         except Exception as yt_rec_err:
             print_warning(f"YouTube/Social recovery notice: {yt_rec_err}")
+
+    # Tier 3.5: Final Safety Net AI Motion Recovery
+    # If any slots are still missing after all stock engines and YouTube/Social harvesters,
+    # generate high-resolution AI visuals and convert them into continuous motion clips.
+    missing_ai_indices = [i for i in range(expected_count) if slot_assets[i] is None or not Path(slot_assets[i]).exists()]
+    if missing_ai_indices:
+        target_scenes = scenes[:max_scenes] if scenes else []
+        print_info(f"🎨 [Waterfall Tier 3.5] Recovering {len(missing_ai_indices)} missing scene(s) via 4K AI Photorealistic Generation + Ken Burns Motion...")
+        try:
+            ai_vis = VisualGenerator()
+            target_w = 1080 if orientation == "portrait" else 1920
+            target_h = 1920 if orientation == "portrait" else 1080
+            used_paths = {Path(a) for a in slot_assets if a is not None and Path(a).exists()}
+
+            for m_idx in missing_ai_indices:
+                m_scene = target_scenes[m_idx] if (target_scenes and m_idx < len(target_scenes)) else None
+                subj = getattr(m_scene, "visual_subject", None) or (fallback_queries[m_idx] if m_idx < len(fallback_queries) else getattr(script, "topic", "scene"))
+                desc = getattr(m_scene, "visual_description", None) or subj
+                prompt = f"{subj}, {desc}, cinematic 4k, hyper-detailed, highly realistic, 8k resolution"
+                img_path = output_dir / f"{slug}_ai_recovery_scene_{m_idx+1:02d}.jpg"
+                gen_img = ai_vis.generate_image(
+                    prompt=prompt,
+                    output_path=img_path,
+                    width=target_w,
+                    height=target_h,
+                    style="cinematic",
+                    allow_fallback=True,
+                )
+                if gen_img and gen_img.exists():
+                    motion_clip = _image_to_motion_clip(
+                        image_path=gen_img,
+                        output_path=output_dir / f"{slug}_ai_motion_scene_{m_idx+1:02d}.mp4",
+                        duration=4.0,
+                        orientation=orientation,
+                        motion_type=m_idx,
+                    )
+                    if motion_clip and motion_clip.exists() and motion_clip not in used_paths:
+                        slot_assets[m_idx] = motion_clip
+                        used_paths.add(motion_clip)
+                        print_success(f"🎬 Recovered Scene {m_idx+1} as 4K dynamic motion video!")
+        except Exception as ai_rec_err:
+            print_warning(f"AI motion scene recovery notice: {ai_rec_err}")
 
     scene_assets = [Path(a) for a in slot_assets if a is not None]
 

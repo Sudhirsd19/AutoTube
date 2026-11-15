@@ -476,17 +476,17 @@ CRITICAL RULES:
                     if is_fb:
                         outro_examples = """     A. Mind-Bending Question / Open Loop: Leave a provocative question ringing in their head (e.g. "क्या यह पुनर्जन्म का सच्चा सबूत था, या विज्ञान का सबसे बड़ा अनसुलझा रहस्य?").
      B. Polarized Comment Debate Trigger: Challenge the viewer to comment their answer (e.g. "अगर आपको इसका सच पता है तो कमेंट में 'हाँ' या 'ना' लिखकर बताएं!").
-     C. High-Conversion Identity & Part 2 Follow Trigger: Compel them to follow the Facebook page based on identity and exclusive revelations (e.g. "अगर आप भी उन 1% लोगों में हैं जो सच जानने का साहस रखते हैं, तो पेज को अभी FOLLOW करें—क्योंकि पार्ट 2 इससे 10 गुना ज़्यादा रोंगटे खड़े कर देने वाला है!")."""
+     C. High-Conversion Follow Trigger: Compel them cleanly to follow the Facebook page (e.g. "ऐसे ही अद्भुत ज्ञान और अनसुलझे रहस्यों के लिए पेज को अभी FOLLOW करें!")."""
                         default_titles = [f"{topic or 'रहस्य'} का चौंकाने वाला सच {'#Reels #FacebookReels' if not is_long else ''}"]
                     elif is_universal:
                         outro_examples = """     A. Mind-Bending Question / Open Loop: Leave a provocative question ringing in their head.
      B. Polarized Comment Debate Trigger: Challenge the viewer to comment their answer.
-     C. High-Conversion Identity & Follow/Subscribe Trigger: (e.g. "अगर आप भी उन 1% लोगों में हैं जो सच जानने का साहस रखते हैं, तो हमें अभी FOLLOW और SUBSCRIBE करें—क्योंकि पार्ट 2 इससे 10 गुना ज़्यादा रोंगटे खड़े कर देने वाला है!")."""
+     C. High-Conversion Follow/Subscribe Trigger: (e.g. "ऐसे ही अद्भुत ज्ञान और अनसुलझे रहस्यों के लिए अभी FOLLOW और SUBSCRIBE करें!")."""
                         default_titles = [f"{topic or 'रहस्य'} का चौंकाने वाला सच {'#Shorts #Reels' if not is_long else ''}"]
                     else:
                         outro_examples = """     A. Mind-Bending Question / Open Loop: Leave a provocative question ringing in their head (e.g. "क्या यह पुनर्जन्म का सच्चा सबूत था, या विज्ञान का सबसे बड़ा अनसुलझा रहस्य?").
      B. Polarized Comment Debate Trigger: Challenge the viewer to comment their answer (e.g. "अगर आपको इसका सच पता है तो कमेंट में 'हाँ' या 'ना' लिखकर बताएं!").
-     C. High-Conversion Identity & Part 2 Subscribe Trigger: Compel them to subscribe based on identity and exclusive revelations (e.g. "अगर आप भी उन 1% लोगों में हैं जो सच जानने का साहस रखते हैं, तो चैनल को अभी SUBSCRIBE करें—क्योंकि पार्ट 2 इससे 10 गुना ज़्यादा रोंगटे खड़े कर देने वाला है!")."""
+     C. High-Conversion Subscribe Trigger: Compel them cleanly to subscribe (e.g. "ऐसे ही अद्भुत ज्ञान और अनसुलझे रहस्यों के लिए चैनल को अभी SUBSCRIBE करें!")."""
                         default_titles = [f"{topic or 'रहस्य'} का चौंकाने वाला सच {'#Shorts' if not is_long else ''}"]
 
                     default_pinned = "क्या आपको लगता है कि यह सच हो सकता है? अपनी राय कमेंट में ज़रूर बताएं! 👇"

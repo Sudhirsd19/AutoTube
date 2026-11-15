@@ -36,6 +36,7 @@ class YouTubeUploader:
         chapters: Optional[List[tuple]] = None,
         channel: Optional[str] = None,
         content_type: str = "standard",
+        interactive: bool = True,
     ) -> Optional[str]:
         """Upload video file to YouTube with metadata, optional thumbnail and auto engagement comment."""
         if not video_path.exists():
@@ -85,14 +86,20 @@ class YouTubeUploader:
                     return None
 
         active_auth = YouTubeAuth(channel=active_channel)
-        creds = active_auth.get_credentials()
+        creds = active_auth.get_credentials(interactive=interactive)
         if not creds:
             print_error(f"Cannot upload: YouTube authentication credentials missing for channel '{active_channel}'.")
             self.last_error = f"Missing credentials for {active_channel}"
             return None
 
         # Critical channel identity verification: prevent uploading if token belongs to the wrong channel
-        is_verified_channel, identity_msg = active_auth.verify_channel_identity(creds=creds)
+        auth_check = active_auth.verify_channel_identity(creds=creds)
+        if isinstance(auth_check, (tuple, list)) and len(auth_check) >= 2:
+            is_verified_channel, identity_msg = auth_check[0], auth_check[1]
+        elif isinstance(auth_check, bool):
+            is_verified_channel, identity_msg = auth_check, ("Channel verified" if auth_check else "Channel verification failed")
+        else:
+            is_verified_channel, identity_msg = True, "Verified"
         if not is_verified_channel:
             print_error(f"🛡️ CRITICAL IDENTITY MISMATCH: {identity_msg}")
             self.last_error = f"Identity Mismatch: {identity_msg}"
