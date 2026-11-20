@@ -175,6 +175,7 @@ def test_visual_waterfall_recovers_missing_stock_scene_without_none_attribute_er
 
     with patch("autotube.media.multi_stock_aggregator.MultiStockAggregator.get_best_scene_asset", return_value=None), \
          patch("autotube.media.stock_fetcher.StockFetcher.fetch_best_visual_for_scene", side_effect=RuntimeError("Could not acquire motion video footage for subject: 'stem cells'")), \
+         patch("autotube.media.youtube_harvester.YouTubeHarvester.acquire_clip_for_scene", return_value=None), \
          patch("autotube.media.ai_visuals.VisualGenerator.generate_image", return_value=ai_img), \
          patch("autotube.media.visual_waterfall._image_to_motion_clip", return_value=motion_mp4), \
          patch("autotube.media.visual_waterfall._verify_scene_batch", return_value=True), \

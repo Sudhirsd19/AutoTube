@@ -2,6 +2,7 @@
 
 import datetime
 import json
+import re
 import time
 from pathlib import Path
 from typing import List, Optional
@@ -442,6 +443,36 @@ class AutoPilot:
             item_channel = item.get("channel") or ("hindi" if str(item_lang).lower().startswith("hi") else "english")
             item_tz_key = item.get("tz", "us" if str(item_lang).lower().startswith("en") else "ist")
 
+            item_fmt = item.get("format", "short")
+            is_fb_post_slot = (item_fmt == "fb_post" or item_channel == "facebook" or item.get("id") == "slot_fb_post")
+
+            if is_fb_post_slot:
+                print_panel(
+                    f"[bold white]Processing Facebook News Post {idx+1}/{count}:[/bold white] [bold yellow]{topic}[/bold yellow]\n"
+                    f"[bold cyan]Category & Slot:[/bold cyan] {slot_label}\n"
+                    f"[bold blue]Target Platform:[/bold blue] 🔵 Facebook Page Feed (1080x1080 Photo Card + Poll)\n"
+                    f"[bold magenta]Language:[/bold magenta] Hindi",
+                    border_style="blue",
+                )
+                try:
+                    from autotube.news.news_pipeline import DailyNewsPostPipeline
+                    news_pipe = DailyNewsPostPipeline()
+                    post_res = news_pipe.run(publish=upload)
+                    if post_res.get("success"):
+                        if post_res.get("facebook_published"):
+                            p_url = post_res.get("post_url")
+                            uploaded_urls.append(p_url)
+                            print_success(f"🎉 Facebook News Post published successfully to Facebook Page! URL: {p_url}")
+                        else:
+                            print_warning(f"Facebook News Post card generated but not published: {post_res.get('facebook_error')}")
+                    else:
+                        failed_count += 1
+                        print_error(f"Facebook News Post generation failed: {post_res.get('error')}")
+                except Exception as fb_slot_err:
+                    failed_count += 1
+                    print_error(f"Exception during Facebook News Post slot: {fb_slot_err}")
+                continue
+
             print_panel(
                 f"[bold white]Processing Video {idx+1}/{count}:[/bold white] [bold yellow]{topic}[/bold yellow]\n"
                 f"[bold cyan]Category & Slot:[/bold cyan] {slot_label}\n"
@@ -607,7 +638,7 @@ class AutoPilot:
                             enable_subscribe_cta=True,
                             target_platform="youtube",
                             output_dir=output_video_path.parent,
-                            render_fb_variant=(not is_landscape and is_hindi_video),
+                            render_fb_variant=(not is_landscape),
                         )
                     except Exception as rb_err:
                         print_warning(f"Remotion render failed ({rb_err}); falling back to classic builder.")
@@ -678,6 +709,126 @@ class AutoPilot:
                         hook_text=auto_hook_text,
                     )
 
+                    # Automated Post-Generation Screenshot Verification & Auto-Healing for Classic Waterfall
+                    if final_video and final_video.exists():
+                        try:
+                            import subprocess
+                            from autotube.media.visual_quality_gate import VisualQualityGate
+                            from autotube.utils.ffmpeg_helper import get_ffmpeg_path, get_media_duration
+                            audit_gate = VisualQualityGate(min_confidence=85, min_coverage=80)
+                            ffmpeg_exe = get_ffmpeg_path()
+                            audit_dir = final_video.parent / f"{slug}_audit"
+                            audit_dir.mkdir(parents=True, exist_ok=True)
+
+                            cuts_ts = []
+                            el = 0.0
+                            durs = scene_durations or [get_media_duration(final_video) / max(1, len(script.scenes))] * len(script.scenes)
+                            for d in durs:
+                                cuts_ts.append((el, el + d))
+                                el += d
+
+                            mismatched_scenes = []
+                            audit_results = []
+                            for s_idx, (in_s, out_s) in enumerate(cuts_ts):
+                                mid_s = round((in_s + out_s) / 2, 2)
+                                f_out = audit_dir / f"scene_{s_idx+1}_audit.jpg"
+                                subprocess.run([
+                                    ffmpeg_exe, "-y", "-ss", str(mid_s), "-i", str(final_video),
+                                    "-frames:v", "1", "-vf", "scale=512:-1", "-q:v", "4", str(f_out)
+                                ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False)
+                                if f_out.exists():
+                                    sc_obj = script.scenes[s_idx] if (script.scenes and s_idx < len(script.scenes)) else None
+                                    s_narr = getattr(sc_obj, "narration", "") if sc_obj else script.narration
+                                    s_subj = getattr(sc_obj, "visual_subject", "") if sc_obj else script.topic
+                                    qa_res = audit_gate.verify(f_out, s_narr, {"subject": s_subj, "is_outro": (s_idx == len(cuts_ts)-1)})
+                                    passed = qa_res.get("accepted", True)
+                                    conf = qa_res.get("confidence", 90)
+                                    status_emoji = "✅" if passed else "⚠️"
+                                    print_info(f"   {status_emoji} [Scene {s_idx+1} Screenshot Audit] Score: {conf}% | Reason: {qa_res.get('reason', 'OK')}")
+                                    audit_results.append({
+                                        "scene": s_idx + 1,
+                                        "timestamp": mid_s,
+                                        "passed": passed,
+                                        "confidence": conf,
+                                        "reason": qa_res.get("reason", ""),
+                                    })
+                                    if not passed:
+                                        mismatched_scenes.append((s_idx, s_narr, s_subj, qa_res.get("reason", "")))
+
+                            audit_log_p = final_video.parent / f"{slug}_audit_report.json"
+                            with open(audit_log_p, "w", encoding="utf-8") as f_aud:
+                                json.dump({"video": final_video.name, "scenes": audit_results}, f_aud, indent=2, ensure_ascii=False)
+
+                            if mismatched_scenes:
+                                print_warning(f"🚨 [Classic Visual Audit] {len(mismatched_scenes)} scene(s) mismatched! Initiating Auto-Healing...")
+                                healed_any = False
+                                from autotube.media.multi_stock_aggregator import MultiStockAggregator
+                                ms_agg = MultiStockAggregator()
+                                from autotube.media.youtube_harvester import YouTubeHarvester
+                                yt_h = YouTubeHarvester()
+
+                                for s_idx, s_narr, s_subj, reason in mismatched_scenes:
+                                    print_info(f"   🔄 Healing Scene {s_idx+1} ('{reason[:60]}')...")
+                                    replacement = None
+                                    try:
+                                        cand = ms_agg.get_best_scene_asset(
+                                            scene_text=s_narr,
+                                            title=script.title,
+                                            scene_index=s_idx,
+                                            orientation=orientation,
+                                            scene_plan={"subject": s_subj, "narration": s_narr},
+                                        )
+                                        if cand and Path(cand).exists():
+                                            qa_c = audit_gate.verify(cand, s_narr, {"subject": s_subj})
+                                            if qa_c.get("accepted"):
+                                                replacement = cand
+                                    except Exception:
+                                        pass
+
+                                    if not replacement or not Path(replacement).exists():
+                                        try:
+                                            yt_out = self.cfg.paths.temp_dir / f"{slug}_healed_sc_{s_idx+1}.mp4"
+                                            doc_q = f"{s_subj} 4k documentary bbc natgeo".strip()
+                                            yt_cand = yt_h.acquire_clip_for_scene(
+                                                query_or_url=doc_q,
+                                                output_path=yt_out,
+                                                orientation=orientation,
+                                                duration=3.8,
+                                                scene_index=s_idx,
+                                            )
+                                            if yt_cand and yt_cand.exists() and yt_cand.stat().st_size > 20000:
+                                                qa_check = audit_gate.verify(yt_cand, s_narr, {"subject": s_subj})
+                                                if qa_check.get("accepted"):
+                                                    replacement = yt_cand
+                                        except Exception:
+                                            pass
+
+                                    if not replacement or not Path(replacement).exists():
+                                        pass_idx = [i for i in range(len(scene_assets)) if i not in [m[0] for m in mismatched_scenes] and scene_assets[i] is not None]
+                                        if pass_idx:
+                                            replacement = scene_assets[pass_idx[0]]
+
+                                    if replacement and Path(replacement).exists():
+                                        scene_assets[s_idx] = Path(replacement)
+                                        healed_any = True
+
+                                if healed_any:
+                                    print_info("🎬 Rebuilding Short with healed verified footage...")
+                                    final_video = self.builder.build_short(
+                                        audio_path=tts_res.audio_path,
+                                        output_path=output_video_path,
+                                        scene_assets=scene_assets,
+                                        scene_durations=scene_durations,
+                                        subtitles_file=tts_res.subtitles_ass_path,
+                                        music_path=selected_music_path,
+                                        width=v_w,
+                                        height=v_h,
+                                        hook_text=auto_hook_text,
+                                    )
+                                    print_success("🎉 Classic Short successfully re-rendered with 100% verified clips!")
+                        except Exception as ca_err:
+                            print_warning(f"Classic visual audit notice: {ca_err}")
+
                 # Universal Fail-Closed Shorts Duration Gate with Auto-Compression
                 if not is_landscape and final_video and final_video.exists():
                     from autotube.utils.ffmpeg_helper import get_media_duration, get_ffmpeg_path
@@ -718,7 +869,20 @@ class AutoPilot:
 
                 # Step E: Upload & Schedule on YouTube
                 if upload and final_video and final_video.exists():
-                    v_title = f"{script.title} [Full Documentary]" if is_landscape else f"{script.title} #Shorts"
+                    raw_title = script.title or ""
+                    # Remove pre-existing hashtags and brackets from AI generated title
+                    clean_t = re.sub(r'#\w+', '', raw_title).strip()
+                    clean_t = re.sub(r'\[.*?\]', '', clean_t).strip()
+                    clean_t = re.sub(r'\s+', ' ', clean_t).strip()
+                    # Cleanly truncate if too long to prevent mobile cut-off
+                    if len(clean_t) > 55:
+                        cut = clean_t[:52].rstrip()
+                        clean_t = cut.rsplit(' ', 1)[0] + '...' if ' ' in cut else cut + '...'
+
+                    if is_landscape:
+                        v_title = f"{clean_t} | Full Documentary"
+                    else:
+                        v_title = f"{clean_t} #Shorts"
                     chapters = []
                     if is_landscape and script.scenes:
                         curr_sec = 0.0
@@ -787,7 +951,7 @@ class AutoPilot:
                             f"Rendered video is safely preserved at: {output_video_path.name if output_video_path else 'unknown'}"
                         )
 
-                    # Step F: Auto-publish to Facebook Page (CosmoChronicle) strictly for Hindi vertical reels
+                    # Step F: Auto-publish to Facebook Page (CosmoChronicle) for vertical reels (English & Hindi)
                     is_hindi_video = (
                         str(item_lang).lower().startswith("hi")
                         or item_channel == "hindi"
@@ -796,69 +960,113 @@ class AutoPilot:
                     )
 
                     if not is_landscape and final_video and final_video.exists():
-                        if not is_hindi_video:
-                            print_info(
-                                f"⏭️ Skipping Facebook Reel auto-publish: Video is English ('{topic}'). "
-                                "Facebook Page is strictly reserved for Hindi Reels."
-                            )
-                        else:
-                            try:
-                                from autotube.uploader.facebook_upload import FacebookReelsUploader
-                                fb_uploader = FacebookReelsUploader()
-                                if fb_uploader.is_configured():
-                                    fb_creds = fb_uploader.load_credentials()
-                                    page_name = fb_creds.get('page_name', 'CosmoChronicle')
-                                    print_info(f"📤 Auto-publishing Hindi Reel to Facebook Page '{page_name}'...")
+                        try:
+                            from autotube.uploader.facebook_upload import FacebookReelsUploader
+                            fb_uploader = FacebookReelsUploader()
+                            if fb_uploader.is_configured():
+                                fb_creds = fb_uploader.load_credentials()
+                                page_name = fb_creds.get('page_name', 'CosmoChronicle')
+                                lang_label = "Hindi" if is_hindi_video else "English"
+                                print_info(f"📤 Auto-publishing {lang_label} Reel to Facebook Page '{page_name}'...")
 
-                                    import re
-                                    # Clean YouTube-specific channel phrases from Facebook caption
+                                # Clean YouTube-specific channel phrases from Facebook caption
+                                if is_hindi_video:
                                     clean_narration = re.sub(
                                         r"(चैनल को सब्सक्राइब|चैनल को subscribe|subscribe to (the )?channel|subscribe करें)[^.!?\n]*[.!?]?",
                                         "",
                                         script.narration,
                                         flags=re.IGNORECASE
                                     ).strip()
+                                    fb_follow_cta = f"👉 ऐसे ही अद्भुत ज्ञान और रहस्यों के लिए अभी @{page_name} पेज को फॉलो करें! 🔔"
+                                else:
+                                    clean_narration = re.sub(
+                                        r"(subscribe to (the )?channel|like and subscribe|subscribe for more)[^.!?\n]*[.!?]?",
+                                        "",
+                                        script.narration,
+                                        flags=re.IGNORECASE
+                                    ).strip()
+                                    fb_follow_cta = f"👉 Follow @{page_name} for daily mind-bending space & science mysteries! 🔔"
 
-                                    fb_caption = (
-                                        f"{v_title}\n\n"
-                                        f"{clean_narration}\n\n"
-                                        f"👉 ऐसे ही अद्भुत ज्ञान और रहस्यों के लिए अभी @{page_name} पेज को फॉलो करें! 🔔\n\n"
-                                        f"{' '.join(script.tags)}"
+                                # Clean Facebook title: remove #Shorts, [Full Documentary], etc.
+                                clean_fb_title = re.sub(r"\s*#shorts\b", "", script.title or topic, flags=re.IGNORECASE).strip()
+                                clean_fb_title = re.sub(r"\[Full Documentary\]", "", clean_fb_title, flags=re.IGNORECASE).strip()
+                                if not clean_fb_title:
+                                    clean_fb_title = script.title or topic
+
+                                # Clean tags for Facebook (strip YouTube-specific tags)
+                                fb_clean_tags = [t.replace('#', '') for t in script.tags if t.lower() not in ('#shorts', '#short', '#youtubeshorts', '#ytshorts')]
+
+                                fb_caption = (
+                                    f"{clean_fb_title}\n\n"
+                                    f"{clean_narration}\n\n"
+                                    f"{fb_follow_cta}\n\n"
+                                    f"{' '.join('#' + t for t in fb_clean_tags)}"
+                                )
+
+                                # Calculate Peak Time schedule timestamp for Facebook Reel
+                                fb_sched_epoch = None
+                                if schedule and upload:
+                                    slot_tz = get_timezone(item_tz_key)
+                                    local_now = datetime.datetime.now(slot_tz)
+                                    sched_dt_fb = datetime.datetime(
+                                        local_now.year,
+                                        local_now.month,
+                                        local_now.day,
+                                        sched_hour,
+                                        sched_minute,
+                                        0,
+                                        tzinfo=slot_tz,
+                                    )
+                                    now_utc = datetime.datetime.now(datetime.timezone.utc)
+                                    # Meta Graph API requires scheduled_publish_time >= now + 15 mins
+                                    if sched_dt_fb.astimezone(datetime.timezone.utc) <= (now_utc + datetime.timedelta(minutes=15)):
+                                        sched_dt_fb += datetime.timedelta(days=1)
+                                    fb_sched_epoch = int(sched_dt_fb.astimezone(datetime.timezone.utc).timestamp())
+                                    print_info(
+                                        f"📅 [Facebook Reels Scheduler] Queuing Reel for India Peak: "
+                                        f"[bold yellow]{sched_hour:02d}:{sched_minute:02d} IST[/bold yellow] (timestamp: {fb_sched_epoch})"
                                     )
 
-                                    # Generate or reuse dedicated Facebook-branded variant with Follow Hook banner (fb_follow_like_banner.png)
-                                    fb_video_path = getattr(r_bridge, "last_fb_video", None) if r_bridge else None
-                                    if not fb_video_path or not fb_video_path.exists():
-                                        if use_openmontage:
-                                            try:
-                                                from autotube.video.remotion_bridge import RemotionBridge
-                                                if not r_bridge:
-                                                    r_bridge = RemotionBridge()
-                                                remotion_slug = sanitize_filename(script.title or topic or "hybrid_reel")
-                                                fb_video_path = r_bridge.render_facebook_variant(
-                                                    slug=remotion_slug,
-                                                    original_video_path=final_video,
-                                                )
-                                            except Exception as fb_v_err:
-                                                print_warning(f"Could not render Facebook variant ({fb_v_err}); using base video.")
-                                                fb_video_path = final_video
-                                        else:
+                                # Generate or reuse dedicated Facebook-branded variant with Follow Hook banner (fb_follow_like_banner.png)
+                                fb_video_path = getattr(r_bridge, "last_fb_video", None) if r_bridge else None
+                                if not fb_video_path or not Path(fb_video_path).exists():
+                                    candidate = final_video.parent / f"{final_video.stem}_fb.mp4"
+                                    if candidate.exists():
+                                        fb_video_path = candidate
+                                    elif use_openmontage:
+                                        try:
+                                            from autotube.video.remotion_bridge import RemotionBridge
+                                            if not r_bridge:
+                                                r_bridge = RemotionBridge()
+                                            remotion_slug = sanitize_filename(script.title or topic or "hybrid_reel")
+                                            fb_video_path = r_bridge.render_facebook_variant(
+                                                slug=remotion_slug,
+                                                original_video_path=final_video,
+                                            )
+                                        except Exception as fb_v_err:
+                                            print_warning(f"Could not render Facebook variant ({fb_v_err}); using base video.")
                                             fb_video_path = final_video
-
-                                    fb_res = fb_uploader.upload_reel(
-                                        video_path=fb_video_path,
-                                        title=v_title,
-                                        description=fb_caption,
-                                        tags=[t.replace('#', '') for t in script.tags],
-                                        language="hi",
-                                    )
-                                    if fb_res.get("success"):
-                                        fb_id = fb_res.get("video_id") or fb_res.get("id")
-                                        print_success(f"🎉 Facebook Reel published successfully to {page_name}! ID: {fb_id}")
                                     else:
-                                        print_warning(f"Facebook Reel upload notice: {fb_res.get('error')}")
-                            except Exception as fb_err:
-                                print_warning(f"Facebook Reels publishing notice: {fb_err}")
+                                        fb_video_path = final_video
+
+                                fb_res = fb_uploader.upload_reel(
+                                    video_path=fb_video_path,
+                                    title=clean_fb_title,
+                                    description=fb_caption,
+                                    tags=fb_clean_tags,
+                                    language="hi" if is_hindi_video else "en",
+                                    scheduled_publish_time=fb_sched_epoch,
+                                )
+                                if fb_res.get("success"):
+                                    fb_id = fb_res.get("video_id") or fb_res.get("id")
+                                    if fb_sched_epoch:
+                                        print_success(f"🎉 Facebook Reel scheduled for peak time on {page_name}! ID: {fb_id}")
+                                    else:
+                                        print_success(f"🎉 Facebook Reel published successfully to {page_name}! ID: {fb_id}")
+                                else:
+                                    print_warning(f"Facebook Reel upload notice: {fb_res.get('error')}")
+                        except Exception as fb_err:
+                            print_warning(f"Facebook Reels publishing notice: {fb_err}")
 
                     # Step G: Immediate post-upload storage & memory prune
                     try:

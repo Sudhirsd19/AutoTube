@@ -2,6 +2,7 @@
 
 import json
 import re
+import time
 from datetime import datetime
 from pathlib import Path
 from typing import List, Optional
@@ -137,14 +138,12 @@ class YouTubeUploader:
             else:
                 base_viral_tags = [
                     "Shorts",
-                    "YouTube Shorts",
-                    "Viral",
-                    "Trending",
                     "Space",
-                    "Science Facts",
-                    "Mind Blowing",
-                    "Mysteries",
                     "Universe",
+                    "Cosmology",
+                    "Science Facts",
+                    "Astronomy",
+                    "Quantum Physics",
                 ]
         else:
             base_viral_tags = [
@@ -208,9 +207,9 @@ class YouTubeUploader:
                 pass
 
         sub_link = f"https://www.youtube.com/{channel_handle}?sub_confirmation=1"
-        dynamic_tags_line = " ".join(t if t.startswith("#") else f"#{t}" for t in clean_tags[:8])
+        dynamic_tags_line = " ".join(t if t.startswith("#") else f"#{t}" for t in clean_tags[:4])
         if not dynamic_tags_line:
-            dynamic_tags_line = "#Shorts #Viral #Trending"
+            dynamic_tags_line = "#Shorts #Space #Science"
 
         if content_type == "vedic":
             vedic_tag_line = dynamic_tags_line
@@ -344,11 +343,21 @@ class YouTubeUploader:
             )
 
             response = None
+            retry_count = 0
             while response is None:
-                status, response = insert_request.next_chunk()
-                if status:
-                    percent = int(status.progress() * 100)
-                    print_info(f"Upload progress: {percent}%")
+                try:
+                    status, response = insert_request.next_chunk()
+                    if status:
+                        percent = int(status.progress() * 100)
+                        print_info(f"Upload progress: {percent}%")
+                    retry_count = 0
+                except (HttpError, OSError, Exception) as chunk_err:
+                    retry_count += 1
+                    if retry_count > 8:
+                        raise chunk_err
+                    wait_time = min(2 ** retry_count, 30)
+                    print_warning(f"Network glitch during chunk upload ({chunk_err}). Retrying in {wait_time}s (attempt {retry_count}/8)...")
+                    time.sleep(wait_time)
 
             video_id = response.get("id")
             video_url = f"https://youtu.be/{video_id}"

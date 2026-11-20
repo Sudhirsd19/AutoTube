@@ -30,12 +30,12 @@ def test_spiritual_topics_select_a_dedicated_voice_by_language():
         "Bhagavad Gita: Krishna's Wisdom",
         "The Gita teaches selfless action and steady awareness.",
         "en",
-    ) == "en_deep_warm_male"
+    ) == "Charon"
     assert choose_subject_voice(
         "गीता से जीवन की सीख",
         "श्रीकृष्ण अर्जुन को निष्काम कर्म का संदेश देते हैं।",
         "hi",
-    ) == "akashvani"
+    ) == "Charon"
 
 
 def test_spiritual_voice_takes_priority_over_space_and_history_keywords():
@@ -43,7 +43,7 @@ def test_spiritual_voice_takes_priority_over_space_and_history_keywords():
         "Bhagavad Gita Cosmic Wisdom",
         "Krishna explains karma yoga to Arjuna on the battlefield.",
         "en",
-    ) == "en_deep_warm_male"
+    ) == "Charon"
 
 
 def test_generic_motivation_and_digital_topics_are_not_misclassified():
@@ -216,6 +216,7 @@ def test_scripture_video_path_requests_native_4k_ai_images_and_qas_every_scene(
         return output_path
 
     monkeypatch.setattr("autotube.media.ai_visuals.VisualGenerator", FakeGenerator)
+    monkeypatch.setattr("autotube.media.visual_waterfall.VisualGenerator", FakeGenerator)
     monkeypatch.setattr("PIL.Image.open", lambda *args, **kwargs: FakeImageContext())
     monkeypatch.setattr(visual_waterfall, "_image_to_motion_clip", fake_motion_clip)
     monkeypatch.setattr(

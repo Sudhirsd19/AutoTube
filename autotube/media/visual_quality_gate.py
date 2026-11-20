@@ -131,21 +131,68 @@ class VisualQualityGate:
         must_show_list = list(plan.get("must_show", []))
         avoid_list = list(plan.get("avoid", []))
 
-        # Auto-infer strict must_show and avoid if missing or loose
+        # Auto-infer strict must_show and avoid if missing or loose based on comprehensive domain rules
         combined_context = (str(plan.get("subject", "")) + " " + str(plan.get("description", "")) + " " + narration).lower()
-        wildlife_species_rules = {
-            "falcon": ("peregrine falcon in nature, hunting, diving or high-speed flight", ["airplanes", "passenger jets", "fighter jets", "modern street lights", "electric poles", "cars", "unrelated birds", "kites", "pigeons", "crows", "seagulls", "cages"]),
-            "cheetah": ("cheetah sprinting, hunting or prowling in wild nature", ["cars", "domestic cats", "modern offices", "cages", "talking heads"]),
-            "snake": ("snake or reptile moving in natural habitat", ["modern rooms", "kitchens", "talking heads", "cartoons"]),
-            "jellyfish": ("bioluminescent jellyfish underwater in ocean", ["cooked dishes", "food", "aquarium glare", "talking heads"]),
-            "shark": ("shark swimming deep underwater in natural ocean", ["aquarium", "food dishes", "talking heads"]),
-            "whale": ("whale swimming in open ocean", ["aquarium", "boats", "fishing nets"]),
-            "black hole": ("deep space black hole, event horizon or cosmic accretion disk simulation", ["airplanes", "modern offices", "human faces", "helmets", "daytime terrestrial"]),
-            "temple": ("ancient stone carvings, monolithic temple architecture, stone ruins", ["modern city streets", "asphalt roads", "plastic", "modern cars", "space footage"]),
-        }
-        for kw, (auto_show, auto_avoid) in wildlife_species_rules.items():
-            if kw in combined_context:
-                if not must_show_list or len(must_show_list) == 1:
+        domain_rules = [
+            # Space & Cosmic Mysteries
+            (
+                ("space", "star", "pulsar", "galaxy", "nebula", "cluster", "cosmos", "universe", "big bang", "supernova", "black hole", "celestial", "deep space", "antariksh"),
+                "authentic deep space, cosmic nebula, stars, glowing galaxy, pulsar beams, astronomical phenomena, celestial motion",
+                ["human faces", "actors", "people talking", "indoor rooms", "train cabins", "costumes", "airplanes", "daytime terrestrial", "thunderstorms", "rain", "forests", "modern buildings", "western movies", "gaming", "tabletop"]
+            ),
+            # Ocean & Deep Sea Abyss
+            (
+                ("ocean", "sea", "abyss", "marine", "underwater", "trench", "shipwreck", "hydrothermal", "reef", "magnetic rock", "sea floor", "samundar", "sagar"),
+                "deep underwater ocean, marine waves, abyss trench, underwater shipwreck, oceanic activity",
+                ["mountains", "dry deserts", "people talking", "indoor rooms", "modern cities", "blurry foam", "tabletop", "sunny beach"]
+            ),
+            # Ancient History, Megaliths, Temples & Subterranean
+            (
+                ("ancient", "temple", "pyramid", "megalith", "subterranean", "tunnels", "ruins", "archaeology", "excavation", "artifact", "pillar", "cave", "battery", "stone", "mandir", "prachin"),
+                "ancient stone architecture, archaeological ruins, authentic historical artifacts, ancient caves or carvings",
+                ["modern clothing", "smartphones", "modern people", "cars", "offices", "snow footprints", "toy beads", "modern street"]
+            ),
+            # Deep Earth & Geology
+            (
+                ("mantle", "earth core", "geology", "seismic", "mineral", "ringwoodite", "crust", "magma", "bhugarbh"),
+                "geological strata, earth cross-section, volcanic molten magma, authentic crystalline mineral formations, seismic waves",
+                ["toy beads", "craft tables", "yoga", "kitchen", "household items", "people talking"]
+            ),
+            # Specific Wildlife species
+            (
+                ("falcon",),
+                "peregrine falcon in nature, hunting, diving or high-speed flight",
+                ["airplanes", "passenger jets", "fighter jets", "modern street lights", "electric poles", "cars", "unrelated birds", "kites", "pigeons", "crows", "seagulls", "cages"]
+            ),
+            (
+                ("cheetah",),
+                "cheetah sprinting, hunting or prowling in wild nature",
+                ["cars", "domestic cats", "modern offices", "cages", "talking heads"]
+            ),
+            (
+                ("snake",),
+                "snake or reptile moving in natural habitat",
+                ["modern rooms", "kitchens", "talking heads", "cartoons"]
+            ),
+            (
+                ("jellyfish",),
+                "bioluminescent jellyfish underwater in ocean",
+                ["cooked dishes", "food", "aquarium glare", "talking heads"]
+            ),
+            (
+                ("shark",),
+                "shark swimming deep underwater in natural ocean",
+                ["aquarium", "food dishes", "talking heads"]
+            ),
+            (
+                ("whale",),
+                "whale swimming in open ocean",
+                ["aquarium", "boats", "fishing nets"]
+            ),
+        ]
+        for kws, auto_show, auto_avoid in domain_rules:
+            if any(kw in combined_context for kw in kws):
+                if not must_show_list or len(must_show_list) <= 1:
                     must_show_list.append(auto_show)
                 avoid_list.extend(auto_avoid)
                 break
@@ -189,6 +236,13 @@ Guidelines:
   * The footage MUST be evaluated as an atmospheric, majestic, or thematic grand finale (e.g. ancient architecture, temple, fort, sunset, deep space, nature landscape, ancient ruins) that fits the overarching theme of the video.
   * DO NOT reject or penalize footage for lacking a subscribe button or bell icon.
   * Accept high-quality thematic finale visuals that fit the topic or historical setting.
+- ZERO TOLERANCE ON RANDOM HUMANS / ACTORS IN DOCUMENTARY & SCIENCE SUBJECTS:
+  Unless the narration or target subject explicitly describes a named human person, real interview, or living creator:
+  * NO random actors, movie/TV scenes, people in rooms/trains/offices, or talking heads are permitted.
+  * Footage containing human actors, random people walking in modern clothes, or costumes for space, deep ocean, geology, or ancient ruins MUST BE IMMEDIATELY REJECTED with violation 'unwanted_human_actor'.
+  * Footage showing toy items (such as plastic/glass beads on a wooden table, craft supplies) for scientific or geological subjects MUST BE REJECTED with violation 'toy_item_mismatch'.
+  * Footage showing terrestrial weather (rain, lightning, thunderstorms, forest) for deep space astronomy topics MUST BE REJECTED with violation 'terrestrial_weather_for_space'.
+  * Footage showing terrestrial dry mountains for deep ocean abyss topics MUST BE REJECTED with violation 'terrestrial_mountain_for_ocean'.
 - Check MUST SHOW and MUST AVOID elements strictly:
   * For astronomy, space, black hole, star, or cosmos topics: footage MUST show authentic cosmic phenomena (deep space, nebulae, stars, planets, galaxies, black hole simulations, celestial motion). DO NOT accept human faces, helmets, visors, modern offices, or terrestrial daytime scenes!
   * For history, mythology, temple, or archaeology topics: footage of ancient stone ruins, temple architecture, archaeological excavations, ancient artifacts, or historical landscapes ARE VALID ACCEPTABLE EVIDENCE for the subject.

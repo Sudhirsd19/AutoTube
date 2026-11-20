@@ -49,6 +49,13 @@ BLACKLISTED_STOCK_IDS = {
     "mixkit_14179",  # 95% pitch-black empty void, black hole is virtually invisible
 }
 
+# Misleading metaphor / clickbait adjectives that divert search from physical core subjects to horror/toys
+MISLEADING_METAPHOR_ADJECTIVES = {
+    "ghostly", "spooky", "haunted", "magic", "magical", "secret", "mysterious",
+    "deadly", "incredible", "shocking", "impossible", "chilling", "bizarre",
+    "weird", "unsolved", "creepy", "unbelievable", "forbidden", "horrifying"
+}
+
 
 class MultiStockAggregator:
     """Aggregates videos from Mixkit, Coverr, Pexels, and Pixabay with AI semantic selection."""
@@ -569,7 +576,7 @@ Return STRICT JSON with keys:
     # 2. SOURCE SEARCH ENGINES (Mixkit, Coverr, Pexels, Pixabay)
     # -------------------------------------------------------------
     def _sanitize_query(self, query: str) -> str:
-        """Sanitize query into clean English search keywords, translating Hindi if present."""
+        """Sanitize query into clean English search keywords, translating Hindi if present and stripping misleading metaphor adjectives."""
         if not query:
             return ""
         try:
@@ -582,7 +589,12 @@ Return STRICT JSON with keys:
                     query = res["subject"]
         except Exception:
             pass
-        return re.sub(r"[^a-zA-Z0-9\s]", " ", str(query)).strip().lower()
+        cleaned = re.sub(r"[^a-zA-Z0-9\s]", " ", str(query)).strip().lower()
+        words = cleaned.split()
+        content_words = [w for w in words if w not in MISLEADING_METAPHOR_ADJECTIVES]
+        if content_words:
+            return " ".join(content_words)
+        return cleaned
 
     def search_mixkit(self, query: str, limit: int = 8) -> List[Dict[str, Any]]:
         """Search Mixkit free stock videos with real slug extraction and clean title parsing."""
@@ -594,7 +606,7 @@ Return STRICT JSON with keys:
         slugs_to_try = []
         
         # Exact kebab-case of the query (e.g., 'black-hole', 'deep-space')
-        words = [w for w in clean_q.split() if len(w) > 2]
+        words = [w for w in clean_q.split() if len(w) > 2 and w not in MISLEADING_METAPHOR_ADJECTIVES]
         if len(words) >= 2:
             slugs_to_try.append("-".join(words[:2]))
         elif words:
@@ -603,12 +615,14 @@ Return STRICT JSON with keys:
         # Domain-specific high quality category slugs
         if any(k in clean_q for k in ("black hole", "blackhole")):
             slugs_to_try.extend(["black-hole", "space", "galaxy", "stars"])
-        elif any(k in clean_q for k in ("space", "galaxy", "universe", "planet", "stars", "cosmos", "event horizon", "dilation")):
+        elif any(k in clean_q for k in ("space", "galaxy", "universe", "planet", "stars", "cosmos", "event horizon", "dilation", "star cluster", "pulsar", "nebula")):
             slugs_to_try.extend(["space", "earth", "galaxy", "universe", "stars", "planet", "nebula"])
+        elif any(k in clean_q for k in ("ocean", "water", "underwater", "deep sea", "marine", "abyss", "trench")):
+            slugs_to_try.extend(["ocean", "underwater", "sea"])
+        elif any(k in clean_q for k in ("temple", "ruins", "ancient", "monument", "pyramid", "cave", "tunnel")):
+            slugs_to_try.extend(["architecture", "nature"])
         elif any(k in clean_q for k in ("portal", "wormhole", "time travel", "dimension")):
             slugs_to_try.extend(["space", "galaxy", "tunnel"])
-        elif any(k in clean_q for k in ("ocean", "water", "underwater", "deep sea")):
-            slugs_to_try.extend(["ocean", "underwater", "sea"])
         elif any(k in clean_q for k in ("city", "street", "crowd", "night")):
             slugs_to_try.extend(["city", "night", "street"])
         elif any(k in clean_q for k in ("technology", "computer", "code", "ai", "robot")):
@@ -1494,9 +1508,17 @@ Output STRICT JSON with:
                     character_hint=char_hint
                 )
                 if yt_asset and yt_asset.exists() and yt_asset.stat().st_size > 20000:
-                    if self._record_asset_fingerprint(yt_asset, label="YouTubeShorts"):
-                        print_success(f"   🛡️ [YouTube Shorts Fallback Approved] Scene {scene_index+1} acquired anti-copyright safe viral footage: {yt_asset.name}")
-                        return yt_asset
+                    qa = self.visual_quality_gate.verify(yt_asset, scene_text, scene_plan)
+                    if qa.get("accepted"):
+                        if self._record_asset_fingerprint(yt_asset, label="YouTubeShorts"):
+                            print_success(f"   🛡️ [YouTube Shorts Fallback Approved] Scene {scene_index+1} acquired anti-copyright safe viral footage: {yt_asset.name} (Score: {qa.get('confidence')}%)")
+                            return yt_asset
+                    else:
+                        print_warning(f"   ⚠️ [YouTube Shorts Fallback QA Rejected] Scene {scene_index+1}: {yt_asset.name} rejected ({qa.get('reason')}). Refusing mismatch.")
+                        try:
+                            yt_asset.unlink(missing_ok=True)
+                        except Exception:
+                            pass
             except Exception as yt_err:
                 print_warning(f"   ⚠️ YouTube Shorts fallback notice: {yt_err}")
 

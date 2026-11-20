@@ -26,9 +26,9 @@ For EVERY scene:
 - 'search_keywords': 2 to 3 clean, simple English search words specific to the scene topic (e.g. ['roman soldiers', 'ancient battle']). DO NOT include buzzwords like 'cinematic', '4k', 'slow motion', 'disaster'. Each scene MUST have DIFFERENT keywords.
 
 Key Viral Rules:
-1. TOTAL LENGTH: The total spoken narration across all scenes MUST be strictly between 135 and 148 words (lasting 55 to 58 seconds, strictly under 59 seconds, HARD CEILING 148 words). NEVER exceed 148 words as YouTube Shorts feed disqualifies any video 60 seconds or above!
-2. High-Curiosity Title: Click-worthy title with series/mystery brackets.
-3. Instant Shock Hook (Scene 1): First 3 seconds MUST use an Impossible Paradox, High-Stakes Secret, or Mind-Bending Fact (e.g. "If you think you control your own decisions, the next 30 seconds will completely shatter your reality!" or "In 1983, a single computer glitch brought humanity 120 seconds from nuclear extinction, and 99% of people were never told this truth!"). NEVER use weak openings like 'Hello', 'Did you know', or 'Have you ever wondered'.
+1. TOTAL LENGTH: Adhere strictly to the word count specified in the user prompt (typically 80-95 words for 35s shorts, or 130-145 words for 55s shorts). Never exceed the target word limit!
+2. High-Curiosity Clean Title: Short, irresistible, curiosity-driven title strictly under 50 characters (e.g. 'The Cosmic Void Where Light Dies', 'Why Black Holes Never Die'). NEVER include brackets like [Full Documentary] or [Mystery], and NEVER put hashtags (#Shorts, #viral, #usa) in the title!
+3. Instant Shock Hook (Scene 1): First 2 seconds MUST use an Impossible Paradox, High-Stakes Secret, or Mind-Bending Fact (e.g. "Inside this black hole, the laws of physics completely break down."). NEVER use weak openings like 'Hello', 'Did you know', or 'Have you ever wondered'.
 4. The 15-Second Retention Twist (Scene 3 or 4): Inject a mid-video curiosity gap or open-loop twist (e.g. "But the real nightmare began when researchers uncovered what was buried 100 feet below...") to lock the viewer's brain until the very last second.
 5. HIGH-CONVERSION SUBSCRIBE TRIGGER (Final Scene): Keep spoken subscribe CTA ultra-compact (strictly 4-6 words maximum, e.g. "Subscribe for more crazy facts!" or "Subscribe for more mind-bending secrets!"). NEVER waste valuable video seconds on long spoken outros because the visual subscribe banner automatically appears on screen!
 6. Pinned Comment: A provocative engagement question for comments to drive 50+ replies.
@@ -62,8 +62,8 @@ CRITICAL REQUIREMENT - PERFECT SCENE-TO-VOICE SYNCHRONIZATION (आवाज़ �
 - 'search_keywords': 2-3 सीधे, सरल अंग्रेजी कीवर्ड्स जो उस विशिष्ट दृश्य से संबंधित हों। फालतू शब्द जैसे 'cinematic', '4k', '8k' बिल्कुल न लिखें! प्रत्येक दृश्य के कीवर्ड अलग-अलग होने चाहिए!
 
 Key Viral Rules for Indian Audience:
-1. अनिवार्य कुल लंबाई (MANDATORY 55-58s): सभी दृश्यों को मिलाकर कुल Narration 135 से 148 शब्दों के बीच होना अनिवार्य है (लक्ष्य: 55 से 58 सेकंड, HARD CEILING 148 words)। 148 से अधिक शब्द कभी न लिखें क्योंकि 60 सेकंड या उससे अधिक का वीडियो YouTube Shorts फीड से अयोग्य हो जाता है!
-2. High-Curiosity Title: हिंदी और अंग्रेजी का आकर्षक शीर्षक।
+1. कुल लंबाई (Target Duration Pacing): यूजर प्रॉम्प्ट में दिए गए शब्द सीमा का कड़ाई से पालन करें (35s के लिए लगभग 80-95 शब्द, 55s के लिए 130-145 शब्द)।
+2. High-Curiosity Clean Title: 50 अक्षरों से कम का आकर्षक शीर्षक। शीर्षक में कभी भी [Full Documentary] या #Shorts, #viral जैसे हैशटैग न जोड़ें!
 3. Instant Shock Hook (Scene 1): पहले 2-3 सेकंड में दर्शक का दिमाग हिला देने वाला मनोवैज्ञानिक हुक अनिवार्य है।
    - विरोधाभास हुक: "अगर आपको लगता है कि आप अपने फैसलों के खुद मालिक हैं, तो अगले 30 सेकंड्स में आपकी यह सोच पूरी तरह बदलने वाली है!"
    - ऐतिहासिक/गुप्त सत्य हुक: "1983 में एक छोटी सी गलती ने पूरी दुनिया को परमाणु तबाही के कगार पर ला खड़ा किया था, और 99% लोगों को यह सच कभी नहीं बताया गया!"
@@ -101,8 +101,8 @@ Key Rules:
    - Scene 1: Cinematic Hook & Problem Statement
    - Middle Scenes: Engaging breakdown, chronological story, or key insights with smooth transitions
    - Final Scene: Climax, philosophical takeaway, and an ultra-short spoken Outro CTA:
-     In Hindi: "ऐसे ही रहस्यों के लिए अभी SUBSCRIBE करें!" (Ultra-compact, maximum 4-6 words)
-     In English: "Subscribe for more mind-bending facts!" (Ultra-compact, maximum 4-6 words)
+     In Hindi: "ऐसे ही रहस्यों के लिए अभी FOLLOW और SUBSCRIBE करें!" (Ultra-compact, maximum 4-6 words)
+     In English: "Follow and subscribe for more mind-bending facts!" (Ultra-compact, maximum 4-6 words)
 2. Every scene must have:
    - Natural spoken narration
    - Specific, high-quality visual query (for stock footage / AI image prompt)

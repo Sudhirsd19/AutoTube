@@ -22,10 +22,12 @@ def test_nasa_video_url_rejects_image_only_links():
 
 def test_frame_gate_non_strict_without_api(tmp_path, monkeypatch):
     monkeypatch.delenv("GEMINI_API_KEY", raising=False)
-    monkeypatch.delenv("AUTOTUBE_FRAME_QA_STRICT", raising=False)
+    monkeypatch.setenv("AUTOTUBE_FRAME_QA_STRICT", "0")
     asset = tmp_path / "clip.mp4"
     asset.write_bytes(b"x" * 6000)
-    result = VisualQualityGate().verify(asset, "A black hole in deep space.")
+    gate = VisualQualityGate()
+    gate._get_client = lambda: None
+    result = gate.verify(asset, "A black hole in deep space.")
     assert result["accepted"] is True
     assert result["mode"] == "metadata_only"
 
@@ -35,7 +37,9 @@ def test_frame_gate_strict_without_api(tmp_path, monkeypatch):
     monkeypatch.setenv("AUTOTUBE_FRAME_QA_STRICT", "1")
     asset = tmp_path / "clip.mp4"
     asset.write_bytes(b"x" * 6000)
-    result = VisualQualityGate().verify(asset, "A black hole in deep space.")
+    gate = VisualQualityGate()
+    gate._get_client = lambda: None
+    result = gate.verify(asset, "A black hole in deep space.")
     assert result["accepted"] is False
     assert result["mode"] == "metadata_only"
 

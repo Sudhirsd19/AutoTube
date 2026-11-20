@@ -7,19 +7,19 @@ from autotube.voice.voice_director import (
 
 
 def test_auto_voice_black_hole_hindi():
-    assert choose_subject_voice("Black Hole", "यह अंतरिक्ष का सबसे रहस्यमय black hole है", "hi") == "hi_astro_vibes_male"
+    assert choose_subject_voice("Black Hole", "यह अंतरिक्ष का सबसे रहस्यमय black hole है", "hi") == "Charon"
 
 
 def test_auto_voice_history_english():
-    assert choose_subject_voice("Indian History", "The empire changed the course of history.", "en") == "en_deep_british_male"
+    assert choose_subject_voice("Indian History", "The empire changed the course of history.", "en") == "Fenrir"
 
 
 def test_auto_voice_science_hindi():
-    assert choose_subject_voice("Science Facts", "यह एक scientific experiment है", "hi") == "hi_astro_vibes_male"
+    assert choose_subject_voice("Science Facts", "यह एक scientific experiment है", "hi") == "Charon"
 
 
 def test_auto_voice_mystery_english():
-    assert choose_subject_voice("Unsolved Mystery", "An unexplained case shocked investigators.", "en") == "en_cinematic_narrator"
+    assert choose_subject_voice("Unsolved Mystery", "An unexplained case shocked investigators.", "en") == "Fenrir"
 
 
 def test_language_detection():
@@ -28,9 +28,9 @@ def test_language_detection():
 
 
 def test_language_compatibility():
-    assert is_voice_language_compatible("hi_deep_cinematic_male", "hi")
+    assert is_voice_language_compatible("Charon", "hi")
     assert not is_voice_language_compatible("en_deep_cinematic_male", "hi")
-    assert is_voice_language_compatible("en_deep_british_male", "en")
+    assert is_voice_language_compatible("Puck", "en")
 
 
 def test_resolve_auto_voice_uses_generated_subject():
@@ -39,7 +39,7 @@ def test_resolve_auto_voice_uses_generated_subject():
         "What Happens Inside a Black Hole?",
         "A black hole bends spacetime around its event horizon.",
         "en",
-    ) == "en_deep_cinematic_male"
+    ) == "Charon"
 
 
 def test_resolve_incompatible_voice_fails_closed_to_language_safe_voice():
@@ -48,16 +48,16 @@ def test_resolve_incompatible_voice_fails_closed_to_language_safe_voice():
         "Mahabharat Mystery",
         "यह महाभारत का एक रहस्यमय प्रसंग है।",
         "hi",
-    ) == "hi_authoritative_male"
+    ) == "Fenrir"
 
 
 def test_resolve_explicit_compatible_voice_preserves_choice():
     assert resolve_voice_for_content(
-        "hi_deep_cinematic_male",
+        "Charon",
         "Black Hole",
         "यह अंतरिक्ष की कहानी है।",
         "hi",
-    ) == "hi_deep_cinematic_male"
+    ) == "Charon"
 
 
 
@@ -66,12 +66,12 @@ def test_gita_and_scripture_topics_use_dedicated_spiritual_voices():
         "Bhagavad Gita: Krishna's Wisdom",
         "The Gita teaches selfless action and steady awareness.",
         "en",
-    ) == "en_deep_warm_male"
+    ) == "Charon"
     assert choose_subject_voice(
         "गीता से जीवन की सीख",
         "श्रीकृष्ण अर्जुन को निष्काम कर्म का संदेश देते हैं।",
         "hi",
-    ) == "akashvani"
+    ) == "Charon"
 
 
 def test_spiritual_voice_takes_priority_over_space_or_history_words():
@@ -79,7 +79,7 @@ def test_spiritual_voice_takes_priority_over_space_or_history_words():
         "Bhagavad Gita Cosmic Wisdom",
         "Krishna explains karma yoga to Arjuna.",
         "en",
-    ) == "en_deep_warm_male"
+    ) == "Charon"
 
 
 def test_generic_motivation_does_not_force_spiritual_voice():
@@ -87,7 +87,7 @@ def test_generic_motivation_does_not_force_spiritual_voice():
         "Daily Motivation",
         "Build a consistent routine and make progress every day.",
         "en",
-    ) == "en_authoritative_male"
+    ) == "Puck"
 
 
 
@@ -96,4 +96,4 @@ def test_word_inside_digital_does_not_trigger_spiritual_voice():
         "The Digital Future of Education",
         "Digital systems are changing the way people learn.",
         "en",
-    ) != "en_deep_warm_male"
+    ) != "Charon"

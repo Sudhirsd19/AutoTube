@@ -59,20 +59,56 @@ class DailyNewsPostPipeline:
             if override_image and Path(override_image).exists():
                 story["image_path"] = str(override_image)
             else:
-                photo_path = self.collector.fetch_high_res_photo(override_topic)
+                photo_path = self.collector.fetch_high_res_photo(
+                    search_query=override_topic,
+                    subject=override_topic.split()[0],
+                    category="TECH & AI UPDATE",
+                    headline=override_topic,
+                )
                 story["image_path"] = str(photo_path) if photo_path else ""
         else:
             story = self.collector.get_todays_featured_story()
 
         raw_img = story.get("image_path")
         if not raw_img or not Path(raw_img).exists():
-            # Check fallback jensen_raw or general stock
-            jensen_sample = PROJECT_ROOT / "assets" / "stock_cache" / "jensen_raw.jpg"
-            if jensen_sample.exists():
-                raw_img = str(jensen_sample)
+            print_info("Story image not found locally; executing smart photo retrieval...")
+            photo_path = self.collector.fetch_high_res_photo(
+                search_query=story.get("search_query", story.get("subject", "")),
+                subject=story.get("subject", ""),
+                category=story.get("category", ""),
+                headline=story.get("headline_en", ""),
+            )
+            if photo_path and Path(photo_path).exists():
+                raw_img = str(photo_path)
             else:
-                print_error("❌ Could not obtain high-resolution image for news card.")
-                return {"success": False, "error": "No image available for news card generation."}
+                # Themed categorical fallback
+                fb_dir = PROJECT_ROOT / "assets" / "news_fallback"
+                cat_lower = str(story.get("category", "")).lower()
+                subj_lower = str(story.get("subject", "")).lower()
+                hl_lower = str(story.get("headline_en", "")).lower()
+                all_text = f"{cat_lower} {subj_lower} {hl_lower}"
+
+                if "jensen" in all_text or "nvidia" in all_text:
+                    fallback_file = fb_dir / "jensen_huang.jpg"
+                elif "space" in all_text or "galaxy" in all_text or "mars" in all_text or "webb" in all_text:
+                    fallback_file = fb_dir / "space_galaxy.jpg"
+                elif "robot" in all_text or "automation" in all_text:
+                    fallback_file = fb_dir / "robotics.jpg"
+                elif "quantum" in all_text or "chip" in all_text or "semiconductor" in all_text:
+                    fallback_file = fb_dir / "quantum_chip.jpg"
+                elif "bio" in all_text or "dna" in all_text or "medical" in all_text or "health" in all_text:
+                    fallback_file = fb_dir / "biotech_dna.jpg"
+                elif "ai" in all_text or "intelligence" in all_text or "neural" in all_text:
+                    fallback_file = fb_dir / "ai_neural.jpg"
+                else:
+                    fallback_file = fb_dir / "future_tech.jpg"
+
+                if fallback_file.exists():
+                    raw_img = str(fallback_file)
+                    print_info(f"Using category fallback: {fallback_file.name}")
+                else:
+                    print_error("❌ Could not obtain high-resolution image for news card.")
+                    return {"success": False, "error": "No image available for news card generation."}
 
         # 2. Generate Hindi Content & Poll
         print_info("✍️ Generating Hindi headline, breakdown & engagement poll...")

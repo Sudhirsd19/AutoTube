@@ -420,7 +420,7 @@ MANDATORY STRUCTURAL REQUIREMENTS:
    - 'search_keywords': 2-3 clean, simple English search words (e.g. ['black hole', 'space galaxy']).
 3. TOTAL SPOKEN WORDS across all scenes MUST be strictly between {min_words} and {max_words} words (hard ceiling {max_words} words). NEVER exceed {max_words} words as YouTube Shorts feed disqualifies any vertical video 60 seconds or above!
 4. Set the top-level 'narration' field to the combined text of all scene narrations.
-5. {"Under-30s Short Mandate: DO NOT write any spoken subscribe/follow CTA in the narration audio! End the story naturally with a high-impact climax." if target_duration < 30 else "High-converting climax cliffhanger CTA in the final scene (strictly 4-6 words, e.g. 'Subscribe for more fascinating knowledge and mysteries!' / 'ऐसे ही अद्भुत ज्ञान और रहस्यों के लिए अभी सब्सक्राइब करें!')."}
+5. {"Under-30s Short Mandate: DO NOT write any spoken subscribe/follow CTA in the narration audio! End the story naturally with a high-impact climax." if target_duration < 30 else "High-converting climax cliffhanger CTA in the final scene (strictly 4-6 words, e.g. 'Follow and subscribe for more fascinating mysteries!' / 'ऐसे ही अद्भुत रहस्यों के लिए अभी फॉलो और सब्सक्राइब करें!')."}
 6. Seamless infinite loop: ending sentence flows back into opening hook.
 7. STRICT ANTI-REPETITION MANDATE: Do NOT use stock opening cliches ('Did you know', 'Imagine if'). Present a completely fresh, unique, factually grounded story angle."""
 

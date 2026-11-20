@@ -702,9 +702,19 @@ def acquire_scene_visuals_waterfall(
                     character_hint=char_hint
                 )
                 if yt_clip and yt_clip.exists() and yt_clip not in used_paths:
-                    used_paths.add(yt_clip)
-                    slot_assets[m_idx] = yt_clip
-                    print_success(f"🛡️ [Anti-Copyright Safe] YouTube Shorts Harvester secured Scene {m_idx + 1} ('{m_subj}')!")
+                    gate = VisualQualityGate(min_confidence=85, min_coverage=80)
+                    s_plan = {"subject": m_subj, "must_show": [m_subj]}
+                    qa_res = gate.verify(yt_clip, m_narr or m_subj, s_plan)
+                    if qa_res.get("accepted"):
+                        used_paths.add(yt_clip)
+                        slot_assets[m_idx] = yt_clip
+                        print_success(f"🛡️ [Anti-Copyright Safe] YouTube Shorts Harvester QA approved Scene {m_idx + 1} ('{m_subj}')!")
+                    else:
+                        print_warning(f"⚠️ [YouTube Harvester Rejected] Scene {m_idx + 1} clip failed Frame QA ({qa_res.get('reason')}). Discarding.")
+                        try:
+                            yt_clip.unlink(missing_ok=True)
+                        except Exception:
+                            pass
         except Exception as yt_err:
             print_warning(f"YouTube Harvester fallback notice in waterfall: {yt_err}")
 
@@ -755,9 +765,19 @@ def acquire_scene_visuals_waterfall(
                         break
 
                 if clip and clip.exists():
-                    slot_assets[m_idx] = clip
-                    used_paths.add(clip)
-                    print_success(f"🎬 [YouTube/Social Secured] Scene {m_idx+1} recovered with authentic video: {clip.name}!")
+                    gate = VisualQualityGate(min_confidence=85, min_coverage=80)
+                    s_plan = {"subject": subj, "must_show": [subj]}
+                    qa_res = gate.verify(clip, getattr(m_scene, "narration", "") if m_scene else subj, s_plan)
+                    if qa_res.get("accepted"):
+                        slot_assets[m_idx] = clip
+                        used_paths.add(clip)
+                        print_success(f"🎬 [YouTube/Social Secured] Scene {m_idx+1} QA approved with authentic video: {clip.name}!")
+                    else:
+                        print_warning(f"⚠️ [YouTube/Social Rejected] Scene {m_idx+1} failed Frame QA ({qa_res.get('reason')}). Discarding.")
+                        try:
+                            clip.unlink(missing_ok=True)
+                        except Exception:
+                            pass
         except Exception as yt_rec_err:
             print_warning(f"YouTube/Social recovery notice: {yt_rec_err}")
 

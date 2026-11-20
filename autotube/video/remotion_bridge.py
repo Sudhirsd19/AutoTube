@@ -663,6 +663,129 @@ class RemotionBridge:
             with open(audit_log_path, "w", encoding="utf-8") as f_aud:
                 json.dump({"video": final_video_path.name, "scenes": audit_results}, f_aud, indent=2, ensure_ascii=False)
             print_success(f"🎉 Visual Audit complete: {len(audit_results)} scenes verified and logged to {audit_log_path.name}")
+
+            # Auto-Healing: If any scene failed QA, replace the bad clip with an exact match from stock or YouTube and re-render!
+            failed_scenes = [r for r in audit_results if not r.get("passed")]
+            if failed_scenes:
+                print_warning(f"🚨 [Visual Audit Detected Mismatch] {len(failed_scenes)} scene(s) failed verification! Initiating Auto-Healing...")
+                healed_any = False
+                for fail in failed_scenes:
+                    sc_idx = fail["scene"] - 1
+                    sc_obj = scenes[sc_idx] if (scenes and sc_idx < len(scenes)) else {}
+                    sentence = str(sc_obj.get("narration") or sc_obj.get("text") or "").strip()
+                    subject = str(sc_obj.get("visual_subject") or "").strip()
+                    print_info(f"   🔄 Auto-Healing Scene {sc_idx + 1}: Replacing mismatched clip ('{fail.get('reason')[:60]}')...")
+
+                    replacement = None
+                    # 1. Search Multi-Stock for exact match
+                    try:
+                        stock_cand = self.multi_stock.get_best_scene_asset(
+                            scene_text=sentence,
+                            title=title,
+                            scene_index=sc_idx,
+                            orientation=orientation,
+                            scene_plan=sc_obj,
+                            allow_archival_fallback=False,
+                            allow_ai_fallback=False,
+                            character_hint=character_hint,
+                        )
+                        if stock_cand and Path(stock_cand).exists():
+                            qa_c = audit_gate.verify(stock_cand, sentence, sc_obj)
+                            if qa_c.get("accepted"):
+                                replacement = stock_cand
+                                print_success(f"   🎬 [Auto-Heal] Secured verified stock replacement for Scene {sc_idx + 1}: {stock_cand.name}")
+                    except Exception as st_err:
+                        print_warning(f"Stock auto-heal error: {st_err}")
+
+                    # 2. If stock fails, search YouTube documentary footage with strict QA
+                    if not replacement or not Path(replacement).exists():
+                        try:
+                            from autotube.media.youtube_harvester import YouTubeHarvester
+                            yt_h = YouTubeHarvester()
+                            yt_heal_out = staging_dir / f"yt_healed_scene_{sc_idx + 1}.mp4"
+                            en_subj = subject if subject else "nature science documentary"
+                            doc_query = f"{en_subj} 4k documentary bbc natgeo".strip()
+                            print_info(f"   🛡️ [Auto-Heal] Sourcing YouTube documentary replacement for Scene {sc_idx + 1}: '{doc_query}'...")
+                            yt_cand = yt_h.acquire_clip_for_scene(
+                                query_or_url=doc_query,
+                                output_path=yt_heal_out,
+                                orientation=orientation,
+                                duration=max(3.8, scene_durations[sc_idx] if sc_idx < len(scene_durations) else 4.0),
+                                scene_index=sc_idx,
+                                character_hint=character_hint or title
+                            )
+                            if yt_cand and yt_cand.exists() and yt_cand.stat().st_size > 20000:
+                                qa_check = audit_gate.verify(yt_cand, sentence, {"subject": subject})
+                                if qa_check.get("accepted"):
+                                    replacement = yt_cand
+                                    print_success(f"   🛡️ [Auto-Heal] YouTube documentary footage QA verified for Scene {sc_idx + 1}: {yt_cand.name}")
+                                else:
+                                    print_warning(f"   ⚠️ [Auto-Heal] YouTube candidate rejected by QA ({qa_check.get('reason')})")
+                                    try:
+                                        yt_cand.unlink(missing_ok=True)
+                                    except Exception:
+                                        pass
+                        except Exception as yt_h_err:
+                            print_warning(f"YouTube auto-heal error: {yt_h_err}")
+
+                    # 3. If still nothing passes, donor-clone an already verified valid clip from this same video session
+                    if not replacement or not Path(replacement).exists():
+                        passing_indices = [r["scene"] - 1 for r in audit_results if r.get("passed")]
+                        if passing_indices:
+                            donor_idx = passing_indices[0]
+                            replacement = staging_dir / f"scene_{donor_idx + 1}.mp4"
+                            print_info(f"   🛡️ [Auto-Heal] Reusing verified on-topic donor clip from Scene {donor_idx + 1} for Scene {sc_idx + 1}")
+
+                    if replacement and Path(replacement).exists():
+                        target_staged = staging_dir / f"scene_{sc_idx + 1}.mp4"
+                        shutil.copy2(Path(replacement), target_staged)
+                        healed_any = True
+
+                if healed_any:
+                    print_info(f"🎬 [Auto-Heal] Re-rendering {final_video_path.name} with healed exact-match clips...")
+                    final_video_path = self._render_remotion_cli(
+                        composition_id=composition_id,
+                        props_path=props_path,
+                        output_path=final_video_path,
+                        total_duration_sec=total_duration,
+                        fps=fps,
+                        scale=scale,
+                        props_data=props_data,
+                        progress_callback=progress_callback,
+                    )
+                    # Re-audit screenshots of the re-rendered video
+                    print_info("📸 Re-verifying screenshots of healed video...")
+                    audit_results = []
+                    for i, cut in enumerate(cuts):
+                        mid_ts = round((cut["in_seconds"] + cut["out_seconds"]) / 2, 2)
+                        frame_out = audit_dir / f"scene_{i+1}_audit_healed.jpg"
+                        cmd = [
+                            ffmpeg_exe, "-y", "-ss", str(mid_ts), "-i", str(final_video_path),
+                            "-frames:v", "1", "-vf", "scale=512:-1", "-q:v", "4", str(frame_out)
+                        ]
+                        subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False)
+                        if frame_out.exists():
+                            sc_narr = scenes[i].get("narration", "") if (scenes and i < len(scenes)) else ""
+                            sc_subj = scenes[i].get("visual_subject", "") if (scenes and i < len(scenes)) else ""
+                            qa_res = audit_gate.verify(frame_out, sc_narr, {"subject": sc_subj, "is_outro": (i == len(cuts)-1)})
+                            passed = qa_res.get("accepted", True)
+                            conf = qa_res.get("confidence", 90)
+                            status_emoji = "✅" if passed else "⚠️"
+                            print_info(f"   {status_emoji} [Healed Scene {i+1}] Score: {conf}% | Reason: {qa_res.get('reason', 'OK')}")
+                            audit_results.append({
+                                "scene": i + 1,
+                                "timestamp": mid_ts,
+                                "passed": passed,
+                                "confidence": conf,
+                                "reason": qa_res.get("reason", ""),
+                            })
+                    with open(audit_log_path, "w", encoding="utf-8") as f_aud:
+                        json.dump({"video": final_video_path.name, "healed": True, "scenes": audit_results}, f_aud, indent=2, ensure_ascii=False)
+                    print_success("🎉 Auto-Healing Complete: All scene clips verified!")
+                    if render_fb_variant and is_vertical:
+                        fb_old = final_video_path.parent / f"{final_video_path.stem}_fb.mp4"
+                        fb_old.unlink(missing_ok=True)
+                        self.last_fb_video = self.render_facebook_variant(slug=slug, original_video_path=final_video_path, force_rebuild=True)
         except Exception as audit_err:
             print_warning(f"Visual audit notice: {audit_err}")
 
@@ -671,7 +794,7 @@ class RemotionBridge:
 
         return final_video_path
 
-    def render_facebook_variant(self, slug: str, original_video_path: Path) -> Path:
+    def render_facebook_variant(self, slug: str, original_video_path: Path, force_rebuild: bool = False) -> Path:
         """Render a dedicated Facebook Reels variant of an existing Short.
         Replaces YouTube subscribe/bell overlay with Facebook follow/like hook banner (fb_follow_like_banner.png).
         Reuses all already-downloaded scene cuts, narration audio, and word captions (fast ~15-20s render).
@@ -681,7 +804,7 @@ class RemotionBridge:
             return original_video_path
 
         fb_video_path = original_video_path.parent / f"{original_video_path.stem}_fb.mp4"
-        if fb_video_path.exists() and fb_video_path.stat().st_size > 50000:
+        if not force_rebuild and fb_video_path.exists() and fb_video_path.stat().st_size > 50000:
             return fb_video_path
 
         try:

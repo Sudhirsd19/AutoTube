@@ -965,6 +965,52 @@ def cleanup(
         print_info(f"No temp files older than {max_age}h found. ({total_files} files, {total_mb:.1f} MB total)")
 
 
+@app.command(name="fb-post")
+def create_facebook_post(
+    topic: Optional[str] = typer.Option(None, "--topic", "-t", help="Override headline/topic for the news card"),
+    image: Optional[Path] = typer.Option(None, "--image", "-i", help="Custom photo file path for the card"),
+    publish: bool = typer.Option(True, "--publish/--no-publish", help="Publish immediately to Facebook Page feed"),
+):
+    """Generate and publish a 1080x1080 viral Breaking News card + poll to Facebook Page feed."""
+    from autotube.news.news_pipeline import DailyNewsPostPipeline
+
+    print_banner()
+    pipeline = DailyNewsPostPipeline()
+    res = pipeline.run(publish=publish, override_topic=topic, override_image=image)
+    if res.get("success"):
+        if res.get("facebook_published"):
+            print_success(f"Facebook Post published: {res.get('post_url')}")
+        else:
+            print_info(f"Card rendered (preview): {res.get('card_path')}")
+    else:
+        print_error(f"Failed to generate post: {res.get('error')}")
+
+
+@app.command(name="news-post")
+def create_news_post_alias(
+    topic: Optional[str] = typer.Option(None, "--topic", "-t", help="Override headline/topic for the news card"),
+    image: Optional[Path] = typer.Option(None, "--image", "-i", help="Custom photo file path for the card"),
+    publish: bool = typer.Option(True, "--publish/--no-publish", help="Publish immediately to Facebook Page feed"),
+):
+    """Alias for fb-post: Generate and publish a 1080x1080 Breaking News card + poll."""
+    create_facebook_post(topic=topic, image=image, publish=publish)
+
+
+@app.command(name="fb-delete")
+def delete_facebook_post(
+    post_id: str = typer.Argument(..., help="Facebook Post ID to delete (e.g. 1319257467944992_122110447845524838)"),
+):
+    """Delete a post or photo from Facebook Page feed."""
+    from autotube.uploader.facebook_upload import FacebookReelsUploader
+
+    uploader = FacebookReelsUploader()
+    res = uploader.delete_post(post_id)
+    if res.get("success"):
+        print_success(f"Post {post_id} successfully deleted from Facebook.")
+    else:
+        print_error(f"Failed to delete post: {res.get('error')}")
+
+
 @app.command()
 def web(
     host: str = typer.Option("0.0.0.0", "--host", "-h", help="Host interface to bind to"),

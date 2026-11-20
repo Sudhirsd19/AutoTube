@@ -248,14 +248,136 @@ def test_facebook_upload_caption_follow_hook_and_youtube_cleanup():
 
 
 def test_generator_hindi_outro_has_follow_hook():
-    """Verify ScriptGenerator's Hindi subject outro includes like and follow hook."""
+    """Verify ScriptGenerator's Hindi subject outro includes dignified subscription CTA."""
     from autotube.scripting.generator import get_subject_outro_text
     
     outro_space = get_subject_outro_text("Space Black Holes", language="hi")
-    assert "फॉलो करें" in outro_space
+    assert "सब्सक्राइब करें" in outro_space
     
     outro_gita = get_subject_outro_text("Bhagavad Gita Karma", language="hi")
-    assert "फॉलो करें" in outro_gita
+    assert "सब्सक्राइब करें" in outro_gita
     
     outro_mandir = get_subject_outro_text("Kailasa Temple Mystery", language="hi")
-    assert "फॉलो करें" in outro_mandir
+    assert "सब्सक्राइब करें" in outro_mandir
+
+
+def test_extract_hindi_subject_purity():
+    """Verify that extract_hindi_subject always returns pure Devanagari Hindi with zero English words."""
+    from autotube.scripting.generator import extract_hindi_subject
+    import re
+
+    # 1. English topic with stupa / brick
+    subj1 = extract_hindi_subject("The 1,500-year-old 'Self-Cooling' brick chemistry of ancient stupas")
+    assert any('\u0900' <= c <= '\u097f' for c in subj1)
+    assert not re.search(r'[a-zA-Z]', subj1)
+
+    # 2. English topic with animal / jellyfish
+    subj2 = extract_hindi_subject("The Immortal Jellyfish biological glitch that reverses aging")
+    assert any('\u0900' <= c <= '\u097f' for c in subj2)
+    assert not re.search(r'[a-zA-Z]', subj2)
+
+    # 3. English topic with space / black hole
+    subj3 = extract_hindi_subject("Why You Would Age Backwards Near a Supermassive Neutron Star")
+    assert any('\u0900' <= c <= '\u097f' for c in subj3)
+    assert not re.search(r'[a-zA-Z]', subj3)
+
+    # 4. Mixed Hindi topic with English parenthetical
+    subj4 = extract_hindi_subject("अमर जेलीफ़िश (Immortal Jellyfish) का जैविक चमत्कार")
+    assert any('\u0900' <= c <= '\u097f' for c in subj4)
+    assert not re.search(r'[a-zA-Z]', subj4)
+
+
+def test_generator_hindi_fallback_zero_english_in_narration():
+    """Verify that ScriptGenerator fallback for Hindi produces 100% pure Devanagari with ZERO English words in spoken narration."""
+    from autotube.scripting.generator import ScriptGenerator
+    import re
+
+    gen = ScriptGenerator()
+    english_topic = (
+        "The 1,500-year-old 'Self-Cooling' brick chemistry of ancient stupas: "
+        "How did architects bake ceramic-like bricks that absorb 95% of heat while maintaining structural integrity for centuries?"
+    )
+    script = gen._generate_fallback_short(
+        topic=english_topic,
+        target_duration=25,
+        language="hi",
+    )
+
+    assert script.scenes and len(script.scenes) >= 3
+    for s in script.scenes:
+        # Spoken narration must have Devanagari
+        assert any('\u0900' <= c <= '\u097f' for c in s.narration)
+        # Spoken narration must have ZERO English words (no Latin character words >= 2 chars)
+        assert not re.search(r'[a-zA-Z]{2,}', s.narration), f"Found English word in narration: '{s.narration}'"
+
+    # Title must have Devanagari and no long English phrases
+    assert any('\u0900' <= c <= '\u097f' for c in script.title)
+    assert "The 1,500-year-old" not in script.title
+
+
+def test_trend_finder_hindi_fallback_purity():
+    """Verify that TrendFinder produces pure Devanagari Hindi topics when fallback pool is used."""
+    from autotube.scripting.trend_finder import TrendFinder
+
+    tf = TrendFinder()
+    # Mock client as None to test fallback
+    tf.cfg.gemini_api_key = None
+    topic = tf.get_single_topic(niche="ancient_engineering", language="hi")
+    assert any('\u0900' <= c <= '\u097f' for c in topic)
+
+
+def test_render_facebook_variant_updates_props_with_fb_follow_hook(tmp_path):
+    """Verify that render_facebook_variant modifies Remotion props to use fb_follow_like_banner and follow hook text."""
+    import json
+    from autotube.video.remotion_bridge import RemotionBridge, REMOTION_PUBLIC_DIR
+
+    bridge = RemotionBridge()
+    test_slug = "test_jellyfish_reel"
+    props_path = REMOTION_PUBLIC_DIR / "demo-props" / f"{test_slug}.json"
+    props_path.parent.mkdir(parents=True, exist_ok=True)
+
+    fake_props = {
+        "cuts": [{"id": "scene-1", "out_seconds": 25.0}],
+        "overlays": [
+            {
+                "type": "subscribe_cta",
+                "text": "लाइक और सब्सक्राइब करें",
+                "subtitle": "🔔 नए वीडियो के लिए सब्सक्राइब करें",
+                "imageSrc": "assets/like_subscribe_bell_banner.png",
+                "accentColor": "#EF4444",
+            }
+        ],
+    }
+    with open(props_path, "w", encoding="utf-8") as f:
+        json.dump(fake_props, f)
+
+    fake_video = tmp_path / f"{test_slug}.mp4"
+    fake_video.write_bytes(b"dummy")
+    fb_dest = tmp_path / f"{test_slug}_fb.mp4"
+
+    def mock_subprocess_side_effect(*args, **kwargs):
+        fb_dest.write_bytes(b"dummy fb video " * 5000)
+        return MagicMock(returncode=0)
+
+    with patch("subprocess.run", side_effect=mock_subprocess_side_effect):
+        res = bridge.render_facebook_variant(slug=test_slug, original_video_path=fake_video)
+        assert res == fb_dest
+
+        fb_props_path = REMOTION_PUBLIC_DIR / "demo-props" / f"{test_slug}_fb.json"
+        assert fb_props_path.exists()
+        with open(fb_props_path, "r", encoding="utf-8") as f:
+            fb_data = json.load(f)
+
+        cta = next(o for o in fb_data["overlays"] if o["type"] == "subscribe_cta")
+        assert cta["text"] == "लाइक और फॉलो करें"
+        assert "फॉलो करें" in cta["subtitle"]
+        assert "fb_follow_like_banner.png" in cta["imageSrc"]
+
+    # Clean up
+    try:
+        props_path.unlink()
+        (REMOTION_PUBLIC_DIR / "demo-props" / f"{test_slug}_fb.json").unlink()
+    except Exception:
+        pass
+
+

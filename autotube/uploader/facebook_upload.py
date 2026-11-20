@@ -131,13 +131,14 @@ class FacebookReelsUploader:
         tags: Optional[List[str]] = None,
         progress_callback: Optional[Callable[[int, str], None]] = None,
         language: Optional[str] = None,
+        scheduled_publish_time: Optional[int] = None,
     ) -> Dict[str, Any]:
         """Upload a vertical 9:16 video to the connected Facebook Page as a Reel.
 
         Follows Meta Graph API Reels 3-phase upload protocol:
         Phase 1: Initialize session on /{page_id}/video_reels?upload_phase=start
         Phase 2: Upload video binary to rupload.facebook.com
-        Phase 3: Publish reel on /{page_id}/video_reels?upload_phase=finish
+        Phase 3: Publish or schedule reel on /{page_id}/video_reels?upload_phase=finish
         """
         video_path = Path(video_path)
         if not video_path.exists():
@@ -234,9 +235,9 @@ class FacebookReelsUploader:
         except Exception as e:
             return {"success": False, "error": f"Failed during Phase 2 binary upload: {e}"}
 
-        # Phase 3: Finish and Publish Reel
+        # Phase 3: Finish and Publish/Schedule Reel
         if progress_callback:
-            progress_callback(75, "Publishing Reel to Facebook Page...")
+            progress_callback(75, "Publishing/Scheduling Reel to Facebook Page...")
 
         try:
             finish_url = f"{GRAPH_API_BASE}/{page_id}/video_reels"
@@ -244,9 +245,24 @@ class FacebookReelsUploader:
                 "upload_phase": "finish",
                 "access_token": access_token,
                 "video_id": video_id,
-                "video_state": "PUBLISHED",
                 "description": caption,
             }
+
+            now_epoch = int(time.time())
+            is_scheduled = False
+            # Meta Graph API requires scheduled_publish_time between 10 minutes and 29 days in the future
+            if scheduled_publish_time and (scheduled_publish_time > now_epoch + 600):
+                finish_payload["video_state"] = "SCHEDULED"
+                finish_payload["scheduled_publish_time"] = int(scheduled_publish_time)
+                is_scheduled = True
+                import datetime
+                sched_dt_utc = datetime.datetime.fromtimestamp(scheduled_publish_time, datetime.timezone.utc)
+                print_info(
+                    f"   📅 Scheduling Facebook Reel for peak time: {sched_dt_utc.strftime('%Y-%m-%d %H:%M:%S UTC')} "
+                    f"(timestamp: {scheduled_publish_time})"
+                )
+            else:
+                finish_payload["video_state"] = "PUBLISHED"
 
             finish_resp = requests.post(finish_url, data=finish_payload, timeout=30)
             finish_data = finish_resp.json()
@@ -259,7 +275,10 @@ class FacebookReelsUploader:
             post_id = finish_data.get("post_id") or video_id
             reel_url = f"https://www.facebook.com/reel/{video_id}"
 
-            print_success(f"🎉 Facebook Reel Published Successfully! URL: {reel_url}")
+            if is_scheduled:
+                print_success(f"🎉 Facebook Reel Scheduled Successfully for Peak Time! Release: {sched_dt_utc.strftime('%Y-%m-%d %H:%M:%S UTC')} | ID: {video_id}")
+            else:
+                print_success(f"🎉 Facebook Reel Published Successfully! URL: {reel_url}")
 
             # Record in published history
             self._record_publish(
@@ -269,10 +288,13 @@ class FacebookReelsUploader:
                 caption=caption,
                 reel_url=reel_url,
                 video_filename=video_path.name,
+                content_type="reel",
+                scheduled_publish_time=scheduled_publish_time if is_scheduled else None,
+                video_state="SCHEDULED" if is_scheduled else "PUBLISHED",
             )
 
             if progress_callback:
-                progress_callback(100, "Reel Published Successfully!")
+                progress_callback(100, "Reel Scheduled Successfully!" if is_scheduled else "Reel Published Successfully!")
 
             return {
                 "success": True,
@@ -281,6 +303,8 @@ class FacebookReelsUploader:
                 "reel_url": reel_url,
                 "title": title,
                 "caption": caption,
+                "video_state": "SCHEDULED" if is_scheduled else "PUBLISHED",
+                "scheduled_publish_time": scheduled_publish_time if is_scheduled else None,
             }
         except Exception as e:
             return {"success": False, "error": f"Failed during Phase 3 publishing: {e}"}
@@ -292,10 +316,16 @@ class FacebookReelsUploader:
         tags: Optional[List[str]] = None,
     ) -> str:
         """Construct an engaging Facebook Reel caption with hashtags."""
+        import re
         clean_title = (title or "").strip()
+        # Strip YouTube-specific marks from Facebook Reel title
+        clean_title = re.sub(r"\s*#shorts\b", "", clean_title, flags=re.IGNORECASE).strip()
+        clean_title = re.sub(r"\s*\[Full Documentary\]", "", clean_title, flags=re.IGNORECASE).strip()
+        clean_title = re.sub(r"\s+", " ", clean_title).strip()
+
         body_desc = (description or "").strip()
 
-        # Clean tags
+        # Clean tags: filter out YouTube-specific hashtags
         clean_tags = []
         default_reel_tags = ["#Reels", "#FacebookReels", "#ViralReels", "#Trending", "#Facts", "#HindiReels"]
 
@@ -304,6 +334,9 @@ class FacebookReelsUploader:
                 t_str = str(t).strip()
                 if not t_str.startswith("#"):
                     t_str = f"#{t_str}"
+                # Exclude YouTube-specific tags
+                if t_str.lower() in ("#shorts", "#short", "#youtubeshorts", "#ytshorts"):
+                    continue
                 if t_str.lower() not in [x.lower() for x in clean_tags]:
                     clean_tags.append(t_str)
 
@@ -316,15 +349,15 @@ class FacebookReelsUploader:
         if clean_title:
             parts.append(clean_title)
 
-        import re
         if body_desc and body_desc != clean_title:
-            # Strip YouTube-specific subscribe appeals from Facebook Reel body
+            # Strip YouTube-specific subscribe appeals and #Shorts from Facebook Reel body
             cleaned_desc = re.sub(
                 r"(चैनल को सब्सक्राइब|चैनल को subscribe|subscribe to (the )?channel|subscribe करें)[^.!?\n]*[.!?]?",
                 "",
                 body_desc,
                 flags=re.IGNORECASE,
             ).strip()
+            cleaned_desc = re.sub(r"#shorts\b", "", cleaned_desc, flags=re.IGNORECASE).strip()
             # If description has multiple paragraphs, keep it concise for Reel
             short_desc = cleaned_desc[:350].strip()
             if short_desc:
@@ -489,6 +522,25 @@ class FacebookReelsUploader:
             print_error(f"❌ Photo upload exception: {e}")
             return {"success": False, "error": str(e)}
 
+    def delete_post(self, post_id: str) -> Dict[str, Any]:
+        """Delete a post or photo from the Facebook Page feed using Graph API."""
+        creds = self.load_credentials()
+        access_token = creds.get("access_token")
+        if not access_token:
+            return {"success": False, "error": "Facebook Page access token not configured."}
+        try:
+            url = f"{GRAPH_API_BASE}/{post_id}"
+            resp = requests.delete(url, params={"access_token": access_token}, timeout=20)
+            data = resp.json() if resp.content else {}
+            if resp.status_code == 200 and data.get("success"):
+                print_success(f"🗑️ Deleted Facebook post: {post_id}")
+                return {"success": True, "post_id": post_id}
+            err = data.get("error", {}).get("message", resp.text)
+            print_error(f"Failed to delete post {post_id}: {err}")
+            return {"success": False, "error": err}
+        except Exception as e:
+            return {"success": False, "error": str(e)}
+
     def _record_publish(
         self,
         video_id: str,
@@ -498,8 +550,10 @@ class FacebookReelsUploader:
         reel_url: str,
         video_filename: str,
         content_type: str = "reel",
+        scheduled_publish_time: Optional[int] = None,
+        video_state: str = "PUBLISHED",
     ) -> None:
-        """Record published Reel details in history."""
+        """Record published or scheduled Reel details in history."""
         try:
             records = []
             if self.history_path.exists():
@@ -508,19 +562,25 @@ class FacebookReelsUploader:
                     if not isinstance(records, list):
                         records = []
 
-            records.insert(
-                0,
-                {
-                    "video_id": video_id,
-                    "post_id": post_id,
-                    "title": title,
-                    "reel_url": reel_url,
-                    "video_filename": video_filename,
-                    "content_type": content_type,
-                    "published_at": int(time.time()),
-                    "published_date": time.strftime("%Y-%m-%d %H:%M:%S"),
-                },
-            )
+            entry = {
+                "video_id": video_id,
+                "post_id": post_id,
+                "title": title,
+                "reel_url": reel_url,
+                "video_filename": video_filename,
+                "content_type": content_type,
+                "video_state": video_state,
+                "published_at": int(time.time()),
+                "published_date": time.strftime("%Y-%m-%d %H:%M:%S"),
+            }
+            if scheduled_publish_time:
+                import datetime
+                entry["scheduled_publish_time"] = scheduled_publish_time
+                entry["scheduled_date"] = datetime.datetime.fromtimestamp(
+                    scheduled_publish_time, datetime.timezone.utc
+                ).strftime("%Y-%m-%d %H:%M:%S UTC")
+
+            records.insert(0, entry)
 
             # Keep last 100 records
             records = records[:100]

@@ -40,7 +40,7 @@ class NewsPostGenerator:
         tag_hindi = story_data.get("tag_hindi", "ताज़ा टेक अपडेट")
         photo_credit = story_data.get("photo_credit", "Press / Reuters")
 
-        prompt = f"""You are a master social media content creator for CosmoChronicle, crafting viral Hindi news cards and Facebook posts about futuristic tech, AI, and space.
+        prompt = f"""You are a master scientific journalist and social media content creator for CosmoChronicle, crafting viral, prestigious Hindi news cards and Facebook posts about futuristic tech, AI, and space.
 
 News Details:
 - Category: {category}
@@ -49,6 +49,10 @@ News Details:
 - Summary: {summary}
 - Tag: {tag_hindi}
 - Photo Credit: {photo_credit}
+
+CRITICAL JOURNALISTIC & SCIENTIFIC ACCURACY RULES:
+1. NEVER invent fake sensationalism, pseudoscientific conspiracy claims, or report optical illusions as literal reality (e.g., NEVER claim "मंगल ग्रह पर मिला रहस्यमयी जंगल" or "एलियन सभ्यता मिली"). Always explain the real scientific phenomenon accurately and compellingly (e.g. "मंगल ग्रह की सतह पर मिले अनोखे भूगर्भीय निशान" or "वैज्ञानिकों ने सुलझाया मंगल की रेत का रहस्य").
+2. The Speaker/Attribution MUST be a real human or recognized institution (e.g. — जेन्सन हुआंग (Jensen Huang, CEO - NVIDIA) or — नासा वैज्ञानिक (NASA Scientists) or — इसरो विशेषज्ञ (ISRO Experts)), NEVER an inanimate machine, robot, or spacecraft (e.g. NEVER "— नासा मार्स ऑर्बिटर" or "— जेम्स वेब टेलीस्कोप")!
 
 Your task:
 1. Card Headline (For the 1080x1080 image card):
